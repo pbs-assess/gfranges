@@ -1,0 +1,8 @@
+---
+title: "Practice code"
+author: "Philina English"
+date: "October 23, 2018"
+output: html_document
+---
+
+
