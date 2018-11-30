@@ -5,4 +5,33 @@ date: "October 23, 2018"
 output: html_document
 ---
 
+```{r eval=False}
+install.packages("tidyverse")
+library(tidyverse)
+tidyverse_update()
+```
+
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+# devtools::install_github("r-lib/lobstr")
+# library(lobstr)
+lobstr::obj_addr(mean)
+lobstr::obj_addr(base::mean)
+lobstr::obj_addr(get("mean"))
+lobstr::obj_addr(evalq(mean))
+lobstr::obj_addr(match.fun("mean"))
+```
+
+```{r}
+x <- c(1,2,3)
+y <- c("A","B","C")
+
+
+lobstr::obj_size(x)
+lobstr::obj_size(y)
+```
 

@@ -1,0 +1,64 @@
+---
+title: "Annotated Bibliography"
+author: |
+  | Philina English
+bibliography: pbs-rangeshifts.bib
+csl: apa-cv.csl
+output: html_document
+#biblio-style: chicago-annote
+---
+# csl: smithsonian-institution-scholarly-press-note.csl
+# csl: apa-cv
+# csl: chicago-annotated-bibliography.csl
+# csl: style-manual-australian-government-note.csl
+# csl: chicago-note-bibliography-16th-edition.csl
+
+# bookdown::pdf_document2:
+#  toc: no
+
+# bibliography: [packages.bib, papers.bib]
+# biblio-style: apalike
+
+```{r Setup..., message=FALSE, warning=FALSE, include=FALSE}
+# I usually load my libraries up front to keep things organized
+library(tidyverse)
+library(bookdown)
+library(knitr)
+library(kableExtra)
+library(ggthemes)
+library(ggExtra)
+library(stringr)
+```
+
+
+```{r}
+# library(citr) # went to addin, insert citations, but too slow/didn't seem to work
+```
+
+
+```{r}
+library(rbbt)
+bbt_cite()
+bbt_bib_zotero()
+```
+
+[@thorson_model-based_2016]
+
+
+Key
+
+(1) Citation
+
+(2) Introduction 
+
+(3) Aims & Research methods
+
+(4) Scope
+
+(5) Usefulness (to your research/ to a particular topic)
+
+(6) Limitations
+
+(7) Conclusions
+
+(8) Reflection (explain how this work illuminates your topic or how it will fit in with your research)

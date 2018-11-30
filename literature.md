@@ -1,16 +1,32 @@
-Literature review 
 
-Part 1: Spatiotemporal modelling frameworks 
-
-
-
-Part 2: Range shifts
-
-
-
-Part 3: Groundfish ecology
+---
+title: "Literature review"
+author: |
+  | Philina English
+bibliography: pbs-rangeshifts.bib
+csl: apa-inline-author-sort.csl
+output: html_document
+---
 
 
+# Part 1: Range shifts
 
+`r bbt_cite(@thorson_model-based_2016)`
+
+
+[@thorson_model-based_2016]
+
+
+[@pinsky2013] 
+
+
+# Part 2: Spatiotemporal modelling frameworks 
+
+
+
+# Part 3: Groundfish ecology
+
+
+# References
 
 
