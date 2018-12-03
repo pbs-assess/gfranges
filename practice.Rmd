@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r eval=False}
-install.packages("tidyverse")
+# install.packages("tidyverse")
 library(tidyverse)
 tidyverse_update()
 ```
