@@ -8,12 +8,12 @@ output: html_document
 # installing key packages
 
 ```{r}
-install.packages("tidyverse")
-install.packages(c("devtools", "roxygen2", "testthat", "knitr"))
-install.packages("devtools")
-library(devtools)
-devtools::install_github("nwfsc-assess/geostatistical_delta-GLMM")
-install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
+# install.packages("tidyverse")
+# install.packages(c("devtools", "roxygen2", "testthat", "knitr"))
+# install.packages("devtools")
+# library(devtools)
+# devtools::install_github("nwfsc-assess/geostatistical_delta-GLMM")
+# install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
 ```
 
 
@@ -38,4 +38,11 @@ bbt_bib_zotero()
 library(RefManageR)
 biblio <- ReadZotero(user = 863479, .params = list(collection = 'items'))
 ```
+
+
+```{r eval=False}
+library(tidyverse)
+tidyverse_update()
+```
+
 
