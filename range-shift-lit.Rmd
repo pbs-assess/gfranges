@@ -4,15 +4,19 @@ author: Philina English
 date: "December 3, 2018"
 bibliography: pbs-rangeshifts.bib
 csl: apa-annotated-bibliograph-annotation-inline.csl 
-output: pdf_document
+output: html_document
 ---
 
-```{r}
+[@parry_climate_2007]
 
-```
+
+[@burrows2011]
 
 
 [@parmesan_globally_2003]
+
+
+[@poloczanska2013]
 
 
 [@thorson_model-based_2016]
