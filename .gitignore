@@ -14,6 +14,7 @@ literature.html
 *.pdf
 *.ps
 *.toc
+*.html
 # *.txt
 *.out
 *.snm
