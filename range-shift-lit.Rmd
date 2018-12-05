@@ -13,7 +13,7 @@ output: html_document
 ### Changes in the marine environment
 [@burrows2011]
 
-##--> Many organisms must "adapt, move, or die"
+##Many organisms must "adapt, move, or die"
 --when the environment changes, if they are to persist, organisms must be able to cope with change, change themselves, or move ([@maggini_are_2011])
 
 [@root_fingerprints_2003]
@@ -30,8 +30,9 @@ output: html_document
 
 [@sunday_species_2015]
 
-- but climate velocity was found to explain shifts better than species traits for a range of marine taxa ([@pinsky2013]); however methods used in this study may not have accounted fully for changes in the spatial distribution of survey effort in all cases ([@thorson_model-based_2016])
+--but climate velocity was found to explain shifts better than species traits for a range of marine taxa ([@pinsky2013]); however methods used in this study may not have accounted fully for changes in the spatial distribution of survey effort in all cases ([@thorson_model-based_2016])
 
+--even statistically and biologically significant models based on species traits can have limited exlanatory power and therefore conservation value ([@angert_species_2011])
 
 ###Stages of distribution change and the importance of species traits
 [@bates_defining_2014]
