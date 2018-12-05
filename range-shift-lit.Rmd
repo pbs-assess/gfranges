@@ -7,20 +7,38 @@ csl: apa-annotated-bibliograph-annotation-inline.csl
 output: html_document
 ---
 
+##Changing climate
 [@parry_climate_2007]
 
-
+### Changes in the marine environment
 [@burrows2011]
 
+##--> Many organisms must "adapt, move, or die"
+--when the environment changes, if they are to persist, organisms must be able to cope with change, change themselves, or move ([@maggini_are_2011])
+
+[@root_fingerprints_2003]
+
+###When species move: shifting distributions
+####General patterns 
+--many terrestrial species from a range of taxanomic groups have moved to higher latitudes and elevations ([@hickling_distributions_2006])
+
+--despite similar climate velocities, within regions, some species have rapidly extended their geographical distributions, while others have moved less, or have even moved in the opposite direction
 
 [@parmesan_globally_2003]
 
-
 [@poloczanska2013]
 
+[@sunday_species_2015]
 
-[@thorson_model-based_2016]
+- but climate velocity was found to explain shifts better than species traits for a range of marine taxa ([@pinsky2013]); however methods used in this study may not have accounted fully for changes in the spatial distribution of survey effort in all cases ([@thorson_model-based_2016])
 
+
+###Stages of distribution change and the importance of species traits
+[@bates_defining_2014]
+
+[@poyry_species_2009]
+###Modeling responses to environmental gradients
+[@maggini_are_2011]
 
 [@pinsky2013] 
 
