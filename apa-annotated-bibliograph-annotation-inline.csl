@@ -661,8 +661,8 @@
     </sort>
     <layout prefix="" suffix="" delimiter="">
       <group delimiter=", ">
-        <text macro="author-short"/>
-        <text macro="issued-year"/>
+        <text macro="author-short" font-weight="bold"/>
+        <text macro="issued-year" font-weight="bold"/>
         <text macro="citation-locator"/>
         <text variable="annote" display="left-margin"/>
       </group>
