@@ -25,6 +25,12 @@ despite similar climate velocities, within regions, some species have rapidly ex
 # Part 3: Groundfish ecology
 
 
+# Part 4: Implications
+
+--lizard extinction prediction? [@sinervo_erosion_2010]
+
+
+
 # References
 
 

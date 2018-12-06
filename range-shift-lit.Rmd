@@ -1,26 +1,39 @@
 ---
-title: "Range shift literature review"
+title: "Groundfish range shifts in response to climate: literature outline"
 author: Philina English
-date: "December 3, 2018"
+date: "December 5, 2018"
 bibliography: pbs-rangeshifts.bib
 csl: apa-annotated-bibliograph-annotation-inline.csl 
-output: html_document
+output: pdf_document
 ---
 
 ##Changing climate
 [@parry_climate_2007]
 
 ### Changes in the marine environment
+
+#### Temperature
 [@burrows2011]
+
+
+#### Dissolved O2 
+[@keeling_ocean_2010]
+[@pierce_declining_2012]
+[@long_finding_2016]
+
+But [@schmidtko_decline_2017]
+
+[@crawford_declining_2013]
 
 ##In response organisms "adapt, move, or die"
 --when the environment changes, if they are to persist, organisms must be able to cope with change, change themselves, or move ([@maggini_are_2011])
 
 [@root_fingerprints_2003]
 
+
 ###When species move: shifting distributions
 ####General patterns 
---many terrestrial species from a range of taxanomic groups have moved to higher latitudes and elevations ([@hickling_distributions_2006,@chen_rapid_2011])
+--many terrestrial species from a range of taxonomic groups have moved to higher latitudes and elevations ([@hickling_distributions_2006,@chen_rapid_2011])
 
 --despite similar climate velocities, within regions, some species have rapidly extended their geographical distributions, while others have moved less, or have even moved in the opposite direction
 
@@ -30,7 +43,7 @@ output: html_document
 
 [@sunday_species_2015]
 
---even statistically and biologically significant models based on species traits can have limited exlanatory power and therefore conservation value ([@angert_species_2011])
+--even statistically and biologically significant models based on species traits can have limited explanatory power and therefore conservation value ([@angert_species_2011])
 
 ###Stages of distribution change and the importance of species traits
 [@bates_defining_2014]
@@ -38,16 +51,61 @@ output: html_document
 [@poyry_species_2009]
 
 
-###Modeling responses to environmental change
+###Use abundance-occupancy patterns to assess locality restricted responses to climate?
 
---distances moved were correlated with warming and generally sufficient to track temperatures latitudinally, but not elevationally [@chen_rapid_2011]
+--centre of gravity (COG) as a measure of range shift? 
+[@thorson_model-based_2016]
 
---climate velocity was found to explain shifts better than species traits for a range of marine taxa ([@pinsky2013]); however methods used in this study may not have accounted fully for changes in the spatial distribution of survey effort in all cases ([@thorson_model-based_2016])
+--incorporating body size a key variable in understanding both importance of dispersal and trophic interactions in occupancy changes in fishes
+
+[@webb_birds_2011]
+
+--both more detailed assessments of distribution change than COG, including accounting for age structure are important for butterfish in the Atlantic 
+[@adams_age-specific_2017]
+
+
+##Modeling occupancy-density responses to environmental change
+
+--occupancy shift distances were correlated with warming and generally sufficient to track temperatures latitudinally, but not elevationally [@chen_rapid_2011]
+
+--climate velocity was found to explain shifts better than species traits for a range of marine taxa ([@pinsky2013]); however methods used in this study may not have accounted fully for changes in the spatial distribution of survey effort in all cases (**Thorson et al. 2016**)
 
 --sea surface temperature was not correlated with range shifts [@przeslawski_using_2012]
 
 
 [@maggini_are_2011]
+
+
+
+
+###Comparison with analagous elevation change in terrestrial environments?
+
+--through consideration of the appropriate ecological ‘units’ (species or size class), comparisons between different systems greatly benefits the search for general understanding of the processes structuring communities (**Steele 1991; Webb et al. 2011**)
+
+--marine systems are inherently more variable than terrestrial systems at decadal timescales due to the tight coupling of physical and biological processes in the sea ([@steele_can_1991-1])
+
+--rapid, spatially-extensive human impacts on terrestrial ecosystems make them behave more like oceanic systems (in that ecological and physical processes occur at similar scales), and yet temporal variability in the distribution and abundance of fish species is still greater (**Webb et al. 2011**)
+
+
+
+
+##Groundfish in Pacific Canada
+
+--large number of taxa
+
+--includes economically relevant stocks --> also human food sources
+
+--live at depth--most stable and slow to change environment, yet showing signs of responding to temperature change 
+[@dulvy_climate_2008]
+
+--region with low-average rate of warming on a global scale (**Burrows et al. 2011**)
+
+--region with higher than average rate of deoxygenation (**Keeling et al. 2010;Pierce et al. 2012; Long et al. 2016**) and a guild that appears to respond to very strongly 
+[@koslow_fish_2013]
+
+[@keller_occurrence_2015]
+
+[@keller_species-specific_2017]
 
 
 
