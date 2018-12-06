@@ -3,8 +3,8 @@ title: "Groundfish range shifts in response to climate: literature outline"
 author: Philina English
 date: "December 5, 2018"
 bibliography: pbs-rangeshifts.bib
-csl: apa-annotated-bibliograph-annotation-inline.csl 
-output: pdf_document
+csl: apa-annotated-bibliograph-inline.csl 
+output: html_document
 ---
 
 ##Changing climate
