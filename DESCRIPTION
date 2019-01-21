@@ -1,5 +1,5 @@
-Package: r4ss
-Title: What the Package Does (One Line, Title Case)
+Package: gfranges
+Title: Groundfish Ranges
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "First",
