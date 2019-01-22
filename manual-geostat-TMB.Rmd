@@ -18,66 +18,54 @@ library(ggplot2)
 survey <- "SYN QCS"
 
 d <- gfplot::get_survey_sets("pacific cod", ssid = 1)
- # d <- dplyr::filter(d, !(year == 2014 & survey_abbrev == "SYN WCHG")) # something went wrong in 2014
-  
+# d <- dplyr::filter(d, !(year == 2014 & survey_abbrev == "SYN WCHG")) # something went wrong in 2014
 ```
 
 #### Tidy data and fill in missing depth values
 ```{r}
-
 col <- if (grepl("SYN", survey)) "density_kgpm2" else "density_ppkm2" # grep says if SYN is in survey returns logical (l), use kgpm2
 
 dat <- gfplot:::tidy_survey_sets(d, survey, years = seq(1, 1e6), # say which surveys and years to include
-    density_column = col) # make utm = x,y rename density, remove 
+  density_column = col) # make utm = x,y rename density, remove 
 
 #glimpse(dat)
-  if (mean(dat$present) < 0.05) stop("Not enough data.") # stops if too little data
+if (mean(dat$present) < 0.05) stop("Not enough data.") # stops if too little data
 
 #  .scale <- if (grepl("SYN", survey)) 1000 else 1 # for computational stability # may be needed for INLA
 #  dat <- dplyr::mutate(dat, density = density * .scale) # may be needed for INLA
 
-  if (any(is.na(dat$depth)))
-    dat <- gfplot:::interp_survey_bathymetry(dat)$data
-    dat <- gfplot:::scale_survey_predictors(dat) # choose interp data if needed, and scale
+if (any(is.na(dat$depth)))
+  dat <- gfplot:::interp_survey_bathymetry(dat)$data
+dat <- gfplot:::scale_survey_predictors(dat) # choose interp data if needed, and scale
 ```
 
 #### Make prediction grid for plotting
 ```{r}
-#  if (grepl("SYN", survey)) {
-    grid_locs <- gfplot:::make_prediction_grid(
-      dplyr::filter(dat, year == max(dat$year)), survey = survey,
-      cell_width = 2)$grid # cell width of 2 km
-    grid_locs <- dplyr::rename(grid_locs, depth = akima_depth)
-#  } else {
-#    grid_locs <- if (surv == "HBLL OUT N") gfplot::hbll_n_grid$grid else gfplot::hbll_s_grid$grid
- # }
-  grid_locs$year <- NULL
-  
-#  formula <- if (include_depth) {
-#    stats::as.formula(density ~ 0 + as.factor(year))
-#  } else {
-#    stats::as.formula(density ~ 0 + as.factor(year) + depth_scaled + depth_scaled2)
-# }
+grid_locs <- gfplot:::make_prediction_grid(
+  dplyr::filter(dat, year == max(dat$year)), survey = survey,
+  cell_width = 2)$grid # cell width of 2 km
+grid_locs <- dplyr::rename(grid_locs, depth = akima_depth)
+grid_locs$year <- NULL
 ```
 
 
 #### Spatial model
 ```{r}
-  spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 100)
+spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 50)
 
-  m <- sdmTMB::sdmTMB(
-            formula = density ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
-            data = dat, time = "year", 
-            spde = spde, 
-            family = sdmTMB::tweedie(link = "log"),
-            anisotropy = FALSE, 
-            silent = FALSE)
-  
-  names(m) 
+m <- sdmTMB::sdmTMB(
+  formula = density ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
+  data = dat, time = "year", 
+  spde = spde, 
+  family = sdmTMB::tweedie(link = "log"),
+  anisotropy = FALSE, 
+  silent = FALSE)
+
+names(m) 
 ```
 
 
-#### Save preditions from model
+#### Save predictions from model
 ```{r}
 predictions <- predict(m, newdata = grid_locs)$data
 glimpse(predictions) # est = predicted values
@@ -134,4 +122,3 @@ plot_map(predictions, "est_re_st") +
   scale_fill_gradient2()
 
 ```
-
