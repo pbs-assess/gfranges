@@ -79,10 +79,14 @@ dat <- gfplot:::tidy_survey_sets(d, survey, years = seq(1, 1e6), # say which sur
 
 #### Save preditions from model
 ```{r}
-  predictions <- stats::predict(m, newdata = grid_locs)$data
-# predictions$resids <- residuals(m) # randomized quantile residuals but not working
-  glimpse(predictions) # est = predicted values
-  
+predictions <- predict(m, newdata = grid_locs)$data
+glimpse(predictions) # est = predicted values
+
+# Make predictions on original data:
+predictions_original <- predict(m)$data
+predictions_original$resids <- residuals(m) # randomized quantile residuals
+glimpse(predictions_original) # est = predicted values
+
 # A short function for plotting our predictions:
 plot_map <- function(dat, column = "est") {
   ggplot(dat, aes_string("X", "Y", fill = column)) +
@@ -94,11 +98,11 @@ plot_map <- function(dat, column = "est") {
 
 #### Check residuals
 ```{r}
-#ggplot(predictions, aes(X, Y, col = resids)) + scale_colour_gradient2() +
-#  geom_point() + facet_wrap(~year)
+ggplot(predictions_original, aes(X, Y, col = resids)) + scale_colour_gradient2() +
+ geom_point() + facet_wrap(~year)
 
-#hist(predictions$resids)
-#qqnorm(predictions$resids);abline(a = 0, b = 1)
+hist(predictions_original$resids)
+qqnorm(predictions_original$resids);abline(a = 0, b = 1)
 ```
 
 #### Plot overall model
