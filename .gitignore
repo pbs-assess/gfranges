@@ -20,3 +20,10 @@
 *.nav
 *.synctex.gz*
 knitr-cache
+*.html
+*.rds
+*.aux
+*.log
+*html*
+*chunk*
+*data-cache*
