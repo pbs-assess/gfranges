@@ -5,18 +5,26 @@ date: "1/21/2019"
 output: html_document
 ---
 
+#### Load packages
+
 ```{r}
 library(dplyr)
 library(gfplot)
 library(ggplot2)
 ```
 
+#### Retrieve data
 ```{r}
 survey <- "SYN QCS"
 
 d <- gfplot::get_survey_sets("pacific cod", ssid = 1)
  # d <- dplyr::filter(d, !(year == 2014 & survey_abbrev == "SYN WCHG")) # something went wrong in 2014
   
+```
+
+#### Tidy data and fill in missing depth values
+```{r}
+
 col <- if (grepl("SYN", survey)) "density_kgpm2" else "density_ppkm2" # grep says if SYN is in survey returns logical (l), use kgpm2
 
 dat <- gfplot:::tidy_survey_sets(d, survey, years = seq(1, 1e6), # say which surveys and years to include
@@ -33,6 +41,7 @@ dat <- gfplot:::tidy_survey_sets(d, survey, years = seq(1, 1e6), # say which sur
     dat <- gfplot:::scale_survey_predictors(dat) # choose interp data if needed, and scale
 ```
 
+#### Make prediction grid for plotting
 ```{r}
 #  if (grepl("SYN", survey)) {
     grid_locs <- gfplot:::make_prediction_grid(
@@ -52,6 +61,7 @@ dat <- gfplot:::tidy_survey_sets(d, survey, years = seq(1, 1e6), # say which sur
 ```
 
 
+#### Spatial model
 ```{r}
   spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 100)
 
@@ -66,6 +76,8 @@ dat <- gfplot:::tidy_survey_sets(d, survey, years = seq(1, 1e6), # say which sur
   names(m) 
 ```
 
+
+#### Save preditions from model
 ```{r}
   predictions <- stats::predict(m, newdata = grid_locs)$data
 # predictions$resids <- residuals(m) # randomized quantile residuals but not working
@@ -80,6 +92,7 @@ plot_map <- function(dat, column = "est") {
 }
 ```
 
+#### Check residuals
 ```{r}
 #ggplot(predictions, aes(X, Y, col = resids)) + scale_colour_gradient2() +
 #  geom_point() + facet_wrap(~year)
@@ -88,16 +101,14 @@ plot_map <- function(dat, column = "est") {
 #qqnorm(predictions$resids);abline(a = 0, b = 1)
 ```
 
-
+#### Plot overall model
 ```{r}
 plot_map(predictions, "exp(est)") +
   scale_fill_viridis_c(trans = "sqrt") +
   ggtitle("Prediction (fixed effects + all random effects)")
 ```
 
-
-
-
+#### Plot fixed effects
 ```{r}
 
 plot_map(predictions, "exp(est_fe)") +
@@ -105,14 +116,14 @@ plot_map(predictions, "exp(est_fe)") +
   scale_fill_viridis_c(trans = "sqrt")
 ```
 
-
+#### Plot spatial random effects
 ```{r}
 plot_map(predictions, "est_re_s") +
   ggtitle("Spatial random effects only") +
   scale_fill_gradient2()
 ```
 
-
+#### Plot spatiotemporal random effects
 ```{r}
 plot_map(predictions, "est_re_st") +
   ggtitle("Spatiotemporal random effects only") +
@@ -120,8 +131,3 @@ plot_map(predictions, "est_re_st") +
 
 ```
 
-
-
-
-
-index-standardization
