@@ -1,0 +1,127 @@
+---
+title: "manual-geostat-TMB"
+author: "Philina English"
+date: "1/21/2019"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(gfplot)
+library(ggplot2)
+```
+
+```{r}
+survey <- "SYN QCS"
+
+d <- gfplot::get_survey_sets("pacific cod", ssid = 1)
+ # d <- dplyr::filter(d, !(year == 2014 & survey_abbrev == "SYN WCHG")) # something went wrong in 2014
+  
+col <- if (grepl("SYN", survey)) "density_kgpm2" else "density_ppkm2" # grep says if SYN is in survey returns logical (l), use kgpm2
+
+dat <- gfplot:::tidy_survey_sets(d, survey, years = seq(1, 1e6), # say which surveys and years to include
+    density_column = col) # make utm = x,y rename density, remove 
+
+#glimpse(dat)
+  if (mean(dat$present) < 0.05) stop("Not enough data.") # stops if too little data
+
+#  .scale <- if (grepl("SYN", survey)) 1000 else 1 # for computational stability # may be needed for INLA
+#  dat <- dplyr::mutate(dat, density = density * .scale) # may be needed for INLA
+
+  if (any(is.na(dat$depth)))
+    dat <- gfplot:::interp_survey_bathymetry(dat)$data
+    dat <- gfplot:::scale_survey_predictors(dat) # choose interp data if needed, and scale
+```
+
+```{r}
+#  if (grepl("SYN", survey)) {
+    grid_locs <- gfplot:::make_prediction_grid(
+      dplyr::filter(dat, year == max(dat$year)), survey = survey,
+      cell_width = 2)$grid # cell width of 2 km
+    grid_locs <- dplyr::rename(grid_locs, depth = akima_depth)
+#  } else {
+#    grid_locs <- if (surv == "HBLL OUT N") gfplot::hbll_n_grid$grid else gfplot::hbll_s_grid$grid
+ # }
+  grid_locs$year <- NULL
+  
+#  formula <- if (include_depth) {
+#    stats::as.formula(density ~ 0 + as.factor(year))
+#  } else {
+#    stats::as.formula(density ~ 0 + as.factor(year) + depth_scaled + depth_scaled2)
+# }
+```
+
+
+```{r}
+  spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 100)
+
+  m <- sdmTMB::sdmTMB(
+            formula = density ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
+            data = dat, time = "year", 
+            spde = spde, 
+            family = sdmTMB::tweedie(link = "log"),
+            anisotropy = FALSE, 
+            silent = FALSE)
+  
+  names(m) 
+```
+
+```{r}
+  predictions <- stats::predict(m, newdata = grid_locs)$data
+# predictions$resids <- residuals(m) # randomized quantile residuals but not working
+  glimpse(predictions) # est = predicted values
+  
+# A short function for plotting our predictions:
+plot_map <- function(dat, column = "est") {
+  ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    facet_wrap(~year) +
+    coord_fixed()
+}
+```
+
+```{r}
+#ggplot(predictions, aes(X, Y, col = resids)) + scale_colour_gradient2() +
+#  geom_point() + facet_wrap(~year)
+
+#hist(predictions$resids)
+#qqnorm(predictions$resids);abline(a = 0, b = 1)
+```
+
+
+```{r}
+plot_map(predictions, "exp(est)") +
+  scale_fill_viridis_c(trans = "sqrt") +
+  ggtitle("Prediction (fixed effects + all random effects)")
+```
+
+
+
+
+```{r}
+
+plot_map(predictions, "exp(est_fe)") +
+  ggtitle("Prediction (fixed effects only)") +
+  scale_fill_viridis_c(trans = "sqrt")
+```
+
+
+```{r}
+plot_map(predictions, "est_re_s") +
+  ggtitle("Spatial random effects only") +
+  scale_fill_gradient2()
+```
+
+
+```{r}
+plot_map(predictions, "est_re_st") +
+  ggtitle("Spatiotemporal random effects only") +
+  scale_fill_gradient2()
+
+```
+
+
+
+
+
+index-standardization
