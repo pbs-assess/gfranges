@@ -51,7 +51,7 @@ grid_locs$year <- NULL
 
 #### Spatial model
 ```{r}
-spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 50)
+spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 150)
 
 m <- sdmTMB::sdmTMB(
   formula = density ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
@@ -63,7 +63,6 @@ m <- sdmTMB::sdmTMB(
 
 names(m) 
 ```
-
 
 #### Save predictions from model
 ```{r}
