@@ -51,7 +51,7 @@ grid_locs$year <- NULL
 
 #### Spatial model
 ```{r}
-spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 50)
+spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 100)
 
 m <- sdmTMB::sdmTMB(
   formula = density ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
@@ -120,5 +120,4 @@ plot_map(predictions, "est_re_s") +
 plot_map(predictions, "est_re_st") +
   ggtitle("Spatiotemporal random effects only") +
   scale_fill_gradient2()
-
 ```
