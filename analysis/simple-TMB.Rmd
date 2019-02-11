@@ -22,7 +22,7 @@ plot(Y ~ X)
 
 ```{r}
 compile("src/simpletest.cpp")
-dyn.load(dynlib("simpletest"))
+dyn.load(dynlib("src/simpletest"))
 ```
 
 
