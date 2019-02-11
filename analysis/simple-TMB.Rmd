@@ -1,0 +1,46 @@
+---
+title: "Practice TMB"
+output: html_notebook
+---
+
+```{r setup}
+library(TMB)
+## Optionally:
+## precompile()
+# devtools::install_github("kaskr/adcomp", subdir = "TMB")
+# runExample(all=TRUE)
+
+```
+
+
+Simulate data
+```{r}
+X = 1:30
+Y = rnorm(30, mean = -2 + 0.25 * X, sd = exp(0.5))
+plot(Y ~ X)
+```
+
+```{r}
+compile("src/simpletest.cpp")
+dyn.load(dynlib("simpletest"))
+```
+
+
+
+```{r}
+set.seed(123)
+data <- list(y = Y, x = X)
+parameters <- list(a=0, b=0, logSigma=0)
+
+obj <- MakeADFun(data = list(y = Y, x = X), 
+                 parameters =  list(a=0, b=0, logSigma=0), 
+                 DLL = "simple")
+
+obj$hessian <- TRUE
+opt <- do.call("optim", obj)
+opt
+opt$hessian ## <-- FD hessian from optim
+obj$he()    ## <-- Analytical hessian
+sdreport(obj)
+```
+
