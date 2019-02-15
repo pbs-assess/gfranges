@@ -131,7 +131,8 @@ gamma_glm <- glm(y~x, family = Gamma(link=log))
 coef(gamma_glm)
 
 # function to generate negative log-likelihood for a parameter value
-nll_gamma <- function(a, b, shape) {
+nll_gamma <- function(a, b, log_shape) {
+  shape <- exp(log_shape)
   eta <- a + b * x
   # rate = shape / mu
   rate <- shape / exp(eta)
@@ -141,7 +142,8 @@ nll_gamma <- function(a, b, shape) {
 
 # find maximum likelihood using bbmle::mle2 with intitial values normally distributed around 1
 # 'shape' parameter must be positive so using values from log normal distribution
-gamma_mle2 <- mle2(nll_gamma, start = list(a = rnorm(1), b = rnorm(1), shape = (rlnorm(1)))) 
+gamma_mle2 <- mle2(nll_gamma, start = list(a = rnorm(1), b = rnorm(1), log_shape = 0))
+gamma_mle2
 confint(gamma_mle2)
 
 
