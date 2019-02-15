@@ -47,7 +47,6 @@ N <- 100
 x <- runif(N, -2, 2)
 a <- 1
 b <- 1.5
-lambda <- y_true
 mu <- exp(a + b * x)
 
 y <- rpois(N, lambda = mu)  
@@ -146,4 +145,48 @@ gamma_mle2 <- mle2(nll_gamma, start = list(a = rnorm(1), b = rnorm(1), shape = (
 confint(gamma_mle2)
 
 
+##############################
+# TWEEDIE
+##############################
 
+# Simulate data for compound poisson-gamma Tweedie model
+# continuous gamma with exact zeros with 1 < power < 2
+
+library(tweedie)
+library(statmod)
+
+N <- 100
+x <- runif(N, -2, 2)
+a <- 3
+b <- 1
+
+power <- 1.5 # must be between 1 and 2 for compound poisson-gamma
+phi <- 1 # dispersion must be positive
+eta <- a + b * x 
+mu <- exp(eta) 
+y <- rtweedie(N, power = power, mu = mu, phi = phi) 
+
+# plot simulated data 
+plot(x, y)
+lines(sort(x), mu[order(x)])
+
+# check values are returned with glm
+
+tweedie_glm <- glm(y ~ x, family = tweedie(var.power = 1.5, link.power = 0))
+summary(tweedie_glm)
+coef(tweedie_glm)
+
+# function to generate negative log-likelihood for a parameter value
+nll_tweedie <- function(a, b, ipx, iphi) {
+  eta <- a + b * (x)
+  mu <- exp(eta)
+  p <- plogis(ipx) + 1
+  phi <- iphi
+  # sum of negative log likelihoods:
+  loglik <- log(dtweedie.inversion(y, power = p, mu = mu, phi = phi))
+  -sum(loglik[is.finite(loglik)])
+}
+
+# find maximum likelihood using bbmle::mle2 with intitial values normally distributed around 1
+tweedie_mle2 <- mle2(nll_tweedie, start = list(a = 1, b = 1, ipx = rnorm(1), iphi = rlnorm(1))) 
+confint(tweedie_mle2)
