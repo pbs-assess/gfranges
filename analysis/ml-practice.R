@@ -14,13 +14,13 @@ x <- runif(N, -2, 2)
 a <- 1
 b <- 1.5
 sigma <- 1
-eta <- a + b * x
+y_true <- a + b * x
 
-y <- rnorm(N, mean = eta, sd = sigma )  
+y <- rnorm(N, mean = y_true, sd = sigma )  
 
 # plot simulated data 
 plot(x, y)
-lines(sort(x), eta[order(x)])
+lines(sort(x), y_true[order(x)])
 
 # check values are returned with lm
 simple_lm <- lm(y~x)
