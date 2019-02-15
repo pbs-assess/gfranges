@@ -27,14 +27,14 @@ simple_lm <- lm(y~x)
 coef(simple_lm)
 
 # function to generate negative log-likelihood for a parameter value
-nll_norm <- function(a, b) {
+nll_norm <- function(a, b, log_sigma) {
   eta <- a + b * x
    # sum of negative log likelihoods:
-  -sum(dnorm(y, mean = eta, sd = sigma, log = TRUE))
+  -sum(dnorm(y, mean = eta, sd = exp(log_sigma), log = TRUE))
 }
 
 # find maximum likelihood using bbmle::mle2 with intitial values normally distributed around 1
-lm_mle2 <- mle2(nll_norm, start = list(a = rnorm(1), b = rnorm(1)))
+lm_mle2 <- mle2(nll_norm, start = list(a = rnorm(1), b = rnorm(1), log_sigma = 0))
 confint(lm_mle2)
 
 ##############################
