@@ -1,7 +1,12 @@
+##############################
+# Maximum likelihood simulation practice
+##############################
 
-
-library("bbmle")
 #set.seed(1)
+library("bbmle")
+
+
+
 
 ##############################
 # NORMAL
@@ -37,6 +42,10 @@ nll_norm <- function(a, b) {
 lm_mle2 <- mle2(nll_norm, start = list(a = rnorm(1), b = rnorm(1)))
 confint(lm_mle2)
 
+
+
+
+
 ##############################
 # POISSON
 ##############################
@@ -69,6 +78,10 @@ nll_pois <- function(a, b) {
 # find maximum likelihood using bbmle::mle2 with intitial values normally distributed around 1
 pois_mle2 <- mle2(nll_pois, start = list(a = rnorm(1), b = rnorm(1)))
 confint(pois_mle2)
+
+
+
+
 
 
 ##############################
@@ -105,6 +118,10 @@ nll_logistic <- function(a, b) {
 # find maximum likelihood using bbmle::mle2 with intitial values normally distributed around 1
 logistic_mle2 <- mle2(nll_logistic, start = list(a = rnorm(1), b = rnorm(1)))
 confint(logistic_mle2)
+
+
+
+
 
 
 ##############################
@@ -145,12 +162,17 @@ gamma_mle2 <- mle2(nll_gamma, start = list(a = rnorm(1), b = rnorm(1), shape = (
 confint(gamma_mle2)
 
 
+
+
+
+
 ##############################
 # TWEEDIE
 ##############################
 
 # Simulate data for compound poisson-gamma Tweedie model
 # continuous gamma with exact zeros with 1 < power < 2
+# Var(y) = phi ∗ mu ^ power
 
 library(tweedie)
 library(statmod)
@@ -166,13 +188,17 @@ eta <- a + b * x
 mu <- exp(eta) 
 y <- rtweedie(N, power = power, mu = mu, phi = phi) 
 
+data <- data.frame(y,x)
+
 # plot simulated data 
 plot(x, y)
 lines(sort(x), mu[order(x)])
 
+hist(y, breaks=30)
+
 # check values are returned with glm
 
-tweedie_glm <- glm(y ~ x, family = tweedie(var.power = 1.5, link.power = 0))
+tweedie_glm <- glm(y ~ x, family = tweedie(var.power = 1.5, link.power = 0), data=data)
 summary(tweedie_glm)
 coef(tweedie_glm)
 
@@ -181,12 +207,19 @@ nll_tweedie <- function(a, b, ipx, iphi) {
   eta <- a + b * (x)
   mu <- exp(eta)
   p <- plogis(ipx) + 1
-  phi <- iphi
+  phi <- plogis(iphi) + plnorm(iphi)
   # sum of negative log likelihoods:
-  loglik <- log(dtweedie.inversion(y, power = p, mu = mu, phi = phi))
-  -sum(loglik[is.finite(loglik)])
+  nloglik <- - sum(log(dtweedie(y, power = p, mu = mu, phi = phi)))
+  nloglik
+  #sum(nloglik) # [is.finite(loglik)]
 }
 
 # find maximum likelihood using bbmle::mle2 with intitial values normally distributed around 1
-tweedie_mle2 <- mle2(nll_tweedie, start = list(a = 1, b = 1, ipx = rnorm(1), iphi = rlnorm(1))) 
+tweedie_mle2 <- mle2(nll_tweedie, start = list(a = 0, b = 1, ipx = 0, iphi = 0.5), data = data) 
+tweedie_mle2
 confint(tweedie_mle2)
+
+
+iphi <- rlnorm(1)
+phi <- plogis(iphi) + plnorm(iphi)
+list(iphi, phi)
