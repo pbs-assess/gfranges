@@ -19,27 +19,27 @@ x <- runif(N, -2, 2)
 a <- 1
 b <- 1.5
 sigma <- 1
-eta <- a + b * x
+y_true <- a + b * x
 
-y <- rnorm(N, mean = eta, sd = sigma )  
+y <- rnorm(N, mean = y_true, sd = sigma )  
 
 # plot simulated data 
 plot(x, y)
-lines(sort(x), eta[order(x)])
+lines(sort(x), y_true[order(x)])
 
 # check values are returned with lm
 simple_lm <- lm(y~x)
 coef(simple_lm)
 
 # function to generate negative log-likelihood for a parameter value
-nll_norm <- function(a, b) {
+nll_norm <- function(a, b, log_sigma) {
   eta <- a + b * x
    # sum of negative log likelihoods:
-  -sum(dnorm(y, mean = eta, sd = sigma, log = TRUE))
+  -sum(dnorm(y, mean = eta, sd = exp(log_sigma), log = TRUE))
 }
 
 # find maximum likelihood using bbmle::mle2 with intitial values normally distributed around 1
-lm_mle2 <- mle2(nll_norm, start = list(a = rnorm(1), b = rnorm(1)))
+lm_mle2 <- mle2(nll_norm, start = list(a = rnorm(1), b = rnorm(1), log_sigma = 0))
 confint(lm_mle2)
 
 
@@ -148,7 +148,8 @@ gamma_glm <- glm(y~x, family = Gamma(link=log))
 coef(gamma_glm)
 
 # function to generate negative log-likelihood for a parameter value
-nll_gamma <- function(a, b, shape) {
+nll_gamma <- function(a, b, log_shape) {
+  shape <- exp(log_shape)
   eta <- a + b * x
   # rate = shape / mu
   rate <- shape / exp(eta)
@@ -158,7 +159,8 @@ nll_gamma <- function(a, b, shape) {
 
 # find maximum likelihood using bbmle::mle2 with intitial values normally distributed around 1
 # 'shape' parameter must be positive so using values from log normal distribution
-gamma_mle2 <- mle2(nll_gamma, start = list(a = rnorm(1), b = rnorm(1), shape = (rlnorm(1)))) 
+gamma_mle2 <- mle2(nll_gamma, start = list(a = rnorm(1), b = rnorm(1), log_shape = 0))
+gamma_mle2
 confint(gamma_mle2)
 
 
@@ -202,9 +204,34 @@ tweedie_glm <- glm(y ~ x, family = tweedie(var.power = 1.5, link.power = 0), dat
 summary(tweedie_glm)
 coef(tweedie_glm)
 
+
 # function to generate negative log-likelihood for a parameter value
-nll_tweedie <- function(a, b, ipx, iphi) {
-  eta <- a + b * (x)
+nll_tweedie <- function(par) {
+  eta <- par[1] + par[2] * x
+  mu <- exp(eta)
+  p <- plogis(par[3]) + 1
+  phi <- exp(par[4])
+  # sum of negative log likelihoods:
+  loglik <- log(dtweedie.inversion(y, power = p, mu = mu, phi = phi))
+  nll <- -sum(loglik[is.finite(loglik)])
+  cat(nll, "\n")
+  nll
+}
+
+# find maximum likelihood using bbmle::mle2:
+tweedie_mle2 <- nlminb(c(a = 3, b = 1, ipx = 0, log_phi = log(1)), nll_tweedie)
+
+tweedie_mle2$par[1]
+tweedie_mle2$par[2]
+plogis(tweedie_mle2$par[3]) + 1
+exp(tweedie_mle2$par[4])
+
+
+
+# Philina's final failed attempt
+# function to generate negative log-likelihood for a parameter value
+nll_tweedie <- function(par) {
+  eta <- par[1] + par[2] * x
   mu <- exp(eta)
   p <- plogis(ipx) + 1
   phi <- plogis(iphi) + plnorm(iphi)
@@ -217,9 +244,3 @@ nll_tweedie <- function(a, b, ipx, iphi) {
 # find maximum likelihood using bbmle::mle2 with intitial values normally distributed around 1
 tweedie_mle2 <- mle2(nll_tweedie, start = list(a = 0, b = 1, ipx = 0, iphi = 0.5), data = data) 
 tweedie_mle2
-confint(tweedie_mle2)
-
-
-iphi <- rlnorm(1)
-phi <- plogis(iphi) + plnorm(iphi)
-list(iphi, phi)
