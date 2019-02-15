@@ -179,16 +179,23 @@ summary(tweedie_glm)
 coef(tweedie_glm)
 
 # function to generate negative log-likelihood for a parameter value
-nll_tweedie <- function(a, b, ipx, iphi) {
-  eta <- a + b * (x)
+nll_tweedie <- function(par) {
+  eta <- par[1] + par[2] * x
   mu <- exp(eta)
-  p <- plogis(ipx) + 1
-  phi <- iphi
+  p <- plogis(par[3]) + 1
+  phi <- exp(par[4])
   # sum of negative log likelihoods:
   loglik <- log(dtweedie.inversion(y, power = p, mu = mu, phi = phi))
-  -sum(loglik[is.finite(loglik)])
+  nll <- -sum(loglik[is.finite(loglik)])
+  cat(nll, "\n")
+  nll
 }
 
-# find maximum likelihood using bbmle::mle2 with intitial values normally distributed around 1
-tweedie_mle2 <- mle2(nll_tweedie, start = list(a = 1, b = 1, ipx = rnorm(1), iphi = rlnorm(1))) 
-confint(tweedie_mle2)
+# find maximum likelihood using bbmle::mle2:
+tweedie_mle2 <- nlminb(c(a = 3, b = 1, ipx = 0, log_phi = log(1)), nll_tweedie)
+
+tweedie_mle2$par[1]
+tweedie_mle2$par[2]
+plogis(tweedie_mle2$par[3]) + 1
+exp(tweedie_mle2$par[4])
+
