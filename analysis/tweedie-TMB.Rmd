@@ -1,0 +1,68 @@
+---
+title: "Tweedie in TMB"
+output: html_notebook
+---
+Started using tmb.template
+
+```{r set-up}
+## Load TMB TRUE
+library(TMB)
+library(tweedie)
+
+## Make C++ file
+# TMB::template("tweedie_tmb.cpp")
+## Compile and load the model
+compile("tweedie_tmb.cpp")
+dyn.load(dynlib("tweedie_tmb"))
+```
+
+
+Simulate data
+
+```{r}
+N <- 100
+x <- runif(N, -2, 2)
+a <- 3
+b <- 1
+
+power <- 1.5 # must be between 1 and 2 for compound poisson-gamma
+phi <- 1 # dispersion must be positive
+eta <- a + b * x 
+mu <- exp(eta) 
+y <- rtweedie(N, power = power, mu = mu, phi = phi) 
+
+# plot simulated data 
+plot(x, y)
+lines(sort(x), mu[order(x)])
+
+hist(y, breaks=30)
+```
+
+
+```{r}
+## Data and parameters
+data <- list(x = x, y = y)
+parameters <- list(a=0, b=0, power = 1.5, log_phi = log(1) )
+
+## Make a function object
+obj <- MakeADFun(data, parameters, DLL="tweedie_tmb")
+
+## Call function minimizer
+opt <- nlminb(obj$par, obj$fn, obj$gr)
+
+## Get parameter uncertainties and convergence diagnostics
+sdr <- sdreport(obj)
+sdr
+
+```
+
+
+# check against values are returned with glm
+```{r}
+tweedie_glm <- glm(y ~ x, family = tweedie(var.power = 1.5, link.power = 0))
+summary(tweedie_glm)
+coef(tweedie_glm)
+```
+
+
+
