@@ -15,32 +15,53 @@ library(TMB)
 
 Simulate data
 ```{r}
+set.seed(123)
 X = 1:30
-Y = rnorm(30, mean = -2 + 0.25 * X, sd = exp(0.5))
+a = -2
+b = 0.25
+logsigma = 0.5
+Y = rnorm(30, mean = a + b * X, sd = exp(logsigma))
 plot(Y ~ X)
 ```
 
 ```{r}
-compile("src/simpletest.cpp")
-dyn.load(dynlib("src/simpletest"))
+compile("src/simple.cpp")
+dyn.load(dynlib("src/simple"))
 ```
 
-
-
+# TMB maximum likelihood
 ```{r}
-set.seed(123)
 data <- list(y = Y, x = X)
 parameters <- list(a=0, b=0, logSigma=0)
 
-obj <- MakeADFun(data = list(y = Y, x = X), 
-                 parameters =  list(a=0, b=0, logSigma=0), 
-                 DLL = "simpletest")
+obj <- MakeADFun(data, 
+                 parameters, 
+                 DLL = "simple")
 
-obj$hessian <- TRUE
-opt <- do.call("optim", obj)
-opt
-opt$hessian ## <-- FD hessian from optim
-obj$he()    ## <-- Analytical hessian
+# obj$fn # returns negative log likelihood
+# obj$gr # returns the gradient
 sdreport(obj)
 ```
+
+# check against values are returned with lm
+```{r}
+simple_lm <- lm (Y ~ X)
+coef (simple_lm)
+```
+
+# additional code optim code
+```{r alternate-opt, eval=FALSE}
+opt <- do.call("optim", obj)
+opt$par
+opt_port <- nlminb(start = obj$par, obj = obj$fn, gr = obj$gr)
+opt_port$par
+ 
+obj$he()    ## <-- Analytical hessian
+opt$hessian ## <-- FD hessian from optim
+
+```
+
+
+
+
 
