@@ -151,8 +151,9 @@ coef(gamma_glm)
 nll_gamma <- function(a, b, log_shape) {
   shape <- exp(log_shape)
   eta <- a + b * x
+  mu <- exp(eta)
   # rate = shape / mu
-  rate <- shape / exp(eta)
+  rate <- shape / mu
   # sum of negative log likelihoods:
   -sum(dgamma(y, rate = rate, shape = shape, log = TRUE))
 }
@@ -212,35 +213,32 @@ nll_tweedie <- function(par) {
   p <- plogis(par[3]) + 1
   phi <- exp(par[4])
   # sum of negative log likelihoods:
-  loglik <- log(dtweedie.inversion(y, power = p, mu = mu, phi = phi))
-  nll <- -sum(loglik[is.finite(loglik)])
-  cat(nll, "\n")
+  loglik <- log(dtweedie(y, power = p, mu = mu, phi = phi))
+  nll <- -sum(loglik) #[is.finite(loglik)]
+  print(nll)
   nll
 }
 
-# find maximum likelihood using bbmle::mle2:
-tweedie_mle2 <- nlminb(c(a = 3, b = 1, ipx = 0, log_phi = log(1)), nll_tweedie)
-
-tweedie_mle2$par[1]
-tweedie_mle2$par[2]
-plogis(tweedie_mle2$par[3]) + 1
-exp(tweedie_mle2$par[4])
+# find maximum likelihood using nlminb
+tweedie_ml <- nlminb(start = c(a = 0, b = 0, ipx = 0, log_phi = log(1)), nll_tweedie)
+tweedie_ml$par 
 
 
 
-# Philina's final failed attempt
+
 # function to generate negative log-likelihood for a parameter value
-nll_tweedie <- function(par) {
-  eta <- par[1] + par[2] * x
+nll_tweedie <- function(a, b, log_phi) {
+  eta <- a + b * (x)
   mu <- exp(eta)
-  p <- plogis(ipx) + 1
-  phi <- plogis(iphi) + plnorm(iphi)
+  #p <- plogis(ipx) + 1
+  phi <- exp(log_phi)
   # sum of negative log likelihoods:
-  nloglik <- - sum(log(dtweedie(y, power = p, mu = mu, phi = phi)))
-  nloglik
-  #sum(nloglik) # [is.finite(loglik)]
+  loglik <- log(dtweedie.inversion(y, power = 1.5, mu = mu, phi = phi))
+  nll <- -sum(loglik[is.finite(loglik)])
+  print(nll)
+  nll
 }
 
 # find maximum likelihood using bbmle::mle2 with intitial values normally distributed around 1
-tweedie_mle2 <- mle2(nll_tweedie, start = list(a = 0, b = 1, ipx = 0, iphi = 0.5), data = data) 
-tweedie_mle2
+tweedie_mle2 <- mle2(nll_tweedie, start = list(a = 3, b = 1, log_phi = 0)) 
+attributes(tweedie_mle2)
