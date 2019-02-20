@@ -1,0 +1,98 @@
+---
+title: "Mixed effect tweedie model in TMB"
+output: html_notebook
+---
+
+
+
+```{r}
+# use tmb.template snippet
+```
+
+```{r set-up}
+## Load TMB 
+library(TMB)
+library(tweedie)
+
+#library(statmod)
+
+# Make C++ file
+# TMB::template("m_tweedie_tmb.cpp")
+
+## Compile and load the model
+compile("src/m_tweedie_tmb.cpp")
+dyn.load(dynlib("src/m_tweedie_tmb"))
+```
+
+# Simulate data with a tweedie distribution and mixed-effects...
+
+```{r}
+# Simulate predictors
+
+n_groups = 10
+n_within = 10
+n_total = n_groups*n_within
+
+group_sd = 1
+
+group <- rep( 1:n_groups, each = n_within)
+group_beta <- rnorm(length(unique(group)), mean = 0, sd = group_sd)
+
+x <- runif(n_total, -2, 2)
+a <- 3
+b <- 1
+
+power <- 1.5 # must be between 1 and 2 for compound poisson-gamma
+phi <- 1 # dispersion must be positive
+eta <- a + group_beta[group] + b * x 
+mu <- exp(eta) 
+
+# Simulate response
+y = rtweedie(n_total, power = power, mu = mu, phi = phi) 
+
+d = data.frame(y, x, group)
+
+# plot simulated data 
+plot(x, y)
+hist(y, breaks=30)
+```
+
+# plot data by group to see if it looks right
+```{r}
+library(ggplot2)
+library(viridis)
+
+ggplot(d, aes(x, y, group = as.factor(group), color = as.factor(group))) + geom_point() + geom_smooth(method = 'loess', formula = 'y ~ x', span = 3, se = FALSE) + scale_color_viridis_d()
+```
+
+
+```{r}
+## Data and parameters
+data <- list("g_i" = group-1, "y_i" = y, "x" = x)
+parameters <- list("a" = 0, "b" = 0, "log_phi" = log(1), "p" = 0, "log_SDZ"= 2, "z_g" = rep(0, length(unique(group))))
+random = c("z_g")
+#if(REML==TRUE ) Random = union( Random, "a")
+
+
+## Make a function object
+obj <- MakeADFun(data, parameters, random = random, DLL="m_tweedie_tmb")
+
+## Call function minimizer
+opt <- nlminb(obj$par, obj$fn, obj$gr)
+
+## Get parameter uncertainties and convergence diagnostics
+sdr <- sdreport(obj)
+sdr
+```
+
+```{r}
+## Get likelihood profiles for individual parameters:
+a_profile <- tmbprofile(obj, "a")
+b_profile <- tmbprofile(obj, "b")
+confint(a_profile)
+confint(b_profile)
+
+plot(a_profile)
+plot(b_profile)
+```
+
