@@ -12,12 +12,12 @@ library(tweedie)
 ## Make C++ file
 # TMB::template("tweedie_tmb.cpp")
 ## Compile and load the model
-compile("tweedie_tmb.cpp")
-dyn.load(dynlib("tweedie_tmb"))
+compile("src/tweedie_tmb.cpp")
+dyn.load(dynlib("src/tweedie_tmb"))
 ```
 
 
-Simulate data
+# Simulate data
 
 ```{r}
 N <- 100
@@ -39,6 +39,8 @@ hist(y, breaks=30)
 ```
 
 
+# Send data to TMB function to get likelihood profiles for parameters
+
 ```{r}
 ## Data and parameters
 data <- list(y = y, x = x)
@@ -57,14 +59,15 @@ sdr
 ## Get likelihood profiles for individual parameters:
 a_profile <- tmbprofile(obj, "a")
 b_profile <- tmbprofile(obj, "b")
+confint(a_profile)
+confint(b_profile)
 
 plot(a_profile)
 plot(b_profile)
-confint(a_profile)
-confint(b_profile)
+
 ```
 
-# find maximum likelihood using nlminb
+# For comparision, find maximum likelihood parameter estimates using nlminb
 
 ```{r}
 # function to generate negative log-likelihood for a parameter value
@@ -85,14 +88,13 @@ tweedie_ml$par
 ```
 
 
+# Check both methods against values are returned with a glm
 
-
-# check both methods against values are returned with glm
 ```{r}
 tweedie_glm <- glm(y ~ x, family = tweedie(var.power = 1.5, link.power = 0))
 summary(tweedie_glm)
 coef(tweedie_glm)
-sdr
+sdr$par.fixed
 tweedie_ml$par 
 ```
 
