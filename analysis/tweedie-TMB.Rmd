@@ -53,6 +53,15 @@ opt <- nlminb(obj$par, obj$fn, obj$gr)
 ## Get parameter uncertainties and convergence diagnostics
 sdr <- sdreport(obj)
 sdr
+
+## Get likelihood profiles for individual parameters:
+a_profile <- tmbprofile(obj, "a")
+b_profile <- tmbprofile(obj, "b")
+
+plot(a_profile)
+plot(b_profile)
+confint(a_profile)
+confint(b_profile)
 ```
 
 # find maximum likelihood using nlminb

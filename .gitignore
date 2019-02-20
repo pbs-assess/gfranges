@@ -27,3 +27,5 @@ knitr-cache
 *html*
 *chunk*
 *data-cache*
+*.so
+*.o
