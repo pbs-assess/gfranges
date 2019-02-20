@@ -41,8 +41,8 @@ hist(y, breaks=30)
 
 ```{r}
 ## Data and parameters
-data <- list(x = x, y = y)
-parameters <- list(a=0, b=0, power = 1.5, log_phi = log(1) )
+data <- list(y = y, x = x)
+parameters <- list(a=0, b=0, log_phi = log(1), p = 0 )
 
 ## Make a function object
 obj <- MakeADFun(data, parameters, DLL="tweedie_tmb")
@@ -53,15 +53,38 @@ opt <- nlminb(obj$par, obj$fn, obj$gr)
 ## Get parameter uncertainties and convergence diagnostics
 sdr <- sdreport(obj)
 sdr
+```
 
+# find maximum likelihood using nlminb
+
+```{r}
+# function to generate negative log-likelihood for a parameter value
+nll_tweedie <- function(par) {
+  eta <- par[1] + par[2] * x
+  mu <- exp(eta)
+  p <- plogis(par[3]) + 1
+  phi <- exp(par[4])
+  # sum of negative log likelihoods:
+  loglik <- log(dtweedie(y, power = p, mu = mu, phi = phi))
+  nll <- -sum(loglik) #[is.finite(loglik)]
+  print(nll)
+  nll
+}
+
+tweedie_ml <- nlminb(start = c(a = 0, b = 0, ipx = 0, log_phi = log(1)), nll_tweedie)
+tweedie_ml$par 
 ```
 
 
-# check against values are returned with glm
+
+
+# check both methods against values are returned with glm
 ```{r}
 tweedie_glm <- glm(y ~ x, family = tweedie(var.power = 1.5, link.power = 0))
 summary(tweedie_glm)
 coef(tweedie_glm)
+sdr
+tweedie_ml$par 
 ```
 
 

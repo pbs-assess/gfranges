@@ -11,18 +11,19 @@ Type objective_function<Type>::operator() ()
   PARAMETER(log_phi);
   PARAMETER(p);
   
-  // Objective function is sum of negative log likelihood components
-  Type power = invlogit(p) + Type(1.0);
-   
-  // ------------------ Linear predictor----------------------------------------
-  
-  vector<Type> eta = a + b * x;
-  vector<Type> mu = exp(eta);
-  
   // ------------------ negative log likelihood --------------------------
-  Type nll = 0;  // likelihood of data
-  Type nll -= sum(dtweedie(y, mu, exp(log_phi), power, true));
-
+  Type power = invlogit(p) + Type(1.0);
+  Type phi = exp(log_phi);
+  
+  int n = y.size(); // get number of data points to loop over
+  
+  Type nll = 0.0; // initialize negative log likelihood
+  
+  for(int i = 0; i < n; i++){ // C++ starts loops at 0!
+    // get negative log likelihood (last argument is log = TRUE)
+    nll -= dtweedie(y[i], exp(a + b * x[i]), phi, power, true);
+  }
+  
   return nll;
 
   /* Quick Reference
