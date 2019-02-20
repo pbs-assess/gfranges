@@ -5,7 +5,7 @@ output: html_notebook
 Started using tmb.template
 
 ```{r set-up}
-## Load TMB TRUE
+## Load TMB 
 library(TMB)
 library(tweedie)
 
@@ -44,7 +44,7 @@ hist(y, breaks=30)
 ```{r}
 ## Data and parameters
 data <- list(y = y, x = x)
-parameters <- list(a=0, b=0, log_phi = log(1), p = 0 )
+parameters <- list(a=0, b=0, p = 0, log_phi = log(1) )
 
 ## Make a function object
 obj <- MakeADFun(data, parameters, DLL="tweedie_tmb")
@@ -64,7 +64,6 @@ confint(b_profile)
 
 plot(a_profile)
 plot(b_profile)
-
 ```
 
 # For comparision, find maximum likelihood parameter estimates using nlminb
@@ -74,16 +73,16 @@ plot(b_profile)
 nll_tweedie <- function(par) {
   eta <- par[1] + par[2] * x
   mu <- exp(eta)
-  p <- plogis(par[3]) + 1
   phi <- exp(par[4])
+  power <- plogis(par[3]) + 1
   # sum of negative log likelihoods:
-  loglik <- log(dtweedie(y, power = p, mu = mu, phi = phi))
+  loglik <- log(dtweedie(y, power = power, mu = mu, phi = phi))
   nll <- -sum(loglik) #[is.finite(loglik)]
   print(nll)
   nll
 }
 
-tweedie_ml <- nlminb(start = c(a = 0, b = 0, ipx = 0, log_phi = log(1)), nll_tweedie)
+tweedie_ml <- nlminb(start = c(a = 0, b = 0,  logis_p = 0, log_phi = log(1)), nll_tweedie)
 tweedie_ml$par 
 ```
 
@@ -91,6 +90,7 @@ tweedie_ml$par
 # Check both methods against values are returned with a glm
 
 ```{r}
+library(statmod)
 tweedie_glm <- glm(y ~ x, family = tweedie(var.power = 1.5, link.power = 0))
 summary(tweedie_glm)
 coef(tweedie_glm)
