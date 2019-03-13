@@ -1,6 +1,8 @@
 library(tidyverse)
 library(sdmTMB)
 
+d_trawl <- readRDS("analysis/tmb-sensor-explore/sensor-data-processed.rds")
+
 set.seed(39201114)
 withheld_fe <- sample(d_trawl$fishing_event_id, size = round(nrow(d_trawl) * .2))
 d_withheld <- filter(d_trawl, fishing_event_id %in% withheld_fe)
@@ -10,7 +12,8 @@ nrow(d_withheld)
 unique(d_withheld$year)
 unique(d_fit$year)
 
-# temp:
+# FIXME: need to work out a bug in production on this new data set
+# It's crashing TMB.
 d_fit <- d_trawl
 d_withheld <- d_trawl
 spde <- make_spde(d_fit$X, d_fit$Y, n_knots = 200)
@@ -26,9 +29,6 @@ m_temp1$model$par
 # 2 * plogis(m_temp1$model$par[["ar1_phi"]]) - 1
 exp(m_temp1$model$par[["ln_phi"]])
 
-# plot_anisotropy(m_temp1)
-
-# d_withheld <- rename(d_withheld, temperature_c_orig = temperature_c)
 predictions <- predict(m_temp1)
 predictions$data$residuals <- residuals(m_temp1)
 
