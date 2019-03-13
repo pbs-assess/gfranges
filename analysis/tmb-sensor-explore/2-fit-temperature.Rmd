@@ -19,7 +19,7 @@ unique(d_fit$year)
 # It's crashing TMB.
 d_fit <- d_trawl
 d_withheld <- d_trawl
-spde <- make_spde(d_fit$X, d_fit$Y, n_knots = 200)
+spde <- make_spde(d_fit$X, d_fit$Y, n_knots = 150)
 plot_spde(spde)
 
 m_temp1 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + depth_scaled,
@@ -68,11 +68,6 @@ ggplot(predictions$data, aes(est, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
-
-ggplot(predictions5$data, aes(est, residuals)) +
-  geom_point() +
-  geom_smooth()
-
 
 ggplot(predictions$data, aes(depth_scaled, residuals)) +
   geom_point() +
