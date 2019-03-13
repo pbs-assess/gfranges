@@ -430,8 +430,7 @@ cell_area <- gfplot:::make_prediction_grid(filter(temp_dat, year %in% c(2016, 20
 
 Project onto grid:
 
-
-```{r}
+```{r , eval=TRUE, include=FLASE}
 # alternative to function, hard code
 # samples = 10L
 # pred_grid <- pg_one_year
@@ -504,31 +503,20 @@ Plot values on the grid:
 attributes(projected)
 pg_one_year <- filter(pg, year == min(pg$year))
 attributes(projected$latent_grid)
-# out <- stats::plogis(p_bin) * exp(p_pos)
 out_med <- apply(projected$latent_grid, c(1,3), median)
-# out_bin <- stats::plogis(p_bin)
-# out_bin <- apply(out_bin, c(1, 3), median)
 pg_all <- bind_rows(replicate(dim(projected$latent_grid)[3], pg, simplify = FALSE))
 out_long <- reshape2::melt(out_med)
 pg_all$time <- out_long$Var2
 pg_all$pred <- out_long$value
-
-# pg$year_k <- pg$year - min(pg$year) + 1
-# count_k <- unique(year_k)
- 
-
 ```
 
 
-```{r prediction-grid-calcs}
+```{r }
 attributes(projected$spatial_field)
-# out <- stats::plogis(p_bin) * exp(p_pos)
 out_med_sp <- apply(projected$spatial_field, c(1,3), median)
 out_long_sp <- reshape2::melt(out_med_sp)
 pg_all$sp_field <- out_long_sp$value
 ```
-
-
 
 
 Spatiotemporal plot:
@@ -578,9 +566,13 @@ make_plot <- function(dat, fill = "sqrt(pred)") {
   
   g
 }
-# make_plot(pg_all)
-median(pg_all$pred)
 
+
+```
+
+
+```{r}
+median(pg_all$pred)
 make_plot(pg_all, "pred") + facet_wrap(~ time) +
   scale_fill_gradient2(
     midpoint = median(pg_all$pred),
@@ -604,8 +596,7 @@ make_plot(pg_all, "depth_scaled") +
     mid = "white",
     low = scales::muted("red"))
 ```
-
-
+```
 
 
 Run using Zuur's polar bear code as template for letting relationship between temp and depth change through time...
