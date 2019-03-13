@@ -1,20 +1,23 @@
+# Fit spatiotemporal models to dissolved oxygen and salinity
+
+```{r}
 library(sdmTMB)
 library(tidyverse)
-d_fit <- readRDS("analysis/tmb-sensor-explore/sensor-data-processed.rds")
+d_fit <- readRDS(here::here("analysis/tmb-sensor-explore/sensor-data-processed.rds"))
+d_fit$log_do_mlpl <- log(d_fit$do_mlpl)
 
 d <- filter(d_fit, !is.na(do_mlpl), !is.na(salinity_psu))
 spde <- make_spde(d$X, d$Y, n_knots = 150)
 unique(d$year)
 plot_spde(spde)
 
-d_fit$log_do_mlpl <- log(d_fit$do_mlpl)
 
 hist(d$do_mlpl)
 hist(log(d$do_mlpl))
 min(d$do_mlpl)
 
 m_do1 <- sdmTMB(d, log_do_mlpl ~ 1 + depth_scaled,
-  time = "year", spde = spde, family = gaussian(link = "identity"), silent = FALSE)
+  time = "year", spde = spde, family = gaussian(link = "identity"), silent = TRUE)
 
 m_do1$model$par
 exp(m_do1$model$par[["ln_phi"]])
@@ -145,3 +148,4 @@ m_salinity5 <- sdmTMB(d,
 get_diag(m_salinity5, response = "salinity_psu")
 
 # much harder to fit
+```

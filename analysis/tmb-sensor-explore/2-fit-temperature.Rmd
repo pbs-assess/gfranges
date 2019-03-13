@@ -1,7 +1,10 @@
+# Fit spatial temporal models to bottom temperature
+
+```{r}
 library(tidyverse)
 library(sdmTMB)
 
-d_trawl <- readRDS("analysis/tmb-sensor-explore/sensor-data-processed.rds")
+d_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/sensor-data-processed.rds"))
 
 set.seed(39201114)
 withheld_fe <- sample(d_trawl$fishing_event_id, size = round(nrow(d_trawl) * .2))
@@ -22,7 +25,7 @@ plot_spde(spde)
 m_temp1 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + depth_scaled,
   # time_varying =  ~ depth_scaled + depth_scaled2,
   time = "year", spde = spde, family = gaussian(link = "identity"), ar1_fields = FALSE,
-  anisotropy = FALSE, include_spatial = TRUE, silent = FALSE)
+  anisotropy = FALSE, include_spatial = TRUE, silent = TRUE)
 
 m_temp1$model$par
 
@@ -91,7 +94,7 @@ ggplot(predictions$data, aes(X, Y, colour = residuals)) +
 
 m_temp2 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + poly(depth_scaled, 2),
   time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = FALSE)
+  silent = TRUE)
 
 predictions2 <- predict(m_temp2)
 predictions2$data$residuals <- residuals(m_temp2)
@@ -115,7 +118,7 @@ ggplot(predictions2$data, aes(X, Y, colour = residuals)) +
 # Try with a third degree polynomial:
 m_temp3 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + poly(depth_scaled, 3),
   time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = FALSE)
+  silent = TRUE)
 
 predictions3 <- predict(m_temp3)
 predictions3$data$residuals <- residuals(m_temp3)
@@ -143,7 +146,7 @@ ggplot(predictions3$data, aes(X, Y, colour = residuals)) +
 d_fit$log_temperature_c <- log(d_fit$temperature_c)
 m_temp4 <- sdmTMB(d_fit, log_temperature_c ~ 0 + as.factor(year) + poly(depth_scaled, 3),
   time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = FALSE)
+  silent = TRUE)
 
 predictions4 <- predict(m_temp4)
 predictions4$data$residuals <- residuals(m_temp4)
@@ -167,7 +170,7 @@ ggplot(predictions4$data, aes(X, Y, colour = residuals)) +
 
 m_temp5 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + poly(depth_m, 3),
   time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = FALSE)
+  silent = TRUE)
 
 predictions5 <- predict(m_temp5)
 predictions5$data$residuals <- residuals(m_temp5)
@@ -259,3 +262,4 @@ temp_cog %>%
   geom_line() +
   geom_ribbon(alpha = 0.2) +
   facet_wrap(~coord, scales = "free_y")
+```

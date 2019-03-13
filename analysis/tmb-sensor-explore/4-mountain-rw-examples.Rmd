@@ -1,4 +1,8 @@
+# Fit time-varying quadratic models with depth and temperature
+
+```{r}
 library(dplyr)
+library(ggplot2)
 survey <- "SYN QCS"
 
 fit_mountains <- function(survey_set_data, type = c("temperature", "depth"), n_knots = 100) {
@@ -7,7 +11,7 @@ fit_mountains <- function(survey_set_data, type = c("temperature", "depth"), n_k
   
   d <- survey_set_data
   # sd <- gfplot::get_sensor_data_trawl(ssid = 1, spread_attributes = FALSE)
-  sd <- readRDS("analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
+  sd <- readRDS(here::here("analysis/tmb-sensor-explore/dat-sensor-trawl.rds"))
   sd <- sd %>%
     select(-count, -start_time, -end_time, -min, -max) %>%
     mutate(attribute = tolower(attribute)) %>%
@@ -18,7 +22,8 @@ fit_mountains <- function(survey_set_data, type = c("temperature", "depth"), n_k
   dat <- gfplot:::tidy_survey_sets(d, survey, years = seq(1, 1e6),
     density_column = col)
   
-  dat <- left_join(dat, select(sd, temperature_c, year, fishing_event_id)) %>%
+  dat <- left_join(dat, select(sd, temperature_c, year, fishing_event_id), 
+    by = c("year", "fishing_event_id")) %>%
     rename(temperature = temperature_c)
 
   nrow(dat)
@@ -52,7 +57,7 @@ fit_mountains <- function(survey_set_data, type = c("temperature", "depth"), n_k
     spde = spde, include_spatial = TRUE,
     family = sdmTMB::tweedie(link = "log"),
     anisotropy = FALSE,
-    silent = FALSE)
+    silent = TRUE)
   
   get_y_hat <- function(b0, b1, b2, year, predictor, mean_column, sd_column) {
     x_pred <- seq(min(dat[[predictor]]), max(dat[[predictor]]), length.out = 300)
@@ -93,26 +98,29 @@ plot_mountains <- function(dat, type = c("depth", "temperature")) {
     coord_cartesian(expand = FALSE) + 
     theme(axis.text.y = element_blank())
 }
+```
 
+```{r, fig.asp=1.3, fig.width=5}
 # d <- gfplot::get_survey_sets("pacific cod", ssid = 1)
-d <- readRDS("../gfsynopsis/report/data-cache/petrale-sole.rds")
+d <- readRDS(here::here("../gfsynopsis/report/data-cache/petrale-sole.rds"))
 f <- fit_mountains(d$survey_sets, type = "temperature")
 plot_mountains(f, type = "temperature")
 f <- fit_mountains(d$survey_sets, type = "depth")
 plot_mountains(f, type = "depth")
 
-d <- readRDS("../gfsynopsis/report/data-cache/pacific-cod.rds")
+d <- readRDS(here::here("../gfsynopsis/report/data-cache/pacific-cod.rds"))
 f <- fit_mountains(d$survey_sets, type = "temperature")
 plot_mountains(f, type = "temperature")
 f <- fit_mountains(d$survey_sets, type = "depth")
 plot_mountains(f, type = "depth")
 
-d <- readRDS("../gfsynopsis/report/data-cache/pacific-ocean-perch.rds")
+d <- readRDS(here::here("../gfsynopsis/report/data-cache/pacific-ocean-perch.rds"))
 f <- fit_mountains(d$survey_sets, type = "temperature")
 plot_mountains(f, type = "temperature")
 f <- fit_mountains(d$survey_sets, type = "depth")
 plot_mountains(f, type = "depth")
 
-d <- readRDS("../gfsynopsis/report/data-cache/rougheye-blackspotted-rockfish-complex.rds")
+d <- readRDS(here::here("../gfsynopsis/report/data-cache/rougheye-blackspotted-rockfish-complex.rds"))
 f <- fit_mountains(d$survey_sets, type = "depth")
 plot_mountains(f, type = "depth")
+```
