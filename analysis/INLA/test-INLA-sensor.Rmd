@@ -28,11 +28,10 @@ glimpse(raw)
 
 ```{r}
 testdat <- tidy_survey_sets(raw, c("SYN HS","SYN QCS","SYN WCVI","SYN WCHG"), years = c(2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018))
-#testdat <- gfplot:::interp_survey_bathymetry(testdat)
-glimpse(testdat)
-#View(testdat[[1]])
 ```
 
+
+Get sensor data
 ```{r}
 # get_ssids()
 # sensor_syn <- get_sensor_data_trawl(ssid = c(1, 3, 4, 16), spread_attributes = TRUE)
@@ -43,19 +42,35 @@ glimpse(testdat)
 #                     do_mlpL_max = col_double(), do_mlpL_min = col_double(), salinity_PSU_avg = col_double(), salinity_PSU_max = col_double(), 
 #                     salinity_PSU_min = col_double()), na = "NA")
 sensor <- readRDS("data-cache/allsynoptic_sensor_07mar19_time2.rds")
+glimpse(sensor)
 # View(sensor)
 ```
 
 
+Join sensor data with trawl data from tidy_survey_sets function
 ```{r}
-dat <- left_join(testdat[[1]], sensor, by="fishing_event_id", suffix = c("", ".sensor"))
-# dat <- left_join(testdat, sensor, by="fishing_event_id", suffix = c("", ".sensor"))
+dat <- left_join(testdat, sensor, by="fishing_event_id", suffix = c("", ".sensor"))
 dat$year_f <- factor(dat$year)
 # View(dat)
 dat <- dat %>% mutate(do_range = do_mlpL_max - do_mlpL_min, salinity_range = salinity_PSU_max -
   salinity_PSU_min, temp_range = temperature_C_max - temperature_C_min, depth_range = depth_m_max - depth_m_min)
 # glimpse(dat)
 ```
+
+
+Optional: Interpolate missing depth data
+```{r, eval=FALSE}
+testdat2 <- gfplot:::interp_survey_bathymetry(testdat)
+glimpse(testdat2[[1]])
+# if bathymetry ran...
+dat <- left_join(testdat2[[1]], sensor, by="fishing_event_id", suffix = c("", ".sensor"))
+dat$year_f <- factor(dat$year)
+# View(dat)
+dat <- dat %>% mutate(do_range = do_mlpL_max - do_mlpL_min, salinity_range = salinity_PSU_max -
+  salinity_PSU_min, temp_range = temperature_C_max - temperature_C_min, depth_range = depth_m_max - depth_m_min)
+```
+
+
 
 ```{r}
 plot(depth ~ depth_m_avg, data = dat) # both depth variables seem to agree
@@ -165,7 +180,7 @@ scale_survey_predictors <- function(dat) {
 ```
 
 ```{r}
-scaled <- scale_survey_predictors(dat)
+scaled <- dat %>% filter(depth != "NA") %>% scale_survey_predictors()
 # glimpse(scaled)
 temp_dat <- scaled %>% filter (density!="NA") %>% filter ( ssid =="1") %>% filter(temperature_C_avg!="NA") # %>% filter(year==2017)
 # glimpse(temp_dat)
@@ -177,9 +192,9 @@ temp_dat <- scaled %>% filter (density!="NA") %>% filter ( ssid =="1") %>% filte
 
 
 ```{r}
-ggplot(sens_dat, aes(depth)) + geom_histogram() 
-ggplot(sens_dat, aes(density*1000)) + geom_histogram() 
-ggplot(sens_dat, aes(depth, (density*1000))) + geom_point() 
+ggplot(temp_dat, aes(depth)) + geom_histogram() 
+ggplot(temp_dat, aes(density*1000)) + geom_histogram() 
+ggplot(temp_dat, aes(depth, (density*1000))) + geom_point() 
 #ggplot(synhs, aes(depth_m, log(density*1000+1))) + geom_point() 
 ```
 
@@ -218,13 +233,15 @@ debug = FALSE
 trials = 2
 covariates = c("depth_scaled", "depth_scaled2")
 time = "year"
-
+re_model_type = "rw1"
+formula = full_model
 
 fit_inla_sensor <- function(d, response = "temperature_C_avg",
                      n_knots = 50,
                      family = "binomial",
                      plot = FALSE,
                      fit_model = TRUE,
+                     re_model_type = "rw1",
                      extend = list(n = 8, offset = -0.1),
                      kmeans = FALSE,                   
                      RangeGuess = 100, 
@@ -237,9 +254,10 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
                      covariates = NULL,
                      verbose = FALSE,
                      debug = FALSE,
-                     trials = 10) {
+                     trials = 10,
+                     formula = full_model) {
   
-   # create data.frame including response ("y"), coordinates("xcoo", "ycoo"), covariates, and "intercept"
+  # create data.frame including response ("y"), coordinates("xcoo", "ycoo"), covariates, but not "intercept" as that will be input as time 1
   dat <- data.frame(
     y = d[, response, drop = TRUE],
     xcoo = d$X,
@@ -247,29 +265,27 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
     raw_time = d[, time, drop = TRUE],
     select(d, covariates)
   )
-
-  # make a design matrix where the first year is the intercept:
+  
+  # make sure dat is ordered temporally
   YO  <- order(dat$raw_time)
   dat <- dat[YO,]
   
+  # number years sequentially, removing placeholders for missing years
   time_k <- as.numeric(as.factor(dat$raw_time))
-  
-  #time_k <- dat$raw_time - min(dat$raw_time) + 1
   k <- max(time_k)
   
-  time_lab <- paste0("Y", seq(1, k))
-  dat[time_lab] <- 0
-  dat[, time_lab[1]] <- 1
+  # make design matrix with first time as intercept
+  time_lab <- paste0("Y", seq(1, k)) # make vector of each year labeled "Y1", "Y2", ..."
+  dat[time_lab] <- 0 # fill empty matrix with 0
+  dat[, time_lab[1]] <- 1 # first time point assigned 1 for intercept
   for (j in seq_along(time_lab)) {
     dat[time_k == j, time_lab[j]] <- 1
   }
-  #names(dat)[names(dat)=="Y1"] <- "intercept"
   
-  ## Select time knots and generate time mesh
+  ## Generate time mesh
   t_knots = seq(1, k, length = k)
   mesh1 = inla.mesh.1d(loc = t_knots, degree = 1, boundary = "free")
   
-
   ## Generate spatial mesh
   coords <- as.matrix(unique(d[, c("X", "Y")]))
 
@@ -289,10 +305,10 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
       cutoff = cutoff
     )
   }
-  message("INLA max_edge = ", "c(", max_edge[[1]], ", ", max_edge[[2]], "), n = ", mesh$n)
+  message("INLA max_edge = ", "c(", max_edge[[1]], ", ", max_edge[[2]], "), n = ", mesh2d$n)
   
   if (plot) {
-    graphics::plot(mesh, asp = 1)
+    graphics::plot(mesh2d, asp = 1)
     graphics::points(coords, col = "red")
   }
 
@@ -342,28 +358,11 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
                            A = A.list,
                            effects = effect.list
   )
-# 
-#   formula <- as.formula(paste(
-#     "y ~ -1 + ",
-#     paste(covar_names, collapse = "+"), 
-#     "+ f(spatial.field, model = spde, group = spatial.field.group, control.group = list(model = "ar1"))"))
-#  
- 
-  #covariates <- paste(covar_names, collapse = "+") 
-  
-  formula <- y ~ -1 + depth_scaled+depth_scaled2+Y1+Y2+Y3+Y4+Y5+Y6 +
-   f(spatial.field, model = spde, group = spatial.field.group, control.group = list(model = "ar1"))
 
-
- # formula <- as.formula(paste(
- #    "y ~ -1 + ",
- #    paste(covar_names, collapse = "+"), "+ 
- #      f(year_f, model = "rw2") +
- #      f(year_f2, depth_scaled, model = "rw2") +
- #      f(year_f3, depth_scaled2, model = "rw2") +
- #      f(spatial.field, model=spde)"
- #  ))
- #  
+  full_model <- as.formula(paste(
+    'y ~ -1 + ',
+    paste(covar_names, collapse = '+'),
+    '+ f(spatial.field, model = spde, group = spatial.field.group, control.group = list(model ="', re_model_type,'"))'))
   
   
   if (fit_model) {
@@ -415,12 +414,14 @@ obj <- fit_inla_sensor(temp_dat, response = "temperature_C_avg",
                        family = "gaussian",
                        plot = TRUE,
                        fit_model = TRUE,
+                       re_model_type = "rw1",
                        extend = list(n = 8, offset = -0.1),
                        RangeGuess = 100, 
                        covariates = c("depth_scaled", "depth_scaled2"),
                        verbose = FALSE,
                        debug = FALSE,
-                       trials = 2)
+                       trials = 2
+                       )
 
 pg <- gfplot:::make_prediction_grid(temp_dat, survey ="SYN QCS")$grid #filter(temp_dat, year %in% c(2016, 2017))
 cell_area <- gfplot:::make_prediction_grid(filter(temp_dat, year %in% c(2016, 2017)), survey = "SYN QCS")$cell_area
@@ -430,7 +431,7 @@ cell_area <- gfplot:::make_prediction_grid(filter(temp_dat, year %in% c(2016, 20
 
 Project onto grid:
 
-```{r , eval=TRUE, include=FLASE}
+```{r , eval=TRUE, include=FALSE}
 # alternative to function, hard code
 # samples = 10L
 # pred_grid <- pg_one_year
