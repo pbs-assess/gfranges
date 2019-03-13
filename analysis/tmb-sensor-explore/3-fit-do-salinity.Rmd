@@ -77,9 +77,12 @@ get_diag <- function(m, response = "log_do_mlpl") {
     2 * k - 2 * (-nll)
   }
   
-  r2 <- cor(predictions1$data$est, predictions1$data$log_do_mlpl)^2
+  print("R^2:")
+  r2 <- cor(predictions1$data$est, predictions1$data[[response]])^2
   print(r2)
   
+  print("")
+  print("AIC:")
   print(aic(m))
 }
 
