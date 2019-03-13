@@ -1,0 +1,147 @@
+library(sdmTMB)
+library(tidyverse)
+d_fit <- readRDS("analysis/tmb-sensor-explore/sensor-data-processed.rds")
+
+d <- filter(d_fit, !is.na(do_mlpl), !is.na(salinity_psu))
+spde <- make_spde(d$X, d$Y, n_knots = 150)
+unique(d$year)
+plot_spde(spde)
+
+d_fit$log_do_mlpl <- log(d_fit$do_mlpl)
+
+hist(d$do_mlpl)
+hist(log(d$do_mlpl))
+min(d$do_mlpl)
+
+m_do1 <- sdmTMB(d, log_do_mlpl ~ 1 + depth_scaled,
+  time = "year", spde = spde, family = gaussian(link = "identity"), silent = FALSE)
+
+m_do1$model$par
+exp(m_do1$model$par[["ln_phi"]])
+
+get_diag <- function(m, response = "log_do_mlpl") {
+  predictions1 <- predict(m)
+  predictions1$data$residuals <- residuals(m)
+  
+  plot_map <- function(dat, column = "est") {
+    ggplot(dat, aes_string("X", "Y", colour = column)) +
+      geom_point() +
+      coord_fixed()
+  }
+  
+  g <- plot_map(predictions1$data, "est") +
+    scale_colour_viridis_c() +
+    ggtitle("Prediction (fixed effects + all random effects)")
+  print(g)
+  
+  g <- plot_map(predictions1$data, "est_fe") +
+    ggtitle("Prediction (fixed effects only)") +
+    scale_colour_viridis_c()
+  print(g)
+  
+  g <- plot_map(predictions1$data, "est_re_s") +
+    ggtitle("Spatial random effects only") +
+    scale_colour_gradient2()
+  print(g)
+  
+  g <- ggplot(predictions1$data, aes_string("est", response)) +
+    geom_point() +
+    facet_wrap(~year) +
+    coord_fixed() +
+    geom_abline()
+  print(g)
+  
+  g <- ggplot(predictions1$data, aes(est, residuals)) +
+    geom_point() +
+    geom_smooth()
+  print(g)
+  
+  g <- ggplot(predictions1$data, aes(depth_scaled, residuals)) +
+    geom_point() +
+    geom_smooth() +
+    facet_wrap(~year)
+  print(g)
+  
+  g <- ggplot(predictions1$data, aes(X, Y, colour = residuals)) +
+    geom_point() +
+    coord_fixed() +
+    scale_color_gradient2()
+  print(g)
+  
+  aic <- function(m) {
+    k <- length(m$model$par)
+    nll <- m$model$objective
+    2 * k - 2 * (-nll)
+  }
+  
+  r2 <- cor(predictions1$data$est, predictions1$data$log_do_mlpl)^2
+  print(r2)
+  
+  print(aic(m))
+}
+
+get_diag(m_do1)
+
+m_do2 <- sdmTMB(d, log_do_mlpl ~ 1 + poly(depth_scaled, 2),
+  time = "year", spde = spde, family = gaussian(link = "identity"), silent = TRUE)
+get_diag(m_do2)
+
+m_do3 <- sdmTMB(d, log_do_mlpl ~ 1 + poly(depth_scaled, 3),
+  time = "year", spde = spde, family = gaussian(link = "identity"), silent = TRUE)
+get_diag(m_do3)
+
+.grid <- sdmTMB::qcs_grid %>% filter(year == 2017)
+predictions3_nd <- predict(m_do3, newdata = .grid)
+
+plot_map <- function(dat, column = "est") {
+  ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    facet_wrap(~year) +
+    coord_fixed()
+}
+
+plot_map(predictions3_nd$data, "exp(est)") +
+  scale_fill_viridis_c(option = "C") +
+  ggtitle("Prediction (fixed effects + all random effects)") +
+  geom_point(data = d, aes(X, Y, size = do_mlpl), inherit.aes = FALSE, pch = 21) +
+  scale_size_area(max_size = 10)
+
+plot_map(predictions3_nd$data, "est_fe") +
+  ggtitle("Prediction (fixed effects only)") +
+  scale_fill_viridis_c(trans = "sqrt")
+
+plot_map(predictions3_nd$data, "est_re_s") +
+  ggtitle("Spatial random effects only") +
+  scale_fill_gradient2()
+
+# Salinity:
+
+hist(d$salinity_psu, breaks = 40)
+hist(log(d$salinity_psu))
+hist(exp(d$salinity_psu), breaks = 40)
+
+m_salinity3 <- sdmTMB(d, salinity_psu ~ 1 + poly(depth_scaled, 3),
+  time = "year", spde = spde, family = gaussian(link = "identity"), silent = TRUE)
+get_diag(m_salinity3, response = "salinity_psu")
+
+m_salinity4 <- sdmTMB(d,
+  salinity_psu ~ 1 + depth_scaled * log_do_mlpl,
+  time = "year", spde = spde, family = gaussian(link = "identity"), silent = TRUE)
+get_diag(m_salinity4, response = "salinity_psu")
+
+m_salinity5 <- sdmTMB(d,
+  salinity_psu ~ 1 + poly(depth_scaled, 3) * log_do_mlpl,
+  time = "year", spde = spde, family = gaussian(link = "identity"), silent = TRUE)
+get_diag(m_salinity5, response = "salinity_psu")
+
+m_salinity5 <- sdmTMB(d,
+  salinity_psu ~ 1 + poly(depth_scaled, 3) * temperature_c,
+  time = "year", spde = spde, family = gaussian(link = "identity"), silent = TRUE)
+get_diag(m_salinity5, response = "salinity_psu")
+
+m_salinity5 <- sdmTMB(d,
+  salinity_psu ~ 1 + poly(depth_scaled, 3) * log_do_mlpl + temperature_c,
+  time = "year", spde = spde, family = gaussian(link = "identity"), silent = TRUE)
+get_diag(m_salinity5, response = "salinity_psu")
+
+# much harder to fit

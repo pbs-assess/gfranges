@@ -71,6 +71,8 @@ ggplot(d_trawl, aes(X, Y, colour = depth_scaled2)) +
   facet_wrap(~year) +
   scale_color_viridis_c()
 
+saveRDS(d_trawl, "analysis/tmb-sensor-explore/sensor-data-processed.rds")
+
 library(sdmTMB)
 
 set.seed(39201114)
