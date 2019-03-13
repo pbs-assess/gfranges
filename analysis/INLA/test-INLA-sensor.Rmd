@@ -27,8 +27,8 @@ glimpse(raw)
 ```
 
 ```{r}
-testdat <- tidy_survey_sets(raw, c("SYN HS","SYN QCS","SYN WCVI","SYN WCHG"), years = c(2015, 2016, 2017, 2018))
-testdat <- gfplot:::interp_survey_bathymetry(testdat)
+testdat <- tidy_survey_sets(raw, c("SYN HS","SYN QCS","SYN WCVI","SYN WCHG"), years = c(2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018))
+#testdat <- gfplot:::interp_survey_bathymetry(testdat)
 glimpse(testdat)
 #View(testdat[[1]])
 ```
@@ -82,7 +82,7 @@ plot(-log(depth) ~ salinity_PSU_max,  cex = depth_range/35, data = dat)
 ```
 
 ```{r}
-dat2 <- dat %>% filter(temperature_C_avg!="NA")
+dat2 <- dat %>% filter(temperature_C_avg!="NA") %>% filter(ssid==1)
 
 ggplot(dat2, aes(x=depth, y=temperature_C_avg)) + 
   geom_point(alpha=0.25) + 
@@ -220,8 +220,6 @@ covariates = c("depth_scaled", "depth_scaled2")
 time = "year"
 
 
-
-
 fit_inla_sensor <- function(d, response = "temperature_C_avg",
                      n_knots = 50,
                      family = "binomial",
@@ -241,32 +239,7 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
                      debug = FALSE,
                      trials = 10) {
   
-  coords <- as.matrix(unique(d[, c("X", "Y")]))
-
-  # use kmeans() to calculate centers:
-  if (kmeans) {
-    km <- stats::kmeans(x = coords, centers = n_knots)
-    mesh <- INLA::inla.mesh.create(km$centers,
-      extend = extend
-    )
-  } else {
-    bnd <- INLA::inla.nonconvex.hull(coords)
-    
-    mesh <- INLA::inla.mesh.2d(
-      offset = offset,
-      boundary = bnd,
-      max.edge = max_edge,
-      cutoff = cutoff
-    )
-  }
-  message("INLA max_edge = ", "c(", max_edge[[1]], ", ", max_edge[[2]], "), n = ", mesh$n)
-  
-  if (plot) {
-    graphics::plot(mesh, asp = 1)
-    graphics::points(coords, col = "red")
-  }
-
-  # create data.frame including response ("y"), coordinates("xcoo", "ycoo"), covariates, and "intercept"
+   # create data.frame including response ("y"), coordinates("xcoo", "ycoo"), covariates, and "intercept"
   dat <- data.frame(
     y = d[, response, drop = TRUE],
     xcoo = d$X,
@@ -283,6 +256,7 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
   
   #time_k <- dat$raw_time - min(dat$raw_time) + 1
   k <- max(time_k)
+  
   time_lab <- paste0("Y", seq(1, k))
   dat[time_lab] <- 0
   dat[, time_lab[1]] <- 1
@@ -291,16 +265,50 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
   }
   #names(dat)[names(dat)=="Y1"] <- "intercept"
   
+  ## Select time knots and generate time mesh
+  t_knots = seq(1, k, length = k)
+  mesh1 = inla.mesh.1d(loc = t_knots, degree = 1, boundary = "free")
+  
+
+  ## Generate spatial mesh
+  coords <- as.matrix(unique(d[, c("X", "Y")]))
+
+  # use kmeans() to calculate centers:
+  if (kmeans) {
+    km <- stats::kmeans(x = coords, centers = n_knots)
+    mesh <- INLA::inla.mesh.create(km$centers,
+      extend = extend
+    )
+  } else {
+    bnd <- INLA::inla.nonconvex.hull(coords)
+    
+    mesh2d <- INLA::inla.mesh.2d(
+      offset = offset,
+      boundary = bnd,
+      max.edge = max_edge,
+      cutoff = cutoff
+    )
+  }
+  message("INLA max_edge = ", "c(", max_edge[[1]], ", ", max_edge[[2]], "), n = ", mesh$n)
+  
+  if (plot) {
+    graphics::plot(mesh, asp = 1)
+    graphics::points(coords, col = "red")
+  }
+
+  
   # create an object for a Matérn model
-  spde <- INLA::inla.spde2.matern(mesh = mesh, alpha = 3 / 2) #, # WHAT DOES ALPHS DO?????
+  spde <- INLA::inla.spde2.matern(mesh = mesh2d, alpha = 3 / 2) #, # WHAT DOES ALPHA DO?????
   #                                prior.range = prior_range, 
   #                                prior.sigma = prior_sigma) 
   
+  ## build the space time indices
+  # index = inla.spde.make.index("space", n.spde = spde$n.spde, n.group = mesh1$m)
   # construct index for ar1 model ---- DON'T QUITE UNDERSTAND THIS
   iset <- INLA::inla.spde.make.index(
     name = "spatial.field",
-    n.spde = mesh$n,
-    n.group = k
+    n.spde = spde$n.spde, 
+    n.group = mesh1$m
   )
   
   # isolate list of covariates:
@@ -318,9 +326,9 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
   
  # projection matrix to map to observed points
  A <- INLA::inla.spde.make.A(
-    mesh = mesh,
+    mesh = mesh2d,
     loc = cbind(dat$xcoo, dat$ycoo),
-    group = time_k
+    group = time_k, group.mesh = mesh1
   )
   A.list <- list()
   A.list[[1]] <- A
@@ -334,13 +342,30 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
                            A = A.list,
                            effects = effect.list
   )
+# 
+#   formula <- as.formula(paste(
+#     "y ~ -1 + ",
+#     paste(covar_names, collapse = "+"), 
+#     "+ f(spatial.field, model = spde, group = spatial.field.group, control.group = list(model = "ar1"))"))
+#  
+ 
+  #covariates <- paste(covar_names, collapse = "+") 
+  
+  formula <- y ~ -1 + depth_scaled+depth_scaled2+Y1+Y2+Y3+Y4+Y5+Y6 +
+   f(spatial.field, model = spde, group = spatial.field.group, control.group = list(model = "ar1"))
 
-  formula <- as.formula(paste(
-    "y ~ -1 +",
-    paste(covar_names, collapse = "+"),
-    "+ f(spatial.field, model=spde)"
-  ))
 
+ # formula <- as.formula(paste(
+ #    "y ~ -1 + ",
+ #    paste(covar_names, collapse = "+"), "+ 
+ #      f(year_f, model = "rw2") +
+ #      f(year_f2, depth_scaled, model = "rw2") +
+ #      f(year_f3, depth_scaled2, model = "rw2") +
+ #      f(spatial.field, model=spde)"
+ #  ))
+ #  
+  
+  
   if (fit_model) {
     try_fitting <- TRUE
     trial_i <- 1
@@ -407,12 +432,9 @@ Project onto grid:
 
 
 ```{r}
-
 # alternative to function, hard code
-
 # samples = 10L
 # pred_grid <- pg_one_year
-
 
 predict_inla_sens <- function(obj, pred_grid, 
                                    samples = 100L) {
@@ -436,7 +458,7 @@ predict_inla_sens <- function(obj, pred_grid,
   # define empty arrays to store projections:
   latent_grid   <- array(0, dim = c(nrow(grid_locs), samples, length(yr_fe_indx)))
   spatial_field <- array(0, dim = c(nrow(grid_locs), samples, length(yr_fe_indx)))
-  proj_matrix   <- INLA::inla.spde.make.A(mesh, loc = as.matrix(grid_locs))
+  proj_matrix   <- INLA::inla.spde.make.A(mesh2d, loc = as.matrix(grid_locs))
   
   # loop over all years; do MCMC projections for that year
   for (yr in seq_along(yr_fe_indx)) {
