@@ -233,15 +233,15 @@ debug = FALSE
 trials = 2
 covariates = c("depth_scaled", "depth_scaled2")
 time = "year"
-re_model_type = "rw1"
-formula = full_model
+sp_model_type = "ar1"
+formula = "full_model"
 
 fit_inla_sensor <- function(d, response = "temperature_C_avg",
                      n_knots = 50,
                      family = "binomial",
                      plot = FALSE,
                      fit_model = TRUE,
-                     re_model_type = "rw1",
+                     sp_model_type = "ar1",
                      extend = list(n = 8, offset = -0.1),
                      kmeans = FALSE,                   
                      RangeGuess = 100, 
@@ -282,17 +282,13 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
     dat[time_k == j, time_lab[j]] <- 1
   }
   
-  ## Generate time mesh
-  t_knots = seq(1, k, length = k)
-  mesh1 = inla.mesh.1d(loc = t_knots, degree = 1, boundary = "free")
-  
   ## Generate spatial mesh
   coords <- as.matrix(unique(d[, c("X", "Y")]))
 
   # use kmeans() to calculate centers:
   if (kmeans) {
     km <- stats::kmeans(x = coords, centers = n_knots)
-    mesh <- INLA::inla.mesh.create(km$centers,
+    mesh2d <- INLA::inla.mesh.create(km$centers,
       extend = extend
     )
   } else {
@@ -307,11 +303,7 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
   }
   message("INLA max_edge = ", "c(", max_edge[[1]], ", ", max_edge[[2]], "), n = ", mesh2d$n)
   
-  if (plot) {
-    graphics::plot(mesh2d, asp = 1)
-    graphics::points(coords, col = "red")
-  }
-
+  
   
   # create an object for a Matérn model
   spde <- INLA::inla.spde2.matern(mesh = mesh2d, alpha = 3 / 2) #, # WHAT DOES ALPHA DO?????
@@ -320,12 +312,28 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
   
   ## build the space time indices
   # index = inla.spde.make.index("space", n.spde = spde$n.spde, n.group = mesh1$m)
-  # construct index for ar1 model ---- DON'T QUITE UNDERSTAND THIS
+  # construct index for ar1 model 
   iset <- INLA::inla.spde.make.index(
     name = "spatial.field",
     n.spde = spde$n.spde, 
-    n.group = mesh1$m
+    n.group = k
   )
+  
+  ## Generate depth mesh
+  d_knots = seq(min(d$depth_scaled), max(d$depth_scaled), length.out = 30)
+  #mesh0 = inla.mesh.1d(loc = d_knots, degree = 0, boundary = c('neumann', 'free'))
+  mesh1 = inla.mesh.1d(loc = d_knots, degree = 1, boundary = c('neumann', 'free'))
+  #mesh2 = inla.mesh.1d(loc = d_knots, degree = 2, boundary = c('neumann', 'free'))
+    # graphics::plot(mesh0$loc,mesh0$mid)
+    # graphics::points(mesh1$loc,mesh1$mid)
+    # graphics::points(mesh2$loc,mesh2$mid, col = "red")
+  
+  idepth <- INLA::inla.spde.make.index("depth.field", n.spde = mesh1$m, n.group = k)
+
+  if (plot) {
+    graphics::plot(mesh2d, asp = 1)
+    graphics::points(coords, col = "red")
+  }
   
   # isolate list of covariates:
   X.1              <- dat[, -c(1:4), drop = FALSE] # remove "y", "xcoo", "ycoo", "real_time"
@@ -333,24 +341,31 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
   XX.list          <- as.list(X.1) # turn data.frame to a list
   effect.list      <- list()
   effect.list[[1]] <- c(iset)
+  effect.list[[2]] <- c(idepth)
   
  for (Z in seq_len(ncol(X.1)))
-    effect.list[[Z + 1]] <- XX.list[[Z]] 
+    effect.list[[Z + 2]] <- XX.list[[Z]] 
     
     
-  names(effect.list) <- c("1", covar_names)
+  names(effect.list) <- c("1", "d_knots", covar_names)
   
  # projection matrix to map to observed points
  A <- INLA::inla.spde.make.A(
     mesh = mesh2d,
     loc = cbind(dat$xcoo, dat$ycoo),
-    group = time_k, group.mesh = mesh1
+    group = time_k
+  )
+ A2 <- INLA::inla.spde.make.A(
+    mesh = mesh1,
+    loc = dat$depth_scaled,
+    group = time_k
   )
   A.list <- list()
   A.list[[1]] <- A
+  A.list[[2]] <- A2
   
   for (Z in seq_len(ncol(X.1)))
-    A.list[[Z + 1]] <- 1
+    A.list[[Z + 2]] <- 1
   
   # make projection points stack:
   sdat <- INLA::inla.stack(tag = "stdata",
@@ -359,11 +374,12 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
                            effects = effect.list
   )
 
-  full_model <- as.formula(paste(
+   full_model <- as.formula(paste(
     'y ~ -1 + ',
     paste(covar_names, collapse = '+'),
-    '+ f(spatial.field, model = spde, group = spatial.field.group, control.group = list(model ="', re_model_type,'"))'))
+    '+f(depth_scaled, time_k, model = "rw1", scale.model = TRUE) + f(spatial.field, model = spde, group = spatial.field.group, control.group = list(model ="', sp_model_type,'"))'))
   
+ 
   
   if (fit_model) {
     try_fitting <- TRUE
@@ -398,8 +414,8 @@ fit_inla_sensor <- function(d, response = "temperature_C_avg",
   } else {
     model <- NA
   }
-  list(
-    model = model, mesh = mesh, spde = spde, data = dat,
+#  obj <- 
+    list(model = model, mesh = mesh2d, spde = spde, data = dat,
     formula = formula, iset = iset
   )
 }
@@ -585,9 +601,9 @@ median(pg_all$sp_field)
 make_plot(pg_all, "sp_field") + facet_wrap(~ time) +
   scale_fill_gradient2(
     midpoint = median(pg_all$sp_field),
-    high = scales::muted("blue"), 
+    high = scales::muted("red"), 
     mid = "white",
-    low = scales::muted("red"))
+    low = scales::muted("blue"))
 
 
 make_plot(pg_all, "depth_scaled") +
