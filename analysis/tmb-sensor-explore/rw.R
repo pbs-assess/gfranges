@@ -1,0 +1,118 @@
+library(dplyr)
+survey <- "SYN QCS"
+
+fit_mountains <- function(survey_set_data, type = c("temperature", "depth"), n_knots = 100) {
+  
+  type <- match.arg(type)
+  
+  d <- survey_set_data
+  # sd <- gfplot::get_sensor_data_trawl(ssid = 1, spread_attributes = FALSE)
+  sd <- readRDS("analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
+  sd <- sd %>%
+    select(-count, -start_time, -end_time, -min, -max) %>%
+    mutate(attribute = tolower(attribute)) %>%
+    distinct() %>%
+    reshape2::dcast(fishing_event_id + year + ssid + survey_desc ~ attribute, value.var = "avg")
+  
+  col <- if (grepl("SYN", survey)) "density_kgpm2" else "density_ppkm2"
+  dat <- gfplot:::tidy_survey_sets(d, survey, years = seq(1, 1e6),
+    density_column = col)
+  
+  dat <- left_join(dat, select(sd, temperature_c, year, fishing_event_id)) %>%
+    rename(temperature = temperature_c)
+
+  nrow(dat)
+  dat <- filter(dat, !is.na(temperature), !is.na(depth))
+  nrow(dat)
+  
+  spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = n_knots)
+  
+  dat <- mutate(dat,
+    temperature_mean = mean(temperature),
+    temperature_sd = sd(temperature),
+    depth_mean = mean(depth),
+    depth_sd = sd(depth),
+    depth_scaled = (depth - mean(depth)) / sd(depth),
+    temperature_scaled = (temperature - mean(temperature)) / sd(temperature),
+    temperature_scaled2 = temperature_scaled^2,
+    depth_scaled2 = depth_scaled^2,
+  )
+  
+  if (type == "depth") {
+    formula <-  ~ 0 + depth_scaled + depth_scaled2
+  }
+  if (type == "temperature"){
+    formula <-  ~ 0 + temperature_scaled + temperature_scaled2
+  }
+  m <- sdmTMB::sdmTMB(
+    formula = density ~ 0 + as.factor(year),
+    time_varying = formula,
+    data = dat, time = "year",
+    ar1_fields = FALSE,
+    spde = spde, include_spatial = TRUE,
+    family = sdmTMB::tweedie(link = "log"),
+    anisotropy = FALSE,
+    silent = FALSE)
+  
+  get_y_hat <- function(b0, b1, b2, year, predictor, mean_column, sd_column) {
+    x_pred <- seq(min(dat[[predictor]]), max(dat[[predictor]]), length.out = 300)
+    data.frame(
+      x = x_pred * dat[[sd_column]][[1]] + dat[[mean_column]][[1]],
+      y_hat = exp(b0 + b1 * x_pred + b2 * x_pred^2),
+      year = year)
+  }
+  
+  r <- m$tmb_obj$report()
+  r$b_rw_t
+  n_t <- nrow(r$b_rw_t)
+  yrs <- sort(unique(dat$year))
+  
+  pred_temperature <- purrr::map_df(seq_len(n_t), function(.t) {
+    get_y_hat(r$b_j[.t], r$b_rw_t[.t,1], r$b_rw_t[.t,2], yrs[.t], 
+      sd_column = if (type == "depth") "depth_sd" else "temperature_sd" ,
+      mean_column = if (type == "depth") "depth_mean" else "temperature_mean", 
+      predictor = if (type == "depth") "depth_scaled" else "temperature_scaled")
+  })
+  
+  pred_temperature
+}
+
+plot_mountains <- function(dat, type = c("depth", "temperature")) {
+  type <- match.arg(type)
+  mountain_scaler <- max(dat$y_hat)
+  mountain_scaler <- mountain_scaler * 10000
+  ggplot(dat, aes_string(x = "x", 
+    ymax = "100000*y_hat + year*mountain_scaler", ymin = "0 + year*mountain_scaler",
+    group = "year", colour = "year", fill = "year")) +
+    geom_ribbon(lwd = 0.5, alpha = 0.2) +
+    xlab(if (type == "depth") "Depth" else "Temperature") +
+    scale_color_viridis_c(option = "C") +
+    scale_fill_viridis_c(option = "C") +
+    ylab("Predicted density") +
+    gfplot::theme_pbs() +
+    coord_cartesian(expand = FALSE) + 
+    theme(axis.text.y = element_blank())
+}
+
+# d <- gfplot::get_survey_sets("pacific cod", ssid = 1)
+d <- readRDS("../gfsynopsis/report/data-cache/petrale-sole.rds")
+f <- fit_mountains(d$survey_sets, type = "temperature")
+plot_mountains(f, type = "temperature")
+f <- fit_mountains(d$survey_sets, type = "depth")
+plot_mountains(f, type = "depth")
+
+d <- readRDS("../gfsynopsis/report/data-cache/pacific-cod.rds")
+f <- fit_mountains(d$survey_sets, type = "temperature")
+plot_mountains(f, type = "temperature")
+f <- fit_mountains(d$survey_sets, type = "depth")
+plot_mountains(f, type = "depth")
+
+d <- readRDS("../gfsynopsis/report/data-cache/pacific-ocean-perch.rds")
+f <- fit_mountains(d$survey_sets, type = "temperature")
+plot_mountains(f, type = "temperature")
+f <- fit_mountains(d$survey_sets, type = "depth")
+plot_mountains(f, type = "depth")
+
+d <- readRDS("../gfsynopsis/report/data-cache/rougheye-blackspotted-rockfish-complex.rds")
+f <- fit_mountains(d$survey_sets, type = "depth")
+plot_mountains(f, type = "depth")
