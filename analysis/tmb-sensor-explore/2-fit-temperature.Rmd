@@ -19,7 +19,7 @@ unique(d_fit$year)
 # It's crashing TMB.
 d_fit <- d_trawl
 d_withheld <- d_trawl
-spde <- make_spde(d_fit$X, d_fit$Y, n_knots = 150)
+spde <- make_spde(d_fit$X, d_fit$Y, n_knots = 250)
 plot_spde(spde)
 
 m_temp1 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + depth_scaled,
@@ -113,7 +113,7 @@ ggplot(predictions2$data, aes(X, Y, colour = residuals)) +
 # Try with a third degree polynomial:
 m_temp3 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + poly(depth_scaled, 3),
   time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
+  silent = FALSE)
 
 predictions3 <- predict(m_temp3)
 predictions3$data$residuals <- residuals(m_temp3)
@@ -215,6 +215,7 @@ cor(predictions3$data$est, predictions3$data$temperature_c)^2
 # Extrapolate:
 
 predictions3_nd <- predict(m_temp3, newdata = sdmTMB::qcs_grid)
+saveRDS(predictions3_nd$data, file = "analysis/tmb-sensor-explore/qcs-temp.rds")
 
 ggplot(predictions3$data, aes(X, Y, colour = residuals)) +
   geom_point() +
