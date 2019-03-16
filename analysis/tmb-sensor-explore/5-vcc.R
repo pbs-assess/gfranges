@@ -15,11 +15,11 @@ library(dplyr)
 library(ggplot2)
 library(sdmTMB)
 
-# ssid <- 4
-# survey_abbrev <- "SYN WCVI"
+ssid <- 4
+survey_abbrev <- "SYN WCVI"
 
-ssid <- 1
-survey_abbrev <- "SYN QCS"
+# ssid <- 1
+# survey_abbrev <- "SYN QCS"
 
 # ssid <- 3
 # survey_abbrev <- "SYN HS"
@@ -41,7 +41,8 @@ surv_fish <- surv %>%
   dplyr::distinct() %>%
   dplyr::rename(ssid = survey_series_id)
 
-d_trawl <- left_join(surv_fish, d_trawl)
+d_trawl <- left_join(surv_fish, d_trawl, 
+  by = c("year", "fishing_event_id", "ssid"))
 d_trawl2 <- dplyr::rename(d_trawl, X = longitude, Y = latitude)
 d_trawl <- as_tibble(gfplot:::ll2utm(d_trawl2, utm_zone = 9))
 
@@ -50,16 +51,32 @@ d_fit <- d_fit %>% dplyr::rename(depth = depth_m)
 d_fit <- d_fit %>% dplyr::filter(!is.na(depth), depth > 0)
 dat <- gfplot:::scale_survey_predictors(d_fit)
 
-spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 300)
+spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 250)
 sdmTMB::plot_spde(spde)
 m_temp <- sdmTMB::sdmTMB(dat,
   temperature_c ~ 0 + as.factor(year) + poly(depth_scaled, 3),
+  # time_varying = ~ 0 + poly(depth_scaled, 3),
   time = "year", spde = spde,
   family = gaussian(link = "identity"),
   ar1_fields = TRUE,
   include_spatial = FALSE,
   silent = FALSE
 )
+
+stopifnot(m_temp$model$convergence == 0L)
+m_temp$model$message
+r <- m_temp$tmb_obj$report()
+r$range
+2 * plogis(m_temp$model$par[['ar1_phi']]) - 1
+if (ncol(r$b_rw_t) > 1) {
+  r$b_rw_t
+  exp(r$ln_tau_V)
+  plot(r$b_rw_t[,1], type = "o")
+  plot(r$b_rw_t[,2], type = "o")
+}
+exp(r$ln_phi)
+r$b_j
+r$sigma_E
 
 dummy_year <- c(2005, 2006)
 grid_locs <- gfplot:::make_prediction_grid(filter(dat, year %in% dummy_year),
