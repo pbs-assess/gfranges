@@ -2,7 +2,16 @@ library(sdmTMB)
 library(tidyverse)
 
 dp <- readRDS("~/src/gfsynopsis/report/data-cache/pacific-ocean-perch.rds")$survey_sets
+# pop <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "pacific ocean perch", ssid = c(1, 3, 4, 16))
+# saveRDS(pop, file = "analysis/tmb-sensor-explore/pacific-ocean-perch.rds")
+# dp <- readRDS("analysis/tmb-sensor-explore/pacific-ocean-perch.rds")
+
 dc <- readRDS("~/src/gfsynopsis/report/data-cache/pacific-cod.rds")$survey_sets
+# pcod <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "pacific cod", ssid = c(1, 3, 4, 16))
+# saveRDS(pcod, file = "analysis/tmb-sensor-explore/pacific-cod.rds")
+# dc <- readRDS("analysis/tmb-sensor-explore/pacific-cod.rds")
+
+
 
 dp <- dp %>% filter(survey_series_id == 1)
 dc <- dc %>% filter(survey_series_id == 1)
@@ -51,3 +60,4 @@ library(TMB)
 ssr <- summary(sr)
 
 plot(plogis(m$model$par[1:9] + r$b_rw_t))
+
