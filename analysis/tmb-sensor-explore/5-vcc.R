@@ -15,12 +15,11 @@ library(dplyr)
 library(ggplot2)
 library(sdmTMB)
 
-ssid <- 4
-survey_abbrev <- "SYN WCVI"
+# ssid <- 4
+# survey_abbrev <- "SYN WCVI"
 
-# ssid <- 1
-# survey_abbrev <- "SYN QCS"
-dummy_year <- c(2005, 2006)
+ssid <- 1
+survey_abbrev <- "SYN QCS"
 
 # ssid <- 3
 # survey_abbrev <- "SYN HS"
@@ -62,6 +61,7 @@ m_temp <- sdmTMB::sdmTMB(dat,
   silent = FALSE
 )
 
+dummy_year <- c(2005, 2006)
 grid_locs <- gfplot:::make_prediction_grid(filter(dat, year %in% dummy_year),
   survey = survey_abbrev, cell_width = 2
 )$grid
@@ -93,13 +93,6 @@ ggsave(paste0("analysis/tmb-sensor-explore/", survey_abbrev, "-temp.pdf"))
 
 # Velocity of climate change ---------------------------------------------
 
-# library(vocc)
-# library(raster)
-# library(sp)
-# library(ggquiver)
-
-# load in the temp data or anything else
-# d = readRDS(file.choose())
 d <- predictions$data
 
 # Just to confirm the trends we're seeing are real,
@@ -157,8 +150,9 @@ df <- dplyr::left_join(rtrend_df, rgradlat_df, by = c("x", "y")) %>%
   dplyr::left_join(rgradlon_df, by = c("x", "y")) %>%
   dplyr::left_join(rvocc_df, by = c("x", "y"))
 
-gtrend <- ggplot(df, aes(x, y, fill = trend)) +
-  geom_raster() + scale_fill_gradient2(low = "blue", high = "red") +
+gtrend <- ggplot(df, aes(x, y, fill = -trend)) +
+  geom_raster() + 
+  scale_fill_gradient2(low = scales::muted("blue"), high = scales::muted("red")) +
   xlab("Longitude") + ylab("Latitude") + ggtitle("Trend") + coord_fixed()
 
 # spatial gradient plot
@@ -183,10 +177,11 @@ ggrad <- ggplot(df) +
   xlab("Longitude") + ylab("Latitude") + ggtitle("Gradient") + coord_fixed()
 
 # velocity plot
-gvocc <- ggplot(df) +
-  ggquiver::geom_quiver(aes(x, y, u = u_velo, v = v_velo, colour = -trend), 
+gvocc <- ggplot(mutate(df, `Climate trend\n(C/decade)` = -trend)) +
+  ggquiver::geom_quiver(aes(x, y, u = u_velo, v = v_velo, 
+    colour = `Climate trend\n(C/decade)`), 
     vecsize = 2) +
-  scale_color_gradient2(high = "red", low = "blue") +
+  scale_colour_gradient2(low = scales::muted("blue"), high = scales::muted("red")) +
   xlab("Longitude") + ylab("Latitude") + ggtitle("Velocity") + 
   gfplot::theme_pbs()
 
@@ -200,13 +195,19 @@ isobath <- gfplot:::load_isobath(range(surv$longitude) + c(-5, 5),
   bath = c(100, 200, 300, 500), utm_zone = 9
 )
 
-gvocc <- gvocc + geom_path(
+# library(ggnewscale)
+
+gvocc <- gvocc + 
+  ggnewscale::new_scale_color() +
+  geom_path(
   data = isobath, aes_string(
     x = "X", y = "Y",
-    group = "paste(PID, SID)", lty = "as.factor(PID)"
+    group = "paste(PID, SID)", colour = "PID"
   ),
   inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
 ) +
+  scale_colour_continuous(low = "grey70", high = "grey10") +
+  labs(colour = "Depth") +
   coord_fixed(xlim = range(df$x) + c(-2, 2), ylim = range(df$y) + c(-2, 2))
 
 gvocc <- gvocc + geom_polygon(
@@ -214,6 +215,7 @@ gvocc <- gvocc + geom_polygon(
   fill = "grey87", col = "grey70", lwd = 0.2
 )
 
-pdf(paste0("analysis/tmb-sensor-explore/", survey_abbrev, "-vcc.pdf"), width = 27, height = 8)
-gridExtra::grid.arrange(gtrend, ggrad, gvocc, nrow = 1)
+pdf(paste0("analysis/tmb-sensor-explore/", survey_abbrev, "-vcc.pdf"), width = 8, height = 6)
+# gridExtra::grid.arrange(gtrend, gvocc, nrow = 1)
+gridExtra::grid.arrange(gvocc, nrow = 1)
 dev.off()
