@@ -4,6 +4,7 @@
 library(dplyr)
 library(ggplot2)
 survey <- "SYN QCS"
+survey <- "SYN WCHG"
 
 fit_mountains <- function(survey_set_data, type = c("temperature", "depth"), n_knots = 100) {
   
@@ -40,7 +41,7 @@ fit_mountains <- function(survey_set_data, type = c("temperature", "depth"), n_k
     depth_scaled = (depth - mean(depth)) / sd(depth),
     temperature_scaled = (temperature - mean(temperature)) / sd(temperature),
     temperature_scaled2 = temperature_scaled^2,
-    depth_scaled2 = depth_scaled^2,
+    depth_scaled2 = depth_scaled^2
   )
   
   if (type == "depth") {
@@ -124,3 +125,95 @@ d <- readRDS(here::here("../gfsynopsis/report/data-cache/rougheye-blackspotted-r
 f <- fit_mountains(d$survey_sets, type = "depth")
 plot_mountains(f, type = "depth")
 ```
+
+
+
+
+### Code that works with local gfranges/data-cache
+```{r}
+d <- readRDS(here::here("data-cache/pacific-cod.rds"))
+f <- fit_mountains(d, type = "temperature")
+plot_mountains(f, type = "temperature")
+f <- fit_mountains(d, type = "depth")
+plot_mountains(f, type = "depth")
+```
+
+```{r}
+survey <- "SYN QCS"
+d <- readRDS(here::here("analysis/tmb-sensor-explore/dover-sole.rds"))
+f <- fit_mountains(d, type = "temperature")
+plot_mountains(f, type = "temperature")
+f <- fit_mountains(d, type = "depth")
+plot_mountains(f, type = "depth")
+```
+
+```{r}
+survey <- "SYN WCHG"
+d <- readRDS(here::here("analysis/tmb-sensor-explore/dover-sole.rds"))
+f <- fit_mountains(d, type = "temperature")
+plot_mountains(f, type = "temperature")
+f <- fit_mountains(d, type = "depth")
+plot_mountains(f, type = "depth")
+```
+
+```{r}
+survey <- "SYN HS"
+d <- readRDS(here::here("analysis/tmb-sensor-explore/dover-sole.rds"))
+f <- fit_mountains(d, type = "temperature")
+plot_mountains(f, type = "temperature")
+f <- fit_mountains(d, type = "depth")
+plot_mountains(f, type = "depth")
+```
+
+
+```{r}
+d <- readRDS(here::here("analysis/tmb-sensor-explore/dover-sole.rds"))
+
+  #d <- survey_set_data
+  # sd <- gfplot::get_sensor_data_trawl(ssid = 1, spread_attributes = FALSE)
+  sd <- readRDS(here::here("analysis/tmb-sensor-explore/dat-sensor-trawl.rds"))
+  sd <- sd %>%
+    select(-count, -start_time, -end_time, -min, -max, ssid) %>%
+    mutate(attribute = tolower(attribute)) %>%
+    distinct() %>%
+    reshape2::dcast(fishing_event_id + year + ssid + survey_desc ~ attribute, value.var = "avg")
+  
+  col <- if (grepl("SYN", survey)) "density_kgpm2" else "density_ppkm2"
+#  dat <- gfplot:::tidy_survey_sets(d, survey, years = seq(1, 1e6), survey = c("SYN QCS", "SYN WCVI", "SYN HS", "SYN WCHG"), density_column = col)
+  
+  dat <- left_join(d, select(sd, temperature_c, year, fishing_event_id, ssid), 
+    by = c("year", "fishing_event_id")) %>%
+    rename(temperature = temperature_c, depth = depth_m, density= density_kgpm2)
+
+  nrow(dat)
+  dat <- filter(dat, !is.na(temperature), !is.na(depth))
+  nrow(dat)
+  
+  # spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = n_knots)
+  
+  dat <- mutate(dat,
+    temperature_mean = mean(temperature),
+    temperature_sd = sd(temperature),
+    depth_mean = mean(depth),
+    depth_sd = sd(depth),
+    depth_scaled = (depth - mean(depth)) / sd(depth),
+    temperature_scaled = (temperature - mean(temperature)) / sd(temperature),
+    temperature_scaled2 = temperature_scaled^2,
+    depth_scaled2 = depth_scaled^2
+  )
+
+
+ggplot(dat, aes(x=temperature, y=density, col=year)) + 
+  geom_point(alpha=0.5) + 
+  scale_color_viridis_c(option = "C") +
+  facet_grid(ssid~year, scales = "free" )
+```
+
+```{r}
+QCS <-  dat %>% filter(ssid=="1")
+ggplot(QCS, aes(x=temperature, y=density, col=year)) + 
+  geom_point(alpha=0.5) + 
+  scale_color_viridis_c(option = "C") +
+  facet_wrap(~year, scales = "free" )
+```
+

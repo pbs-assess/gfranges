@@ -4,11 +4,15 @@ d_trawl <- gfplot::get_sensor_data_trawl(ssid = c(1, 3, 4, 16), spread_attribute
 saveRDS(d_trawl, file = "analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
 d_trawl <- readRDS("analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
 
+dovsol <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "dover sole", ssid = c(1, 3, 4, 16))
+saveRDS(dovsol, file = "analysis/tmb-sensor-explore/dover-sole.rds")
+
+
 # d_ll <- gfplot::get_sensor_data_ll_ctd(c(22, 36), sensor_min_max = TRUE)
 # saveRDS(d_ll, file = "analysis/tmb-sensor-explore/dat-sensor-ll.rds")
 # d_ll <- readRDS("analysis/tmb-sensor-explore/dat-sensor-ll.rds")
 
-surv <- readRDS("../gfsynopsis/report/data-cache/pacific-cod.rds")$survey_sets
+#surv <- readRDS("../gfsynopsis/report/data-cache/pacific-cod.rds")$survey_sets
 
 library(tidyverse)
 
@@ -18,11 +22,11 @@ d_trawl <- d_trawl %>%
   distinct() %>%
   reshape2::dcast(fishing_event_id + year + ssid + survey_desc ~ attribute, value.var = "avg")
 
-surv_fish <- surv %>% select(year, fishing_event_id, survey_series_id, longitude, latitude, density_kgpm2) %>%
+surv_fish <- surv %>% select(year, ssid, fishing_event_id, survey_series_id, longitude, latitude, density_kgpm2) %>%
   distinct() %>%
   rename(ssid = survey_series_id)
 
-d_trawl <- left_join(surv_fish, d_trawl) %>%
+d_trawl <- left_join(surv_fish, d_trawl) #%>%
   filter(ssid == 1)
 
 d_trawl2 <- rename(d_trawl, X = longitude, Y = latitude)
