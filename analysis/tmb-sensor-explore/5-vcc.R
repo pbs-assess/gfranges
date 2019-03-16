@@ -78,12 +78,16 @@ exp(r$ln_phi)
 r$b_j
 r$sigma_E
 
+##################
+# this grid_locs not building for PE, WHY?
 dummy_year <- c(2005, 2006)
 grid_locs <- gfplot:::make_prediction_grid(filter(dat, year %in% dummy_year),
   survey = survey_abbrev, cell_width = 2
 )$grid
 grid_locs <- dplyr::rename(grid_locs, depth = akima_depth)
 grid_locs$year <- NULL
+#################
+
 
 # Expand the prediction grid to create a slice for each time:
 original_time <- sort(unique(dat$year))
