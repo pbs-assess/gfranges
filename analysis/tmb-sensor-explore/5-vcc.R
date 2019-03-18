@@ -14,8 +14,7 @@ surv <- readRDS("analysis/tmb-sensor-explore/pacific-cod.rds")
 library(dplyr)
 library(ggplot2)
 library(sdmTMB)
-library(gfplot)
-# devtools::install_github("cbrown5/vocc")
+# devtools::install_github("seananderson/vocc")
 
 # ssid <- 4
 # survey_abbrev <- "SYN WCVI"
@@ -43,7 +42,7 @@ surv_fish <- surv %>%
   dplyr::distinct() %>%
   dplyr::rename(ssid = survey_series_id)
 
-d_trawl <- left_join(surv_fish, d_trawl, 
+d_trawl <- left_join(surv_fish, d_trawl,
   by = c("year", "fishing_event_id", "ssid"))
 d_trawl2 <- dplyr::rename(d_trawl, X = longitude, Y = latitude)
 d_trawl <- as_tibble(gfplot:::ll2utm(d_trawl2, utm_zone = 9))
@@ -82,13 +81,13 @@ r$sigma_E
 
 dummy_year <- c(2004, 2005)
 
-  grid_locs <- gfplot:::make_prediction_grid(filter(dat, year %in% dummy_year),
-    survey = survey_abbrev, 
-    cell_width = 2
-    )$grid
-  grid_locs <- dplyr::rename(grid_locs, depth = akima_depth)
-  grid_locs$year <- NULL
- 
+grid_locs <- gfplot:::make_prediction_grid(filter(dat, year %in% dummy_year),
+  survey = survey_abbrev,
+  cell_width = 2
+)$grid
+grid_locs <- dplyr::rename(grid_locs, depth = akima_depth)
+grid_locs$year <- NULL
+
 # Expand the prediction grid to create a slice for each time:
 original_time <- sort(unique(dat$year))
 nd <- do.call(
@@ -172,7 +171,7 @@ df <- dplyr::left_join(rtrend_df, rgradlat_df, by = c("x", "y")) %>%
   dplyr::left_join(rvocc_df, by = c("x", "y"))
 
 gtrend <- ggplot(df, aes(x, y, fill = -trend)) +
-  geom_raster() + 
+  geom_raster() +
   scale_fill_gradient2(low = scales::muted("blue"), high = scales::muted("red")) +
   xlab("Longitude") + ylab("Latitude") + ggtitle("Trend") + coord_fixed()
 
@@ -199,11 +198,11 @@ ggrad <- ggplot(df) +
 
 # velocity plot
 gvocc <- ggplot(mutate(df, `Climate trend\n(C/decade)` = -trend)) +
-  ggquiver::geom_quiver(aes(x, y, u = u_velo, v = v_velo, 
-    colour = `Climate trend\n(C/decade)`), 
+  ggquiver::geom_quiver(aes(x, y, u = u_velo, v = v_velo,
+    colour = `Climate trend\n(C/decade)`),
     vecsize = 2) +
   scale_colour_gradient2(low = scales::muted("blue"), high = scales::muted("red")) +
-  xlab("Longitude") + ylab("Latitude") + ggtitle("Velocity") + 
+  xlab("Longitude") + ylab("Latitude") + ggtitle("Velocity") +
   gfplot::theme_pbs()
 
 coast <- gfplot:::load_coastline(range(surv$longitude) + c(-1, 1),
@@ -218,7 +217,7 @@ isobath <- gfplot:::load_isobath(range(surv$longitude) + c(-5, 5),
 
 # library(ggnewscale)
 
-gvocc <- gvocc + 
+gvocc <- gvocc +
   ggnewscale::new_scale_color() +
   geom_path(
   data = isobath, aes_string(
