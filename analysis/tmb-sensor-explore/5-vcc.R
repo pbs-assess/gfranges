@@ -122,7 +122,7 @@ d <- predictions$data
 
 # This parameter controls how the original 2-km projection is aggregated.
 # for example, a value of 5 means that the raster would be reprojected to 10km grid
-scale_fac <- 2
+scale_fac <- 3
 
 # create a RasterBrick
 # raster for each year
@@ -202,7 +202,7 @@ gvocc <- ggplot(mutate(df, `Climate trend\n(C/decade)` = -trend)) +
     colour = `Climate trend\n(C/decade)`),
     vecsize = 2) +
   scale_colour_gradient2(low = scales::muted("blue"), high = scales::muted("red")) +
-  xlab("Longitude") + ylab("Latitude") + ggtitle("Velocity") +
+  xlab("UTM") + ylab("UTM") + #ggtitle("Velocity") +
   gfplot::theme_pbs()
 
 coast <- gfplot:::load_coastline(range(surv$longitude) + c(-1, 1),
@@ -218,6 +218,7 @@ isobath <- gfplot:::load_isobath(range(surv$longitude) + c(-5, 5),
 # library(ggnewscale)
 
 gvocc <- gvocc +
+  labs(colour = "Local\nclimate trend\n(°C/decade)") +
   ggnewscale::new_scale_color() +
   geom_path(
   data = isobath, aes_string(
@@ -227,15 +228,16 @@ gvocc <- gvocc +
   inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
 ) +
   scale_colour_continuous(low = "grey70", high = "grey10") +
-  labs(colour = "Depth") +
-  coord_fixed(xlim = range(df$x) + c(-2, 2), ylim = range(df$y) + c(-2, 2))
+  # labs(colour = "Depth") +
+  guides(colour = FALSE) +
+  coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3))
 
 gvocc <- gvocc + geom_polygon(
   data = coast, aes_string(x = "X", y = "Y", group = "PID"),
   fill = "grey87", col = "grey70", lwd = 0.2
 )
 
-pdf(paste0("analysis/tmb-sensor-explore/", survey_abbrev, "-vcc.pdf"), width = 8, height = 6)
+pdf(paste0("analysis/tmb-sensor-explore/", survey_abbrev, "-vcc.pdf"), width = 6, height = 6)
 # gridExtra::grid.arrange(gtrend, gvocc, nrow = 1)
 gridExtra::grid.arrange(gvocc, nrow = 1)
 dev.off()
