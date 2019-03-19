@@ -1,21 +1,33 @@
 # gfplot::get_sensor_attributes()
 
+
+# get and save sensor data from different surveys
+
 d_trawl <- gfplot::get_sensor_data_trawl(ssid = c(1, 3, 4, 16), spread_attributes = FALSE)
 saveRDS(d_trawl, file = "analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
-d_trawl <- readRDS("analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
-
-dovsol <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "dover sole", ssid = c(1, 3, 4, 16))
-saveRDS(dovsol, file = "analysis/tmb-sensor-explore/dover-sole.rds")
-
-pcod <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "pacific cod", ssid = c(1, 3, 4, 16))
-saveRDS(pcod, file = "analysis/tmb-sensor-explore/pacific-cod.rds")
-
 
 # d_ll <- gfplot::get_sensor_data_ll_ctd(c(22, 36), sensor_min_max = TRUE)
 # saveRDS(d_ll, file = "analysis/tmb-sensor-explore/dat-sensor-ll.rds")
 # d_ll <- readRDS("analysis/tmb-sensor-explore/dat-sensor-ll.rds")
 
+
+# get and save data for different species
+
+pcod <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "pacific cod", ssid = c(1, 3, 4, 16))
+saveRDS(pcod, file = "analysis/tmb-sensor-explore/pacific-cod.rds")
+
+pop <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "pacific ocean perch", ssid = c(1, 3, 4, 16))
+saveRDS(pop, file = "analysis/tmb-sensor-explore/pacific-ocean-perch.rds")
+
+# dovsol <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "dover sole", ssid = c(1, 3, 4, 16))
+# saveRDS(dovsol, file = "analysis/tmb-sensor-explore/dover-sole.rds")
+
+
+# explore data
+
+d_trawl <- readRDS("analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
 #surv <- readRDS("../gfsynopsis/report/data-cache/pacific-cod.rds")$survey_sets
+surv <- readRDS("analysis/tmb-sensor-explore/pacific-cod.rds")
 
 library(tidyverse)
 
