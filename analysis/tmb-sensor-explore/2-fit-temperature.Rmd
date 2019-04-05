@@ -1,51 +1,102 @@
 # Fit spatial temporal models to bottom temperature
 
-```{r}
+```{r setup}
 library(tidyverse)
 library(sdmTMB)
 
 d_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/sensor-data-processed.rds"))
 
 set.seed(39201114)
-withheld_fe <- sample(d_trawl$fishing_event_id, size = round(nrow(d_trawl) * .2))
+```
+
+```{r}
+withheld_fe <- sample(d_trawl$fishing_event_id, size = round(nrow(d_trawl)*.2))
+
 d_withheld <- filter(d_trawl, fishing_event_id %in% withheld_fe)
+
 d_fit <- filter(d_trawl, !fishing_event_id %in% withheld_fe)
-nrow(d_fit)
-nrow(d_withheld)
-unique(d_withheld$year)
+
+nrow(d_fit) # 3774
+nrow(d_withheld) # 943
+unique(d_withheld$year) 
 unique(d_fit$year)
+length(unique(d_fit$year))
 
 # FIXME: need to work out a bug in production on this new data set
 # It's crashing TMB.
-d_fit <- d_trawl
-d_withheld <- d_trawl
+
+#d_fit <- d_trawl
+#d_withheld <- d_trawl
+```
+
+```{r}
 spde <- make_spde(d_fit$X, d_fit$Y, n_knots = 250)
 plot_spde(spde)
+```
 
+```{r}
 m_temp1 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + depth_scaled,
   # time_varying =  ~ depth_scaled + depth_scaled2,
-  time = "year", spde = spde, family = gaussian(link = "identity"), ar1_fields = FALSE,
-  anisotropy = FALSE, include_spatial = TRUE, silent = TRUE)
+  time = "year", spde = spde, family = gaussian(link = "identity"), 
+  ar1_fields = FALSE,
+  anisotropy = FALSE, 
+  include_spatial = TRUE, 
+  silent = FALSE)
 
+```
+
+
+```{r}
 m_temp1$model$par
-
 # 2 * plogis(m_temp1$model$par[["ar1_phi"]]) - 1
 exp(m_temp1$model$par[["ln_phi"]])
+```
 
+```{r}
+# FIXME: Error in `$<-.data.frame`(`*tmp*`, "est", value = c(7.12313541783276, :replacement has 4716 rows, data has 4717
 predictions <- predict(m_temp1)
-predictions$data$residuals <- residuals(m_temp1)
 
+attributes(m_temp1)
+
+# find source of error in predict function
+object <- m_temp1
+
+ nd <- object$data # this has 3,774 rows of data
+ lp <- object$tmb_obj$env$last.par # this has 6583 length(lp)
+  r <- object$tmb_obj$report(lp)
+    length(r$omega_s) # 386
+    length(r$epsilon_st) # this is 6176
+    length(r$b_rw_t) # this has 16 time steps
+    length(r$eta_i) # this is a vector of 3773
+    
+    nd$est <- r$eta_i # ERROR OCCURS HERE
+    nd$est_fe <- r$eta_fixed_i # ERROR OCCURS HERE
+
+attributes(r)
+
+```
+
+```{r}
+predictions$data$residuals <- residuals(m_temp1)
+```
+
+```{r}
 plot_map <- function(dat, column = "est") {
   ggplot(dat, aes_string("X", "Y", colour = column)) +
     geom_point() +
     facet_wrap(~year) +
     coord_fixed()
 }
+```
 
+```{r}
 plot_map(predictions$data, "est") +
   scale_colour_viridis_c() +
   ggtitle("Prediction (fixed effects + all random effects)")
+```
 
+
+```{r}
 plot_map(predictions$data, "est_fe") +
   ggtitle("Prediction (fixed effects only)") +
   scale_colour_viridis_c()
