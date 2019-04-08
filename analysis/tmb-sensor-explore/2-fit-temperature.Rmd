@@ -6,7 +6,8 @@ library(sdmTMB)
 
 d_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/sensor-data-processed.rds"))
 
-set.seed(39201114)
+#set.seed(39201114) # original seed, predictions max out at .88 cor with true temp
+set.seed(392011149)
 ```
 
 ```{r}
@@ -192,9 +193,46 @@ predictions3_rw <- predict(m_temp3_rw)
 predictions3_rw$data$residuals <- residuals(m_temp3_rw)
 ```
 
+```{r}
+m_temp3_rw_sp <- sdmTMB(d_fit,
+  temperature_c ~ 0 + as.factor(year),
+  time_varying =  ~ 0 + poly(depth_scaled, 3),
+  include_spatial = TRUE, ar1_fields = TRUE,
+  time = "year", spde = spde, family = gaussian(link = "identity"),
+  silent = FALSE)
+
+predictions3_rw_sp <- predict(m_temp3_rw)
+predictions3_rw_sp$data$residuals <- residuals(m_temp3_rw)
+```
+
+```{r}
+m_temp3_st <- sdmTMB(d_fit,
+  temperature_c ~ 0 + as.factor(year),
+  time_varying =  ~ 0 + poly(depth_scaled, 3),
+  include_spatial = TRUE, ar1_fields = TRUE, spatial_trend = TRUE,
+  time = "year", spde = spde, family = gaussian(link = "identity"),
+  silent = FALSE)
+
+predictions3_st <- predict(m_temp3_st)
+predictions3_st$data$residuals <- residuals(m_temp3_st)
+```
+
+```{r}
+ggplot(predictions3$data, aes(depth_scaled, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+```
 
 ```{r}
 ggplot(predictions3_rw$data, aes(depth_scaled, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+```
+
+```{r}
+ggplot(predictions3_st$data, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
@@ -221,7 +259,11 @@ ggplot(predictions3$data, aes(X, Y, colour = residuals)) +
 
 ```{r}
 d_fit$log_temperature_c <- log(d_fit$temperature_c)
-m_temp4 <- sdmTMB(d_fit, log_temperature_c ~ 0 + as.factor(year) + poly(depth_scaled, 3),
+m_temp4 <- sdmTMB(d_fit, 
+  log_temperature_c ~ 0 + as.factor(year),
+  time_varying = ~ 0 + poly(depth_scaled, 3),
+  #time_varying =  ~ 0 + depth_scaled,
+  include_spatial = TRUE, ar1_fields = TRUE, spatial_trend = TRUE,
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = TRUE)
 
@@ -298,6 +340,8 @@ aic <- function(m) {
 aic(m_temp1)
 aic(m_temp2)
 aic(m_temp3)
+aic(m_temp3_rw)
+aic(m_temp3_st)
 aic(m_temp4)
 aic(m_temp5)
 ```
@@ -322,7 +366,7 @@ cor(predictions3$data$est, predictions3$data$temperature_c)^2
 
 ```{r}
 predictions3_nd <- predict(m_temp3, newdata = sdmTMB::qcs_grid)
-saveRDS(predictions3_nd$data, file = "qcs-temp.rds")
+#saveRDS(predictions3_nd$data, file = "qcs-temp.rds")
 ```
 
 
@@ -381,20 +425,100 @@ p_withheld <- predict(m_temp3, newdata = d_withheld)
 arrange(p_withheld$data, fishing_event_id) 
 arrange(d_withheld, fishing_event_id) 
 p_withheld$data$temperature_c <- d_withheld$temperature_c
+
+cor(p_withheld$data$est, p_withheld$data$temperature_c)^2 # 0.88 in first 
 ```
 
 
 ```{r}
-ggplot(p_withheld$data, aes(est, temperature_c)) +
+ggplot(p_withheld$data, aes(temperature_c,est)) +
   geom_point() +
   facet_wrap(~year) +
   coord_fixed() +
-  xlim(3,12) +
-  ylim(3,12) +
+  xlim(3,15) +
+  ylim(3,15) +
+  geom_abline()
+```
+
+```{r}
+m_temp3_rw$model$par
+# 2 * plogis(m_temp1$model$par[["ar1_phi"]]) - 1
+exp(m_temp3_rw$model$par[["ln_phi"]])
+
+p_withheld_rw <- predict(m_temp3_rw, newdata = d_withheld)
+
+#FIXME: p_withheld$data$temperature_c is all zeros?!?!?! 
+# temp work around (first make sure both df in same order)
+arrange(p_withheld_rw$data, fishing_event_id) 
+arrange(d_withheld, fishing_event_id) 
+p_withheld_rw$data$temperature_c <- d_withheld$temperature_c
+
+cor(p_withheld_rw$data$est, p_withheld_rw$data$temperature_c)^2 # 0.86?
+```
+
+```{r}
+ggplot(p_withheld_rw$data, aes(temperature_c,est)) +
+  geom_point() +
+  facet_wrap(~year) +
+  coord_fixed() +
+  xlim(3,15) +
+  ylim(3,15) +
   geom_abline()
 ```
 
 
+```{r}
+m_temp3_st$model$par
+# 2 * plogis(m_temp1$model$par[["ar1_phi"]]) - 1
+exp(m_temp3_st$model$par[["ln_phi"]])
+
+p_withheld_st <- predict(m_temp3_st, newdata = d_withheld)
+
+#FIXME: p_withheld$data$temperature_c is all zeros?!?!?! 
+# temp work around (first make sure both df in same order)
+arrange(p_withheld_st$data, fishing_event_id) 
+arrange(d_withheld, fishing_event_id) 
+p_withheld_st$data$temperature_c <- d_withheld$temperature_c
+
+cor(p_withheld_st$data$est, p_withheld_st$data$temperature_c)^2
+```
+
+```{r}
+ggplot(p_withheld_st$data, aes(temperature_c,est)) +
+  geom_point() +
+  facet_wrap(~year) +
+  coord_fixed() +
+  xlim(3,15) +
+  ylim(3,15) +
+  geom_abline()
+```
+
+```{r}
+m_temp4$model$par
+# 2 * plogis(m_temp1$model$par[["ar1_phi"]]) - 1
+exp(m_temp4$model$par[["ln_phi"]])
+
+p_withheld4 <- predict(m_temp4, newdata = d_withheld)
+
+#FIXME: p_withheld$data$temperature_c is all zeros?!?!?! 
+# temp work around (first make sure both df in same order)
+arrange(p_withheld4$data, fishing_event_id) 
+arrange(d_withheld, fishing_event_id) 
+p_withheld4$data$temperature_c <- d_withheld$temperature_c
+
+cor(p_withheld4$data$est, p_withheld4$data$temperature_c)^2 # 0.86
+```
+
+
+```{r}
+ggplot(p_withheld4$data, aes(log(temperature_c),est)) +
+  geom_point() +
+  facet_wrap(~year) +
+  coord_fixed() +
+  xlim(1, 3) +
+  ylim(1, 3) +
+  geom_abline()
+```
 
 ```{r}
 temp_cog <- get_cog(predictions3_nd)
