@@ -45,7 +45,6 @@ m_temp1 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + depth_scaled,
 
 ```
 
-
 ```{r}
 m_temp1$model$par
 # 2 * plogis(m_temp1$model$par[["ar1_phi"]]) - 1
@@ -53,27 +52,7 @@ exp(m_temp1$model$par[["ln_phi"]])
 ```
 
 ```{r}
-# FIXME: Error in `$<-.data.frame`(`*tmp*`, "est", value = c(7.12313541783276, :replacement has 4716 rows, data has 4717
 predictions <- predict(m_temp1)
-
-attributes(m_temp1)
-
-# find source of error in predict function
-object <- m_temp1
-
- nd <- object$data # this has 3,774 rows of data
- lp <- object$tmb_obj$env$last.par # this has 6583 length(lp)
-  r <- object$tmb_obj$report(lp)
-    length(r$omega_s) # 386
-    length(r$epsilon_st) # this is 6176
-    length(r$b_rw_t) # this has 16 time steps
-    length(r$eta_i) # this is a vector of 3773
-    
-    nd$est <- r$eta_i # ERROR OCCURS HERE
-    nd$est_fe <- r$eta_fixed_i # ERROR OCCURS HERE
-
-attributes(r)
-
 ```
 
 ```{r}
@@ -95,78 +74,113 @@ plot_map(predictions$data, "est") +
   ggtitle("Prediction (fixed effects + all random effects)")
 ```
 
-
 ```{r}
 plot_map(predictions$data, "est_fe") +
   ggtitle("Prediction (fixed effects only)") +
   scale_colour_viridis_c()
+```
 
+
+```{r}
 plot_map(predictions$data, "est_re_s") +
   ggtitle("Spatial random effects only") +
   scale_colour_gradient2()
+```
 
+```{r}
 plot_map(predictions$data, "est_re_st") +
   ggtitle("Spatiotemporal random effects only") +
   scale_colour_gradient2()
+```
 
+```{r}
 ggplot(predictions$data, aes(est, temperature_c)) +
   geom_point() +
   facet_wrap(~year) +
   coord_fixed() +
   geom_abline()
+```
 
+```{r}
 ggplot(predictions$data, aes(est, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
+```
 
+```{r}
 ggplot(predictions$data, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
+```
 
+```{r}
+ggplot(predictions$data, aes(depth_scaled, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+```
+
+```{r}
 ggplot(predictions$data, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth()
+```
 
+```{r}
 ggplot(predictions$data, aes(X, Y, colour = residuals)) +
   geom_point() +
   facet_wrap(~year) +
   coord_fixed() +
   scale_color_gradient2()
+```
 
+ Looks a bit curved, let's try with a quadratic
 
-# Looks a bit curved, let's try with a quadratic
-
+```{r}
 m_temp2 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + poly(depth_scaled, 2),
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = TRUE)
 
 predictions2 <- predict(m_temp2)
 predictions2$data$residuals <- residuals(m_temp2)
+```
 
+```{r}
 ggplot(predictions2$data, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
+```
 
+```{r}
 ggplot(predictions2$data, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth()
+```
 
+```{r}
 ggplot(predictions2$data, aes(X, Y, colour = residuals)) +
   geom_point() +
   facet_wrap(~year) +
   coord_fixed() +
   scale_color_gradient2()
+```
 
+Try with a third degree polynomial:
 
-# Try with a third degree polynomial:
+```{r}
 m_temp3 <- sdmTMB(d_fit, 
   temperature_c ~ 0 + as.factor(year) + poly(depth_scaled, 3),
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = FALSE)
 
+predictions3 <- predict(m_temp3)
+predictions3$data$residuals <- residuals(m_temp3)
+```
+
+```{r}
 m_temp3_rw <- sdmTMB(d_fit,
   temperature_c ~ 0 + as.factor(year),
   time_varying =  ~ 0 + poly(depth_scaled, 3),
@@ -174,34 +188,38 @@ m_temp3_rw <- sdmTMB(d_fit,
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = FALSE)
 
-
-predictions3 <- predict(m_temp3)
-predictions3$data$residuals <- residuals(m_temp3)
-
 predictions3_rw <- predict(m_temp3_rw)
 predictions3_rw$data$residuals <- residuals(m_temp3_rw)
+```
 
 
+```{r}
 ggplot(predictions3_rw$data, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
+```
 
+```{r}
 ggplot(predictions3$data, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth()
+```
 
+```{r}
 ggplot(predictions3$data, aes(X, Y, colour = residuals)) +
   geom_point() +
   facet_wrap(~year) +
   coord_fixed() +
   scale_color_gradient2()
+```
 
 # That's getting pretty straight although it looks a bit heteroscedastic
 
 # Perhaps this would work better with log temperature as the response
 # since it basically isn't going to go lower than 0 degree celsius
 
+```{r}
 d_fit$log_temperature_c <- log(d_fit$temperature_c)
 m_temp4 <- sdmTMB(d_fit, log_temperature_c ~ 0 + as.factor(year) + poly(depth_scaled, 3),
   time = "year", spde = spde, family = gaussian(link = "identity"),
@@ -209,51 +227,69 @@ m_temp4 <- sdmTMB(d_fit, log_temperature_c ~ 0 + as.factor(year) + poly(depth_sc
 
 predictions4 <- predict(m_temp4)
 predictions4$data$residuals <- residuals(m_temp4)
+```
 
+```{r}
 ggplot(predictions4$data, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
+```
 
+```{r}
 ggplot(predictions4$data, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth()
+```
 
+```{r}
 ggplot(predictions4$data, aes(X, Y, colour = residuals)) +
   geom_point() +
   facet_wrap(~year) +
   coord_fixed() +
   scale_color_gradient2()
+```
 
 # That might've helped a little but not a lot. Let's try with depth and not log depth.
 
+```{r}
 m_temp5 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + poly(depth_m, 3),
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = TRUE)
 
 predictions5 <- predict(m_temp5)
 predictions5$data$residuals <- residuals(m_temp5)
+```
 
+```{r}
 ggplot(predictions5$data, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
+```
 
+```{r}
 ggplot(predictions5$data, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth()
+```
 
 # I don't think that helps with the heteroscedasticity but it made the curvature of the residuals a little bit worse.
 
+```{r}
 ggplot(predictions5$data, aes(est, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
+```
 
+```{r}
 ggplot(predictions5$data, aes(est, residuals)) +
   geom_point() +
   geom_smooth()
+```
 
+```{r}
 aic <- function(m) {
   k <- length(m$model$par)
   nll <- m$model$objective
@@ -264,59 +300,111 @@ aic(m_temp2)
 aic(m_temp3)
 aic(m_temp4)
 aic(m_temp5)
+```
 
 # Conclusion: log depth, 3rd order polynomial with depth
 
+```{r}
 ggplot(predictions3$data, aes(est, temperature_c)) +
   geom_point() +
   facet_wrap(~year) +
   coord_fixed() +
   geom_abline()
+```
 
 # R2
+
+```{r}
 cor(predictions3$data$est, predictions3$data$temperature_c)^2
+```
 
 # Extrapolate:
 
+```{r}
 predictions3_nd <- predict(m_temp3, newdata = sdmTMB::qcs_grid)
-saveRDS(predictions3_nd$data, file = "analysis/tmb-sensor-explore/qcs-temp.rds")
+saveRDS(predictions3_nd$data, file = "qcs-temp.rds")
+```
 
+
+```{r}
 ggplot(predictions3$data, aes(X, Y, colour = residuals)) +
   geom_point() +
   facet_wrap(~year) +
   coord_fixed() +
   scale_color_gradient2()
+```
 
 # A short function for plotting our predictions:
+
+```{r}
 plot_map <- function(dat, column = "est") {
   ggplot(dat, aes_string("X", "Y", fill = column)) +
     geom_raster() +
     facet_wrap(~year) +
     coord_fixed()
 }
+```
 
+```{r}
 plot_map(predictions3_nd$data, "est") +
   scale_fill_viridis_c(trans = "sqrt", option = "C") +
   ggtitle("Prediction (fixed effects + all random effects)")
+```
 
+```{r}
 plot_map(predictions3_nd$data, "est_fe") +
   ggtitle("Prediction (fixed effects only)") +
   scale_fill_viridis_c(trans = "sqrt")
+```
 
+```{r}
 plot_map(predictions3_nd$data, "est_re_s") +
   ggtitle("Spatial random effects only") +
   scale_fill_gradient2()
+```
 
+```{r}
 plot_map(predictions3_nd$data, "est_re_st") +
   ggtitle("Spatiotemporal random effects only") +
   scale_fill_gradient2()
+```
 
+```{r}
+m_temp3$model$par
+# 2 * plogis(m_temp1$model$par[["ar1_phi"]]) - 1
+exp(m_temp3$model$par[["ln_phi"]])
+
+p_withheld <- predict(m_temp3, newdata = d_withheld)
+
+#FIXME: p_withheld$data$temperature_c is all zeros?!?!?! 
+# temp work around (first make sure both df in same order)
+arrange(p_withheld$data, fishing_event_id) 
+arrange(d_withheld, fishing_event_id) 
+p_withheld$data$temperature_c <- d_withheld$temperature_c
+```
+
+
+```{r}
+ggplot(p_withheld$data, aes(est, temperature_c)) +
+  geom_point() +
+  facet_wrap(~year) +
+  coord_fixed() +
+  xlim(3,12) +
+  ylim(3,12) +
+  geom_abline()
+```
+
+
+
+```{r}
 temp_cog <- get_cog(predictions3_nd)
 
 temp_cog %>% reshape2::dcast(year ~ coord, value.var = "est") %>%
   ggplot(aes(X, Y, colour = year)) + geom_path(arrow = arrow()) +
   scale_color_viridis_c()
+```
 
+```{r}
 temp_cog %>%
   ggplot(aes(year, est, ymin = lwr, ymax = upr)) +
   geom_line() +
