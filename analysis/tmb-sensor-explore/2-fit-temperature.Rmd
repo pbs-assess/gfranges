@@ -11,6 +11,7 @@ set.seed(392011149)
 d_trawl$log_temperature_c <- log(d_trawl$temperature_c)
 d_trawl$depth2 <- (d_trawl$depth_scaled)^2
 d_trawl$depth3 <- (d_trawl$depth_scaled)^3
+d_trawl$depth_scaled3 <- (d_trawl$depth_scaled)^3
 ```
 
 ```{r}
@@ -35,6 +36,51 @@ length(unique(d_fit$year))
 spde <- make_spde(d_fit$X, d_fit$Y, n_knots = 100)
 plot_spde(spde)
 ```
+
+10-fold cross-validation of candidate models
+```{r}
+temp1 <- loglik_cv(d_trawl, n_knots = 100, 
+                   formula = temperature_c ~ 0 + as.factor(year) + depth_scaled,
+                   time = "year", family = gaussian(link = "identity"), 
+                   ar1_fields = FALSE, include_spatial = FALSE)
+sum(temp1$nll)
+
+temp2 <- loglik_cv(d_trawl, n_knots = 100, 
+                   formula = temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
+                   time = "year", family = gaussian(link = "identity"), 
+                   ar1_fields = FALSE, include_spatial = FALSE)
+sum(temp2$nll)
+
+temp3 <- loglik_cv(d_trawl, n_knots = 100, 
+                   formula = temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3,
+                   time = "year", family = gaussian(link = "identity"), 
+                   ar1_fields = FALSE, include_spatial = FALSE)
+sum(temp3$nll)
+
+# allow slope with depth to vary through between years with a random walk
+temp1_rw <- loglik_cv(d_trawl, n_knots = 100,
+                   formula = temperature_c ~ 0 + as.factor(year),
+                   time_varying = ~ 0 + depth_scaled,
+                   time = "year", family = gaussian(link = "identity"), 
+                   ar1_fields = FALSE, include_spatial = FALSE)
+sum(temp1_rw$nll)
+
+temp2_rw <- loglik_cv(d_trawl, n_knots = 100, 
+                   formula = temperature_c ~ 0 + as.factor(year),
+                   time_varying = ~ 0 + depth_scaled + depth_scaled2,
+                   time = "year", family = gaussian(link = "identity"), 
+                   ar1_fields = FALSE, include_spatial = FALSE)
+sum(temp2_rw$nll)
+
+
+temp3_rw <- loglik_cv(d_trawl, n_knots = 100, 
+                   formula = temperature_c ~ 0 + as.factor(year),
+                   time_varying = ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
+                   time = "year", family = gaussian(link = "identity"), 
+                   ar1_fields = FALSE, include_spatial = FALSE)
+sum(temp3_rw$nll)
+```
+
 
 Functions for model exploration:
 ```{r}
@@ -371,9 +417,8 @@ ggplot(predictions3_rw_nosp$data, aes(depth_scaled, residuals)) +
 
 # Extrapolate:
 
-#FIXME: this is crashing R
-
-```{r}
+# there is probably a problem with doing this... but need to figure out how to add poly args to predict function
+```{r eval=FALSE}
 m_temp2_rw_poly <- sdmTMB(d_fit,
   temperature_c ~ 0 + as.factor(year),
   time_varying =  ~ 0 + poly(depth_scaled,2),
@@ -383,7 +428,14 @@ m_temp2_rw_poly <- sdmTMB(d_fit,
 ```
 
 ```{r}
-predictions_nd <- predict(m_temp2_rw_poly, newdata = qcs_grid)
+qcs_grid$depth2 <- (qcs_grid$depth_scaled)^2
+qcs_grid$depth3 <- (qcs_grid$depth_scaled)^3
+```
+
+
+
+```{r}
+predictions_nd <- predict(m_temp2_rw_nosp, newdata = qcs_grid)
 #saveRDS(predictions3_rw_nd$data, file = "qcs-temp.rds")
 ```
 
