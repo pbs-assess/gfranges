@@ -39,46 +39,46 @@ plot_spde(spde)
 
 10-fold cross-validation of candidate models
 ```{r}
-temp1 <- loglik_cv(d_trawl, n_knots = 100, 
+temp1 <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
                    formula = temperature_c ~ 0 + as.factor(year) + depth_scaled,
                    time = "year", family = gaussian(link = "identity"), 
                    ar1_fields = FALSE, include_spatial = FALSE)
-sum(temp1$nll)
+sum(temp1$sum_loglik)
 
-temp2 <- loglik_cv(d_trawl, n_knots = 100, 
+temp2 <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
                    formula = temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
                    time = "year", family = gaussian(link = "identity"), 
                    ar1_fields = FALSE, include_spatial = FALSE)
-sum(temp2$nll)
+sum(temp2$sum_loglik)
 
-temp3 <- loglik_cv(d_trawl, n_knots = 100, 
+temp3 <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
                    formula = temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3,
                    time = "year", family = gaussian(link = "identity"), 
                    ar1_fields = FALSE, include_spatial = FALSE)
-sum(temp3$nll)
+sum(temp3$sum_loglik)
 
 # allow slope with depth to vary through between years with a random walk
-temp1_rw <- loglik_cv(d_trawl, n_knots = 100,
+temp1_rw <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
                    formula = temperature_c ~ 0 + as.factor(year),
                    time_varying = ~ 0 + depth_scaled,
                    time = "year", family = gaussian(link = "identity"), 
                    ar1_fields = FALSE, include_spatial = FALSE)
-sum(temp1_rw$nll)
+sum(temp1_rw$sum_loglik)
 
-temp2_rw <- loglik_cv(d_trawl, n_knots = 100, 
+temp2_rw <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
                    formula = temperature_c ~ 0 + as.factor(year),
                    time_varying = ~ 0 + depth_scaled + depth_scaled2,
                    time = "year", family = gaussian(link = "identity"), 
                    ar1_fields = FALSE, include_spatial = FALSE)
-sum(temp2_rw$nll)
+sum(temp2_rw$sum_loglik)
 
 
-temp3_rw <- loglik_cv(d_trawl, n_knots = 100, 
+temp3_rw <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
                    formula = temperature_c ~ 0 + as.factor(year),
                    time_varying = ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
                    time = "year", family = gaussian(link = "identity"), 
                    ar1_fields = FALSE, include_spatial = FALSE)
-sum(temp3_rw$nll)
+sum(temp3_rw$sum_loglik)
 ```
 
 
