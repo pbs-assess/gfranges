@@ -3,15 +3,177 @@
 ```{r setup}
 library(tidyverse)
 library(sdmTMB)
+library(future)
 
 d_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/sensor-data-processed.rds"))
-
 #set.seed(39201114) # original seed, predictions max out at .88 cor with true temp
 set.seed(392011149)
-d_trawl$log_temperature_c <- log(d_trawl$temperature_c)
-d_trawl$depth2 <- (d_trawl$depth_scaled)^2
-d_trawl$depth3 <- (d_trawl$depth_scaled)^3
+#d_trawl$log_temperature_c <- log(d_trawl$temperature_c)
 d_trawl$depth_scaled3 <- (d_trawl$depth_scaled)^3
+```
+
+
+### Functions for model exploration:
+```{r}
+generate_cv_args <- function(
+                formula = formula,
+                time_varying = time_varying,
+                ar1_fields = c(FALSE,TRUE), 
+                include_spatial = c(FALSE,TRUE),
+                n_knots = c(30,80) ){
+  arguments <- expand.grid(
+    formula = formula,
+    time_varying = time_varying,
+    include_spatial = include_spatial,
+    ar1_fields = ar1_fields,
+    n_knots = n_knots
+  )
+  args <- as_tibble(arguments)
+  args
+}
+
+plot_cv_meshes <- function(cv_out) {
+  k <- max(cv_out$data$cv_fold)
+  op <- graphics::par(
+      mfrow = c((sqrt(k)), ceiling(sqrt(k))),
+      mar = c(1, 1, 1, 1)
+    )
+  for (i in seq_len(k)){
+    plot_spde(cv_out$models[[i]]$spde)
+  }
+graphics::par(op)
+}
+
+aic <- function(m) {
+  k <- length(m$model$par)
+  nll <- m$model$objective
+  2 * k - 2 * (-nll)
+}
+```
+
+
+# 10-fold cross-validation 
+
+## All fixed slope models
+```{r}
+cv_args <- generate_cv_args (formula = list(
+    temperature_c ~ 0 + as.factor(year) + depth_scaled,
+    temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
+    temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3),
+    time_varying = list(NULL),
+    ar1_fields = c(FALSE, TRUE), 
+    include_spatial = c(FALSE,TRUE),
+    n_knots = c(30,80,150)
+  )
+
+plan(multiprocess)
+sdmTMB_cv_batch <- purrr::pmap(cv_args, sdmTMB_cv, data = d_trawl)
+cv_args1 <- cv_args
+cv_loglik <- c()
+for (i in seq_len(nrow(cv_args1))) {
+  cv_loglik[[i]] <- round(sdmTMB_cv_batch1[[i]]$sum_loglik, 1)
+}
+cv_args1$formula <- as.character(cv_args1$formula)
+cv_args1$cv_loglik <- cv_loglik
+View(cv_args1)
+cv_args_notv <- as.data.frame(cv_args1) %>% select(., -time_varying)
+glimpse(cv_args_notv)
+write.csv(cv_args_notv, file="cv-all-non-time-varying.csv")
+```
+
+## All time-varying slope models
+```{r}
+cv_args <- generate_cv_args (formula = list(
+    temperature_c ~ 0 + as.factor(year)),
+    time_varying = list(
+    ~ 0 + depth_scaled,
+    ~ 0 + depth_scaled + depth_scaled2,
+    ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3),
+    ar1_fields = c(FALSE, TRUE), 
+    include_spatial = c(FALSE,TRUE),
+    n_knots = c(30,80,150)
+    )
+
+plan(multiprocess)
+sdmTMB_cv_batch <- purrr::pmap(cv_args, sdmTMB_cv, data = d_trawl)
+
+cv_loglik <- c()
+for (i in seq_len(nrow(cv_args))) {
+  cv_loglik[[i]] <- c(sdmTMB_cv_batch[[i]]$sum_loglik)
+}
+cv_args2 <- cv_args
+cv_args2$formula <- as.character(cv_args$formula)
+cv_args2$time_varying <- as.character(cv_args$time_varying)
+cv_args2$cv_loglik <- cv_loglik
+glimpse(cv_args2)
+cv_args_tv <- as.data.frame(cv_args2) 
+write.csv(cv_args_tv, file="cv-all-time-varying.csv")
+```
+
+
+# A functions for plotting our predictions:
+
+```{r}
+plot_map <- function(dat, column = "est") {
+  ggplot(dat, aes_string("X", "Y", colour = column)) +
+    geom_point() +
+    facet_wrap(~year) +
+    coord_fixed()
+}
+
+plot_map_raster <- function(dat, column = "est") {
+  ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    facet_wrap(~year) +
+    coord_fixed()
+}
+```
+
+
+## Plotting predictions
+
+```{r}
+predictions_nd <- predict(m_temp2_rw_nosp, newdata = qcs_grid)
+#saveRDS(predictions3_rw_nd$data, file = "qcs-temp.rds")
+```
+
+```{r}
+plot_map(predictions_nd$data, "est") +
+  scale_fill_viridis_c(trans = "sqrt", option = "C") +
+  ggtitle("Prediction (fixed effects + all random effects)")
+```
+
+```{r}
+plot_map(predictions_nd$data, "est_fe") +
+  ggtitle("Prediction (fixed effects only)") +
+  scale_fill_viridis_c(trans = "sqrt")
+```
+
+```{r, eval=FALSE}
+plot_map(predictions_nd$data, "est_re_s") +
+  ggtitle("Spatial random effects only") +
+  scale_fill_gradient2()
+```
+
+```{r}
+plot_map(predictions_nd$data, "est_re_st") +
+  ggtitle("Spatiotemporal random effects only") +
+  scale_fill_gradient2()
+```
+
+
+########################
+########################
+
+Various candidate models
+
+########################
+########################
+
+```{r}
+spde <- make_spde(d_fit$X, d_fit$Y, n_knots = 100)
+p <- plot_spde(spde)
+p
 ```
 
 ```{r}
@@ -24,48 +186,33 @@ nrow(d_withheld) # 943
 unique(d_withheld$year) 
 unique(d_fit$year)
 length(unique(d_fit$year))
-
-# FIXME: need to work out a bug in production on this new data set
-# It's crashing TMB.
-
-#d_fit <- d_trawl
-#d_withheld <- d_trawl
 ```
 
-```{r}
-spde <- make_spde(d_fit$X, d_fit$Y, n_knots = 100)
-plot_spde(spde)
-```
 
-10-fold cross-validation of candidate models
+Misc models
 ```{r}
-temp1 <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
-                   formula = temperature_c ~ 0 + as.factor(year) + depth_scaled,
-                   time = "year", family = gaussian(link = "identity"), 
-                   ar1_fields = FALSE, include_spatial = FALSE)
-sum(temp1$sum_loglik)
-
-temp2 <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
+temp2 <- sdmTMB_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
                    formula = temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
                    time = "year", family = gaussian(link = "identity"), 
                    ar1_fields = FALSE, include_spatial = FALSE)
+plot_cv_meshes(temp2)
 sum(temp2$sum_loglik)
 
-temp3 <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
+temp3 <- sdmTMB_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
                    formula = temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3,
                    time = "year", family = gaussian(link = "identity"), 
                    ar1_fields = FALSE, include_spatial = FALSE)
 sum(temp3$sum_loglik)
 
 # allow slope with depth to vary through between years with a random walk
-temp1_rw <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
+temp1_rw <- sdmTMB_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
                    formula = temperature_c ~ 0 + as.factor(year),
                    time_varying = ~ 0 + depth_scaled,
                    time = "year", family = gaussian(link = "identity"), 
                    ar1_fields = FALSE, include_spatial = FALSE)
 sum(temp1_rw$sum_loglik)
 
-temp2_rw <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
+temp2_rw <- sdmTMB_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
                    formula = temperature_c ~ 0 + as.factor(year),
                    time_varying = ~ 0 + depth_scaled + depth_scaled2,
                    time = "year", family = gaussian(link = "identity"), 
@@ -73,7 +220,7 @@ temp2_rw <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5
 sum(temp2_rw$sum_loglik)
 
 
-temp3_rw <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
+temp3_rw <- sdmTMB_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
                    formula = temperature_c ~ 0 + as.factor(year),
                    time_varying = ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
                    time = "year", family = gaussian(link = "identity"), 
@@ -81,25 +228,6 @@ temp3_rw <- loglik_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5
 sum(temp3_rw$sum_loglik)
 ```
 
-
-Functions for model exploration:
-```{r}
-plot_map <- function(dat, column = "est") {
-  ggplot(dat, aes_string("X", "Y", colour = column)) +
-    geom_point() +
-    facet_wrap(~year) +
-    coord_fixed()
-}
-
-aic <- function(m) {
-  k <- length(m$model$par)
-  nll <- m$model$objective
-  2 * k - 2 * (-nll)
-}
-```
-
-
-Various candidate models:
 
 ```{r}
 m_temp1 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + depth_scaled,
@@ -192,6 +320,9 @@ aic(m_temp1_rw_st)
 What about polynomial response to depth?
 
 ```{r, eval=FALSE}
+#d_trawl$depth2 <- (d_trawl$depth_scaled)^2
+#d_trawl$depth3 <- (d_trawl$depth_scaled)^3
+
 m_temp2 <- sdmTMB(d_fit, 
   temperature_c ~ 0 + as.factor(year) + depth_scaled + depth2,
   ar1_fields = FALSE, include_spatial = TRUE, #these are defaults
@@ -415,8 +546,6 @@ ggplot(predictions3_rw_nosp$data, aes(depth_scaled, residuals)) +
 
 
 
-# Extrapolate:
-
 # there is probably a problem with doing this... but need to figure out how to add poly args to predict function
 ```{r eval=FALSE}
 m_temp2_rw_poly <- sdmTMB(d_fit,
@@ -425,54 +554,6 @@ m_temp2_rw_poly <- sdmTMB(d_fit,
   include_spatial = FALSE, ar1_fields = FALSE,
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = TRUE)
-```
-
-```{r}
-qcs_grid$depth2 <- (qcs_grid$depth_scaled)^2
-qcs_grid$depth3 <- (qcs_grid$depth_scaled)^3
-```
-
-
-
-```{r}
-predictions_nd <- predict(m_temp2_rw_nosp, newdata = qcs_grid)
-#saveRDS(predictions3_rw_nd$data, file = "qcs-temp.rds")
-```
-
-
-# A short function for plotting our predictions:
-
-```{r}
-plot_map <- function(dat, column = "est") {
-  ggplot(dat, aes_string("X", "Y", fill = column)) +
-    geom_raster() +
-    facet_wrap(~year) +
-    coord_fixed()
-}
-```
-
-```{r}
-plot_map(predictions_nd$data, "est") +
-  scale_fill_viridis_c(trans = "sqrt", option = "C") +
-  ggtitle("Prediction (fixed effects + all random effects)")
-```
-
-```{r}
-plot_map(predictions_nd$data, "est_fe") +
-  ggtitle("Prediction (fixed effects only)") +
-  scale_fill_viridis_c(trans = "sqrt")
-```
-
-```{r, eval=FALSE}
-plot_map(predictions_nd$data, "est_re_s") +
-  ggtitle("Spatial random effects only") +
-  scale_fill_gradient2()
-```
-
-```{r}
-plot_map(predictions_nd$data, "est_re_st") +
-  ggtitle("Spatiotemporal random effects only") +
-  scale_fill_gradient2()
 ```
 
 
