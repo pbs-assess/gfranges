@@ -1,0 +1,37 @@
+"","formula","include_spatial","ar1_fields","n_knots","cv_loglik"
+"1","temperature_c ~ 0 + as.factor(year) + depth_scaled",FALSE,FALSE,30,-578
+"2","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",FALSE,FALSE,30,-339.8
+"3","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,FALSE,30,-352.3
+"4","temperature_c ~ 0 + as.factor(year) + depth_scaled",TRUE,FALSE,30,-530.9
+"5","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",TRUE,FALSE,30,-346.1
+"6","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,FALSE,30,-293
+"7","temperature_c ~ 0 + as.factor(year) + depth_scaled",FALSE,TRUE,30,-509.9
+"8","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",FALSE,TRUE,30,-331.5
+"9","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,TRUE,30,-281.7
+"10","temperature_c ~ 0 + as.factor(year) + depth_scaled",TRUE,TRUE,30,-465.2
+"11","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",TRUE,TRUE,30,-297.6
+"12","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,TRUE,30,-294
+"13","temperature_c ~ 0 + as.factor(year) + depth_scaled",FALSE,FALSE,80,-456.4
+"14","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",FALSE,FALSE,80,-256.5
+"15","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,FALSE,80,-224.6
+"16","temperature_c ~ 0 + as.factor(year) + depth_scaled",TRUE,FALSE,80,-336.9
+"17","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",TRUE,FALSE,80,-163.2
+"18","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,FALSE,80,-127.3
+"19","temperature_c ~ 0 + as.factor(year) + depth_scaled",FALSE,TRUE,80,-367.3
+"20","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",FALSE,TRUE,80,-185.5
+"21","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,TRUE,80,-154.3
+"22","temperature_c ~ 0 + as.factor(year) + depth_scaled",TRUE,TRUE,80,-311.8
+"23","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",TRUE,TRUE,80,-119.4
+"24","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,TRUE,80,-208.4
+"25","temperature_c ~ 0 + as.factor(year) + depth_scaled",FALSE,FALSE,150,-530.8
+"26","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",FALSE,FALSE,150,-276.7
+"27","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,FALSE,150,-274.7
+"28","temperature_c ~ 0 + as.factor(year) + depth_scaled",TRUE,FALSE,150,-200.5
+"29","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",TRUE,FALSE,150,-159.9
+"30","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,FALSE,150,-84
+"31","temperature_c ~ 0 + as.factor(year) + depth_scaled",FALSE,TRUE,150,-395.8
+"32","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",FALSE,TRUE,150,-165.7
+"33","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,TRUE,150,-105.2
+"34","temperature_c ~ 0 + as.factor(year) + depth_scaled",TRUE,TRUE,150,-182.8
+"35","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2",TRUE,TRUE,150,-170
+"36","temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,TRUE,150,-74.2
