@@ -67,7 +67,11 @@ cv_args <- generate_cv_args (formula = list(
   )
 
 plan(multiprocess)
+<<<<<<< HEAD
 sdmTMB_cv_batch1 <- purrr::pmap(cv_args, sdmTMB_cv, data = d_trawl)
+=======
+sdmTMB_cv_batch <- purrr::pmap(cv_args, sdmTMB_cv, data = d_trawl)
+>>>>>>> 94325345634652c6249d3c01d19d68b896540f18
 cv_args1 <- cv_args
 cv_loglik <- c()
 for (i in seq_len(nrow(cv_args1))) {
@@ -79,8 +83,11 @@ View(cv_args1)
 cv_args_notv <- as.data.frame(cv_args1) %>% select(., -time_varying)
 glimpse(cv_args_notv)
 write.csv(cv_args_notv, file="cv-all-non-time-varying.csv")
+<<<<<<< HEAD
 saveRDS(sdmTMB_cv_batch1, file = "cv-all-non-time-varying.rds")
 # readRDS(file = "sdmTMB_cv_nontv.rds")
+=======
+>>>>>>> 94325345634652c6249d3c01d19d68b896540f18
 ```
 
 ## All time-varying slope models
@@ -110,8 +117,11 @@ cv_args2$cv_loglik <- cv_loglik
 glimpse(cv_args2)
 cv_args_tv <- as.data.frame(cv_args2) 
 write.csv(cv_args_tv, file="cv-all-time-varying.csv")
+<<<<<<< HEAD
 saveRDS(sdmTMB_cv_batch, file = "cv-all-time-varying.rds")
 # readRDS(file = "sdmTMB_cv_nontv.rds")
+=======
+>>>>>>> 94325345634652c6249d3c01d19d68b896540f18
 ```
 
 
