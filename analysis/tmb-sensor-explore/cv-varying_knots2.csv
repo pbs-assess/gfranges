@@ -1,0 +1,41 @@
+"","formula","time_varying","include_spatial","ar1_fields","n_knots","cv_loglik"
+"1","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",FALSE,FALSE,60,-205.314370937708
+"2","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,FALSE,60,-277.632558511617
+"3","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",TRUE,FALSE,60,-125.460318462835
+"4","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,FALSE,60,-138.016392224843
+"5","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",FALSE,TRUE,60,-111.802820045724
+"6","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,TRUE,60,-159.263018649113
+"7","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",TRUE,TRUE,60,-105.799183307713
+"8","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,TRUE,60,-70.1130944760316
+"9","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",FALSE,FALSE,90,-221.282903473981
+"10","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,FALSE,90,-207.052973360102
+"11","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",TRUE,FALSE,90,-74.5533901808414
+"12","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,FALSE,90,-44.2508351077691
+"13","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",FALSE,TRUE,90,-140.597385924484
+"14","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,TRUE,90,-179.275647687118
+"15","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",TRUE,TRUE,90,-52.4093159465804
+"16","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,TRUE,90,-140.521660033481
+"17","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",FALSE,FALSE,110,-303.935550915832
+"18","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,FALSE,110,-254.011998263159
+"19","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",TRUE,FALSE,110,-107.525218640444
+"20","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,FALSE,110,-37.721535782733
+"21","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",FALSE,TRUE,110,-108.323498172919
+"22","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,TRUE,110,-123.712533928976
+"23","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",TRUE,TRUE,110,-51.8300187312088
+"24","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,TRUE,110,-70.7469706727618
+"25","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",FALSE,FALSE,130,-213.508216579564
+"26","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,FALSE,130,-223.59527694019
+"27","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",TRUE,FALSE,130,17.2430201213032
+"28","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,FALSE,130,-42.4906422053861
+"29","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",FALSE,TRUE,130,-35.8546001586955
+"30","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,TRUE,130,-98.7027579722231
+"31","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",TRUE,TRUE,130,-199.683906036934
+"32","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,TRUE,130,19.0097394457861
+"33","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",FALSE,FALSE,160,-229.134233961233
+"34","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,FALSE,160,-310.327163702457
+"35","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",TRUE,FALSE,160,16.5546723731726
+"36","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,FALSE,160,-81.0640199292751
+"37","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",FALSE,TRUE,160,-32.7114674058231
+"38","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",FALSE,TRUE,160,-176.321523893194
+"39","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2",TRUE,TRUE,160,-72.9947134641069
+"40","temperature_c ~ 0 + as.factor(year)","~0 + depth_scaled + depth_scaled2 + depth_scaled3",TRUE,TRUE,160,-78.1310903629181
