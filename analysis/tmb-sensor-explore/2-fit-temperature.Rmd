@@ -53,7 +53,7 @@ aic <- function(m) {
 
 
 # 10-fold cross-validation 
-
+#FIXME: need to extract information on whether or not models converge
 ## All fixed slope models
 ```{r}
 cv_args <- generate_cv_args (formula = list(
@@ -75,12 +75,11 @@ for (i in seq_len(nrow(cv_args1))) {
 }
 cv_args1$formula <- as.character(cv_args1$formula)
 cv_args1$cv_loglik <- cv_loglik
-View(cv_args1)
 cv_args_notv <- as.data.frame(cv_args1) %>% select(., -time_varying)
+# View(cv_args_notv)
+# write.csv(cv_args_notv, file = "cv-all-non-time-varying.csv")
+# saveRDS(sdmTMB_cv_batch1, file = "cv-all-non-time-varying.rds")
 glimpse(cv_args_notv)
-write.csv(cv_args_notv, file="cv-all-non-time-varying.csv")
-saveRDS(sdmTMB_cv_batch1, file = "cv-all-non-time-varying.rds")
-# readRDS(file = "sdmTMB_cv_nontv.rds")
 ```
 
 ## All time-varying slope models
@@ -98,23 +97,109 @@ cv_args <- generate_cv_args (formula = list(
 
 plan(multiprocess)
 sdmTMB_cv_batch <- purrr::pmap(cv_args, sdmTMB_cv, data = d_trawl)
-
-cv_loglik <- c()
-for (i in seq_len(nrow(cv_args))) {
-  cv_loglik[[i]] <- c(sdmTMB_cv_batch[[i]]$sum_loglik)
-}
 cv_args2 <- cv_args
+cv_args2$cv_loglik <- c()
+for (i in seq_len(nrow(cv_args))) {
+  cv_args2$cv_loglik[[i]] <- c(sdmTMB_cv_batch[[i]]$sum_loglik)
+}
 cv_args2$formula <- as.character(cv_args$formula)
 cv_args2$time_varying <- as.character(cv_args$time_varying)
-cv_args2$cv_loglik <- cv_loglik
-glimpse(cv_args2)
 cv_args_tv <- as.data.frame(cv_args2) 
-write.csv(cv_args_tv, file="cv-all-time-varying.csv")
-
-saveRDS(sdmTMB_cv_batch, file = "cv-all-time-varying.rds")
-# readRDS(file = "sdmTMB_cv_nontv.rds")
+# View(cv_args_tv)
+# write.csv(cv_args_tv, file = "cv-all-time-varying.csv")
+# saveRDS(sdmTMB_cv_batch, file = "cv-all-time-varying.rds")
+glimpse(cv_args_tv)
 ```
 
+
+## vary n_knots for top model
+```{r}
+cv_args_knots <- generate_cv_args (formula = list(
+    temperature_c ~ 0 + as.factor(year)),
+    time_varying = list(
+    ~ 0 + depth_scaled + depth_scaled2,
+    ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3),
+    ar1_fields = c(FALSE,TRUE), 
+    include_spatial = c(FALSE,TRUE),
+    n_knots = c(60,90,110,130,160)
+    )
+
+plan(multiprocess)
+sdmTMB_cv_knots2 <- purrr::pmap(cv_args_knots, sdmTMB_cv, data = d_trawl)
+cv_args3 <- cv_args_knots
+cv_args3$cv_loglik <- c()
+for (i in seq_len(nrow(cv_args3))) {
+  cv_args3$cv_loglik[[i]] <- c(sdmTMB_cv_knots2[[i]]$sum_loglik)
+}
+cv_args3$formula <- as.character(cv_args3$formula)
+cv_args3$time_varying <- as.character(cv_args3$time_varying)
+cv_args_knots2 <- as.data.frame(cv_args3) 
+# View(cv_args_knots2)
+# write.csv(cv_args_knots2, file = "cv-varying_knots2.csv")
+# saveRDS(sdmTMB_cv_knots2, file = "cv-varying_knots2.rds")
+glimpse(cv_args_knots2)
+```
+
+Load saved batches:
+```{r}
+non_time_varying_batch <- readRDS(file = "cv-all-non-time-varying.rds")
+time_varying_batch <- readRDS(file = "cv-all-time-varying.rds")
+knot_varying_batch <- readRDS(file = "cv-varying_knots.rds")
+knot_varying_batch2 <- readRDS(file = "cv-varying_knots2.rds")
+```
+
+Current top model
+```{r}
+plan(multiprocess)
+temp3_rw <- sdmTMB_cv(data = d_trawl, n_knots = 130, x = "X", y ="Y", k_folds = 10, 
+                   formula = temperature_c ~ 0 + as.factor(year),
+                   time_varying = ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
+                   time = "year", family = gaussian(link = "identity"), 
+                   ar1_fields = TRUE, include_spatial = TRUE)
+temp3_rw$models
+sum(temp3_rw$sum_loglik)
+```
+
+
+```{r}
+spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 130)
+plot_spde(spde)
+```
+
+```{r}
+m_temp3_rw <- sdmTMB(d_trawl,
+  temperature_c ~ 0 + as.factor(year),
+  time_varying =  ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
+  ar1_fields = TRUE, include_spatial = TRUE, 
+  time = "year", spde = spde, family = gaussian(link = "identity"),
+  silent = TRUE)
+
+predictions3_rw <- predict(m_temp3_rw)
+predictions3_rw$data$residuals <- residuals(m_temp3_rw)
+cor(predictions3_rw$data$est, predictions3_rw$data$temperature_c)^2 # 
+aic(m_temp3_rw)
+```
+
+Residual plots:
+```{r}
+ggplot(predictions3_rw$data, aes(est, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+```
+
+```{r}
+ggplot(predictions3_rw$data, aes(depth_scaled, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+```
+
+```{r}
+ggplot(predictions3_rw$data, aes(depth_scaled, residuals)) +
+  geom_point() +
+  geom_smooth()
+```
 
 # A functions for plotting our predictions:
 
@@ -136,429 +221,45 @@ plot_map_raster <- function(dat, column = "est") {
 
 
 ## Plotting predictions
-
 ```{r}
-predictions_nd <- predict(m_temp2_rw_nosp, newdata = qcs_grid)
+qcs_grid$depth_scaled3 <- (qcs_grid$depth_scaled)^3
+predictions_nd <- predict(m_temp3_rw, newdata = qcs_grid)
 #saveRDS(predictions3_rw_nd$data, file = "qcs-temp.rds")
 ```
 
 ```{r}
-plot_map(predictions_nd$data, "est") +
+plot_map_raster(predictions_nd$data, "est") +
   scale_fill_viridis_c(trans = "sqrt", option = "C") +
   ggtitle("Prediction (fixed effects + all random effects)")
 ```
 
 ```{r}
-plot_map(predictions_nd$data, "est_fe") +
+plot_map_raster(predictions_nd$data, "est_fe") +
   ggtitle("Prediction (fixed effects only)") +
   scale_fill_viridis_c(trans = "sqrt")
 ```
 
 ```{r, eval=FALSE}
-plot_map(predictions_nd$data, "est_re_s") +
+plot_map_raster(predictions_nd$data, "est_re_s") +
   ggtitle("Spatial random effects only") +
   scale_fill_gradient2()
 ```
 
 ```{r}
-plot_map(predictions_nd$data, "est_re_st") +
+plot_map_raster(predictions_nd$data, "est_re_st") +
   ggtitle("Spatiotemporal random effects only") +
   scale_fill_gradient2()
 ```
 
 
-########################
-########################
-
-Various candidate models
-
-########################
-########################
-
 ```{r}
-spde <- make_spde(d_fit$X, d_fit$Y, n_knots = 100)
-p <- plot_spde(spde)
-p
-```
-
-```{r}
-withheld_fe <- sample(d_trawl$fishing_event_id, size = round(nrow(d_trawl)*.2))
-d_withheld <- filter(d_trawl, fishing_event_id %in% withheld_fe)
-d_fit <- filter(d_trawl, !fishing_event_id %in% withheld_fe)
-
-nrow(d_fit) # 3774
-nrow(d_withheld) # 943
-unique(d_withheld$year) 
-unique(d_fit$year)
-length(unique(d_fit$year))
-```
-
-
-Misc models
-```{r}
-temp2 <- sdmTMB_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
-                   formula = temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
-                   time = "year", family = gaussian(link = "identity"), 
-                   ar1_fields = FALSE, include_spatial = FALSE)
-plot_cv_meshes(temp2)
-sum(temp2$sum_loglik)
-
-temp3 <- sdmTMB_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
-                   formula = temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3,
-                   time = "year", family = gaussian(link = "identity"), 
-                   ar1_fields = FALSE, include_spatial = FALSE)
-sum(temp3$sum_loglik)
-
-# allow slope with depth to vary through between years with a random walk
-temp1_rw <- sdmTMB_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
-                   formula = temperature_c ~ 0 + as.factor(year),
-                   time_varying = ~ 0 + depth_scaled,
-                   time = "year", family = gaussian(link = "identity"), 
-                   ar1_fields = FALSE, include_spatial = FALSE)
-sum(temp1_rw$sum_loglik)
-
-temp2_rw <- sdmTMB_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
-                   formula = temperature_c ~ 0 + as.factor(year),
-                   time_varying = ~ 0 + depth_scaled + depth_scaled2,
-                   time = "year", family = gaussian(link = "identity"), 
-                   ar1_fields = FALSE, include_spatial = FALSE)
-sum(temp2_rw$sum_loglik)
-
-
-temp3_rw <- sdmTMB_cv(data = d_trawl, n_knots = 30, x = "X", y ="Y", k_folds = 5, plot_spde = TRUE,
-                   formula = temperature_c ~ 0 + as.factor(year),
-                   time_varying = ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
-                   time = "year", family = gaussian(link = "identity"), 
-                   ar1_fields = FALSE, include_spatial = FALSE)
-sum(temp3_rw$sum_loglik)
-```
-
-
-```{r}
-m_temp1 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + depth_scaled,
-  time = "year", spde = spde, family = gaussian(link = "identity"), 
-  ar1_fields = FALSE, include_spatial = FALSE, 
-  silent = TRUE)
-
-predictions <- predict(m_temp1)
-predictions$data$residuals <- residuals(m_temp1)
-cor(predictions$data$est, predictions$data$temperature_c)^2
-aic(m_temp1)
-
-m_temp1_nosp  <- m_temp1
-```
-
-AR1 fields no improvement in R^2
-```{r, eval=FALSE}
-m_temp1_ar1 <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year) + depth_scaled,
-  time = "year", spde = spde, family = gaussian(link = "identity"), 
-  ar1_fields = TRUE, include_spatial = FALSE, 
-  anisotropy = FALSE, 
-  silent = TRUE)
-
-predictions_ar1 <- predict(m_temp1_ar1)
-predictions_ar1$data$residuals <- residuals(m_temp1_ar1)
-cor(predictions_ar1$data$est, predictions_ar1$data$temperature_c)^2
-aic(m_temp1_ar1)
-```
-
-Time-varying slope for depth, little imporvement for R^2
-```{r}
-m_temp1_rw <- sdmTMB(d_fit, temperature_c ~ 0 + as.factor(year),   
-  time_varying = ~ 0 + depth_scaled,
-  ar1_fields = FALSE, include_spatial = FALSE, #these are defaults
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions1_rw <- predict(m_temp1_rw)
-predictions1_rw$data$residuals <- residuals(m_temp1_rw)
-cor(predictions1_rw$data$est, predictions1_rw$data$temperature_c)^2
-aic(m_temp1_rw)
-```
-
-NO improvement
-```{r, eval=FALSE}
-m_temp1_rw_ar1 <- sdmTMB(d_fit, 
-  temperature_c ~ 0 + as.factor(year),   
-  time_varying = ~ 0 + depth_scaled,
-  ar1_fields = TRUE, include_spatial = TRUE,
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions1_rw_ar1 <- predict(m_temp1_rw_ar1)
-predictions1_rw_ar1$data$residuals <- residuals(m_temp1_rw_ar1)
-cor(predictions1_rw_ar1$data$est, predictions1_rw_ar1$data$temperature_c)^2
-aic(m_temp1_rw_ar1)
-```
-
-NO improvement
-```{r, eval=FALSE}
-m_temp1_st <- sdmTMB(d_fit,
-  temperature_c ~ 0 + as.factor(year) + depth_scaled,
-  #time_varying =  ~ 0 + depth_scaled,
-  include_spatial = TRUE, ar1_fields = FALSE, spatial_trend = TRUE, 
-  # seems to be only config that converges
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions1_st <- predict(m_temp1_st)
-predictions1_st$data$residuals <- residuals(m_temp1_st)
-cor(predictions1_st$data$est, predictions1_st$data$temperature_c)^2 # 
-aic(m_temp1_st)
-```
-
-Both time and space varying... doesn't improve R^2
-```{r, eval=FALSE}
-m_temp1_rw_st <- sdmTMB(d_fit,
-  temperature_c ~ 0 + as.factor(year), 
-  time_varying =  ~ 0 + depth_scaled,
-  include_spatial = TRUE, ar1_fields = FALSE, spatial_trend = TRUE, 
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions1_rw_st <- predict(m_temp1_rw_st)
-predictions1_rw_st$data$residuals <- residuals(m_temp1_rw_st)
-cor(predictions1_rw_st$data$est, predictions1_rw_st$data$temperature_c)^2 # 
-aic(m_temp1_rw_st)
-```
-
-What about polynomial response to depth?
-
-```{r, eval=FALSE}
-#d_trawl$depth2 <- (d_trawl$depth_scaled)^2
-#d_trawl$depth3 <- (d_trawl$depth_scaled)^3
-
-m_temp2 <- sdmTMB(d_fit, 
-  temperature_c ~ 0 + as.factor(year) + depth_scaled + depth2,
-  ar1_fields = FALSE, include_spatial = TRUE, #these are defaults
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions2 <- predict(m_temp2)
-predictions2$data$residuals <- residuals(m_temp2)
-cor(predictions2$data$est, predictions2$data$temperature_c)^2
-aic(m_temp2)
-```
-
-```{r}
-m_temp2_nosp <- sdmTMB(d_fit, 
-  temperature_c ~ 0 + as.factor(year) + depth_scaled + depth2,
-  ar1_fields = FALSE, include_spatial = FALSE, 
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions2_nosp <- predict(m_temp2_nosp)
-predictions2_nosp$data$residuals <- residuals(m_temp2_nosp)
-cor(predictions2_nosp$data$est, predictions2_nosp$data$temperature_c)^2
-aic(m_temp2_nosp)
-```
-
-
-```{r}
-m_temp2_rw_nosp <- sdmTMB(d_fit,
-  temperature_c ~ 0 + as.factor(year),
-  time_varying =  ~ 0 + depth_scaled + depth2,
-  include_spatial = FALSE, ar1_fields = FALSE,
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions2_rw_nosp <- predict(m_temp2_rw_nosp)
-predictions2_rw_nosp$data$residuals <- residuals(m_temp2_rw_nosp)
-cor(predictions2_rw_nosp$data$est, predictions2_rw_nosp$data$temperature_c)^2
-aic(m_temp2_rw_nosp)
-```
-
-NO improvement 
-```{r, eval=FALSE}
-m_temp2_st <- sdmTMB(d_fit,
-  temperature_c ~ 0 + as.factor(year), #+ poly(depth_scaled, 2),
-  time_varying =  ~ 0 + poly(depth_scaled, 2),
-  include_spatial = FALSE, ar1_fields = FALSE, spatial_trend = TRUE, 
-  # seems to be only config that converges
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions2_st <- predict(m_temp2_st)
-predictions2_st$data$residuals <- residuals(m_temp2_st)
-cor(predictions2_st$data$est, predictions2_st$data$temperature_c)^2 # 
-aic(m_temp2_st)
-```
-
-What about 3 order polynomial?
-```{r, eval=FALSE}
-m_temp3 <- sdmTMB(d_fit, 
-  temperature_c ~ 0 + as.factor(year) + depth_scaled + depth2 + depth3,
-  ar1_fields = FALSE, include_spatial = TRUE, #these are defaults
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions3 <- predict(m_temp3)
-predictions3$data$residuals <- residuals(m_temp3)
-
-cor(predictions3$data$est, predictions3$data$temperature_c)^2 # 
-```
-
-Slightly better without a fixed spatial field!
-```{r}
-m_temp3_nosp <- sdmTMB(d_fit, 
-  temperature_c ~ 0 + as.factor(year) + depth_scaled + depth2 + depth3,
-  ar1_fields = FALSE, include_spatial = FALSE, 
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions3_nosp <- predict(m_temp3_nosp)
-predictions3_nosp$data$residuals <- residuals(m_temp3_nosp)
-
-cor(predictions3_nosp$data$est, predictions3_nosp$data$temperature_c)^2 # 
-```
-
-Better without AR1
-```{r, eval=FALSE}
-m_temp3_ar1 <- sdmTMB(d_fit, 
-  temperature_c ~ 0 + as.factor(year) + depth_scaled + depth2 + depth3,
-  ar1_fields = TRUE, include_spatial = FALSE, 
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions3_ar1 <- predict(m_temp3_ar1)
-predictions3_ar1$data$residuals <- residuals(m_temp3_ar1)
-
-cor(predictions3_ar1$data$est, predictions3_ar1$data$temperature_c)^2 # 
-```
-
-```{r, eval=FALSE}
-m_temp3_rw <- sdmTMB(d_fit,
-  temperature_c ~ 0 + as.factor(year),
-  time_varying =  ~ 0 + depth_scaled + depth2 + depth3,
-  ar1_fields = FALSE, include_spatial = TRUE, 
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions3_rw <- predict(m_temp3_rw)
-predictions3_rw$data$residuals <- residuals(m_temp3_rw)
-cor(predictions3_rw$data$est, predictions3_rw$data$temperature_c)^2 # 
-aic(m_temp3_rw)
-```
-
-Also better without fixed spatial field but not quite as good as 2nd order
-```{r}
-m_temp3_rw_nosp <- sdmTMB(d_fit,
-  temperature_c ~ 0 + as.factor(year),
-  time_varying =  ~ 0 + depth_scaled + depth2 + depth3,
-  include_spatial = FALSE, ar1_fields = FALSE,
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions3_rw_nosp <- predict(m_temp3_rw_nosp)
-predictions3_rw_nosp$data$residuals <- residuals(m_temp3_rw_nosp)
-cor(predictions3_rw_nosp$data$est, predictions3_rw_nosp$data$temperature_c)^2 # 
-```
-
-Not converging 
-```{r, eval=FALSE}
-m_temp3_st <- sdmTMB(d_fit,
-  temperature_c ~ 0 + as.factor(year), #+ poly(depth_scaled, 2),
-  time_varying =  ~ 0 + depth_scaled + depth2 + depth3,
-  include_spatial = FALSE, ar1_fields = FALSE, spatial_trend = TRUE, 
-  # seems to be only config that converges
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
-
-predictions3_st <- predict(m_temp3_st)
-predictions3_st$data$residuals <- residuals(m_temp3_st)
-cor(predictions3_st$data$est, predictions3_st$data$temperature_c)^2 # 
-```
-
-# Conclusion: 
-
-```{r}
-# m_temp2_rw$model$par
-# 2 * plogis(m_temp1$model$par[["ar1_phi"]]) - 1
-# exp(m_temp2_rw$model$par[["ln_phi"]])
-
-p_withheld1 <- predict(m_temp1_nosp, newdata = d_withheld)
-cor(p_withheld1$data$est, p_withheld1$data$temperature_c)^2 # 0.87 in first 
-```
-```{r}
-p_withheld1_rw <- predict(m_temp1_rw, newdata = d_withheld)
-cor(p_withheld1_rw$data$est, p_withheld1_rw$data$temperature_c)^2 # 0.87 in first 
-```
-
-# 4
-```{r}
-p_withheld2 <- predict(m_temp2_nosp, newdata = d_withheld)
-cor(p_withheld2$data$est, p_withheld2$data$temperature_c)^2 # 
-```
-
-# 2
-```{r}
-p_withheld2_rw <- predict(m_temp2_rw_nosp, newdata = d_withheld)
-cor(p_withheld2_rw$data$est, p_withheld2_rw$data$temperature_c)^2 # 
-```
-
-# 3
-```{r}
-p_withheld3 <- predict(m_temp3_nosp, newdata = d_withheld)
-cor(p_withheld3$data$est, p_withheld3$data$temperature_c)^2 # 0.87
-```
-
-# 1
-```{r}
-p_withheld3_rw <- predict(m_temp3_rw_nosp, newdata = d_withheld)
-cor(p_withheld3_rw$data$est, p_withheld3_rw$data$temperature_c)^2 # 0.87
-```
-
-
-
-```{r}
-ggplot(p_withheld3_rw$data, aes(temperature_c,est)) +
+ggplot(predictions3_rw$data, aes(temperature_c, est)) +
   geom_point() +
   facet_wrap(~year) +
   coord_fixed() +
   xlim(3,15) +
   ylim(3,15) +
   geom_abline()
-```
-
-
-Residual plots:
-```{r}
-ggplot(predictions3_rw_nosp$data, aes(est, residuals)) +
-  geom_point() +
-  geom_smooth() +
-  facet_wrap(~year)
-```
-
-```{r}
-ggplot(predictions2_rw_nosp$data, aes(depth_scaled, residuals)) +
-  geom_point() +
-  geom_smooth() +
-  facet_wrap(~year)
-```
-
-
-```{r}
-ggplot(predictions2_rw_nosp$data, aes(depth_scaled, residuals)) +
-  geom_point() +
-  geom_smooth()
-```
-
-```{r}
-ggplot(predictions3_rw_nosp$data, aes(depth_scaled, residuals)) +
-  geom_point() +
-  geom_smooth()
-```
-
-
-
-# there is probably a problem with doing this... but need to figure out how to add poly args to predict function
-```{r eval=FALSE}
-m_temp2_rw_poly <- sdmTMB(d_fit,
-  temperature_c ~ 0 + as.factor(year),
-  time_varying =  ~ 0 + poly(depth_scaled,2),
-  include_spatial = FALSE, ar1_fields = FALSE,
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE)
 ```
 
 
