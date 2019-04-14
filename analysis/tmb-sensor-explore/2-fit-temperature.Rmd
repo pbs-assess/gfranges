@@ -110,6 +110,7 @@ cv_args2$cv_loglik <- cv_loglik
 glimpse(cv_args2)
 cv_args_tv <- as.data.frame(cv_args2) 
 write.csv(cv_args_tv, file="cv-all-time-varying.csv")
+
 saveRDS(sdmTMB_cv_batch, file = "cv-all-time-varying.rds")
 # readRDS(file = "sdmTMB_cv_nontv.rds")
 ```
