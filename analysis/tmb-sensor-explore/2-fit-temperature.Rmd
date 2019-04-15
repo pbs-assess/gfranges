@@ -20,13 +20,16 @@ generate_cv_args <- function(
                 time_varying = time_varying,
                 ar1_fields = c(FALSE,TRUE), 
                 include_spatial = c(FALSE,TRUE),
-                n_knots = c(30,80) ){
+                n_knots = c(30,80),
+                seed = c(999)
+  ){
   arguments <- expand.grid(
     formula = formula,
     time_varying = time_varying,
     include_spatial = include_spatial,
     ar1_fields = ar1_fields,
-    n_knots = n_knots
+    n_knots = n_knots,
+    seed = seed
   )
   args <- as_tibble(arguments)
   args
@@ -61,24 +64,28 @@ cv_args <- generate_cv_args (formula = list(
     temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
     temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3),
     time_varying = list(NULL),
-    ar1_fields = c(FALSE, TRUE), 
+    ar1_fields = c(FALSE), 
     include_spatial = c(FALSE,TRUE),
-    n_knots = c(30,80,150)
+    n_knots = c(150),
+    seed = c(111,222,333)
   )
 
 plan(multiprocess)
 sdmTMB_cv_batch1 <- purrr::pmap(cv_args, sdmTMB_cv, data = d_trawl)
 cv_args1 <- cv_args
-cv_loglik <- c()
+cv_args1$cv_loglik <- c()
+cv_args1$all_converged <- c()
 for (i in seq_len(nrow(cv_args1))) {
-  cv_loglik[[i]] <- round(sdmTMB_cv_batch1[[i]]$sum_loglik, 1)
+  cv_args1$cv_loglik[[i]] <- round(sdmTMB_cv_batch[[i]]$sum_loglik, 1)
+  cv_args1$all_converged[[i]] <- all(sdmTMB_cv_batch[[i]]$converg)
 }
 cv_args1$formula <- as.character(cv_args1$formula)
-cv_args1$cv_loglik <- cv_loglik
-cv_args_notv <- as.data.frame(cv_args1) %>% select(., -time_varying)
+cv_args1$time_varying <- "NA"
+
+cv_args_notv <- as.data.frame(cv_args1) 
 # View(cv_args_notv)
-# write.csv(cv_args_notv, file = "cv-all-non-time-varying.csv")
-# saveRDS(sdmTMB_cv_batch1, file = "cv-all-non-time-varying.rds")
+# write.csv(cv_args_notv, file = "cv-non-time-varying.csv")
+# saveRDS(sdmTMB_cv_batch1, file = "cv-non-time-varying.rds")
 glimpse(cv_args_notv)
 ```
 
@@ -92,40 +99,75 @@ cv_args <- generate_cv_args (formula = list(
     ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3),
     ar1_fields = c(FALSE, TRUE), 
     include_spatial = c(FALSE,TRUE),
-    n_knots = c(30,80,150)
+    n_knots = c(150),
+    seed = c(111,222,333)
     )
 
 plan(multiprocess)
 sdmTMB_cv_batch <- purrr::pmap(cv_args, sdmTMB_cv, data = d_trawl)
 cv_args2 <- cv_args
 cv_args2$cv_loglik <- c()
+cv_args2$all_converged <- c()
 for (i in seq_len(nrow(cv_args))) {
   cv_args2$cv_loglik[[i]] <- c(sdmTMB_cv_batch[[i]]$sum_loglik)
+  cv_args2$all_converged[[i]] <- all(sdmTMB_cv_batch[[i]]$converg)
 }
 cv_args2$formula <- as.character(cv_args$formula)
 cv_args2$time_varying <- as.character(cv_args$time_varying)
 cv_args_tv <- as.data.frame(cv_args2) 
 # View(cv_args_tv)
-# write.csv(cv_args_tv, file = "cv-all-time-varying.csv")
-# saveRDS(sdmTMB_cv_batch, file = "cv-all-time-varying.rds")
+# write.csv(cv_args_tv, file = "cv-time-varying.csv")
+# saveRDS(sdmTMB_cv_batch, file = "cv-time-varying.rds")
 glimpse(cv_args_tv)
 ```
 
 
 ## vary n_knots for top model
 ```{r}
-cv_args_knots <- generate_cv_args (formula = list(
+cv_args_knots <- generate_cv_args(formula = list(
     temperature_c ~ 0 + as.factor(year)),
     time_varying = list(
-    ~ 0 + depth_scaled + depth_scaled2,
-    ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3),
-    ar1_fields = c(FALSE,TRUE), 
-    include_spatial = c(FALSE,TRUE),
-    n_knots = c(60,90,110,130,160)
+    ~ 0 + depth_scaled + depth_scaled2),
+    #~ 0 + depth_scaled + depth_scaled2 + depth_scaled3),
+    ar1_fields = c(FALSE), 
+    include_spatial = c(TRUE),
+    n_knots = c(80,120,180),
+    seed = c(111,222,333)
     )
 
 plan(multiprocess)
-sdmTMB_cv_knots2 <- purrr::pmap(cv_args_knots, sdmTMB_cv, data = d_trawl)
+sdmTMB_cv_knots <- purrr::pmap(cv_args_knots, sdmTMB_cv, data = d_trawl)
+cv_args3 <- cv_args_knots
+cv_args3$cv_loglik <- c()
+cv_args3$all_converged <- c()
+for (i in seq_len(nrow(cv_args3))) {
+  cv_args3$cv_loglik[[i]] <- c(sdmTMB_cv_knots[[i]]$sum_loglik)
+  cv_args3$all_converged[[i]] <- all(sdmTMB_cv_knots[[i]]$converg)
+}
+cv_args3$formula <- as.character(cv_args3$formula)
+cv_args3$time_varying <- as.character(cv_args3$time_varying)
+cv_knots <- as.data.frame(cv_args3) 
+# View(cv_knots)
+# write.csv(cv_knots, file = "cv-varying-knots.csv")
+# saveRDS(sdmTMB_cv_knots, file = "cv-varying-knots.rds")
+glimpse(cv_knots)
+```
+
+Change seeds and refine knots
+```{r}
+cv_args_knots <- generate_cv_args(formula = list(
+    temperature_c ~ 0 + as.factor(year)),
+    time_varying = list(
+    ~ 0 + depth_scaled + depth_scaled2),
+    #~ 0 + depth_scaled + depth_scaled2 + depth_scaled3),
+    ar1_fields = c(FALSE,TRUE), 
+    include_spatial = c(TRUE),
+    n_knots = c(135,145,155),
+    seed = c(444,555)
+    )
+
+plan(multiprocess)
+sdmTMB_cv_knots <- purrr::pmap(cv_args_knots, sdmTMB_cv, data = d_trawl)
 cv_args3 <- cv_args_knots
 cv_args3$cv_loglik <- c()
 for (i in seq_len(nrow(cv_args3))) {
@@ -133,19 +175,31 @@ for (i in seq_len(nrow(cv_args3))) {
 }
 cv_args3$formula <- as.character(cv_args3$formula)
 cv_args3$time_varying <- as.character(cv_args3$time_varying)
-cv_args_knots2 <- as.data.frame(cv_args3) 
-# View(cv_args_knots2)
-# write.csv(cv_args_knots2, file = "cv-varying_knots2.csv")
-# saveRDS(sdmTMB_cv_knots2, file = "cv-varying_knots2.rds")
-glimpse(cv_args_knots2)
+cv_args_knots <- as.data.frame(cv_args3) 
+# View(cv_args_knots)
+# write.csv(cv_args_knots, file = "cv-refine-knots.csv")
+# saveRDS(sdmTMB_cv_knots, file = "cv-refine-knots.rds")
+glimpse(cv_args_knots)
 ```
 
 Load saved batches:
 ```{r}
-non_time_varying_batch <- readRDS(file = "cv-all-non-time-varying.rds")
-time_varying_batch <- readRDS(file = "cv-all-time-varying.rds")
-knot_varying_batch <- readRDS(file = "cv-varying_knots.rds")
-knot_varying_batch2 <- readRDS(file = "cv-varying_knots2.rds")
+non_time_varying_batch <- readRDS(file = "cv-non-time-varying.rds")
+time_varying_batch <- readRDS(file = "cv-time-varying.rds")
+knot_varying_batch <- readRDS(file = "cv-varying-knots.rds")
+knot_refining_batch <- readRDS(file = "cv-refine-knots.rds")
+
+all_cv_loglik <- rbind(cv_args_notv, cv_args_tv, cv_args_knots, deparse.level = 1, make.row.names=TRUE)
+View(all_cv_loglik)
+
+by_seed <- all_cv_loglik %>% group_by(seed)
+for (i in unique(all_cv_loglik$seed)){
+  for (j in seq_len(nrow(diff_ll))) {
+  by_seed[[i]]$delta_ll <- c()
+  by_seed[[i]]$delta_ll[[j]] <- by_seed[[i]]$cv_loglik[[j]]-min(by_seed[[i]]$cv_loglik)
+  }
+}
+all_cv_loglik <- by_seed %>% ungroup()
 ```
 
 Current top model
@@ -153,9 +207,9 @@ Current top model
 plan(multiprocess)
 temp3_rw <- sdmTMB_cv(data = d_trawl, n_knots = 130, x = "X", y ="Y", k_folds = 10, 
                    formula = temperature_c ~ 0 + as.factor(year),
-                   time_varying = ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
+                   time_varying = ~ 0 + depth_scaled + depth_scaled2,
                    time = "year", family = gaussian(link = "identity"), 
-                   ar1_fields = TRUE, include_spatial = TRUE)
+                   ar1_fields = FALS, include_spatial = TRUE)
 temp3_rw$models
 sum(temp3_rw$sum_loglik)
 ```
