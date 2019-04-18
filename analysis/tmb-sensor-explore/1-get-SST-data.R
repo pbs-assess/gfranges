@@ -4,11 +4,6 @@
 # install.packages("rerddap")
 # devtools::install_github("ropensci/rerddap")
 
-
-
-# TEMPORARY CODE TO WRANGLE SENSOR DATA FROM MULTIPLE SENSORS
-# first need to refine gfdata SQL query output before finalizing any of this...
-
 # GET SENSOR DATA
 # trawl_depth <- gfdata::get_sensor_data_trawl(
 #   ssid = c(1),
@@ -21,34 +16,37 @@
 ## saveRDS(trawl_depth, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-depth.rds")
 ## saveRDS(trawl_temp, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-temp.rds")
 #
+# TEMPORARY CODE TO WRANGLE SENSOR DATA FROM MULTIPLE SENSORS
+#TODO: need to refine gfdata SQL query output before finalizing any of this...
+
 # trawl_depth <- readRDS(here::here("analysis/tmb-sensor-explore/dat-sensor-trawl-depth.rds"))
 # trawl_temp <- readRDS(here::here("analysis/tmb-sensor-explore/dat-sensor-trawl-temp.rds"))
 # library(dplyr)
-# trawl_date <- trawl_temp %>% select (fishing_event_id, survey_desc, start_time, end_time)
+# trawl_date <- trawl_temp %>% select (fishing_event_id, survey_desc, start_time, end_time) %>% distinct() 
 # trawl_date$date <- format(as.Date(trawl_date$start_time), "%Y-%m-%d")
+# trawl_date <- trawl_date %>% select (fishing_event_id, survey_desc, date) %>% distinct() 
 # # trawl_date$month <- as.numeric(format(as.Date(trawl_date$start_time), "%m"))
 # # trawl_date$day <- as.numeric(format(as.Date(trawl_date$start_time), "%d"))
-#
-## combine duplicate rows for fishing events from two sensors
+# 
+# # combine duplicate rows for fishing events from two sensors
 # aggdepth <- trawl_depth %>%
 #   group_by(fishing_event_id) %>%
 #   summarise_if(is.numeric, mean, na.rm=TRUE) %>%
-#   select(-count) %>%
+#   select(-count, -latitude, -longitude, -year, -ssid) %>%
 #   rename(depth_m = avg, depth_min = min, depth_max = max)
 # aggtemp <- trawl_temp %>%
 #   group_by(fishing_event_id) %>%
 #   summarise_if(is.numeric, mean, na.rm=TRUE) %>%
-#   select(fishing_event_id, avg, count) %>%
+#   select(fishing_event_id, year, ssid, latitude, longitude, avg, count) %>%
 #   rename(temperature_c = avg)
-#
-# sd_trawl <- inner_join(trawl_date, aggdepth, by ="fishing_event_id")
-# sd_trawl <- inner_join(sd_trawl, aggtemp, by ="fishing_event_id", suffix = c(".depth",".temp"))
-#
+# 
+# sd_trawl1 <- full_join(aggtemp, aggdepth, by ="fishing_event_id")
+# sd_trawl <- right_join(trawl_date, sd_trawl1, by ="fishing_event_id")
+# 
+# glimpse(sd_trawl)
 ## saveRDS(sd_trawl, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-processed.rds")
 
 sd_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/dat-sensor-trawl-processed.rds"))
-
-# View(sd_trawl)
 
 # GET SST AT LOCATION OF AND ON DAY OF FISHING EVENT
 get_event_SST <- function(data,
@@ -86,6 +84,11 @@ new_sd_trawl <- new_sd_trawl %>%
   mutate(X = longitude, Y = latitude) %>%
   gfplot:::ll2utm(., utm_zone = 9)
 
+# retrieve SST values from prior run to add to new sensor data pull
+# sst_trawl <- d_trawl %>% select(fishing_event_id, SST, X, Y) %>% distinct()
+# new_sd_trawl <- left_join(sd_trawl, sst_trawl, by="fishing_event_id")
+# View(new_sd_trawl)
+
 # saveRDS(new_sd_trawl, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-SST.rds")
 
 
@@ -94,10 +97,10 @@ new_sd_trawl <- new_sd_trawl %>%
 # BETWEEN FIXED 'START' AND 'END' DAYS FOR EACH YEAR IN DATAFRAME
 
 get_mean_SST <- function(data,
-                         start = "-05-01",
-                         end = "-07-31",
-                         latitude = "latitude",
-                         longitude = "longitude") {
+  start = "-06-20",
+  end = "-06-30",
+  latitude = "latitude",
+  longitude = "longitude") {
   data <- data[!is.na(data$latitude), ]
   data <- data[!is.na(data$longitude), ]
   data <- data[!is.na(data$year), ]
@@ -106,37 +109,57 @@ get_mean_SST <- function(data,
   sstInfo <- rerddap::info("jplMURSST41")
   SST <- list()
   data$meanSST <- NA
+  
   for (i in seq_len(nrow(data))) {
     start_date <- paste(data$year[i], start, sep = "")
     end_date <- paste(data$year[i], end, sep = "")
-
-    SST[[i]] <- rerddap::griddap(sstInfo,
-      latitude = c(lat[i], lat[i]),
-      longitude = c(lon[[i]], lon[i]),
-      time = c(start_date, end_date),
-      fields = "analysed_sst"
-    )
-    data$meanSST[i] <- mean(SST[[i]]$data$analysed_sst)
+    
+    tryCatch({
+      SST[[i]]  <- rerddap::griddap(sstInfo,
+        url = 'https://coastwatch.pfeg.noaa.gov/erddap/',
+        latitude = c(lat[i], lat[i]),
+        longitude = c(lon[[i]], lon[i]),
+        time = c(start_date, end_date),
+        fields = "analysed_sst"
+      )
+      data$meanSST[i] <- mean(SST[[i]]$data$analysed_sst, na.rm = TRUE)
+    }, error=function(x){
+      data$meanSST[i] <- "NA"
+    })
+    # browser()
   }
   data
 }
+
 
 # FIXME: this code works for some periods and not others
 #    Error in R_nc4_open: NetCDF: Unknown file format
 #    Error in ncdf4::nc_open(file) :
 #        Error in nc_open trying to open file
 #    /Users/dfomac/Library/Caches/R/rerddap/2d3403596ec1641ba7fa9a5468d8370a.nc
+# Seems related to https://github.com/ropensci/rerddap/issues/72
+# Currently loop will continue and throw NAs in place of the errors. 
+# Will be worth trying other date ranges as sometimes that avoids the error.
 
 new_sd_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/dat-sensor-trawl-SST.rds"))
+new_sd_trawl[is.na(new_sd_trawl$year), ]$year <- 2003
+nrow(new_sd_trawl)
 
-# sd_trawl_meanSST <- get_mean_SST(new_sd_trawl[1:500,], start = "-06-02", end = "-06-30")
-# sd_trawl_meanSSTx <- get_mean_SST(new_sd_trawl[654:656,], start = "-06-02", end = "-06-30")
-# some rows (eg. 654:656; all same location) have an issue with -06-01
 
-sd_trawl_meanSST2 <- get_mean_SST(new_sd_trawl[501:656, ], start = "-06-01", end = "-06-30")
-sd_trawl_meanSST3 <- get_mean_SST(new_sd_trawl[1001:1500, ], start = "-06-02", end = "-06-30")
+sd_trawl_meanSST <- get_mean_SST(new_sd_trawl[1:500,], start = "-06-15", end = "-07-31")
+sd_trawl_meanSST2 <- get_mean_SST(new_sd_trawl[501:1000,], start = "-06-15", end = "-07-31")
+sd_trawl_meanSST3 <- get_mean_SST(new_sd_trawl[1001:1500,], start = "-06-15", end = "-07-31")
 
-# saveRDS(sd_trawl_meanSST, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-meanSST.rds")
+trawl_meanSST <- bind_rows(list(
+  sd_trawl_meanSST, 
+  sd_trawl_meanSST2,
+  sd_trawl_meanSST3
+  ))
+
+glimpse(sd_trawl_meanSST)
+glimpse(trawl_meanSST)
+
+# saveRDS(trawl_meanSST, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-meanSST.rds")
 # other misc code ideas
 # sst <- tabledap(sstInfo, fields = c('latitude','longitude','time'), 'latitude>=50.9', 'latitude<=52.7', 'longitude>=-131.3', 'longitude<=-127.8', 'time>=2003-07-01', 'time<=2003-07-31')
 
