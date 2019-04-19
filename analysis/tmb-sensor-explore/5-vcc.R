@@ -1,20 +1,20 @@
 # d_trawl <- gfplot::get_sensor_data_trawl(ssid = c(1, 3, 4, 16), spread_attributes = FALSE)
-# saveRDS(d_trawl, file = "analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
-d_trawl <- readRDS("analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
+# saveRDS(d_trawl, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl.rds")
+d_trawl <- readRDS("analysis/tmb-sensor-explore/data/dat-sensor-trawl.rds")
 
 # d_ll <- gfplot::get_sensor_data_ll_ctd(c(22, 36), sensor_min_max = TRUE)
-# saveRDS(d_ll, file = "analysis/tmb-sensor-explore/dat-sensor-ll.rds")
-# d_ll <- readRDS("analysis/tmb-sensor-explore/dat-sensor-ll.rds")
+# saveRDS(d_ll, file = "analysis/tmb-sensor-explore/data/dat-sensor-ll.rds")
+# d_ll <- readRDS("analysis/tmb-sensor-explore/data/dat-sensor-ll.rds")
 
 # surv <- gfplot::get_survey_sets(222, ssid = c(1, 3, 4, 16), join_sample_ids = TRUE)
 # surv <- readRDS("../gfsynopsis/report/data-cache/pacific-cod.rds")$survey_sets
-# saveRDS(surv, file = "analysis/tmb-sensor-explore/pacific-cod.rds")
-surv <- readRDS("analysis/tmb-sensor-explore/pacific-cod.rds")
+# saveRDS(surv, file = "analysis/tmb-sensor-explore/data/pacific-cod.rds")
+surv <- readRDS("analysis/tmb-sensor-explore/data/pacific-cod.rds")
 
 library(dplyr)
 library(ggplot2)
 library(sdmTMB)
-# devtools::install_github("seananderson/vocc")
+devtools::install_github("seananderson/vocc")
 
 # ssid <- 4
 # survey_abbrev <- "SYN WCVI"

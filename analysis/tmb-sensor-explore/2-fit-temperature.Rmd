@@ -16,9 +16,9 @@ plan(multiprocess)
 
 Load data
 ```{r}
-# d_trawl1 <- readRDS(here::here("analysis/tmb-sensor-explore/sensor-data-processed.rds"))
+# d_trawl1 <- readRDS(here::here("analysis/tmb-sensor-explore/data/sensor-data-processed.rds"))
 # nrow(d_trawl1)
-d_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/dat-sensor-trawl-SST.rds"))
+d_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST.rds"))
 nrow(d_trawl)
 # d_trawl$log_temperature_c <- log(d_trawl$temperature_c)
 unique(d_trawl$year)

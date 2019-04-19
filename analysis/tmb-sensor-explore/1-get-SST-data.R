@@ -13,14 +13,14 @@
 #   ssid = c(1),
 #   attribute = c("temperature"),
 #   spread_attributes = FALSE)
-## saveRDS(trawl_depth, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-depth.rds")
-## saveRDS(trawl_temp, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-temp.rds")
+## saveRDS(trawl_depth, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-depth.rds")
+## saveRDS(trawl_temp, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-temp.rds")
 #
 # TEMPORARY CODE TO WRANGLE SENSOR DATA FROM MULTIPLE SENSORS
 #TODO: need to refine gfdata SQL query output before finalizing any of this...
 
-# trawl_depth <- readRDS(here::here("analysis/tmb-sensor-explore/dat-sensor-trawl-depth.rds"))
-# trawl_temp <- readRDS(here::here("analysis/tmb-sensor-explore/dat-sensor-trawl-temp.rds"))
+# trawl_depth <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-depth.rds"))
+# trawl_temp <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-temp.rds"))
 # library(dplyr)
 # trawl_date <- trawl_temp %>% select (fishing_event_id, survey_desc, start_time, end_time) %>% distinct() 
 # trawl_date$date <- format(as.Date(trawl_date$start_time), "%Y-%m-%d")
@@ -44,9 +44,9 @@
 # sd_trawl <- right_join(trawl_date, sd_trawl1, by ="fishing_event_id")
 # 
 # glimpse(sd_trawl)
-## saveRDS(sd_trawl, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-processed.rds")
+## saveRDS(sd_trawl, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-processed.rds")
 
-sd_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/dat-sensor-trawl-processed.rds"))
+sd_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-processed.rds"))
 
 # GET SST AT LOCATION OF AND ON DAY OF FISHING EVENT
 get_event_SST <- function(data,
@@ -89,7 +89,7 @@ new_sd_trawl <- new_sd_trawl %>%
 # new_sd_trawl <- left_join(sd_trawl, sst_trawl, by="fishing_event_id")
 # View(new_sd_trawl)
 
-# saveRDS(new_sd_trawl, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-SST.rds")
+# saveRDS(new_sd_trawl, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST.rds")
 
 
 
@@ -141,7 +141,7 @@ get_mean_SST <- function(data,
 # Currently loop will continue and throw NAs in place of the errors. 
 # Will be worth trying other date ranges as sometimes that avoids the error.
 
-new_sd_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/dat-sensor-trawl-SST.rds"))
+new_sd_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST.rds"))
 new_sd_trawl[is.na(new_sd_trawl$year), ]$year <- 2003
 nrow(new_sd_trawl)
 
@@ -159,7 +159,7 @@ trawl_meanSST <- bind_rows(list(
 glimpse(sd_trawl_meanSST)
 glimpse(trawl_meanSST)
 
-# saveRDS(trawl_meanSST, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-meanSST.rds")
+# saveRDS(trawl_meanSST, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-meanSST.rds")
 # other misc code ideas
 # sst <- tabledap(sstInfo, fields = c('latitude','longitude','time'), 'latitude>=50.9', 'latitude<=52.7', 'longitude>=-131.3', 'longitude<=-127.8', 'time>=2003-07-01', 'time<=2003-07-31')
 
@@ -169,7 +169,7 @@ glimpse(trawl_meanSST)
 
 # just_meanSST <- sd_trawl_meanSST %>% select(fishing_event_id, meanSST)
 # sd_trawl_meanSST <- full_join(new_sd_trawl, just_meanSST, by = fishing_event_id)
-# saveRDS(sd_trawl_bothSST, file = "analysis/tmb-sensor-explore/dat-sensor-trawl-bothSST.rds")
+# saveRDS(sd_trawl_bothSST, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-bothSST.rds")
 
 
 # GET STT FOR PREDICTION GRIDS
