@@ -144,21 +144,34 @@ get_mean_SST <- function(data,
 new_sd_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST.rds"))
 new_sd_trawl[is.na(new_sd_trawl$year), ]$year <- 2003
 nrow(new_sd_trawl)
-
-
+# new_sd_trawl %>% group_by(year) %>% summarise(start = min(date), end = max(date))
+# 1  2003 2003-07-04 2003-08-08
+# 2  2004 2004-07-06 2004-08-07
+# 3  2005 2005-07-06 2005-08-06
+# 4  2007 2007-07-04 2007-08-01
+# 5  2009 2009-07-09 2009-08-06
+# 6  2011 2011-07-06 2011-07-29
+# 7  2013 2013-07-04 2013-07-26
+# 8  2015 2015-07-08 2015-08-08
+# 9  2017 2017-07-05 2017-07-30
 sd_trawl_meanSST <- get_mean_SST(new_sd_trawl[1:500,], start = "-06-15", end = "-07-31")
 sd_trawl_meanSST2 <- get_mean_SST(new_sd_trawl[501:1000,], start = "-06-15", end = "-07-31")
 sd_trawl_meanSST3 <- get_mean_SST(new_sd_trawl[1001:1500,], start = "-06-15", end = "-07-31")
+sd_trawl_meanSST4 <- get_mean_SST(new_sd_trawl[1501:nrow(new_sd_trawl),], start = "-06-15", end = "-07-31")
 
-trawl_meanSST <- bind_rows(list(
+nrow(sd_trawl_meanSST3)
+new_sd_trawl[1001:1500,][is.na(new_sd_trawl[1001:1500,]$longitude), ] 
+# note: fishing_event_id == 3234358 is missing lat/lon data
+
+trawl_meanSST <- dplyr::bind_rows(list(
   sd_trawl_meanSST, 
   sd_trawl_meanSST2,
-  sd_trawl_meanSST3
+  sd_trawl_meanSST3,
+  sd_trawl_meanSST4
   ))
 
-glimpse(sd_trawl_meanSST)
-glimpse(trawl_meanSST)
-
+dplyr::glimpse(trawl_meanSST)
+# View(trawl_meanSST)
 # saveRDS(trawl_meanSST, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-meanSST.rds")
 # other misc code ideas
 # sst <- tabledap(sstInfo, fields = c('latitude','longitude','time'), 'latitude>=50.9', 'latitude<=52.7', 'longitude>=-131.3', 'longitude<=-127.8', 'time>=2003-07-01', 'time<=2003-07-31')
