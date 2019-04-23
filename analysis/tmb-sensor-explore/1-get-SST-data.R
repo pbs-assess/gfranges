@@ -6,25 +6,25 @@
 
 # GET SENSOR DATA
 # trawl_depth <- gfdata::get_sensor_data_trawl(
-#   ssid = c(1),
+#   ssid = c(1,4,3,16),
 #   attribute = c("depth"),
 #   spread_attributes = FALSE)
 # trawl_temp <- gfdata::get_sensor_data_trawl(
-#   ssid = c(1),
+#   ssid = c(1,4,3,16),
 #   attribute = c("temperature"),
 #   spread_attributes = FALSE)
-## saveRDS(trawl_depth, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-depth.rds")
-## saveRDS(trawl_temp, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-temp.rds")
-#
+# # saveRDS(trawl_depth, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-depth.rds")
+# # saveRDS(trawl_temp, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-temp.rds")
+
 # TEMPORARY CODE TO WRANGLE SENSOR DATA FROM MULTIPLE SENSORS
 #TODO: need to refine gfdata SQL query output before finalizing any of this...
 
 # trawl_depth <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-depth.rds"))
 # trawl_temp <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-temp.rds"))
 # library(dplyr)
-# trawl_date <- trawl_temp %>% select (fishing_event_id, survey_desc, start_time, end_time) %>% distinct() 
+# trawl_date <- trawl_temp %>% select (fishing_event_id, survey_desc, start_time, end_time) %>% distinct()
 # trawl_date$date <- format(as.Date(trawl_date$start_time), "%Y-%m-%d")
-# trawl_date <- trawl_date %>% select (fishing_event_id, survey_desc, date) %>% distinct() 
+# trawl_date <- trawl_date %>% select (fishing_event_id, survey_desc, date) %>% distinct()
 # # trawl_date$month <- as.numeric(format(as.Date(trawl_date$start_time), "%m"))
 # # trawl_date$day <- as.numeric(format(as.Date(trawl_date$start_time), "%d"))
 # 
@@ -49,6 +49,9 @@
 
 sd_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-processed.rds"))
 
+sd_trawl <- sd_trawl %>% filter(ssid == 3)
+####glimpse(sd_trawl)
+
 # GET SST AT LOCATION OF AND ON DAY OF FISHING EVENT
 get_event_SST <- function(data,
                           latitude = "latitude",
@@ -64,13 +67,18 @@ get_event_SST <- function(data,
   SST <- list()
   data$SST <- NA
   for (i in seq_len(nrow(data))) {
-    SST[[i]] <- rerddap::griddap(sstInfo,
-      latitude = c(lat[i], lat[i]),
-      longitude = c(lon[[i]], lon[i]),
-      time = c(date[i], date[i]),
-      fields = "analysed_sst"
-    )
-    data$SST[i] <- SST[[i]]$data$analysed_sst
+    tryCatch({
+      SST[[i]]  <- rerddap::griddap(sstInfo,
+        url = 'https://coastwatch.pfeg.noaa.gov/erddap/',
+        latitude = c(lat[i], lat[i]),
+        longitude = c(lon[[i]], lon[i]),
+        time = c(date[i], date[i]),
+        fields = "analysed_sst"
+      )
+      data$SST[i] <- SST[[i]]$data$analysed_sst
+    }, error=function(x){
+      data$SST[i] <- "NA"
+    })
   }
   data
 }
