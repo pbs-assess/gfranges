@@ -42,7 +42,8 @@
 # 
 # sd_trawl1 <- full_join(aggtemp, aggdepth, by ="fishing_event_id")
 # sd_trawl <- right_join(trawl_date, sd_trawl1, by ="fishing_event_id")
-# 
+# sd_trawl[is.na(sd_trawl$year), ]$year <- 2003
+
 # glimpse(sd_trawl)
 ## saveRDS(sd_trawl, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-processed.rds")
 
