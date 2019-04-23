@@ -18,21 +18,24 @@ Load data
 ```{r}
 # d_trawl1 <- readRDS(here::here("analysis/tmb-sensor-explore/data/sensor-data-processed.rds"))
 # nrow(d_trawl1)
-d_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST.rds"))
+d_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-meanSST.rds"))
 nrow(d_trawl)
 # d_trawl$log_temperature_c <- log(d_trawl$temperature_c)
 unique(d_trawl$year)
-d_trawl[is.na(d_trawl$year), ]$year <- 2003
 d_trawl <- d_trawl[!is.na(d_trawl$depth_m), ]
 d_trawl <- d_trawl[!is.na(d_trawl$temperature_c), ]
 d_trawl <- d_trawl[!is.na(d_trawl$SST), ]
+d_trawl <- d_trawl[!is.na(d_trawl$meanSST), ]
 d_trawl <- mutate(d_trawl,
   depth_scaled = arm::rescale(log(depth_m)),
-  SST_scaled = arm::rescale(SST),
+  SST_scaled = arm::rescale(meanSST),
   depth_scaled2 = depth_scaled^2,
   depth_scaled3 = depth_scaled^3,
-  shallow = ifelse(depth_m>50,0,1)
+  shallow = ifelse(depth_m>40,0,1)
 )
+d_trawl[is.na(d_trawl$shallow), ]
+d_trawl[is.na(d_trawl$SST_scaled), ]
+
 glimpse(d_trawl)
 ```
 
@@ -46,7 +49,20 @@ ggplot(d_trawl, aes_string("X", "Y", colour = "SST")) +
 ```
 
 ```{r}
-ggplot(dplyr::filter(d_trawl, depth_m <50), aes(SST,temperature_c, colour = depth_m)) + geom_point()
+ggplot(dplyr::filter(d_trawl, depth_m <60), aes(SST,temperature_c, colour = -depth_m)) + geom_point()
+```
+
+Explore mean  SST 
+```{r}
+ggplot(d_trawl, aes_string("X", "Y", colour = "meanSST")) +
+    geom_point() +
+    facet_wrap(~year) +
+    coord_fixed() +
+    scale_color_viridis_c()
+```
+
+```{r}
+ggplot(dplyr::filter(d_trawl, depth_m <50), aes(meanSST,temperature_c, colour = -depth_m)) + geom_point()
 ```
 
 
@@ -57,14 +73,16 @@ plot_spde(spde)
 
 ```{r}
 m_temp3 <- sdmTMB(d_trawl,
-  temperature_c ~ 0 + as.factor(year) + SST_scaled*shallow + depth_scaled + depth_scaled2 + depth_scaled3,
+  temperature_c ~ 0 + SST_scaled*shallow, 
+  time_varying = ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
   ar1_fields = FALSE, include_spatial = TRUE,
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = TRUE
 )
 
-m_temp3_nosst <- sdmTMB(d_trawl,
-  temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3,
+m_temp3b <- sdmTMB(d_trawl,
+  temperature_c ~ 0 + as.factor(year), 
+  time_varying = ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
   ar1_fields = FALSE, include_spatial = TRUE,
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = TRUE
@@ -77,17 +95,46 @@ m_temp3_nosst
 ```{r}
 
 predictions3 <- predict(m_temp3)
-predictions3b <- predict(m_temp3_nosst)
+predictions3b <- predict(m_temp3b)
+#predictions3b <- predict(m_temp3_nosst)
 
 predictions3$data$residuals <- residuals(m_temp3)
-predictions3b$data$residuals <- residuals(m_temp3_nosst)
+predictions3b$data$residuals <- residuals(m_temp3b)
 
 nd <- data.frame(sst_resid = predictions3$data$residuals, nosst_resid = predictions3b$data$residuals, shallow = d_trawl$shallow, depth = d_trawl$depth_m)
 
 ggplot(filter(nd, shallow == 1), aes(nosst_resid,sst_resid, colour = as.factor(shallow))) + 
   geom_point() + geom_abline(intercept = 0, slope = 1)
 ```
+Residual plots:
+```{r}
+ggplot(predictions3$data, aes(est, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+ggplot(predictions3b$data, aes(est, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+```
 
+```{r}
+ggplot(predictions3$data, aes(depth_scaled, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+```
+
+```{r}
+ggplot(predictions3$data, aes(depth_scaled, residuals)) +
+  geom_point() +
+  ylim(-7,8) +
+  geom_smooth()
+ggplot(predictions3b$data, aes(depth_scaled, residuals)) +
+  geom_point() +
+  ylim(-7,8) +
+  geom_smooth()
+```
 
 ### Functions for model exploration:
 ```{r}
@@ -170,7 +217,7 @@ Short example:
 ```{r, eval=FALSE}
 cv_args <- generate_cv_args(
   formula = list(
-    temperature_c ~ 0 + as.factor(year) + SST + depth_scaled + depth_scaled2 + depth_scaled3
+    temperature_c ~ 0 + as.factor(year) + SST_scaled + depth_scaled + depth_scaled2 + depth_scaled3
   ),
   time_varying = list(NULL),
   ar1_fields = c(FALSE),
@@ -194,18 +241,21 @@ View(cv$summary)
 ```{r}
 cv_args <- generate_cv_args(
   formula = list(
-    temperature_c ~ 1 + SST + depth_scaled,
-    temperature_c ~ 1 + SST + depth_scaled + depth_scaled2,
-    temperature_c ~ 1 + SST + depth_scaled + depth_scaled2 + depth_scaled3,
+    temperature_c ~ 0 + SST_scaled*shallow + depth_scaled,
+    temperature_c ~ 0 + SST_scaled*shallow + depth_scaled + depth_scaled2,
+    temperature_c ~ 0 + SST_scaled*shallow + depth_scaled + depth_scaled2 + depth_scaled3,
+    temperature_c ~ 1 + SST_scaled + depth_scaled,
+    temperature_c ~ 1 + SST_scaled + depth_scaled + depth_scaled2,
+    temperature_c ~ 1 + SST_scaled + depth_scaled + depth_scaled2 + depth_scaled3,
     temperature_c ~ 0 + as.factor(year) + depth_scaled,
     temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
     temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3,
-    temperature_c ~ 0 + as.factor(year) + SST + depth_scaled,
-    temperature_c ~ 0 + as.factor(year) + SST + depth_scaled + depth_scaled2,
-    temperature_c ~ 0 + as.factor(year) + SST + depth_scaled + depth_scaled2 + depth_scaled3,
-    temperature_c ~ 0 + as.factor(year) + SST * depth_scaled,
-    temperature_c ~ 0 + as.factor(year) + SST * depth_scaled + SST * depth_scaled2,
-    temperature_c ~ 0 + as.factor(year) + SST * depth_scaled + SST * depth_scaled2 + SST * depth_scaled3
+    temperature_c ~ 0 + as.factor(year) + SST_scaled + depth_scaled,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled + depth_scaled + depth_scaled2,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled + depth_scaled + depth_scaled2 + depth_scaled3,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled * depth_scaled,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled * depth_scaled + SST_scaled * depth_scaled2,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled * depth_scaled + SST_scaled * depth_scaled2 + SST_scaled * depth_scaled3
   ),
   time_varying = list(NULL),
   ar1_fields = c(FALSE),
@@ -227,7 +277,10 @@ All are better than fixed slope models
 ```{r}
 cv_args <- generate_cv_args(
   formula = list(
-    temperature_c ~ 0 + as.factor(year) + SST,
+    #temperature_c ~ 0 + SST_scaled*shallow,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled*shallow,
+    #temperature_c ~ 1 + SST_scaled,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled,
     temperature_c ~ 0 + as.factor(year)
   ),
   time_varying = list(
@@ -255,7 +308,8 @@ AR1 doesn't make much difference (differences between years appear independent)
 ```{r}
 cv_args <- generate_cv_args(
   formula = list(
-    temperature_c ~ 0 + as.factor(year) + SST,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled*shallow,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled,
     temperature_c ~ 0 + as.factor(year)
   ),
   time_varying = list(
@@ -280,41 +334,43 @@ glimpse(vary_rf$summary)
 ```{r}
 cv_args <- generate_cv_args(
     formula = list(
-    temperature_c ~ 0 + as.factor(year) + SST,
+    # temperature_c ~ 0 + as.factor(year) + SST_scaled,
     temperature_c ~ 0 + as.factor(year)
   ),
   time_varying = list(
     ~ 0 + depth_scaled + depth_scaled2
   ),
-  ar1_fields = c(FALSE),
+  ar1_fields = c(FALSE,TRUE),
   include_spatial = c(TRUE),
-  n_knots = c(80,120,140),
-  seed = c(1111, 2222, 3333, 4444)
+  n_knots = c(140,180,220,250),
+  #seed = c(1111, 2222, 3333, 4444) 
+  seed = c(5555, 6666, 7777, 8888, 9999)
 )
 
 more_knots <- sdmTMB_cv_batch(cv_args, d_trawl, time = "year", x = "X", y = "Y")
 
 View(more_knots$summary)
-write.csv(more_knots$summary, file = "cv-output/cv-more-seeds.csv")
-saveRDS(more_knots, file = "cv-output/cv-more-seeds.rds")
+write.csv(more_knots$summary, file = "cv-output/cv-more-knots2.csv")
+saveRDS(more_knots, file = "cv-output/cv-more-knots2.rds")
 glimpse(more_knots$summary)
 ```
 
 ## Change seeds 
 Also increased knot number too 
-Model without SST is always very slightly higher ll
+Models without SST_scaled are usually better
 
 ```{r}
 cv_args <- generate_cv_args(
     formula = list(
-    temperature_c ~ 0 + as.factor(year) + SST,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled*shallow,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled,
     temperature_c ~ 0 + as.factor(year)
   ),
   time_varying = list(
     ~ 0 + depth_scaled + depth_scaled2
   ),
-  ar1_fields = c(FALSE),
-  include_spatial = c(TRUE),
+  ar1_fields = c(FALSE, TRUE),
+  include_spatial = c(TRUE, FALSE),
   n_knots = c(130),
   seed = c(5555, 6666, 7777, 8888, 9999)
 )
@@ -375,7 +431,7 @@ Current top model
 plan(multiprocess)
 temp_rw <- sdmTMB_cv(
   data = d_trawl, n_knots = 130, x = "X", y = "Y", k_folds = 10,
-  formula = temperature_c ~ 0 + as.factor(year) + SST,
+  formula = temperature_c ~ 0 + as.factor(year) + SST_scaled,
   time_varying = ~ 0 + depth_scaled + depth_scaled2,
   time = "year", family = gaussian(link = "identity"),
   ar1_fields = FALSE, include_spatial = TRUE, seed = 999
@@ -385,7 +441,7 @@ sum(temp_rw$sum_loglik)
 
 
 ```{r}
-spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 130)
+spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 220)
 plot_spde(spde)
 ```
 
@@ -426,11 +482,11 @@ ggplot(predictions_rw$data, aes(depth_scaled, residuals)) +
   geom_smooth()
 ```
 
-Does a fixed interaction with SST do any better?
+Does a fixed interaction with SST_scaled do any better?
 
 ```{r}
 m_temp3 <- sdmTMB(d_trawl,
-  temperature_c ~ 0 + as.factor(year) + SST*depth_scaled + SST*depth_scaled2 + SST*depth_scaled3,
+  temperature_c ~ 0 + as.factor(year) + SST_scaled*depth_scaled + SST_scaled*depth_scaled2 + SST_scaled*depth_scaled3,
   ar1_fields = FALSE, include_spatial = TRUE,
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = TRUE
