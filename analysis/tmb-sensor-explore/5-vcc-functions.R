@@ -185,8 +185,9 @@ make_raster_brick <- function(data,
 vocc_calc <- function(data,
                       scale_fac = 1,
                       time_step = "year",
-                      grad_time_steps = NULL,
-                      utm = TRUE) {
+                      grad_time_steps = NULL, 
+                      latlon = FALSE,
+                      quantile_cutoff = 0.05) {
   
   # make raster brick
   rbrick <- make_raster_brick(data,
@@ -217,11 +218,11 @@ vocc_calc <- function(data,
      # # plot(mnraster)
   
   # Calculate the spatial gradient for chosen time period:
-  # must use y_dist = res(rx) if data is in UTMs
-  if (utm) {
-    spatx <- vocc::spatialgrad(mnraster, y_dist = raster::res(mnraster), y_diff = NA)
-  } else {
+  if (latlon) {
     spatx <- vocc::spatialgrad(mnraster)
+  } else {
+    # must use y_dist = res(rx) if data is in UTMs or other true distance grid
+    spatx <- vocc::spatialgrad(mnraster, y_dist = raster::res(mnraster), y_diff = NA)
   }
 
   # Now we can calculate the VoCC:
@@ -253,7 +254,7 @@ vocc_calc <- function(data,
     dplyr::left_join(rvocc_df, by = c("x", "y"))
 
   # spatial gradient plot
-  quantile_cutoff <- 0.05 # for plotting
+  # quantile_cutoff defaults to 0.05; used for plotting 
   df <- dplyr::mutate(df,
     u_velo = trend / gradWE,
     v_velo = trend / gradNS,
@@ -276,6 +277,7 @@ vocc_calc <- function(data,
 plot_vocc <- function(df,
                       vec_col = "C_per_decade",
                       col_label = "Local\nclimate trend\n(°C/decade)",
+                      vecsize = 2,
                       coast = NULL,
                       isobath = NULL) {
   
@@ -286,7 +288,7 @@ plot_vocc <- function(df,
       u = u_velo, v = v_velo,
       colour = colour
     ),
-    vecsize = 2
+    vecsize = vecsize
     ) +
     scale_colour_gradient2(low = scales::muted("blue"), high = scales::muted("red")) +
     xlab("UTM") + ylab("UTM") +
@@ -305,7 +307,7 @@ plot_vocc <- function(df,
         ),
         inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
       ) +
-      scale_colour_continuous(low = "grey70", high = "grey10") +
+      scale_colour_continuous(low = "grey80", high = "grey10") +
       guides(colour = FALSE)
   } else {
     try({df <- df %>%
@@ -316,7 +318,7 @@ plot_vocc <- function(df,
     isobath <- gfplot:::load_isobath(
       range(df$X) + c(-5, 5),
       range(df$Y) + c(-5, 5),
-      bath = c(100, 200, 300, 500),
+      bath = c(100, 200, 300, 400, 500),
       utm_zone = 9
     )
     
@@ -330,7 +332,7 @@ plot_vocc <- function(df,
         ),
         inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
       ) +
-      scale_colour_continuous(low = "grey70", high = "grey10") +
+      scale_colour_continuous(low = "grey80", high = "grey10") +
       guides(colour = FALSE)
     gvocc
     }, silent = TRUE )
@@ -393,7 +395,7 @@ plot_var <- function(df,
         ),
         inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
       ) +
-      scale_colour_continuous(low = "grey70", high = "grey10") +
+      scale_colour_continuous(low = "grey80", high = "grey10") +
       guides(colour = FALSE)
   } else {
     try({df <- df %>%
@@ -404,7 +406,7 @@ plot_var <- function(df,
     isobath <- gfplot:::load_isobath(
       range(df$X) + c(-5, 5),
       range(df$Y) + c(-5, 5),
-      bath = c(100, 200, 300, 500),
+      bath = c(100, 200, 300, 400, 500),
       utm_zone = 9
     )
     
@@ -418,7 +420,7 @@ plot_var <- function(df,
         ),
         inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
       ) +
-      scale_colour_continuous(low = "grey70", high = "grey10") +
+      scale_colour_continuous(low = "grey80", high = "grey10") +
       guides(colour = FALSE)
     g
     }, silent = TRUE )
@@ -455,7 +457,10 @@ plot_var <- function(df,
 
 
 # choose the spatial range to build raster on
-predicted <- predictions %>% filter(ssid == 1)
+
+predicted <- predictions %>% filter(ssid == 4) 
+
+
 
 # scale_fac = 3 means that the raster is reprojected to 3 X original grid (2 km)
 rbrick <- make_raster_brick(predicted, scale_fac = 2)
@@ -480,11 +485,23 @@ coast <- gfplot:::load_coastline(
 isobath <- gfplot:::load_isobath(
   range(df$X) + c(-5, 5),
   range(df$Y) + c(-5, 5),
-  bath = c(100, 200, 300, 500),
+  bath = c(100, 200, 300, 400, 500),
   utm_zone = 9
 )
 
-gvocc <- plot_vocc(df, vec_col = "C_per_decade", col_label = "Local\nClimate trend\n(C/decade)", coast = coast, isobath = isobath)
+isobath <- gfplot:::load_isobath(
+  range(df$X) + c(-5, 5),
+  range(df$Y) + c(-5, 5),
+  bath = c(50, 100, 150, 200, 250, 300, 350, 400, 450, 500),
+  utm_zone = 9
+)
+
+gvocc <- plot_vocc(df, vec_col = "C_per_decade", 
+  col_label = "Local\nClimate trend\n(C/decade)", 
+  vecsize = 5, 
+  coast = coast, isobath = isobath)
+gvocc
+
 
 gmean <- plot_var(df, variable = "mean", var_label = "Mean\ntemperature\ngradient", white_value = mean(df$mean))
 
@@ -495,6 +512,38 @@ names(raster7)[3] <- "est"
 gcurrent <- plot_var(raster7, variable = "est", var_label = "Most recent\ntemperature", white_value = mean(raster7$est))
 
 gridExtra::grid.arrange(gmean, gcurrent, nrow = 1)
-
 gridExtra::grid.arrange(gmean, gvocc, nrow = 1)
 
+
+
+
+predictedA <- predictions %>% filter(year>2004) %>% 
+  filter(ssid != 16) %>% filter(ssid != 4) 
+
+predictedB <- predictions %>% filter(year>2005) %>% 
+  filter(year!=2007) %>% 
+  filter(ssid != 1) %>% filter(ssid != 3) 
+
+#rbrickA <- make_raster_brick(predictedA, scale_fac = 2)
+#rbrickB <- make_raster_brick(predictedB, scale_fac = 2)
+
+dfA <- vocc_calc(predictedA, scale_fac = 5, grad_time_steps = c(0, 0, 0, 0, 0, 1, 1), quantile_cutoff = 0.2)
+dfB <- vocc_calc(predictedB, scale_fac = 5, grad_time_steps = c(0, 0, 0, 0, 0, 1, 1), quantile_cutoff = 0.2)
+df <- rbind(dfA,dfB)
+
+df <- df %>%
+  mutate(C_per_decade = -trend) %>%
+  dplyr::mutate(X = x, Y = y) %>%
+  gfplot:::utm2ll(., utm_zone = 9)
+
+isobath <- gfplot:::load_isobath(
+  range(df$X) + c(-5, 5),
+  range(df$Y) + c(-5, 5),
+  bath = c(100, 200, 300, 400),
+  utm_zone = 9
+)
+
+gvocc <- plot_vocc(df, vec_col = "C_per_decade", 
+  col_label = "Local\nClimate trend\n(C/decade)", 
+  vecsize = 10, isobath = isobath)
+gvocc
