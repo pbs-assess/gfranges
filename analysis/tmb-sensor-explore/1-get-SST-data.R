@@ -49,8 +49,9 @@
 
 sd_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-processed.rds"))
 
-sd_trawl <- sd_trawl %>% filter(ssid == 3)
-####glimpse(sd_trawl)
+# RECOMMENDED TO DO IN CHUNKS TO AVOID TIMING OUT
+sd_trawl <- sd_trawl %>% filter(ssid == 16)
+
 
 # GET SST AT LOCATION OF AND ON DAY OF FISHING EVENT
 get_event_SST <- function(data,
@@ -93,14 +94,6 @@ new_sd_trawl <- new_sd_trawl %>%
   mutate(X = longitude, Y = latitude) %>%
   gfplot:::ll2utm(., utm_zone = 9)
 
-# retrieve SST values from prior run to add to new sensor data pull
-# sst_trawl <- d_trawl %>% select(fishing_event_id, SST, X, Y) %>% distinct()
-# new_sd_trawl <- left_join(sd_trawl, sst_trawl, by="fishing_event_id")
-# View(new_sd_trawl)
-
-# saveRDS(new_sd_trawl, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST.rds")
-
-
 
 # GET SST AVERAGE FOR PERIOD
 # BETWEEN FIXED 'START' AND 'END' DAYS FOR EACH YEAR IN DATAFRAME
@@ -140,20 +133,13 @@ get_mean_SST <- function(data,
   data
 }
 
+# new_sd_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST-3.rds"))
 
-# FIXME: this code works for some periods and not others
-#    Error in R_nc4_open: NetCDF: Unknown file format
-#    Error in ncdf4::nc_open(file) :
-#        Error in nc_open trying to open file
-#    /Users/dfomac/Library/Caches/R/rerddap/2d3403596ec1641ba7fa9a5468d8370a.nc
-# Seems related to https://github.com/ropensci/rerddap/issues/72
-# Currently loop will continue and throw NAs in place of the errors. 
-# Will be worth trying other date ranges as sometimes that avoids the error.
+new_sd_trawl %>% group_by(year) %>% summarise(start = min(date), end = max(date))
+#TODO: if meanSST seems useful, we could fine-tune date range to be year specific?
+# for now these values were used to choose an ~ 1.5 month window that covers about 2 weeks before and the whole survey window in most years
 
-new_sd_trawl <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST.rds"))
-new_sd_trawl[is.na(new_sd_trawl$year), ]$year <- 2003
-nrow(new_sd_trawl)
-# new_sd_trawl %>% group_by(year) %>% summarise(start = min(date), end = max(date))
+# ssid = 1 
 # 1  2003 2003-07-04 2003-08-08
 # 2  2004 2004-07-06 2004-08-07
 # 3  2005 2005-07-06 2005-08-06
@@ -163,35 +149,68 @@ nrow(new_sd_trawl)
 # 7  2013 2013-07-04 2013-07-26
 # 8  2015 2015-07-08 2015-08-08
 # 9  2017 2017-07-05 2017-07-30
-sd_trawl_meanSST <- get_mean_SST(new_sd_trawl[1:500,], start = "-06-15", end = "-07-31")
-sd_trawl_meanSST2 <- get_mean_SST(new_sd_trawl[501:1000,], start = "-06-15", end = "-07-31")
-sd_trawl_meanSST3 <- get_mean_SST(new_sd_trawl[1001:1500,], start = "-06-15", end = "-07-31")
-sd_trawl_meanSST4 <- get_mean_SST(new_sd_trawl[1501:nrow(new_sd_trawl),], start = "-06-15", end = "-07-31")
 
-nrow(sd_trawl_meanSST3)
-new_sd_trawl[1001:1500,][is.na(new_sd_trawl[1001:1500,]$longitude), ] 
+# ssid = 3 
+# 1  2005 2005-05-27 2005-06-27
+# 2  2007 2007-05-24 2007-06-16
+# 3  2009 2009-05-28 2009-06-18
+# 4  2011 2011-05-26 2011-06-18
+# 5  2013 2013-05-30 2013-06-21
+# 6  2015 2015-05-28 2015-06-20
+# 7  2017 2017-05-21 2017-06-12
+
+# ssid = 4 
+# 1  2004 2004-05-26 2004-06-09
+# 2  2006 2006-05-24 2006-06-18
+# 3  2008 2008-05-27 2008-06-21
+# 4  2010 2010-06-08 2010-06-28
+# 5  2012 2012-05-23 2012-06-15
+# 6  2014 2014-05-29 2014-06-20
+# 7  2016 2016-05-25 2016-06-14
+# 8  2018 2018-05-19 2018-06-12
+
+# ssid = 16
+# 1  2006 2006-08-31 2006-09-21
+# 2  2007 2007-09-14 2007-10-12
+# 3  2008 2008-08-28 2008-09-18
+# 4  2010 2010-08-29 2010-09-16
+# 5  2012 2012-08-27 2012-09-16
+# 6  2014 2014-08-30 2014-09-26
+# 7  2016 2016-08-28 2016-09-24
+# 8  2018 2018-09-05 2018-09-19
+
 # note: fishing_event_id == 3234358 is missing lat/lon data
 
+# sd_trawl_meanSST1 <- get_mean_SST(new_sd_trawl[1:nrow(new_sd_trawl),], start = "-06-15", end = "-07-31")
+sd_trawl_meanSST1 <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST-1.rds"))
+
+# sd_trawl_meanSST3 <- get_mean_SST(new_sd_trawl[1:nrow(new_sd_trawl),], start = "-05-10", end = "-06-10")
+# shortened duration from 06-20 to 60-10 due to majority failed retrieval 
+sd_trawl_meanSST3 <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST-3.rds"))
+
+# sd_trawl_meanSST4 <- get_mean_SST(new_sd_trawl[1:nrow(new_sd_trawl),], start = "-05-10", end = "-06-20")
+sd_trawl_meanSST4 <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST-4.rds"))
+
+# sd_trawl_meanSST16 <- get_mean_SST(new_sd_trawl[1:nrow(new_sd_trawl),], start = "-08-15", end = "-09-30")
+sd_trawl_meanSST16 <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-SST-16.rds"))
+
+
+
 trawl_meanSST <- dplyr::bind_rows(list(
-  sd_trawl_meanSST, 
-  sd_trawl_meanSST2,
+  sd_trawl_meanSST1, 
   sd_trawl_meanSST3,
-  sd_trawl_meanSST4
+  sd_trawl_meanSST4,
+  sd_trawl_meanSST16
   ))
 
-dplyr::glimpse(trawl_meanSST)
+# dplyr::glimpse(trawl_meanSST)
 # View(trawl_meanSST)
-# saveRDS(trawl_meanSST, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-meanSST.rds")
-# other misc code ideas
-# sst <- tabledap(sstInfo, fields = c('latitude','longitude','time'), 'latitude>=50.9', 'latitude<=52.7', 'longitude>=-131.3', 'longitude<=-127.8', 'time>=2003-07-01', 'time<=2003-07-31')
+# saveRDS(trawl_meanSST, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-meanSST-all.rds")
 
+# retrieve SST values from prior run to add to new sensor data pull
+# sst_trawl <- d_trawl %>% select(fishing_event_id, SST, X, Y) %>% distinct()
+# new_sd_trawl <- left_join(sd_trawl, sst_trawl, by="fishing_event_id")
 
-
-# MAKE DATAFRAME OF BOTH SST AND meanSST
-
-# just_meanSST <- sd_trawl_meanSST %>% select(fishing_event_id, meanSST)
-# sd_trawl_meanSST <- full_join(new_sd_trawl, just_meanSST, by = fishing_event_id)
-# saveRDS(sd_trawl_bothSST, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-bothSST.rds")
 
 
 # GET STT FOR PREDICTION GRIDS
@@ -205,10 +224,3 @@ qcs_grid_all <- cbind(qcs_grid, qcs_grid_ll)
 # tested on few rows it works...
 qcs_grid_data <- get_mean_SST(qcs_grid_all[1:10, ], start = "-06-01", end = "-06-30")
 qcs_grid_data$SST
-
-
-# library("rerddap")
-# library("gfdata")
-# library("akima")
-# library("mapdata")
-# library("ncdf4")
