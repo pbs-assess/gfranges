@@ -185,6 +185,7 @@ make_raster_brick <- function(data,
 vocc_calc <- function(data,
                       scale_fac = 1,
                       time_step = "year",
+                      grad_time_steps = NULL,
                       utm = TRUE) {
   
   # make raster brick
@@ -196,32 +197,35 @@ vocc_calc <- function(data,
   # Then calculate the trend per pixel:
   slopedat <- vocc::calcslope(rbrick)
 
-  ##### Then get the mean temperature for a time period? #####
+  ##### Then get the mean values for a time period, but what time period? #####
 
-  # # Old code:
-  # # calculates mean temp across all time slices for each grid cell
-  # alltime_steps <- rep(1, raster::nlayers(rbrick))
-  # mnsst <- raster::stackApply(rbrick, indices = alltime_steps, fun = mean)
-  # # library(rgdal)
-  # # library(raster)
-  # # plot(mnsst)
-
-  # Alternate code:
-  # uses spatial gradient in most recent time slice
-  mnsst <- rbrick[[raster::nlayers(rbrick)]]
-  # browser()
-  # Calculate the spatial gradient:
+  if (!is.null(grad_time_steps)) {
+    # if (grad_time_steps = "all") {
+    #   # calculates mean temp across all time slices for each grid cell
+    #   grad_time_steps <- rep(1, raster::nlayers(rbrick))
+    #  mnraster_brick <- raster::stackApply(rbrick, indices = grad_time_steps, fun = mean)
+    #  mnraster <-mnraster_brick[[raster::nlayers(mnraster_brick)]]
+    #   } else {
+   mnraster_brick <- raster::stackApply(rbrick, indices = grad_time_steps, fun = mean)
+   mnraster <-mnraster_brick[[raster::nlayers(mnraster_brick)]]
+  } else { 
+   # uses spatial gradient in most recent time slice
+   mnraster <- rbrick[[raster::nlayers(rbrick)]]
+  }
+     # # library(rgdal)
+     # # library(raster)
+     # # plot(mnraster)
+  
+  # Calculate the spatial gradient for chosen time period:
   # must use y_dist = res(rx) if data is in UTMs
-
   if (utm) {
-    spatx <- vocc::spatialgrad(mnsst, y_dist = raster::res(mnsst), y_diff = NA)
+    spatx <- vocc::spatialgrad(mnraster, y_dist = raster::res(mnraster), y_diff = NA)
   } else {
-    spatx <- vocc::spatialgrad(mnsst)
+    spatx <- vocc::spatialgrad(mnraster)
   }
 
   # Now we can calculate the VoCC:
   velodf <- vocc::calcvelocity(spatx, slopedat)
-  #browser()
 
   # Mapping it again is straightforward:
   rtrend <- rgrad_lon <- rgrad_lat <- rvocc <- angle <- magn <- raster::raster(rbrick)
@@ -233,6 +237,8 @@ vocc_calc <- function(data,
   # convert to data frames for ggplot
   rtrend_df <- as.data.frame(raster::rasterToPoints(rtrend)) %>%
     dplyr::rename(trend = layer)
+  rmnvalues_df <- as.data.frame(raster::rasterToPoints(mnraster)) 
+  names(rmnvalues_df)[3] <- "mean"
   rgradlat_df <- as.data.frame(raster::rasterToPoints(rgrad_lat)) %>%
     dplyr::rename(gradNS = layer)
   rgradlon_df <- as.data.frame(raster::rasterToPoints(rgrad_lon)) %>%
@@ -241,7 +247,8 @@ vocc_calc <- function(data,
     dplyr::rename(velocity = layer)
 
   # create ggquiver plots. need dataframe of lon, lat, delta_lon, delta_lat, trend, velocity
-  df <- dplyr::left_join(rtrend_df, rgradlat_df, by = c("x", "y")) %>%
+  df <- dplyr::left_join(rtrend_df, rmnvalues_df, by = c("x", "y")) %>%
+    dplyr::left_join(rgradlat_df, by = c("x", "y")) %>%
     dplyr::left_join(rgradlon_df, by = c("x", "y")) %>%
     dplyr::left_join(rvocc_df, by = c("x", "y"))
 
@@ -451,9 +458,9 @@ plot_var <- function(df,
 predicted <- predictions %>% filter(ssid == 1)
 
 # scale_fac = 3 means that the raster is reprojected to 3 X original grid (2 km)
-rbrick <- make_raster_brick(predicted, scale_fac = 3)
+rbrick <- make_raster_brick(predicted, scale_fac = 2)
 
-df <- vocc_calc(predicted, scale_fac = 3)
+df <- vocc_calc(predicted, scale_fac = 3, grad_time_steps = c(0, 0, 0, 0, 0, 1, 1))
 glimpse(df)
 
 df <- df %>%
@@ -478,12 +485,16 @@ isobath <- gfplot:::load_isobath(
 )
 
 gvocc <- plot_vocc(df, vec_col = "C_per_decade", col_label = "Local\nClimate trend\n(C/decade)", coast = coast, isobath = isobath)
-gvocc
 
-# plot temperature estimates in most recent time slice
+gmean <- plot_var(df, variable = "mean", var_label = "Mean\ntemperature\ngradient", white_value = mean(df$mean))
+
+
+# # plot temperature estimates in most recent time slice
 raster7 <- as.data.frame(raster::rasterToPoints(rbrick[[7]]))
 names(raster7)[3] <- "est"
 gcurrent <- plot_var(raster7, variable = "est", var_label = "Most recent\ntemperature", white_value = mean(raster7$est))
 
-gridExtra::grid.arrange(gcurrent, gvocc, nrow = 1)
+gridExtra::grid.arrange(gmean, gcurrent, nrow = 1)
+
+gridExtra::grid.arrange(gmean, gvocc, nrow = 1)
 
