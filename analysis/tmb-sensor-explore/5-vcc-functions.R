@@ -113,23 +113,27 @@ nd <- nd # %>% filter(ssid == 4)
 
 spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 500)
 sdmTMB::plot_spde(spde)
+
 m_temp <- sdmTMB::sdmTMB(dat,
   temperature_c ~ 0 + as.factor(year),
   time_varying = ~ 0 + depth_scaled + depth_scaled2,
   time = "year", spde = spde,
   family = gaussian(link = "identity"),
-  ar1_fields = TRUE,
+  ar1_fields = TRUE, # maybe TRUE is better for all areas combined?
   include_spatial = TRUE,
   silent = FALSE
 )
-m_temp
 
 stopifnot(m_temp$model$convergence == 0L)
+m_temp
+# Warning messages:
+#   1: In doTryCatch(return(expr), name, parentenv, handler) :
+#   restarting interrupted promise evaluation
+
+saveRDS(m_temp, file = "analysis/tmb-sensor-explore/data/m_temp_allpost2003.rds")
+m_temp <- readRDS("analysis/tmb-sensor-explore/data/m_temp_allpost2003.rds")
 
 predictions <- predict(m_temp, newdata = nd)
-d <- predictions$data
-# View(d)
-
 
 plot_map <- function(dat, column = "est") {
   ggplot(dat, aes_string("X", "Y", fill = column)) +
@@ -138,7 +142,7 @@ plot_map <- function(dat, column = "est") {
     coord_fixed()
 }
 
-p <- plot_map(d, "est") +
+p <- plot_map(predictions , "est") +
   scale_fill_viridis_c(trans = "sqrt", option = "C") +
   ggtitle("Prediction (fixed effects + all random effects)")
 print(p)
@@ -210,7 +214,7 @@ vocc_calc <- function(data,
   # must use y_dist = res(rx) if data is in UTMs
 
   if (utm) {
-    spatx <- vocc::spatialgrad(mnsst, y_dist = res(mnsst), y_diff = NA)
+    spatx <- vocc::spatialgrad(mnsst, y_dist = raster::res(mnsst), y_diff = NA)
   } else {
     spatx <- vocc::spatialgrad(mnsst)
   }
@@ -357,6 +361,7 @@ plot_vocc <- function(df,
 plot_var <- function(df,
                      variable = "C_per_decade",
                      var_label = "",
+                     white_value = 0,
                      isobath = NULL,
                      coast = NULL) {
   
@@ -364,7 +369,7 @@ plot_var <- function(df,
  
   g <- ggplot(df, aes(x, y, fill = variable)) +
     geom_raster() +
-    scale_fill_gradient2(low = scales::muted("blue"), high = scales::muted("red")) +
+    scale_fill_gradient2(low = scales::muted("blue"), midpoint = white_value, high = scales::muted("red")) +
     xlab("UTM") + ylab("UTM") +
     labs(fill = var_label) +
     coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
@@ -443,7 +448,7 @@ plot_var <- function(df,
 
 
 # choose the spatial range to build raster on
-predicted <- predictions$data %>% filter(ssid == 1)
+predicted <- predictions %>% filter(ssid == 1)
 
 # scale_fac = 3 means that the raster is reprojected to 3 X original grid (2 km)
 rbrick <- make_raster_brick(predicted, scale_fac = 3)
@@ -478,7 +483,7 @@ gvocc
 # plot temperature estimates in most recent time slice
 raster7 <- as.data.frame(raster::rasterToPoints(rbrick[[7]]))
 names(raster7)[3] <- "est"
-gcurrent <- plot_var(raster7, variable = "est", var_label = "Current\ntemperature")
+gcurrent <- plot_var(raster7, variable = "est", var_label = "Most recent\ntemperature", white_value = mean(raster7$est))
 
 gridExtra::grid.arrange(gcurrent, gvocc, nrow = 1)
 
