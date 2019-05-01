@@ -1,5 +1,6 @@
 library(SDMTools)     # install package to read and write ESRI ASCII grids
 library(yaImpute)     # install package for k-nearest neighbour (kNN) search
+library(dplyr)
 
 # Simple example data
 present <- asc2dataframe("eg_data/MAT6190.asc")
@@ -51,14 +52,15 @@ u  <- unique(p)[order(unique(p))]          # list of unique values, or PC1/PC2 c
 
 # STEP 5: Find nearest analogue for each location
 
-# Simple method:
+# Very slow method:
 match <- function(u){c(which(u==f))}    # function finding climate matches of u with f
 m     <- sapply(u, match)               # list of climate matches for unique values
 
 for(i in 1:length(p)){                  # loop for all grid cells of p
   mi   <- m[[which(u==p[i])]]          # recalls list of climate matches for p[i]
-  d[i] <- sqrt(min((x[i]-x[mi])^2 + (y[i]-y[mi])^2))    # distance to closest match
+  d[i] <- sqrt(min((idxy$x[i]-idxy$x[mi])^2 + (idxy$y[i]-idxy$y[mi])^2))    # distance to closest match
 }
+# results in 15 infinity warnings
 
 # kNN search method (works for multiple variables):
 sid <- c()                                 # empty vector for source IDs
