@@ -67,32 +67,57 @@ dist_based_vocc <- function(start_data,
 
   # Generate list of unique values in start
   u <- unique(s)[order(unique(s))] # list of unique values, or combinations
-
-  # Find nearest analogue for each location
-  # # Very slow method:
-  # X <- data[x] # x coords
-  # Y <- data[y] # y coords
-  # match <- function(u){c(u == e)}    # function finding climate matches of u with f
-  # m     <- sapply(u, match)               # list of climate matches for unique values
-  #
-  # for(i in 1:length(d)){          # loop for all grid cells in both time periods
-  #   mi   <- m[[u==s[i]]]          # recalls list of climate matches for p[i]
-  #   d[i] <- sqrt(min((X[i]-X[mi])^2 + (Y[i]-Y[mi])^2))    # distance to closest match
-  # }
-  ## results in 15 infinity warnings
-
-  # kNN search method (works for multiple variables):
-  # dist_kNN_search <- function(idxy, s, e, u){
+  
+  # Generate empty lists if not functionizing next steps
   sid <- list() # empty list for source IDs
   tid <- list() # empty list for target IDs
   d <- list() # empty list for distances
-
+  
+  
+  # Find nearest analogue for each location
+  # draft code of simpler method, possibly for alternate C++ option
+  # # dist_simple_search <- function(idxy, s, e, u){
+  # # sid <- list() # empty list for source IDs
+  # # tid <- list() # empty list for target IDs
+  # # d <- list() # empty list for distances
+  
+  # match <- function(u){c(u == e)}       # function finding climate matches of u with e
+  # m     <- sapply(u, match)             # list of climate matches for unique values
+  # X <- idxy[x]                # x coords
+  # Y <- idxy[y]                # y coords
+  # for(i in seq_along(s)){     # loop for all grid cells in both time periods
+  #   mi   <- m[[u==s[i]]]      # recalls list of climate matches for s[i]
+  #   sxy <- idxy[s == i, , drop = FALSE] # coordinates of i-th unique combination in start
+  #   sid[[i]] <- sxy$id
+  #   if (nrow(mi) > 0) {       # search unless no-analogue climate
+  #     d_all <- c()            # empty vector for distances between all analagous points
+  #     for (k in seq_along(mi)) {
+  #       d_all[k] <- sqrt((X[i]-X[k])^2 + (Y[i]-Y[k])^2)    # distances to all matches
+  #     }
+  #     #d_all <- do.call("c", d_all) 
+  #     d[[i]] <- min(d_all)    # distance to closest match
+  #     txy <- idxy[d_all == min(d_all), , drop = FALSE] # coordinates of closest match in end
+  #     tid[[i]] <- sxy$id      # the ID of the closest match
+  #   } else {                  # else statement for no-analogue climates
+  #     d[[i]] <- Inf           # flag distances as infinity for no analogues
+  #   } 
+  # }
+  
+  
+  # kNN search method 
+  # # dist_kNN_search <- function(idxy, s, e, u){
+  # # sid <- list() # empty list for source IDs
+  # # tid <- list() # empty list for target IDs
+  # # d <- list() # empty list for distances
+  
   for (i in u) { # loop for each unique PC1/PC2 combination
     sxy <- idxy[s == i, , drop = FALSE] # coordinates of i-th unique combination in start
     txy <- idxy[e == i, , drop = FALSE] # coordinates of i-th unique combination in end
     sid[[i]] <- sxy$id
     if (nrow(txy) > 0) { # kNN search unless no-analogue climate
-      knn <- data.frame(yaImpute::ann(as.matrix(txy[, -1]), as.matrix(sxy[, -1]), k = 1)$knnIndexDist)
+      knn <- data.frame(
+        yaImpute::ann(as.matrix(txy[, -1]), as.matrix(sxy[, -1]), k = 1)$knnIndexDist
+        )
       tid[[i]] <- txy[knn[, 1], "id"] # the IDs of the closest matches
       d[[i]] <- sqrt(knn[, 2]) # their corresponding geographic distances
     } else { # else statement for no-analogue climates
@@ -101,17 +126,21 @@ dist_based_vocc <- function(start_data,
     }
   }
 
-  sid <- do.call("c", sid) # %>% tibble::enframe()
-  tid <- do.call("c", tid) # %>% tibble::enframe()
-  d <- do.call("c", d) # %>% tibble::enframe()
-  # }
-  # dist_kNN_search(idxy, s, e, u)
+  sid <- do.call("c", sid) 
+  tid <- do.call("c", tid) 
+  d <- do.call("c", d) 
 
   sxy <- dplyr::full_join(tibble::tibble(id = sid), idxy)[2:3]
   txy <- dplyr::left_join(tibble::tibble(id = tid), idxy)[2:3]
   names(txy) <- c("target_X", "target_Y")
 
   dist_tab <- cbind(id = sid, txy, distance = d)
+  
+  # }
+  
+  # dist_kNN_search(idxy, s, e, u)
+  # dist_simple_search(idxy, s, e, u)
+  
   out <- dplyr::inner_join(data, dist_tab, by = "id")
 
   if (!max_dist) {
