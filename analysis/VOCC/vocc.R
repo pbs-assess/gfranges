@@ -29,7 +29,9 @@ dist_based_vocc <- function(start_data,
                             cell_size = 2, # works best if >/= 1
                             max_dist = NULL,
                             delta_t = 50, # time difference between start and end
-                            raster = FALSE) {
+                            raster = FALSE,
+                            kNN = FALSE
+  ) {
 
   # check that start_data list is equal in length to varaible_names vector
   if (!identical(length(variable_names), length((start_data)))) {
@@ -41,8 +43,7 @@ dist_based_vocc <- function(start_data,
 
   data <- data_lists_to_dfs(start_data, end_data, x = x, y = y, variable_names, raster)
   data <- data %>% dplyr::mutate(id = 1:nrow(data)) # add cell id
-  idxy <- data %>% dplyr::select(id, x, y) # data frame of IDs and XY coords
-
+  
   # Apply difference threshold using rounding
   if (!identical(length(variable_names), length((thresholds)))) {
     stop("Must have `thresholds` value for all `varible_names`.")
@@ -52,117 +53,136 @@ dist_based_vocc <- function(start_data,
   start <- list()
   end <- list()
   n_variables <- length(variable_names)
-  for (i in seq_along(thresholds)) {
-    round_fact <- 1 / (thresholds[i] * 2) # inverse for rounding, double for plus/minus
-    start[[i]] <- round(data[, (2 + i)] * round_fact) / round_fact # rounded start values
-    end[[i]] <- round(data[, (2 + n_variables + i)] * round_fact) / round_fact # rounded end values
-    if (i == 1) {
-      s <- paste(as.vector(start[[i]]))
-      e <- paste(as.vector(end[[i]]))
+  data$s <- c()
+  data$e <- c()
+  for (i in seq_len(nrow(data))) {
+  for (k in seq_along(thresholds)) {
+    round_fact <- 1 / (thresholds[k] * 2) # inverse for rounding, double for plus/minus
+    start[[i]] <- round(data[i, (2 + k)] * round_fact) / round_fact # rounded start values
+    end[[i]] <- round(data[i, (2 + n_variables + k)] * round_fact) / round_fact # rounded end values
+    if (k == 1) {
+      data[i,"s"] <- paste(as.vector(start[[i]]))
+      data[i,"e"] <- paste(as.vector(end[[i]]))
     } else {
-      s <- paste(s, as.vector(start[[i]]))
-      e <- paste(e, as.vector(end[[i]]))
+      data[i,"s"] <- paste(s, as.vector(start[[i]]))
+      data[i,"e"] <- paste(e, as.vector(end[[i]]))
     }
   }
+  }  
 
   # Generate list of unique values in start
-  u <- unique(s)[order(unique(s))] # list of unique values, or combinations
+  u <- unique(data$s)[order(unique(data$s))] # list of unique values, or combinations
 
-  # Generate empty lists if not functionizing next steps
-  sid <- list() # empty list for source IDs
-  tid <- list() # empty list for target IDs
-  d <- list() # empty list for distances
+  # # Generate empty lists if not functionizing next steps
+  # sid <- list() # empty list for source IDs
+  # tid <- list() # empty list for target IDs
+  # d <- list() # empty list for distances
 
 
   # Find nearest analogue for each location
-  # draft code of simpler method, possibly for alternate C++ option
-  # # dist_simple_search <- function(idxy, s, e, u){
-  # # sid <- list() # empty list for source IDs
-  # # tid <- list() # empty list for target IDs
-  # # d <- list() # empty list for distances
+  # # draft code of simpler method, possibly for alternate C++ option
+dist_simple_search <- function(data, s, e, u){
+sid <- list() # empty list for source IDs
+tid <- list() # empty list for target IDs
+d <- list() # empty list for distances
 
-  match <- function(u){c(u == e)}   # function finding climate matches of u with e
-  m     <- sapply(u, match)             # list of climate matches for unique values
-  X <- idxy$x                # x coords
-  Y <- idxy$y                # y coords
-  
-  for(i in seq_along(s)){     # loop for all grid cells in both time periods
-    mi <- m[ , u==s[i]]       # recalls list of climate matches for s[i]
-    sxy <- idxy[s[i],]        # coordinates of i-th unique combination in start
-    sid[[i]] <- sxy$id
-    if (length(mi) > 0) {       # search unless no-analogue climate
+  match <- function(u){c(u == data$e)}   # function finding climate matches of u with e
+  m     <- sapply(u, match)         # list of climate matches for unique values
+  X <- data$x                 # x coords
+  Y <- data$y                 # y coords
+  s <- data$s
+  out <- list()
+  for(i in seq_along(data$s)){     # loop for all grid cells in both time periods
+    mi <- m[ , u == s[i]]     # recalls list of climate matches for s[i]
+    sxy <- data[i,]        # coordinates of i-th unique combination in start
+    out[[i]] <- tibble::tibble()
+    #browser()
+  if (length(mi) > 0) {     # search unless no-analogue climate
       d_all <- c()            # empty vector for distances between all analagous points
       for (k in seq_along(mi)) {
-        if (mi[k]) { 
+        if (mi[k]) {
           d_all[k] <- sqrt((X[i]-X[k])^2 + (Y[i]-Y[k])^2) } # distances to all matches
-        else { 
+        else {
           d_all[k] <- NA
         }
       }
       #d_all <- do.call("c", d_all)
       d[[i]] <- min(d_all, na.rm = TRUE)    # distance to closest match
-      txy <- idxy[d_all == d[[i]], , drop = FALSE] # coordinates of closest match in end
-                                       # returns 2 data points equal distance away?
+      txy <- data[d_all == d[[i]], , drop = TRUE] # coordinates of closest match in end
+      tid[[i]] <- c()
+      # returns 2 data points equal distance away?
       tid[[i]] <- na.omit(txy$id)      # the ID of the closest match
     } else {                  # else statement for no-analogue climates
       d[[i]] <- Inf           # flag distances as infinity for no analogues
       tid[[i]] <- NA
     }
-    #FIXME: need way to identify which tid belong to sid (when there are multiple tid)
+    out[[i]] <- tibble::tibble(tid[[i]])
+    names(out[[i]])[1] <- "tid"
+    out[[i]]$target_X <- na.omit(txy$x)
+    out[[i]]$target_Y <- na.omit(txy$y)
+    n_targets <- nrow(out[[i]])
+    out[[i]]$id <- rep(sxy$id, n_targets)
+    out[[i]]$x <- rep(sxy$x, n_targets)
+    out[[i]]$y <- rep(sxy$y, n_targets)
+    out[[i]]$distance <- rep(d[[i]], n_targets)
+    out[[i]]$n_targets <- rep(n_targets, n_targets)
   }
 
+  do.call(rbind, out)
+}
+  
+# kNN search method
+dist_kNN_search <- function(data, s, e, u){
+sid <- list() # empty list for source IDs
+tid <- list() # empty list for target IDs
+d <- list() # empty list for distances
+idxy <- data %>% dplyr::select(id, x, y) # data frame of IDs and XY coords
+  
+  for (i in u) { # loop for each unique PC1/PC2 combination
+    sxy <- idxy[data$s == i, , drop = FALSE] # coordinates of i-th unique combination in start
+    txy <- idxy[data$e == i, , drop = FALSE] # coordinates of i-th unique combination in end
+    sid[[i]] <- sxy$id
+    if (nrow(txy) > 0) { # kNN search unless no-analogue climate
+      knn <- data.frame(
+        yaImpute::ann(as.matrix(txy[, -1]), as.matrix(sxy[, -1]), k = 1)$knnIndexDist
+      )
 
-  # kNN search method
-  # # dist_kNN_search <- function(idxy, s, e, u){
-  # # sid <- list() # empty list for source IDs
-  # # tid <- list() # empty list for target IDs
-  # # d <- list() # empty list for distances
-# 
-#   for (i in u) { # loop for each unique PC1/PC2 combination
-#     sxy <- idxy[s == i, , drop = FALSE] # coordinates of i-th unique combination in start
-#     txy <- idxy[e == i, , drop = FALSE] # coordinates of i-th unique combination in end
-#     sid[[i]] <- sxy$id
-#     if (nrow(txy) > 0) { # kNN search unless no-analogue climate
-#       knn <- data.frame(
-#         yaImpute::ann(as.matrix(txy[, -1]), as.matrix(sxy[, -1]), k = 1)$knnIndexDist
-#       )
-#       tid[[i]] <- txy[knn[, 1], "id"] # the IDs of the closest matches
-#       d[[i]] <- sqrt(knn[, 2]) # their corresponding geographic distances
-#     } else { # else statement for no-analogue climates
-#       tid[[i]] <- rep(NA, nrow(sxy)) # flag destinations as missing for no analogues
-#       d[[i]] <- rep(Inf, nrow(sxy)) # flag distances as infinity for no analogues
-#     }
-#   }
+      tid[[i]] <- txy[knn[, 1], "id"] # the IDs of the closest matches
+      d[[i]] <- sqrt(knn[, 2]) # their corresponding geographic distances
+    } else { # else statement for no-analogue climates
+      tid[[i]] <- rep(NA, nrow(sxy)) # flag destinations as missing for no analogues
+      d[[i]] <- rep(Inf, nrow(sxy)) # flag distances as infinity for no analogues
+    }
+  }
+sid <- do.call("c", sid)
+tid <- do.call("c", tid)
+d <- do.call("c", d)
+sxy <- dplyr::full_join(tibble::tibble(id = sid), idxy)[2:3]
+txy <- dplyr::left_join(tibble::tibble(id = tid), idxy)[2:3]
+names(txy) <- c("target_X", "target_Y")
 
-  sid <- do.call("c", sid)
-  tid <- do.call("c", tid)
-  d <- do.call("c", d)
+tibble::as_tibble(cbind(id = sid, sxy, txy, distance = d, n_targets = 1))
 
-  sxy <- dplyr::full_join(tibble::tibble(id = sid), idxy)[2:3]
-  txy <- dplyr::left_join(tibble::tibble(id = tid), idxy)[2:3]
-  names(txy) <- c("target_X", "target_Y")
+}
 
-  dist_tab <- dplyr::full_join(sid, txy, distance = d)
 
-  # }
-
-  # dist_kNN_search(idxy, s, e, u)
-  # dist_simple_search(idxy, s, e, u)
-
-  out <- dplyr::inner_join(data, dist_tab, by = "id")
+if (kNN) {dist_tab <- dist_kNN_search(data, s, e, u)
+} else { 
+dist_tab <- dist_simple_search(data, s, e, u)
+}
 
   if (is.null(max_dist)) {
     max_dist <- min((max(data$x) - min(data$x)), (max(data$y) - min(data$y)))
   }
-
-  out$distance[out$distance == Inf] <- max_dist # sets no analogue
-  out$distance[out$distance == 0] <- cell_size / 2 # sets zero distance to half cell size
-
+  
+  dist_tab$distance[dist_tab$distance == Inf] <- max_dist # sets no analogue
+  dist_tab$distance[dist_tab$distance == 0] <- cell_size / 2 # sets zero distance to half cell size
+  
   # calculate speed in units of distance by time in same units as `max_dist` and `delta_t`
-  out$speed <- out$distance / delta_t
-  round(out, digits = 3)
+  dist_tab$speed <- dist_tab$distance / delta_t
+  round(dist_tab, digits = 2)
+  dplyr::inner_join(data, dist_tab, by = c("id","x","y")) 
 }
-
 
 
 
@@ -256,7 +276,7 @@ start_data1 <- list(temp = start_temp)
 end_data1 <- list(temp = end_temp)
 
 
-out1 <- dist_based_vocc(
+out3 <- dist_based_vocc(
   start_data = start_data1,
   end_data = end_data1,
   x = "x",
@@ -269,11 +289,11 @@ out1 <- dist_based_vocc(
   raster = TRUE
 )
 
-out1 <- left_join(out1, slopedat, by = c("x", "y")) %>% select(-icell)
-out1$C_per_decade <- out1$slope * 10
-out1$km_per_decade <- out1$distance * 10 / 5 # dived by delta_t
+out2 <- left_join(out2, slopedat, by = c("x", "y")) %>% select(-icell)
+out2$C_per_decade <- out2$slope * 10
+out2$km_per_decade <- out2$distance * 10 / 5 # dived by delta_t
 # out1$speed_per_decade <- out1$speed*10
-head(out1)
+head(out2)
 
 # ggplot(out1) +
 #   geom_segment(aes(x, y,
@@ -399,7 +419,7 @@ plot_vocc <- function(df,
 }
 
 head(out1)
-gvocc <- plot_vocc(out1,
+gvocc <- plot_vocc(out2,
   #vec_col = "Dark Slate Gray",
   low_col = "White",
   high_col = "White", 
