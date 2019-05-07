@@ -1,6 +1,4 @@
-
-
-# PLOT VECTORS
+# PLOT CLIMATE CHANGE VECTORS
 plot_vocc <- function(df,
   vec_col = "C_per_decade",
   fill_col = "C_per_decade",
@@ -29,10 +27,10 @@ plot_vocc <- function(df,
   panel_border_col = "grey70"
   half_line <- base_size / 2
   
+  library(ggplot2)
   
   
-  
-  gvocc <- ggplot(df, aes(x, y)) +
+  gvocc <- ggplot2::ggplot(df, aes(x, y)) +
     geom_raster(aes(fill = fill), alpha = raster_alpha) +
     scale_fill_viridis_c(trans = "sqrt") +
     guides(colour = "none", size = "none") +
