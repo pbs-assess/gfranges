@@ -30,37 +30,6 @@ data <- data[data$fishing_event_id != 481861, ]
 # )
 
 
-# create prediction grid for each year
-spatiotemporal_grid <- function(data, ssid = NULL, survey_abbrev = NULL, dummy_year) {
-  if (ssid) {
-    dat <- data[data$ssid == ssid, ]
-    grid_locs <- gfplot:::make_prediction_grid(
-      filter(dat, year %in% dummy_year),
-      survey = survey_abbrev,
-      cell_width = 2
-    )$grid
-  } else {
-    # FIXME: Error ... object 'shape_utm' not found
-    # grid_locs <- gfplot:::make_prediction_grid(
-    #   filter(dat, year %in% dummy_year),
-    #   cell_width = 2
-    # )$grid
-    #
-  }
-  grid_locs <- dplyr::rename(grid_locs, depth = akima_depth)
-  grid_locs$year <- NULL
-  
-  # Expand the prediction grid to create a slice for each time:
-  original_time <- sort(unique(dat$year))
-  nd <- do.call(
-    "rbind",
-    replicate(length(original_time), grid_locs, simplify = FALSE)
-  )
-  nd[["year"]] <- rep(original_time, each = nrow(grid_locs))
-  nd[["ssid"]] <- ssid
-  nd
-}
-
 # choose base year(s) to create grid from
 dummy_year <- c(2004, 2005)
 
@@ -351,14 +320,14 @@ gvocc1_hs
 predicted1n3 <- predictions %>% filter(ssid != 16) %>% filter(ssid != 4) %>% filter(year != 2004) 
 
 # scale_fac = 3 means that the raster is reprojected to 3 X original grid (2 km)
-rbrick <- make_raster_brick(predicted1n3, scale_fac = 2)
+rbrick <- make_raster_brick(predicted1n3, scale_fac = 3)
 saveRDS(rbrick, file = "analysis/rbrick-temp-hs-qcs.rds")
 
 temp_rbrick_stitched <- readRDS("analysis/rbrick-temp-hs-qcs.rds")
 glimpse(temp_rbrick_stitched)
 slopedat_stitched <- vocc::calcslope(temp_rbrick_stitched)
-mnraster_brick1 <- raster::stackApply(temp_rbrick_stitched, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
-mnraster_brick2 <- raster::stackApply(temp_rbrick_stitched, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
+mnraster_brick1 <- raster::stackApply(temp_rbrick_stitched, indices = c(1, 1, 1, 2, 2, 3, 3), fun = mean)
+mnraster_brick2 <- raster::stackApply(temp_rbrick_stitched, indices = c(1, 1, 1, 2, 2, 3, 3), fun = mean)
 start_temp_stitched <- mnraster_brick1[[1]]
 end_temp_stitched <- mnraster_brick2[[3]]
 
@@ -387,25 +356,37 @@ out1_stitched <- dist_based_vocc(
 #})
 
 out1_stitched <- left_join(out1_stitched, slopedat_stitched, by = c("x", "y")) %>% select(-icell)
-out1_stitched$C_per_decade <- out1_stitched$slope * 10
+out1_stitched$C_per_decade <- out1_stitched$slope*2 # 2 is because the vocc::slope function assumes time steps of one year
 out1_stitched$km_per_decade <- out1_stitched$distance * 10 / 10 # dived by delta_t
 head(out1_stitched)
-
+# View(out1_stitched)
 
 gvocc <- plot_vocc(out1_stitched,
   low_col = "white",
   mid_col = "white",
   high_col = "white", 
   vec_lwd = "distance",
-  vec_lwd_range = c(0.8,0.8),
-  vec_col = "distance",
+  vec_lwd_range = c(0.5,0.6),
+  #vec_col = "distance",
   max_vec_plotted = 100,
-  fill_col = "temp_e",
-  fill_label = "Current\ntemperature",
+  fill_col = "temp_s",
+  fill_label = "Mean\ntemperature\n2005 to 2010",
   raster_alpha = 1,
   vec_alpha = 0.8
 )
 gvocc
+
+
+gtrend <- plot_vocc(out1_stitched,
+  max_vec_plotted = NULL,
+  fill_col = "C_per_decade",
+  fill_label = "Temperature\ntrend (C/decade)\nfor 2005-2017",
+  raster_alpha = 1,
+  vec_alpha = 0.8
+)
+gtrend
+
+gridExtra::grid.arrange(gtrend, gvocc, nrow = 1)
 
 # start_temp <- raster::mosaic(start_data_hs, start_data_qcs)
 # end_temp <- raster::mosaic(end_temp_hs, end_temp_qcs)

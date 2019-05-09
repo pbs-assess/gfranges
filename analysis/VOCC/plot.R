@@ -1,6 +1,6 @@
 # PLOT CLIMATE CHANGE VECTORS
 plot_vocc <- function(df,
-                      vec_col = "C_per_decade",
+                      #vec_col = "C_per_decade",
                       fill_col = "C_per_decade",
                       fill_label = "Local\nclimate trend\n(°C/decade)",
                       raster_alpha = 1,
@@ -16,15 +16,7 @@ plot_vocc <- function(df,
 
 
   df <- df[order(-df$distance), ] # order so smaller vectors are on top?
-
-  if (max(df$distance) > max_vec_plotted) {
-    df[df$distance > max_vec_plotted, ]$target_X <- NA
-    df[df$distance > max_vec_plotted, ]$target_Y <- NA
-  }
-
-  colour <- df[[vec_col]]
   fill <- df[[fill_col]]
-  lwd <- df[[vec_lwd]]
 
   # # Parameters required by theme_pbs (in case changes are needed locally)
   # base_size <- 11
@@ -32,15 +24,17 @@ plot_vocc <- function(df,
   # text_col <- "grey20"
   # panel_border_col <- "grey70"
   # half_line <- base_size / 2
-
+  
+  if (min(fill, na.rm = TRUE)>0) {
   gvocc <- ggplot2::ggplot(df, aes(x, y)) +
     geom_raster(aes(fill = fill), alpha = raster_alpha) +
     scale_fill_viridis_c(trans = "sqrt") +
-    guides(colour = "none", size = "none") +
     labs(fill = fill_label) + # , colour = col_label
     xlab("UTM") + ylab("UTM") +
     coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
-    gfplot::theme_pbs()
+    guides(colour = "none", size = "none") +
+    gfplot::theme_pbs() +
+    theme(legend.position = c(0.17, 0.17))
   # # This is what theme_pbs does (in case changes are needed locally)
   # theme_light(base_size = base_size, base_family = "") +
   # theme(
@@ -62,25 +56,27 @@ plot_vocc <- function(df,
   #   plot.title = element_text(colour = text_col, size = rel(1)),
   #   plot.subtitle = element_text(colour = text_col, size = rel(.85))
   # )
-
-  gvocc <- gvocc +
-    ggnewscale::new_scale_color() +
-    geom_quiver(aes(x, y, # call modified internal function, head_size = distance/10,
-      # ggquiver::geom_quiver(aes(x, y, # to call published package version
-      u = target_X - x, v = target_Y - y,
-      size = lwd,
-      colour = colour
-    ), vecsize = 0, alpha = vec_alpha, inherit.aes = FALSE) +
-    scale_size_continuous(range = vec_lwd_range) +
-    scale_colour_gradient2(low = low_col, mid = mid_col, high = high_col)
-
+  } else {
+  gvocc <- ggplot2::ggplot(df, aes(x, y)) +
+    geom_raster(aes(fill = fill), alpha = raster_alpha) +
+    scale_fill_gradient2(low = low_col, mid = mid_col, high = high_col) +
+    labs(fill = fill_label) + # , colour = col_label
+    xlab("UTM") + ylab("UTM") +
+    coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
+    guides(colour = "none", size = "none") +
+    gfplot::theme_pbs() +
+    theme(legend.position = c(0.17, 0.17))
+  }
   
+  
+  
+
   # Add bathymetry
 
   if (!is.null(isobath)) {
     # add premade bathymetry layer (must be in utms)
     gvocc <- gvocc +
-      ggnewscale::new_scale_color() +
+      #ggnewscale::new_scale_color() +
       geom_path(
         data = isobath,
         aes_string(
@@ -109,7 +105,7 @@ plot_vocc <- function(df,
 
       # add line to plot
       gvocc <- gvocc +
-        ggnewscale::new_scale_color() +
+        #ggnewscale::new_scale_color() +
         geom_path(
           data = isobath,
           aes_string(
@@ -117,8 +113,8 @@ plot_vocc <- function(df,
             group = "paste(PID, SID)", colour = "PID"
           ),
           inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
-        ) +
-        scale_colour_continuous(low = "grey80", high = "grey10")
+        ) + 
+        scale_colour_continuous(low = "grey80", high = "grey10") 
 
       gvocc
     }, silent = TRUE)
@@ -160,11 +156,37 @@ plot_vocc <- function(df,
     }, silent = TRUE)
   }
 
+  
+  # Add arrows indicating target cells 
+  if (!is.null(max_vec_plotted)) {
+    if (max(df$distance) > max_vec_plotted) {
+      df[df$distance > max_vec_plotted, ]$target_X <- NA
+      df[df$distance > max_vec_plotted, ]$target_Y <- NA
+    }
+    
+    lwd <- df[[vec_lwd]]
+    #colour <- df[[vec_col]]
+    
+    gvocc <- gvocc +
+      #ggnewscale::new_scale_color() +
+      geom_quiver(aes(x, y, # call modified internal function, head_size = distance/10,
+        # ggquiver::geom_quiver(aes(x, y, # to call published package version
+        u = target_X - x, v = target_Y - y,
+        size = lwd
+        
+      ), colour = "white", vecsize = 0, alpha = vec_alpha, inherit.aes = FALSE) +
+      #guides(colour = "none", size = "none") +
+      scale_size_continuous(range = vec_lwd_range) #+
+    # scale_colour_gradient2(low = low_col, mid = mid_col, high = high_col)
+    
+ 
   # add NAs to plot where grid cells have no target cell within the distance range of 'max_vec_plotted'
   gvocc <- gvocc + geom_text(
     data = df[df$distance > max_vec_plotted, ], aes(x, y), inherit.aes = FALSE,
     size = 4, colour = "grey99", 
     alpha = 0.75, label = "NA"
   )
+  }
+  
   gvocc
 }

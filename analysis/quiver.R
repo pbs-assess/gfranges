@@ -74,7 +74,7 @@ GeomQuiver <- ggproto(
                           lineend = "butt",
                           na.rm = FALSE) {
     trans <- CoordCartesian$transform(data, panel_params) %>%
-      mutate(arrowsize = 0.007) #sqrt((x - xend)^2 + (y - yend)^2) * 0.1 + 0.01)
+      mutate(arrowsize = 0.015) #sqrt((x - xend)^2 + (y - yend)^2) * 0.1 + 0.01)
     grid::segmentsGrob(
       trans$x, trans$y, trans$xend, trans$yend,
       default.units = "native",
@@ -86,7 +86,7 @@ GeomQuiver <- ggproto(
       ),
       arrow = grid::arrow(
         length = grid::unit(trans$arrowsize, "npc"),
-        ends = "last" , type = "closed"
+        ends = "last" #, type = "closed"
       )
     )
   }

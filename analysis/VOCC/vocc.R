@@ -121,13 +121,9 @@ dist_based_vocc <- function(start_data,
         
         d[[i]] <- min(d_all, na.rm = TRUE) # distance to closest match
         txy <- data[d_all == d[[i]], ] # coordinates of closest match in end
-        #txy <- filter(data,  == d[[i]], , drop = TRUE] # coordinates of closest match in end
-        
         tid[[i]] <- c()
         tid[[i]] <- as.vector(na.omit(txy$id)) # the ID of the closest match(es)
-      
         out[[i]] <- data.frame(tid = tid[[i]])
-        #names(out[[i]])[1] <- "tid"
         out[[i]]$target_X <- as.vector(na.omit(txy$x))
         mean_target_X <- mean(as.vector(na.omit(txy$x)))
         #out[[i]][["target_X"]] <- na.omit(txy$x)
@@ -150,12 +146,10 @@ dist_based_vocc <- function(start_data,
         out[[i]]$mean_target_X <- rep(mean_target_X, n_targets)
         out[[i]]$mean_target_Y <- rep(mean_target_Y, n_targets)
         
-         
         } else { # else statement for no-analogue climates
         
         d[[i]] <- Inf # flag distances as infinity for no analogues
         tid[[i]] <- NA
-        
         out[[i]] <- data.frame(tid = tid[[i]])
         names(out[[i]])[1] <- "tid"
         out[[i]]$target_X <- NA
@@ -168,19 +162,8 @@ dist_based_vocc <- function(start_data,
         out[[i]]$n_targets <- 0
         out[[i]]$mean_target_X <- NA
         out[[i]]$mean_target_Y <- NA
-        
         }
     }
-    #browser()
-    #FIXME: Error in `.rowNamesDF<-`(x, value = value) : 
-    # duplicate 'row.names' are not allowed
-    # In addition: Warning message:
-    #   Show Traceback
-    # 
-    # Rerun with Debug
-    # Error in `.rowNamesDF<-`(x, value = value) : 
-    #   duplicate 'row.names' are not allowed 
-    # 
     do.call(rbind, out)
   }
 
@@ -221,7 +204,7 @@ dist_based_vocc <- function(start_data,
   if (kNN) {
     dist_tab <- dist_kNN_search(data, s, e, u)
   } else {
-    dist_tab <- dist_simple_search(data, s, e, u)
+    dist_tab <- dist_simple_search(as.data.frame(data), s, e, u)
   }
 
   if (is.null(max_dist)) {
@@ -294,5 +277,5 @@ data_lists_to_dfs <- function(start_data,
       "Only coordinate combinations found in both will be retained."
     )
   }
-  dplyr::inner_join(start_df, end_df, by = c(x, y), suffix = c("_s", "_e"))
+  as.data.frame(dplyr::inner_join(start_df, end_df, by = c(x, y), suffix = c("_s", "_e")))
 }
