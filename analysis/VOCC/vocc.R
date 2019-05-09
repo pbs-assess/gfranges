@@ -61,6 +61,12 @@ dist_based_vocc <- function(start_data,
       round_fact <- 1 / (thresholds[k] * 2) # inverse for rounding, double for plus/minus
       start[[k]] <- round(data[, (2 + k)] * round_fact) / round_fact # rounded start values
       end[[k]] <- round(data[, (2 + n_variables + k)] * round_fact) / round_fact # rounded end values
+ #FIXME: Need a better way to assess matching values...    
+ # thinking about alternative way of using thresholds
+      # start[[k]] <- round(data[, (2 + k)] + thresholds[k], digits = 1) 
+      # end[[k]] <- round(data[, (2 + n_variables + k)], digits = 1)
+      # 
+
       if (k == 1) {
         s <- paste(as.vector(start[[k]]))
         e <- paste(as.vector(end[[k]]))
@@ -96,13 +102,14 @@ dist_based_vocc <- function(start_data,
     Y <- data$y # y coords
     s <- data$s
     out <- list()
+    
     for (i in seq_along(data$s)) { # loop for all grid cells in both time periods
       mi <- m[, u == s[i]] # recalls list of climate matches for s[i]
       sxy <- data[i, ] # coordinates of i-th unique combination in start
-      out[[i]] <- tibble::tibble()
+      #out[[i]] <- tibble::tibble()
 
       if (sum(mi, na.rm = TRUE) > 0) { # search unless no-analogue climate
-        d_all <- c() # empty vector for distances between all analagous points
+        d_all <- vector(mode = "numeric", length = length(mi) ) # empty vector for distances between all analagous points
         for (k in seq_along(mi)) {
           if (mi[k]) {
             d_all[k] <- sqrt((X[i] - X[k])^2 + (Y[i] - Y[k])^2)
@@ -111,28 +118,69 @@ dist_based_vocc <- function(start_data,
             d_all[k] <- NA
           }
         }
-        # d_all <- do.call("c", d_all)
+        
         d[[i]] <- min(d_all, na.rm = TRUE) # distance to closest match
-        txy <- data[d_all == d[[i]], , drop = TRUE] # coordinates of closest match in end
+        txy <- data[d_all == d[[i]], ] # coordinates of closest match in end
+        #txy <- filter(data,  == d[[i]], , drop = TRUE] # coordinates of closest match in end
+        
         tid[[i]] <- c()
-        # returns 2 data points equal distance away?
-        tid[[i]] <- na.omit(txy$id) # the ID of the closest match
-      } else { # else statement for no-analogue climates
+        tid[[i]] <- as.vector(na.omit(txy$id)) # the ID of the closest match(es)
+      
+        out[[i]] <- data.frame(tid = tid[[i]])
+        #names(out[[i]])[1] <- "tid"
+        out[[i]]$target_X <- as.vector(na.omit(txy$x))
+        mean_target_X <- mean(as.vector(na.omit(txy$x)))
+        #out[[i]][["target_X"]] <- na.omit(txy$x)
+        out[[i]]$target_Y <- as.vector(na.omit(txy$y))
+        mean_target_Y <- mean(as.vector(na.omit(txy$y)))
+        n_targets <- nrow(out[[i]])
+        out[[i]]$id <- rep(sxy$id, n_targets)
+        out[[i]]$x <- rep(sxy$x, n_targets)
+        out[[i]]$y <- rep(sxy$y, n_targets)
+        out[[i]]$distance <- rep(d[[i]], n_targets)
+        
+        value_k <- list()
+        for (k in seq_along(variable_names)) {
+          value_k[[i]] <- round(mean(as.numeric(na.omit(txy[, (2 + n_variables + k)])), na.rm = TRUE), digits = 2)
+        }
+
+        target_values <- paste(as.vector(value_k[[i]]))
+        out[[i]]$target_values <- rep(target_values, n_targets)
+        out[[i]]$n_targets <- rep(n_targets, n_targets)
+        out[[i]]$mean_target_X <- rep(mean_target_X, n_targets)
+        out[[i]]$mean_target_Y <- rep(mean_target_Y, n_targets)
+        
+         
+        } else { # else statement for no-analogue climates
+        
         d[[i]] <- Inf # flag distances as infinity for no analogues
         tid[[i]] <- NA
-      }
-
-      out[[i]] <- tibble::tibble(tid[[i]])
-      names(out[[i]])[1] <- "tid"
-      out[[i]]$target_X <- na.omit(txy$x)
-      out[[i]]$target_Y <- na.omit(txy$y)
-      n_targets <- nrow(out[[i]])
-      out[[i]]$id <- rep(sxy$id, n_targets)
-      out[[i]]$x <- rep(sxy$x, n_targets)
-      out[[i]]$y <- rep(sxy$y, n_targets)
-      out[[i]]$distance <- rep(d[[i]], n_targets)
-      out[[i]]$n_targets <- rep(n_targets, n_targets)
+        
+        out[[i]] <- data.frame(tid = tid[[i]])
+        names(out[[i]])[1] <- "tid"
+        out[[i]]$target_X <- NA
+        out[[i]]$target_Y <-  NA
+        out[[i]]$id <- sxy$id
+        out[[i]]$x <- sxy$x
+        out[[i]]$y <- sxy$y
+        out[[i]]$distance <- d[[i]]
+        out[[i]]$target_values <- NA
+        out[[i]]$n_targets <- 0
+        out[[i]]$mean_target_X <- NA
+        out[[i]]$mean_target_Y <- NA
+        
+        }
     }
+    #browser()
+    #FIXME: Error in `.rowNamesDF<-`(x, value = value) : 
+    # duplicate 'row.names' are not allowed
+    # In addition: Warning message:
+    #   Show Traceback
+    # 
+    # Rerun with Debug
+    # Error in `.rowNamesDF<-`(x, value = value) : 
+    #   duplicate 'row.names' are not allowed 
+    # 
     do.call(rbind, out)
   }
 
@@ -185,8 +233,8 @@ dist_based_vocc <- function(start_data,
 
   # calculate speed in units of distance by time in same units as `max_dist` and `delta_t`
   dist_tab$speed <- dist_tab$distance / delta_t
-  round(dist_tab, digits = 2)
-  dplyr::inner_join(data, dist_tab, by = c("id", "x", "y"))
+  #round(dist_tab, digits = 2)
+  dplyr::full_join(data, dist_tab, by = c("id", "x", "y"))
 }
 
 
