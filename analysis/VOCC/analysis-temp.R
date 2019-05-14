@@ -1,5 +1,6 @@
-
-
+# install.packages("yaImpute")     # install package for k-nearest neighbour (kNN) search
+# install.packages("raster")
+# library(dplyr)
 # devtools::install_github("seananderson/vocc")
 # install.package(ggnewscale)
 # install.package(gfplot)
@@ -78,11 +79,11 @@ nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
 # #   1: In doTryCatch(return(expr), name, parentenv, handler) :
 # #   restarting interrupted promise evaluation
 # 
-# saveRDS(m_temp, file = "analysis/tmb-sensor-explore/data/m_temp_allpost2003.rds")
+# saveRDS(m_temp, file = "analysis/data/m_temp_allpost2003.rds")
 
 
 
-m_temp <- readRDS("analysis/tmb-sensor-explore/data/m_temp_allpost2003.rds")
+m_temp <- readRDS("analysis/data/m_temp_allpost2003.rds")
 
 predictions <- predict(m_temp, newdata = nd)
 
@@ -109,19 +110,19 @@ predicted16 <- predictions %>% filter(ssid == 16)
 
 # scale_fac = 2 means that the raster is reprojected to 2 X original grid (2 km)
 rbrick <- make_raster_brick(predicted3, scale_fac = 2)
-saveRDS(rbrick, file = "analysis/rbrick-temp-hs.rds")
+saveRDS(rbrick, file = "analysis/data/rbrick-temp-hs.rds")
 
 # scale_fac = 2 means that the raster is reprojected to 2 X original grid (2 km)
 rbrick <- make_raster_brick(predicted1, scale_fac = 2)
-saveRDS(rbrick, file = "analysis/rbrick-temp-qcs.rds")
+saveRDS(rbrick, file = "analysis/data/rbrick-temp-qcs.rds")
 
 # scale_fac = 2 means that the raster is reprojected to 2 X original grid (2 km)
 rbrick <- make_raster_brick(predicted4, scale_fac = 2)
-saveRDS(rbrick, file = "analysis/rbrick-temp-wcvi.rds")
+saveRDS(rbrick, file = "analysis/data/rbrick-temp-wcvi.rds")
 
 # scale_fac = 2 means that the raster is reprojected to 2 X original grid (2 km)
 rbrick <- make_raster_brick(predicted16, scale_fac = 2)
-saveRDS(rbrick, file = "analysis/rbrick-temp-wchg.rds")
+saveRDS(rbrick, file = "analysis/data/rbrick-temp-wchg.rds")
 
 
 
@@ -129,9 +130,9 @@ saveRDS(rbrick, file = "analysis/rbrick-temp-wchg.rds")
 # QCS
 #####
 
-temp_rbrick_qcs <- readRDS("analysis/rbrick-temp-qcs.rds")
+temp_rbrick_qcs <- readRDS("analysis/data/rbrick-temp-qcs.rds")
 glimpse(temp_rbrick_qcs)
-slopedat_qcs <- calcslope(temp_rbrick_qcs)
+slopedat_qcs <- vocc::calcslope(temp_rbrick_qcs)
 mnraster_brick1 <- raster::stackApply(temp_rbrick_qcs, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 mnraster_brick2 <- raster::stackApply(temp_rbrick_qcs, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 start_temp_qcs <- mnraster_brick1[[1]]
@@ -165,20 +166,17 @@ out1_qcs <- left_join(out1_qcs, slopedat_qcs, by = c("x", "y")) %>% select(-icel
 out1_qcs$C_per_decade <- out1_qcs$slope * 10
 out1_qcs$km_per_decade <- out1_qcs$distance * 10 / 10 # dived by delta_t
 head(out1_qcs)
-#saveRDS(out1, file = "analysis/simple-dist-vocc-qcs1.rds")
+#saveRDS(out1, file = "analysis/data/simple-dist-vocc-qcs1.rds")
 
 gvocc1_qcs <- plot_vocc(out1_qcs,
-  low_col = "white",
-  mid_col = "white",
-  high_col = "grey77", 
-  vec_lwd = "distance",
+  #high_col = "grey77", 
+  vec_aes = "distance",
   vec_lwd_range = c(1,1),
-  #vec_col = "distance",
   max_vec_plotted = 100,
   fill_col = "temp_e",
   fill_label = "Current\ntemperature",
   raster_alpha = 1,
-  vec_alpha = 0.4
+  vec_alpha = 0.5
 )
 gvocc1_qcs
 
@@ -199,7 +197,7 @@ out2_qcs <- left_join(out2_qcs, slopedat_qcs, by = c("x", "y")) %>% select(-icel
 out2_qcs$C_per_decade <- out2_qcs$slope * 10
 out2_qcs$km_per_decade <- out2_qcs$distance * 10 / 10 # dived by delta_t
 head(out2_qcs)
-#saveRDS(out2, file = "analysis/simple-dist-vocc-qcs2.rds")
+#saveRDS(out2, file = "analysis/data/simple-dist-vocc-qcs2.rds")
 View(out2_qcs)
 out2_qcs_1per <- do.call(rbind, lapply(split(out2_qcs, out2_qcs$id), head, 1)) %>%
   mutate(target_X = mean_target_X, target_Y = mean_target_Y)
@@ -254,7 +252,7 @@ gvocc2_qcs1
 #####
 
 
-temp_rbrick_hs <- readRDS("analysis/rbrick-temp-hs.rds")
+temp_rbrick_hs <- readRDS("analysis/data/rbrick-temp-hs.rds")
 glimpse(temp_rbrick_hs)
 slopedat_hs <- vocc::calcslope(temp_rbrick_hs)
 mnraster_brick_hs1 <- raster::stackApply(temp_rbrick_hs, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
@@ -290,7 +288,7 @@ out1_hs <- left_join(out1_hs, slopedat_hs, by = c("x", "y")) %>% select(-icell)
 out1_hs$C_per_decade <- out1_hs$slope * 10
 out1_hs$km_per_decade <- out1_hs$distance * 10 / 10 # dived by delta_t
 head(out1_hs)
-#saveRDS(out1, file = "analysis/simple-dist-vocc-qcs1.rds")
+#saveRDS(out1, file = "analysis/data/simple-dist-vocc-qcs1.rds")
 
 gvocc1_hs <- plot_vocc(out1_hs,
   low_col = "white",
@@ -317,9 +315,9 @@ predicted1n3 <- predictions %>% filter(ssid != 16) %>% filter(ssid != 4) %>% fil
 
 # scale_fac = 3 means that the raster is reprojected to 3 X original grid (2 km)
 rbrick <- make_raster_brick(predicted1n3, scale_fac = 3)
-saveRDS(rbrick, file = "analysis/rbrick-temp-hs-qcs.rds")
+saveRDS(rbrick, file = "analysis/data/rbrick-temp-hs-qcs.rds")
 
-temp_rbrick_stitched <- readRDS("analysis/rbrick-temp-hs-qcs.rds")
+temp_rbrick_stitched <- readRDS("analysis/data/rbrick-temp-hs-qcs.rds")
 glimpse(temp_rbrick_stitched)
 slopedat_stitched <- vocc::calcslope(temp_rbrick_stitched)
 mnraster_brick1 <- raster::stackApply(temp_rbrick_stitched, indices = c(1, 1, 2, 2, 2, 3, 3), fun = mean)
@@ -416,8 +414,8 @@ out1_wcvi$C_per_decade <- out1_wcvi$slope * 10
 out1_wcvi$km_per_decade <- out1_wcvi$distance * 10 / 5 # dived by delta_t
 head(out1_wcvi)
 
-#saveRDS(out1_wcvi, file = "analysis/simple-dist-vocc-wcvi.rds")
-#saveRDS(out1_wcvi, file = "analysis/knn-dist-vocc-wcvi.rds")
+#saveRDS(out1_wcvi, file = "analysis/data/simple-dist-vocc-wcvi.rds")
+#saveRDS(out1_wcvi, file = "analysis/data/knn-dist-vocc-wcvi.rds")
 
 
 gvocc_wcvi <- plot_vocc(out1_wcvi,
@@ -445,7 +443,7 @@ gvocc_wcvi
 
 
 
-temp_rbrick <- readRDS("analysis/rbrick-temp-WCVI.rds")
+temp_rbrick <- readRDS("analysis/data/rbrick-temp-WCVI.rds")
 glimpse(temp_rbrick)
 slopedat_wcvi <- vocc::calcslope(temp_rbrick)
 mnraster_brick1 <- raster::stackApply(temp_rbrick, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
@@ -476,8 +474,8 @@ out1_wcvi$C_per_decade <- out1_wcvi$slope * 10
 out1_wcvi$km_per_decade <- out1_wcvi$distance * 10 / 5 # dived by delta_t
 head(out1_wcvi)
 
-#saveRDS(out1_wcvi, file = "analysis/simple-dist-vocc-wcvi.rds")
-#saveRDS(out1_wcvi, file = "analysis/knn-dist-vocc-wcvi.rds")
+#saveRDS(out1_wcvi, file = "analysis/data/simple-dist-vocc-wcvi.rds")
+#saveRDS(out1_wcvi, file = "analysis/data/knn-dist-vocc-wcvi.rds")
 
 
 gvocc_wcvi <- plot_vocc(out1_wcvi,
@@ -499,7 +497,7 @@ gvocc_wcvi
 # WCHG
 #####
 
-temp_rbrick_wchg <- readRDS("analysis/rbrick-temp-wchg.rds")
+temp_rbrick_wchg <- readRDS("analysis/data/rbrick-temp-wchg.rds")
 glimpse(temp_rbrick_wchg)
 slopedat_wchg <- vocc::calcslope(temp_rbrick_wchg)
 mnraster_brick1 <- raster::stackApply(temp_rbrick_wchg, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
@@ -535,7 +533,7 @@ out1_wchg <- left_join(out1_wchg, slopedat_wchg, by = c("x", "y")) %>% select(-i
 out1_wchg$C_per_decade <- out1_wchg$slope * 10
 out1_wchg$km_per_decade <- out1_wchg$distance * 10 / 10 # dived by delta_t
 head(out1_wchg)
-#saveRDS(out1, file = "analysis/simple-dist-vocc-qcs1.rds")
+#saveRDS(out1, file = "analysis/data/simple-dist-vocc-qcs1.rds")
 
 gvocc1_wchg <- plot_vocc(out1_wchg,
   low_col = "white",
