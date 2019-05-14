@@ -131,7 +131,7 @@ saveRDS(rbrick, file = "analysis/rbrick-temp-wchg.rds")
 
 temp_rbrick_qcs <- readRDS("analysis/rbrick-temp-qcs.rds")
 glimpse(temp_rbrick_qcs)
-slopedat_qcs <- vocc::calcslope(temp_rbrick_qcs)
+slopedat_qcs <- calcslope(temp_rbrick_qcs)
 mnraster_brick1 <- raster::stackApply(temp_rbrick_qcs, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 mnraster_brick2 <- raster::stackApply(temp_rbrick_qcs, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 start_temp_qcs <- mnraster_brick1[[1]]
@@ -173,7 +173,7 @@ gvocc1_qcs <- plot_vocc(out1_qcs,
   high_col = "grey77", 
   vec_lwd = "distance",
   vec_lwd_range = c(1,1),
-  vec_col = "distance",
+  #vec_col = "distance",
   max_vec_plotted = 100,
   fill_col = "temp_e",
   fill_label = "Current\ntemperature",
@@ -207,11 +207,8 @@ View(out2_qcs_1per)
 
 gvocc2_qcs <- plot_vocc(out2_qcs,
   low_col = "white",
-  mid_col = "white",
-  high_col = "grey77", 
-  vec_lwd = "distance",
+  high_col = "white", 
   vec_lwd_range = c(1,1),
-  vec_col = "distance",
   max_vec_plotted = 100,
   fill_col = "temp_e",
   fill_label = "Current\ntemperature",
@@ -223,10 +220,9 @@ gvocc2_qcs
 gvocc2_qcs1 <- plot_vocc(out2_qcs_1per,
   low_col = "white",
   mid_col = "white",
-  high_col = "grey77", 
-  vec_lwd = "distance",
+  high_col = "white", 
+  vec_aes = "distance",
   vec_lwd_range = c(1,1),
-  vec_col = "distance",
   max_vec_plotted = 100,
   fill_col = "temp_e",
   fill_label = "Current\ntemperature",
@@ -326,8 +322,8 @@ saveRDS(rbrick, file = "analysis/rbrick-temp-hs-qcs.rds")
 temp_rbrick_stitched <- readRDS("analysis/rbrick-temp-hs-qcs.rds")
 glimpse(temp_rbrick_stitched)
 slopedat_stitched <- vocc::calcslope(temp_rbrick_stitched)
-mnraster_brick1 <- raster::stackApply(temp_rbrick_stitched, indices = c(1, 1, 1, 2, 2, 3, 3), fun = mean)
-mnraster_brick2 <- raster::stackApply(temp_rbrick_stitched, indices = c(1, 1, 1, 2, 2, 3, 3), fun = mean)
+mnraster_brick1 <- raster::stackApply(temp_rbrick_stitched, indices = c(1, 1, 2, 2, 2, 3, 3), fun = mean)
+mnraster_brick2 <- raster::stackApply(temp_rbrick_stitched, indices = c(1, 1, 2, 2, 2, 3, 3), fun = mean)
 start_temp_stitched <- mnraster_brick1[[1]]
 end_temp_stitched <- mnraster_brick2[[3]]
 
@@ -349,8 +345,8 @@ out1_stitched <- dist_based_vocc(
   y = "y",
   variable_names = c("index_1"),
   thresholds = c(0.75),
-  cell_size = 4,
-  delta_t = 10,
+  cell_size = 6,
+  delta_t = 12,
   raster = TRUE
 )
 #})
@@ -364,13 +360,13 @@ head(out1_stitched)
 gvocc <- plot_vocc(out1_stitched,
   low_col = "white",
   mid_col = "white",
-  high_col = "white", 
+  high_col = "grey97", 
   vec_lwd = "distance",
   vec_lwd_range = c(0.5,0.6),
-  #vec_col = "distance",
+  vec_col = "distance",
   max_vec_plotted = 100,
   fill_col = "temp_s",
-  fill_label = "Mean\ntemperature\n2005 to 2010",
+  fill_label = "Mean\ntemperature\n2005 & 2007",
   raster_alpha = 1,
   vec_alpha = 0.8
 )
@@ -380,14 +376,20 @@ gvocc
 gtrend <- plot_vocc(out1_stitched,
   max_vec_plotted = NULL,
   fill_col = "C_per_decade",
-  fill_label = "Temperature\ntrend (C/decade)\nfor 2005-2017",
+  fill_label = "Temperature\ntrend (°C/decade)\nfor 2005-2017",
   raster_alpha = 1,
   vec_alpha = 0.8
 )
 gtrend
 
-gridExtra::grid.arrange(gtrend, gvocc, nrow = 1)
+png(file = "accasp-wg-fig.png",   # The directory you want to save the file in
+  res = 600,
+  units = 'in',
+  width = 10, # The width of the plot in inches
+  height = 7) # The height of the plot in inches
 
+gridExtra::grid.arrange(gtrend, gvocc, nrow = 1)
+ dev.off()
 # start_temp <- raster::mosaic(start_data_hs, start_data_qcs)
 # end_temp <- raster::mosaic(end_temp_hs, end_temp_qcs)
 # 

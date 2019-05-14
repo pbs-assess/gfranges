@@ -16,23 +16,25 @@ library(sdmTMB)
 # # replace obviously faulty depth data with NA
 # all_sensor$depth_m[all_sensor$depth_m < 10] <- NA
 #
-# all_depth <- all_sensor %>%
-#   # filter missing location data and trial year
-#   dplyr::filter(!is.na(latitude), !is.na(longitude)) %>%
-#
-#   # convert lat and lon to UTMs
-#   dplyr::mutate(X = longitude, Y = latitude) %>%
-#   gfplot:::ll2utm(., utm_zone = 9) %>%
-#
-#   # interpolate missing depth values
-#   dplyr::rename(depth = depth_m) %>%
-#   gfplot:::interp_survey_bathymetry()
+all_depth <- all_sensor %>%
+  filter(depth_max>10) %>% # maybe we should filter here in case missing depth values also indicate a sensor fail?
+  # filter missing location data and trial year
+  dplyr::filter(!is.na(latitude), !is.na(longitude)) %>%
+
+  # convert lat and lon to UTMs
+  dplyr::mutate(X = longitude, Y = latitude) %>%
+  gfplot:::ll2utm(., utm_zone = 9) %>%
+
+  # interpolate missing depth values
+  dplyr::rename(depth = depth_m) %>%
+  gfplot:::interp_survey_bathymetry()
 
 # # saveRDS(all_depth, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-all-depth.rds")
 all_depth <- readRDS("analysis/tmb-sensor-explore/data/dat-sensor-trawl-all-depth.rds")
 
 # add and scale predictors after filtering for survey(s) of interest
 data <- all_depth$data %>%
+  filter(depth_max>10) %>%
   dplyr::filter(year > 2003) %>%
   # filter(ssid != 1) %>%
   # filter(ssid != 3) %>%
@@ -69,7 +71,7 @@ spatiotemporal_grid <- function(data, ssid = NULL, survey_abbrev = NULL, dummy_y
   }
   grid_locs <- dplyr::rename(grid_locs, depth = akima_depth)
   grid_locs$year <- NULL
-
+  
   # Expand the prediction grid to create a slice for each time:
   original_time <- sort(unique(dat$year))
   nd <- do.call(
@@ -158,20 +160,20 @@ print(p)
 # for example, a value of 5 means that the raster would be reprojected to 10km grid
 
 make_raster_brick <- function(data,
-                              scale_fac = 1,
-                              time_step = "year") {
+  scale_fac = 1,
+  time_step = "year") {
   d <- data[order(data[[time_step]]), ]
   time_vec <- d[[time_step]]
-
+  
   # raster for each time_step
   rlist <- list()
   for (i in 1:length(unique(d[[time_step]]))) {
     # browser()
     rlist[[i]] <- raster::rasterFromXYZ(d[time_vec == unique(d[[time_step]])[i], ] %>%
-      dplyr::select(X, Y, est))
+        dplyr::select(X, Y, est))
     rlist[[i]] <- raster::aggregate(rlist[[i]], fact = scale_fac)
   }
-
+  
   # stack rasters into layers -> rasterbrick
   rstack <- raster::stack(rlist[[1]], rlist[[2]])
   for (i in 3:length(rlist)) {
@@ -183,23 +185,23 @@ make_raster_brick <- function(data,
 
 
 vocc_calc <- function(data,
-                      scale_fac = 1,
-                      time_step = "year",
-                      grad_time_steps = NULL, 
-                      latlon = FALSE,
-                      quantile_cutoff = 0.05) {
+  scale_fac = 1,
+  time_step = "year",
+  grad_time_steps = NULL, 
+  latlon = FALSE,
+  quantile_cutoff = 0.05) {
   
   # make raster brick
   rbrick <- make_raster_brick(data,
     scale_fac = scale_fac,
     time_step = time_step
   )
-
+  
   # Then calculate the trend per pixel:
   slopedat <- vocc::calcslope(rbrick)
-
+  
   ##### Then get the mean values for a time period, but what time period? #####
-
+  
   if (!is.null(grad_time_steps)) {
     # if (grad_time_steps = "all") {
     #   # calculates mean temp across all time slices for each grid cell
@@ -207,15 +209,15 @@ vocc_calc <- function(data,
     #  mnraster_brick <- raster::stackApply(rbrick, indices = grad_time_steps, fun = mean)
     #  mnraster <-mnraster_brick[[raster::nlayers(mnraster_brick)]]
     #   } else {
-   mnraster_brick <- raster::stackApply(rbrick, indices = grad_time_steps, fun = mean)
-   mnraster <-mnraster_brick[[raster::nlayers(mnraster_brick)]]
+    mnraster_brick <- raster::stackApply(rbrick, indices = grad_time_steps, fun = mean)
+    mnraster <-mnraster_brick[[raster::nlayers(mnraster_brick)]]
   } else { 
-   # uses spatial gradient in most recent time slice
-   mnraster <- rbrick[[raster::nlayers(rbrick)]]
+    # uses spatial gradient in most recent time slice
+    mnraster <- rbrick[[raster::nlayers(rbrick)]]
   }
-     # # library(rgdal)
-     # # library(raster)
-     # # plot(mnraster)
+  # # library(rgdal)
+  # # library(raster)
+  # # plot(mnraster)
   
   # Calculate the spatial gradient for chosen time period:
   if (latlon) {
@@ -224,17 +226,17 @@ vocc_calc <- function(data,
     # must use y_dist = res(rx) if data is in UTMs or other true distance grid
     spatx <- vocc::spatialgrad(mnraster, y_dist = raster::res(mnraster), y_diff = NA)
   }
-
+  
   # Now we can calculate the VoCC:
   velodf <- vocc::calcvelocity(spatx, slopedat)
-
+  
   # Mapping it again is straightforward:
   rtrend <- rgrad_lon <- rgrad_lat <- rvocc <- angle <- magn <- raster::raster(rbrick)
   rgrad_lat[spatx$icell] <- spatx$NS # latitude shift, NS
   rgrad_lon[spatx$icell] <- spatx$WE # longitude shift, WE
   rtrend[slopedat$icell] <- -1 * slopedat$slope
   rvocc[velodf$icell] <- velodf$velocity
-
+  
   # convert to data frames for ggplot
   rtrend_df <- as.data.frame(raster::rasterToPoints(rtrend)) %>%
     dplyr::rename(trend = layer)
@@ -246,15 +248,15 @@ vocc_calc <- function(data,
     dplyr::rename(gradWE = layer)
   rvocc_df <- as.data.frame(raster::rasterToPoints(rvocc)) %>%
     dplyr::rename(velocity = layer)
-
+  
   # create ggquiver plots. need dataframe of lon, lat, delta_lon, delta_lat, trend, velocity
   df <- dplyr::left_join(rtrend_df, rmnvalues_df, by = c("x", "y")) %>%
     dplyr::left_join(rgradlat_df, by = c("x", "y")) %>%
     dplyr::left_join(rgradlon_df, by = c("x", "y")) %>%
     dplyr::left_join(rvocc_df, by = c("x", "y"))
-
+  
   # spatial gradient plot
-  # quantile_cutoff defaults to 0.05; used for plotting 
+  # quantile_cutoff defaults to 0.05; used for plotting to set min and max angles of vectors?
   df <- dplyr::mutate(df,
     u_velo = trend / gradWE,
     v_velo = trend / gradNS,
@@ -275,27 +277,32 @@ vocc_calc <- function(data,
 
 # PLOT VECTORS
 plot_vocc <- function(df,
-                      vec_col = "C_per_decade",
-                      col_label = "Local\nclimate trend\n(°C/decade)",
-                      vecsize = 2,
-                      coast = NULL,
-                      isobath = NULL) {
+  vec_col = "C_per_decade",
+  col_label = "Local\nclimate trend\n(°C/decade)",
+  vecsize = 1,
+  lwd = 1, 
+  low_col = scales::muted("blue"),
+  high_col = scales::muted("red"),
+  coast = NULL,
+  isobath = NULL) {
   
   colour <- df[[vec_col]]
-
+  
   gvocc <- ggplot(df) +
     ggquiver::geom_quiver(aes(x, y,
       u = u_velo, v = v_velo,
       colour = colour
     ),
-    vecsize = vecsize
+      vecsize = vecsize,
+      lwd = lwd
     ) +
-    scale_colour_gradient2(low = scales::muted("blue"), high = scales::muted("red")) +
+    scale_colour_gradient2(low = low_col, high = high_col) +
+    #scale_colour_gradient2(low = scales::muted("blue"), high = scales::muted("red", l=50, c=90)) +
     xlab("UTM") + ylab("UTM") +
     labs(colour = col_label) +
     coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
     gfplot::theme_pbs()
-
+  
   if (!is.null(isobath)) {
     gvocc <- gvocc +
       ggnewscale::new_scale_color() +
@@ -337,7 +344,7 @@ plot_vocc <- function(df,
     gvocc
     }, silent = TRUE )
   }
-
+  
   if (!is.null(coast)) {
     gvocc <- gvocc +
       geom_polygon(
@@ -368,22 +375,23 @@ plot_vocc <- function(df,
 
 # PLOT OTHER VARIABLES
 plot_var <- function(df,
-                     variable = "C_per_decade",
-                     var_label = "",
-                     white_value = 0,
-                     isobath = NULL,
-                     coast = NULL) {
+  variable = "C_per_decade",
+  var_label = "",
+  isobath = NULL,
+  coast = NULL) {
   
   variable <- df[[variable]]
- 
+  
   g <- ggplot(df, aes(x, y, fill = variable)) +
     geom_raster() +
-    scale_fill_gradient2(low = scales::muted("blue"), midpoint = white_value, high = scales::muted("red")) +
+    scale_fill_viridis_c(trans = "sqrt") +
+    # scale_fill_viridis_c(trans = "sqrt", option = "C") +
+    # scale_fill_gradient2(low = scales::muted("blue"), midpoint = white_value, high = scales::muted("red")) +
     xlab("UTM") + ylab("UTM") +
     labs(fill = var_label) +
     coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
     gfplot::theme_pbs()
-
+  browser()
   if (!is.null(isobath)) {
     g <- g +
       ggnewscale::new_scale_color() +
@@ -425,7 +433,7 @@ plot_var <- function(df,
     g
     }, silent = TRUE )
   }
-
+  
   if (!is.null(coast)) {
     g <- g +
       geom_polygon(
@@ -458,14 +466,19 @@ plot_var <- function(df,
 
 # choose the spatial range to build raster on
 
-predicted <- predictions %>% filter(ssid == 4) 
+predicted1 <- predictions %>% filter(ssid == 1) 
+predicted3 <- predictions %>% filter(ssid == 3) 
+predicted4 <- predictions %>% filter(ssid == 4) 
+predicted16 <- predictions %>% filter(ssid == 16) 
 
 
 
 # scale_fac = 3 means that the raster is reprojected to 3 X original grid (2 km)
-rbrick <- make_raster_brick(predicted, scale_fac = 2)
+rbrick <- make_raster_brick(predicted16, scale_fac = 2)
+saveRDS(rbrick, file = "analysis/rbrick-temp-wchg.rds")
 
-df <- vocc_calc(predicted, scale_fac = 3, grad_time_steps = c(0, 0, 0, 0, 0, 1, 1))
+
+df <- vocc_calc(predicted, scale_fac = 3, grad_time_steps = c(0, 0, 0, 0, 0, 1, 1), quantile_cutoff = 0.05)
 glimpse(df)
 
 df <- df %>%
@@ -492,19 +505,22 @@ isobath <- gfplot:::load_isobath(
 isobath <- gfplot:::load_isobath(
   range(df$X) + c(-5, 5),
   range(df$Y) + c(-5, 5),
-  bath = c(50, 100, 150, 200, 250, 300, 350, 400, 450, 500),
+  bath = c(100, 200, 300, 400,  500),
   utm_zone = 9
 )
 
 gvocc <- plot_vocc(df, vec_col = "C_per_decade", 
   col_label = "Local\nClimate trend\n(C/decade)", 
-  vecsize = 5, 
+  vecsize = 1, 
+  lwd = 1.25,
+  low_col = "steel blue 4",
+  high_col = "orange red 3",
   coast = coast, isobath = isobath)
 gvocc
 
 
 gmean <- plot_var(df, variable = "mean", var_label = "Mean\ntemperature\ngradient", white_value = mean(df$mean))
-
+gmean
 
 # # plot temperature estimates in most recent time slice
 raster7 <- as.data.frame(raster::rasterToPoints(rbrick[[7]]))
@@ -514,7 +530,7 @@ gcurrent <- plot_var(raster7, variable = "est", var_label = "Most recent\ntemper
 gridExtra::grid.arrange(gmean, gcurrent, nrow = 1)
 gridExtra::grid.arrange(gmean, gvocc, nrow = 1)
 
-
+glimpse(predictedB)
 
 
 predictedA <- predictions %>% filter(year>2004) %>% 
@@ -527,23 +543,31 @@ predictedB <- predictions %>% filter(year>2005) %>%
 #rbrickA <- make_raster_brick(predictedA, scale_fac = 2)
 #rbrickB <- make_raster_brick(predictedB, scale_fac = 2)
 
-dfA <- vocc_calc(predictedA, scale_fac = 5, grad_time_steps = c(0, 0, 0, 0, 0, 1, 1), quantile_cutoff = 0.2)
-dfB <- vocc_calc(predictedB, scale_fac = 5, grad_time_steps = c(0, 0, 0, 0, 0, 1, 1), quantile_cutoff = 0.2)
-df <- rbind(dfA,dfB)
+dfA <- vocc_calc(predictedA, scale_fac = 5, grad_time_steps = c(0, 0, 0, 0, 0, 1, 1), quantile_cutoff = 0.05)
+dfB <- vocc_calc(predictedB, scale_fac = 5, grad_time_steps = c(0, 0, 0, 0, 0, 1, 1), quantile_cutoff = 0.05)
+df_all <- rbind(dfA,dfB)
 
-df <- df %>%
+df_all <- df_all %>%
   mutate(C_per_decade = -trend) %>%
   dplyr::mutate(X = x, Y = y) %>%
   gfplot:::utm2ll(., utm_zone = 9)
 
 isobath <- gfplot:::load_isobath(
-  range(df$X) + c(-5, 5),
-  range(df$Y) + c(-5, 5),
+  range(df_all$X) + c(-5, 5),
+  range(df_all$Y) + c(-5, 5),
   bath = c(100, 200, 300, 400),
   utm_zone = 9
 )
 
-gvocc <- plot_vocc(df, vec_col = "C_per_decade", 
+gvocc <- plot_vocc(df_all, vec_col = "C_per_decade", 
   col_label = "Local\nClimate trend\n(C/decade)", 
-  vecsize = 10, isobath = isobath)
+  vecsize = 10, 
+  lwd = 0.7,
+  low_col = "steel blue 4",
+  high_col = "red 3",
+  isobath = isobath)
 gvocc
+
+
+gmean <- plot_var(df_all, variable = "mean", var_label = "Mean\ntemperature\ngradient")
+gmean

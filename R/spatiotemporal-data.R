@@ -44,13 +44,13 @@ make_raster_brick <- function(data,
 #' @export
 #'
 #' @examples
-spatiotemporal_grid <- function(data, ssid = NULL, survey_abbrev = NULL, dummy_year) {
+spatiotemporal_grid <- function(data, ssid = NULL, survey_abbrev = NULL, dummy_year, cell_width = 2) {
   if (ssid) {
     dat <- data[data$ssid == ssid, ]
     grid_locs <- gfplot:::make_prediction_grid(
       filter(dat, year %in% dummy_year),
       survey = survey_abbrev,
-      cell_width = 2
+      cell_width = cell_width
     )$grid
   } else {
     # FIXME: Error ... object 'shape_utm' not found

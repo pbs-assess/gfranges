@@ -279,3 +279,31 @@ data_lists_to_dfs <- function(start_data,
   }
   as.data.frame(dplyr::inner_join(start_df, end_df, by = c(x, y), suffix = c("_s", "_e")))
 }
+
+
+
+
+calcslope <- function (rx, divisor = 10, na.rm = TRUE) 
+{
+  icell <- seq(1, raster::ncell(rx))
+  lonlat <- xyFromCell(rx, icell)
+  browser()
+  y <- t(getValues(rx))
+  x <- row(y)
+  x <- x/divisor
+  x1 <- y
+  x1[!is.na(x1)] <- 1
+  N <- apply(x1, 2, sum, na.rm = na.rm)
+  x <- x * x1
+  rm(x1)
+  xy <- x * y
+  sxy <- apply(xy, 2, sum, na.rm = na.rm)
+  rm(xy)
+  x2 <- x * x
+  sx2 <- apply(x2, 2, sum, na.rm = na.rm)
+  rm(x2)
+  sx <- apply(x, 2, sum, na.rm = na.rm)
+  sy <- apply(y, 2, sum, na.rm = na.rm)
+  slope <- (sxy - (sx * sy/N))/(sx2 - ((sx^2)/N))
+  data.frame(slope = slope, N = N, lonlat, icell)
+}
