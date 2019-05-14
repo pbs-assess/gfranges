@@ -36,7 +36,7 @@ geom_quiver <- function(mapping = NULL, data = NULL,
                         center = FALSE,
                         rescale = FALSE,
                         vecsize = NULL,
-                        #head_size = sqrt((x - xend)^2 + (y - yend)^2) * 0.5,
+                        # head_size = sqrt((x - xend)^2 + (y - yend)^2) * 0.5,
                         na.rm = FALSE,
                         show.legend = NA,
                         inherit.aes = TRUE,
@@ -54,7 +54,7 @@ geom_quiver <- function(mapping = NULL, data = NULL,
       center = center,
       rescale = rescale,
       vecsize = vecsize,
-      #head_size = head_size,
+      # head_size = head_size,
       ...
     )
   )
@@ -70,11 +70,11 @@ GeomQuiver <- ggproto(
                           panel_params,
                           coord,
                           arrow = NULL,
-                          #head_size,
+                          # head_size,
                           lineend = "butt",
                           na.rm = FALSE) {
     trans <- CoordCartesian$transform(data, panel_params) %>%
-      mutate(arrowsize = 0.015) #sqrt((x - xend)^2 + (y - yend)^2) * 0.1 + 0.01)
+      mutate(arrowsize = 0.015) # sqrt((x - xend)^2 + (y - yend)^2) * 0.1 + 0.01)
     grid::segmentsGrob(
       trans$x, trans$y, trans$xend, trans$yend,
       default.units = "native",
@@ -86,7 +86,7 @@ GeomQuiver <- ggproto(
       ),
       arrow = grid::arrow(
         length = grid::unit(trans$arrowsize, "npc"),
-        ends = "last" #, type = "closed"
+        ends = "last" # , type = "closed"
       )
     )
   }

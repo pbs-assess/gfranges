@@ -1,63 +1,119 @@
-# PLOT CLIMATE CHANGE VECTORS
+#' Plot climate change vectors
+#'
+#' @param df Dataframe produced by dist_based_vocc function.
+#' @param fill_col Vector name for colouring raster grid cells.
+#' @param fill_label Label for legend for raster grid cell colour.
+#' @param raster_alpha Raster transparency.
+#' @param vec_aes Vector name for any plotting variation.
+#' @param vec_lwd_range Range in vector line widths.
+#' @param vec_alpha Vector transparency.
+#' @param max_vec_plotted Upper limit for vector lenths.
+#'   Cells with no match within this distance will be labeled 'NA'.
+#' @param low_fill Colour of negative values if raster values span zero.
+#' @param mid_fill Colour of zero value raster cells.
+#' @param high_fill Colour of positive values if raster values span zero.
+#' @param low_col Low colour for vectors.
+#' @param mid_col Middle colour for vectors.
+#' @param high_col High colour for vectors.
+#' @param coast Coast polygons where (x = "X", y = "Y", group = "PID").
+#'    If NULL, will attempt to create them for xy values in df.
+#' @param contours Polygons of contour lines where (x = "X", y = "Y", group = "paste(PID, SID)").
+#'    If NULL, will attempt to create bathymetry layer for xy values in df using gfplot.
+#'
+#' @export
+#'
 plot_vocc <- function(df,
-                      fill_col = "C_per_decade",
-                      fill_label = "Local\nclimate trend\n(°C/decade)",
+                      fill_col = NULL,
+                      fill_label = NULL,
                       raster_alpha = 1,
                       vec_aes = "distance",
-                      vec_lwd_range = c(1, 1.5),
+                      vec_lwd_range = c(0.7, 0.8),
                       vec_alpha = 1,
                       max_vec_plotted = 100,
-                      low_col = "Steel Blue 4",
+                      low_fill = "Steel Blue 4",
+                      mid_fill = "white",
+                      high_fill = "Red 3",
+                      low_col = "white",
                       mid_col = "white",
-                      high_col = "Red 3",
+                      high_col = "white",
                       coast = NULL,
-                      isobath = NULL) {
-
-
+                      contours = NULL) {
   df <- df[order(-df$distance), ] # order so smaller vectors are on top?
-  fill <- df[[fill_col]]
 
-  if (min(fill, na.rm = TRUE)>0) {
   gvocc <- ggplot2::ggplot(df, aes(x, y)) +
-    geom_raster(aes(fill = fill), alpha = raster_alpha) +
-    scale_fill_viridis_c(trans = "sqrt") +
-    labs(fill = fill_label) + 
     xlab("UTM") + ylab("UTM") +
     coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
-    gfplot::theme_pbs() +
-    theme(legend.position = c(0.17, 0.17))
+    gfplot::theme_pbs()
 
-  } else {
-  gvocc <- ggplot2::ggplot(df, aes(x, y)) +
-    geom_raster(aes(fill = fill), alpha = raster_alpha) +
-    scale_fill_gradient2(low = low_col, mid = mid_col, high = high_col) +
-    labs(fill = fill_label) + 
-    xlab("UTM") + ylab("UTM") +
-    coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
-    gfplot::theme_pbs() +
-    theme(legend.position = c(0.17, 0.17))
+
+  if (!is.null(fill_col)) {
+    fill <- df[[fill_col]]
+
+    if (min(fill, na.rm = TRUE) > 0) {
+      gvocc <- gvocc +
+        geom_raster(aes(fill = fill), alpha = raster_alpha) +
+        scale_fill_viridis_c(trans = "sqrt") +
+        labs(fill = fill_label) +
+        theme(legend.position = c(0.17, 0.17))
+    } else {
+      gvocc <- gvocc +
+        geom_raster(aes(fill = fill), alpha = raster_alpha) +
+        scale_fill_gradient2(low = low_fill, mid = mid_fill, high = high_fill) +
+        labs(fill = fill_label) +
+        theme(legend.position = c(0.17, 0.17))
+    }
   }
-  
-#browser()
-  # Add bathymetry
 
-  if (!is.null(isobath)) {
+  # Add bathymetry
+  if (!is.null(contours)) {
     # add premade bathymetry layer (must be in utms)
+    isobath <- contours
+
     gvocc <- gvocc +
       geom_path(
-        data = isobath,
+        data = isobath[isobath$PID == 100, ],
         aes_string(
           x = "X", y = "Y",
-          group = "paste(PID, SID)", colour = "PID"
+          group = "paste(PID, SID)"
         ),
-        inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
+        inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey85"
       ) +
-      scale_colour_continuous(low = "grey80", high = "grey10") 
-    
+      geom_path(
+        data = isobath[isobath$PID == 200, ],
+        aes_string(
+          x = "X", y = "Y",
+          group = "paste(PID, SID)"
+        ),
+        inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey70"
+      ) +
+      geom_path(
+        data = isobath[isobath$PID == 300, ],
+        aes_string(
+          x = "X", y = "Y",
+          group = "paste(PID, SID)"
+        ),
+        inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey55"
+      ) +
+      geom_path(
+        data = isobath[isobath$PID == 400, ],
+        aes_string(
+          x = "X", y = "Y",
+          group = "paste(PID, SID)"
+        ),
+        inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey40"
+      ) +
+      geom_path(
+        data = isobath[isobath$PID == 500, ],
+        aes_string(
+          x = "X", y = "Y",
+          group = "paste(PID, SID)"
+        ),
+        inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey30"
+      )
   } else {
     # add bathymetry layer from gfplot
     try({
-     # browser()
+      # browser()
       # convert coordinate data to lat lon
       df <- df %>%
         dplyr::mutate(X = x, Y = y) %>%
@@ -75,30 +131,46 @@ plot_vocc <- function(df,
       # add line to plot
       gvocc <- gvocc +
         geom_path(
-          data = isobath[[PID==100]],
+          data = isobath[isobath$PID == 100, ],
           aes_string(
             x = "X", y = "Y",
             group = "paste(PID, SID)"
           ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey80"
-        ) + 
+          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey85"
+        ) +
         geom_path(
-          data = isobath[[PID==200]],
+          data = isobath[isobath$PID == 200, ],
           aes_string(
             x = "X", y = "Y",
             group = "paste(PID, SID)"
           ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey65"
-        ) + 
+          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey70"
+        ) +
         geom_path(
-          data = isobath[[PID==300]],
+          data = isobath[isobath$PID == 300, ],
           aes_string(
             x = "X", y = "Y",
             group = "paste(PID, SID)"
           ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey50"
-        ) 
-      # + 
+          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey55"
+        ) +
+        geom_path(
+          data = isobath[isobath$PID == 400, ],
+          aes_string(
+            x = "X", y = "Y",
+            group = "paste(PID, SID)"
+          ),
+          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey40"
+        ) +
+        geom_path(
+          data = isobath[isobath$PID == 500, ],
+          aes_string(
+            x = "X", y = "Y",
+            group = "paste(PID, SID)"
+          ),
+          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey30"
+        )
+      # +
       #   geom_path(
       #     data = isobath,
       #     aes_string(
@@ -106,7 +178,7 @@ plot_vocc <- function(df,
       #       group = "paste(PID, SID)", colour = "PID2"
       #     ),
       #     inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
-      #   ) + 
+      #   ) +
       #   scale_colour_manual(values = c("grey80","grey65","grey50","grey30","grey10")) +
       #   guides(colour="none")
 
@@ -150,36 +222,36 @@ plot_vocc <- function(df,
     }, silent = TRUE)
   }
 
-  
-  # Add arrows indicating target cells 
+
+  # Add arrows indicating target cells
   if (!is.null(max_vec_plotted)) {
     if (max(df$distance) > max_vec_plotted) {
       df[df$distance > max_vec_plotted, ]$target_X <- NA
       df[df$distance > max_vec_plotted, ]$target_Y <- NA
     }
-    #browser()
+    # browser()
     vector <- as.vector(na.omit(df[[vec_aes]]))
-    
+
     gvocc <- gvocc +
       geom_quiver(aes(x, y, # call modified internal function, head_size = distance/10,
         # ggquiver::geom_quiver(aes(x, y, # to call published package version
         u = target_X - x, v = target_Y - y,
-        colour = vector, 
+        colour = vector,
         size = vector
       ), vecsize = 0, alpha = vec_alpha, inherit.aes = FALSE) +
       scale_size_continuous(range = vec_lwd_range) +
-      scale_colour_gradient2(low = low_col, mid = mid_col, high = high_col) 
-    
- 
-  # add NAs to plot where grid cells have no target cell within the distance range of 'max_vec_plotted'
-  gvocc <- gvocc +
-    guides(colour = "none", size = "none") + 
-    geom_text(
-    data = df[df$distance > max_vec_plotted, ], aes(x, y), inherit.aes = FALSE,
-    size = 2, colour = "grey99", 
-    alpha = 0.75, label = "NA"
-  )
+      scale_colour_gradient2(low = low_col, mid = mid_col, high = high_col)
+
+
+    # add NAs to plot where grid cells have no target cell within the distance range of 'max_vec_plotted'
+    gvocc <- gvocc +
+      guides(colour = "none", size = "none") +
+      geom_text(
+        data = df[df$distance > max_vec_plotted, ], aes(x, y), inherit.aes = FALSE,
+        size = 2, colour = "grey99",
+        alpha = 0.75, label = "NA"
+      )
   }
-  
+
   gvocc
 }
