@@ -53,6 +53,7 @@ survey_abbrev <- "SYN WCHG"
 nd_16 <- spatiotemporal_grid(data, ssid, survey_abbrev, dummy_year = 2006)
 
 nd <- rbind(nd_1, nd_3, nd_4, nd_16)
+# nd <- nd_4 # for faster test option
 nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
 
 
@@ -131,8 +132,8 @@ saveRDS(rbrick, file = "analysis/data/rbrick-temp-wchg.rds")
 #####
 
 temp_rbrick_qcs <- readRDS("analysis/data/rbrick-temp-qcs.rds")
-glimpse(temp_rbrick_qcs)
-slopedat_qcs <- vocc::calcslope(temp_rbrick_qcs)
+#glimpse(temp_rbrick_qcs)
+slopedat_qcs <-  calcslope(temp_rbrick_qcs) # vocc::calcslope for comparison
 mnraster_brick1 <- raster::stackApply(temp_rbrick_qcs, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 mnraster_brick2 <- raster::stackApply(temp_rbrick_qcs, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 start_temp_qcs <- mnraster_brick1[[1]]
@@ -163,22 +164,36 @@ end_data_qcs <- list(temp = end_temp_qcs)
   #})
 
 out1_qcs <- left_join(out1_qcs, slopedat_qcs, by = c("x", "y")) %>% select(-icell)
-out1_qcs$C_per_decade <- out1_qcs$slope * 10
+out1_qcs$C_per_decade <- out1_qcs$slope 
 out1_qcs$km_per_decade <- out1_qcs$distance * 10 / 10 # dived by delta_t
 head(out1_qcs)
 #saveRDS(out1, file = "analysis/data/simple-dist-vocc-qcs1.rds")
 
-gvocc1_qcs <- plot_vocc(out1_qcs,
+gvoccs_qcs <- plot_vocc(out1_qcs,
   #high_col = "grey77", 
   vec_aes = "distance",
   vec_lwd_range = c(1,1),
   max_vec_plotted = 100,
-  fill_col = "temp_e",
-  fill_label = "Current\ntemperature",
+  fill_col = "temp_s",
+  fill_label = "Mean bottom\ntemperature\n(2004-2007)",
   raster_alpha = 1,
   vec_alpha = 0.5
 )
-gvocc1_qcs
+gvoccs_qcs
+
+gvocct_qcs <- plot_vocc(out1_qcs,
+  #high_col = "grey77", 
+  vec_aes = "distance",
+  vec_lwd_range = c(1,1),
+  max_vec_plotted = 100,
+  fill_col = "C_per_decade",
+  fill_label = "Temperature\ntrend",
+  raster_alpha = 1,
+  vec_alpha = 0.5
+)
+gvocct_qcs
+
+
 
 
 out2_qcs <- dist_based_vocc(
@@ -187,57 +202,53 @@ out2_qcs <- dist_based_vocc(
   x = "x",
   y = "y",
   variable_names = c("index_1"),
-  thresholds = c(0.95),
-  cell_size = 4,
+  thresholds = c(0.6),
+  cell_size = 2,
   delta_t = 10,
   raster = TRUE
 )
 
 out2_qcs <- left_join(out2_qcs, slopedat_qcs, by = c("x", "y")) %>% select(-icell)
-out2_qcs$C_per_decade <- out2_qcs$slope * 10
+out2_qcs$C_per_decade <- out2_qcs$slope 
 out2_qcs$km_per_decade <- out2_qcs$distance * 10 / 10 # dived by delta_t
 head(out2_qcs)
 #saveRDS(out2, file = "analysis/data/simple-dist-vocc-qcs2.rds")
-View(out2_qcs)
+
+# calculate average vectors for cells with two or more traget cells
 out2_qcs_1per <- do.call(rbind, lapply(split(out2_qcs, out2_qcs$id), head, 1)) %>%
   mutate(target_X = mean_target_X, target_Y = mean_target_Y)
-View(out2_qcs_1per)
 
 gvocc2_qcs <- plot_vocc(out2_qcs,
   low_col = "white",
   high_col = "white", 
-  vec_lwd_range = c(1,1),
+  vec_lwd_range = c(0.5,1),
   max_vec_plotted = 100,
-  fill_col = "temp_e",
-  fill_label = "Current\ntemperature",
+  fill_col = "C_per_decade",
+  fill_label = "Temperature\ntrend",
   raster_alpha = 1,
-  vec_alpha = 0.2
+  vec_alpha = 0.4
 )
 gvocc2_qcs
 
 gvocc2_qcs1 <- plot_vocc(out2_qcs_1per,
-  low_col = "white",
-  mid_col = "white",
-  high_col = "white", 
   vec_aes = "distance",
-  vec_lwd_range = c(1,1),
-  max_vec_plotted = 100,
-  fill_col = "temp_e",
-  fill_label = "Current\ntemperature",
+  head_size = 0.007,
+  vec_lwd_range = c(0.5,1),
+  max_vec_plotted = 70,
+  fill_col = "C_per_decade",
+  fill_label = "Temperature\ntrend",
   raster_alpha = 1,
-  vec_alpha = 0.2
+  vec_alpha = 0.4
 )
 gvocc2_qcs1
 
 #head(out1)
 # gvocc <- plot_vocc(out2,
-#   #vec_col = "Dark Slate Gray",
 #   low_col = "Medium Purple",
 #   mid_col = "grey97",
 #   high_col = "White",
-#   vec_lwd = "distance",
+#   vec_aes = "distance",
 #   vec_lwd_range = c(1,2),
-#   vec_col = "C_per_decade",
 #   fill_col = "temp_e",
 #   fill_label = "Current\ntemperature",
 #   raster_alpha = 1,
@@ -254,7 +265,7 @@ gvocc2_qcs1
 
 temp_rbrick_hs <- readRDS("analysis/data/rbrick-temp-hs.rds")
 glimpse(temp_rbrick_hs)
-slopedat_hs <- vocc::calcslope(temp_rbrick_hs)
+slopedat_hs <-  calcslope(temp_rbrick_hs)
 mnraster_brick_hs1 <- raster::stackApply(temp_rbrick_hs, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 mnraster_brick_hs2 <- raster::stackApply(temp_rbrick_hs, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 start_temp_hs <- mnraster_brick_hs1[[1]]
@@ -285,7 +296,7 @@ out1_hs <- dist_based_vocc(
 #})
 
 out1_hs <- left_join(out1_hs, slopedat_hs, by = c("x", "y")) %>% select(-icell)
-out1_hs$C_per_decade <- out1_hs$slope * 10
+out1_hs$C_per_decade <- out1_hs$slope 
 out1_hs$km_per_decade <- out1_hs$distance * 10 / 10 # dived by delta_t
 head(out1_hs)
 #saveRDS(out1, file = "analysis/data/simple-dist-vocc-qcs1.rds")
@@ -294,9 +305,8 @@ gvocc1_hs <- plot_vocc(out1_hs,
   low_col = "white",
   mid_col = "white",
   high_col = "grey77", 
-  vec_lwd = "distance",
+  vec_aes = "distance",
   vec_lwd_range = c(1,1),
-  vec_col = "distance",
   max_vec_plotted = 100,
   fill_col = "temp_e",
   fill_label = "Current\ntemperature",
@@ -318,8 +328,8 @@ rbrick <- make_raster_brick(predicted1n3, scale_fac = 3)
 saveRDS(rbrick, file = "analysis/data/rbrick-temp-hs-qcs.rds")
 
 temp_rbrick_stitched <- readRDS("analysis/data/rbrick-temp-hs-qcs.rds")
-glimpse(temp_rbrick_stitched)
-slopedat_stitched <- vocc::calcslope(temp_rbrick_stitched)
+# glimpse(temp_rbrick_stitched)
+slopedat_stitched <-  calcslope(temp_rbrick_stitched, time_units = 10)
 mnraster_brick1 <- raster::stackApply(temp_rbrick_stitched, indices = c(1, 1, 2, 2, 2, 3, 3), fun = mean)
 mnraster_brick2 <- raster::stackApply(temp_rbrick_stitched, indices = c(1, 1, 2, 2, 2, 3, 3), fun = mean)
 start_temp_stitched <- mnraster_brick1[[1]]
@@ -350,8 +360,8 @@ out1_stitched <- dist_based_vocc(
 #})
 
 out1_stitched <- left_join(out1_stitched, slopedat_stitched, by = c("x", "y")) %>% select(-icell)
-out1_stitched$C_per_decade <- out1_stitched$slope*2 # 2 is because the vocc::slope function assumes time steps of one year
-out1_stitched$km_per_decade <- out1_stitched$distance * 10 / 10 # dived by delta_t
+out1_stitched$C_per_decade <- out1_stitched$slope * 10 / out1_stitched$time_scale
+out1_stitched$km_per_decade <- out1_stitched$distance * 10 / 10 # divided by delta_t
 head(out1_stitched)
 # View(out1_stitched)
 
@@ -359,9 +369,8 @@ gvocc <- plot_vocc(out1_stitched,
   low_col = "white",
   mid_col = "white",
   high_col = "grey97", 
-  vec_lwd = "distance",
+  vec_aes = "distance",
   vec_lwd_range = c(0.5,0.6),
-  vec_col = "distance",
   max_vec_plotted = 100,
   fill_col = "temp_s",
   fill_label = "Mean\ntemperature\n2005 & 2007",
@@ -410,7 +419,7 @@ out1_wcvi <- dist_based_vocc(
 )
 
 out1_wcvi <- left_join(out1_wcvi, slopedat_wcvi, by = c("x", "y")) %>% select(-icell)
-out1_wcvi$C_per_decade <- out1_wcvi$slope * 10
+out1_wcvi$C_per_decade <- out1_wcvi$slope 
 out1_wcvi$km_per_decade <- out1_wcvi$distance * 10 / 5 # dived by delta_t
 head(out1_wcvi)
 
@@ -422,9 +431,8 @@ gvocc_wcvi <- plot_vocc(out1_wcvi,
   low_col = "white",
   mid_col = "white",
   high_col = "grey77", 
-  vec_lwd = "distance",
+  vec_aes = "distance",
   vec_lwd_range = c(1,1),
-  vec_col = "distance",
   max_vec_plotted = 100,
   fill_col = "temp_e",
   fill_label = "Current\ntemperature",
@@ -445,7 +453,7 @@ gvocc_wcvi
 
 temp_rbrick <- readRDS("analysis/data/rbrick-temp-WCVI.rds")
 glimpse(temp_rbrick)
-slopedat_wcvi <- vocc::calcslope(temp_rbrick)
+slopedat_wcvi <- calcslope(temp_rbrick)
 mnraster_brick1 <- raster::stackApply(temp_rbrick, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 mnraster_brick2 <- raster::stackApply(temp_rbrick, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 start_temp <- mnraster_brick1[[1]]
@@ -470,8 +478,8 @@ out1_wcvi <- dist_based_vocc(
 )
 
 out1_wcvi <- left_join(out1_wcvi, slopedat_wcvi, by = c("x", "y")) %>% select(-icell)
-out1_wcvi$C_per_decade <- out1_wcvi$slope * 10
-out1_wcvi$km_per_decade <- out1_wcvi$distance * 10 / 5 # dived by delta_t
+out1_wcvi$C_per_decade <- out1_wcvi$slope 
+out1_wcvi$km_per_decade <- out1_wcvi$distance * 10 / 10 # dived by delta_t
 head(out1_wcvi)
 
 #saveRDS(out1_wcvi, file = "analysis/data/simple-dist-vocc-wcvi.rds")
@@ -482,12 +490,12 @@ gvocc_wcvi <- plot_vocc(out1_wcvi,
   low_col = "white",
   mid_col = "white",
   high_col = "grey77", 
-  vec_lwd = "distance",
+  vec_aes = "distance",
+  head_size = 0.0075,
   vec_lwd_range = c(1,1),
-  vec_col = "distance",
   max_vec_plotted = 100,
-  fill_col = "temp_e",
-  fill_label = "Current\ntemperature",
+  fill_col = "C_per_decade",
+  fill_label = "Temperature\ntrend (°C per decade)",
   raster_alpha = 1,
   vec_alpha = 0.8
 )
@@ -499,7 +507,7 @@ gvocc_wcvi
 
 temp_rbrick_wchg <- readRDS("analysis/data/rbrick-temp-wchg.rds")
 glimpse(temp_rbrick_wchg)
-slopedat_wchg <- vocc::calcslope(temp_rbrick_wchg)
+slopedat_wchg <-  calcslope(temp_rbrick_wchg)
 mnraster_brick1 <- raster::stackApply(temp_rbrick_wchg, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 mnraster_brick2 <- raster::stackApply(temp_rbrick_wchg, indices = c(1, 1, 1, 2, 2, 3, 3, 3), fun = mean)
 start_temp_wchg <- mnraster_brick1[[1]]
@@ -530,7 +538,7 @@ out1_wchg <- dist_based_vocc(
 #})
 
 out1_wchg <- left_join(out1_wchg, slopedat_wchg, by = c("x", "y")) %>% select(-icell)
-out1_wchg$C_per_decade <- out1_wchg$slope * 10
+out1_wchg$C_per_decade <- out1_wchg$slope 
 out1_wchg$km_per_decade <- out1_wchg$distance * 10 / 10 # dived by delta_t
 head(out1_wchg)
 #saveRDS(out1, file = "analysis/data/simple-dist-vocc-qcs1.rds")
@@ -539,9 +547,8 @@ gvocc1_wchg <- plot_vocc(out1_wchg,
   low_col = "white",
   mid_col = "white",
   high_col = "grey87", 
-  vec_lwd = "distance",
+  vec_aes = "distance",
   vec_lwd_range = c(1,1),
-  vec_col = "distance",
   max_vec_plotted = 100,
   fill_col = "temp_e",
   fill_label = "Current\ntemperature",
@@ -554,13 +561,11 @@ gvocc1_wchg
 
 # #head(out1)
 # gvocc <- plot_vocc(out2,
-#   #vec_col = "Dark Slate Gray",
 #   low_col = "Medium Purple",
 #   mid_col = "grey97",
 #   high_col = "White",
-#   vec_lwd = "distance",
+#   vec_aes = "distance",
 #   vec_lwd_range = c(1,3),
-#   vec_col = "C_per_decade",
 #   fill_col = "temp_e",
 #   fill_label = "Current\ntemperature",
 #   raster_alpha = 1,
