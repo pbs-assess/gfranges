@@ -155,7 +155,6 @@ data_lists_to_dfs <- function(start_data,
   as.data.frame(dplyr::inner_join(start_df, end_df, by = c(x, y), suffix = c("_s", "_e")))
 }
 
-
 # internal function to find nearest analogue(s) for each location
 dist_simple_search <- function(data, variable_names, s, e, u) {
   sid <- list() # empty list for source IDs
@@ -266,30 +265,4 @@ dist_kNN_search <- function(data, s, e, u) {
   names(txy) <- c("target_X", "target_Y")
 
   tibble::as_tibble(cbind(id = sid, sxy, txy, distance = d, n_targets = 1))
-}
-
-
-
-calcslope <- function(rx, divisor = 10, na.rm = TRUE) {
-  icell <- seq(1, raster::ncell(rx))
-  lonlat <- xyFromCell(rx, icell)
-  browser()
-  y <- t(getValues(rx))
-  x <- row(y)
-  x <- x / divisor
-  x1 <- y
-  x1[!is.na(x1)] <- 1
-  N <- apply(x1, 2, sum, na.rm = na.rm)
-  x <- x * x1
-  rm(x1)
-  xy <- x * y
-  sxy <- apply(xy, 2, sum, na.rm = na.rm)
-  rm(xy)
-  x2 <- x * x
-  sx2 <- apply(x2, 2, sum, na.rm = na.rm)
-  rm(x2)
-  sx <- apply(x, 2, sum, na.rm = na.rm)
-  sy <- apply(y, 2, sum, na.rm = na.rm)
-  slope <- (sxy - (sx * sy / N)) / (sx2 - ((sx^2) / N))
-  data.frame(slope = slope, N = N, lonlat, icell)
 }
