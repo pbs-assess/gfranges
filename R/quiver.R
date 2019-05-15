@@ -36,7 +36,7 @@ geom_quiver <- function(mapping = NULL, data = NULL,
                         center = FALSE,
                         rescale = FALSE,
                         vecsize = NULL,
-                        # head_size = sqrt((x - xend)^2 + (y - yend)^2) * 0.5,
+                        #arrowhead_size = 0.015, #sqrt((x - xend)^2 + (y - yend)^2) * 0.5,
                         na.rm = FALSE,
                         show.legend = NA,
                         inherit.aes = TRUE,
@@ -54,7 +54,6 @@ geom_quiver <- function(mapping = NULL, data = NULL,
       center = center,
       rescale = rescale,
       vecsize = vecsize,
-      # head_size = head_size,
       ...
     )
   )
@@ -63,18 +62,18 @@ geom_quiver <- function(mapping = NULL, data = NULL,
 #' @rdname geom_quiver
 #'
 #' @export
-GeomQuiver <- ggproto(
+GeomQuiver <- ggplot2::ggproto(
   "GeomQuiver", ggplot2::GeomSegment,
   draw_panel = function(
                           data,
                           panel_params,
                           coord,
                           arrow = NULL,
-                          # head_size,
+                          arrowhead_size = 0.015,
                           lineend = "butt",
                           na.rm = FALSE) {
     trans <- CoordCartesian$transform(data, panel_params) %>%
-      mutate(arrowsize = 0.015) # sqrt((x - xend)^2 + (y - yend)^2) * 0.1 + 0.01)
+      mutate(arrowsize = arrowhead_size) # sqrt((x - xend)^2 + (y - yend)^2) * 0.1 + 0.01)
     grid::segmentsGrob(
       trans$x, trans$y, trans$xend, trans$yend,
       default.units = "native",
@@ -167,3 +166,4 @@ StatQuiver <- ggplot2::ggproto(
       )
   }
 )
+
