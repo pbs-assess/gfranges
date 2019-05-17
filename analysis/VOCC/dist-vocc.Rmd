@@ -23,7 +23,7 @@ all_depth <- readRDS("../tmb-sensor-explore/data/dat-sensor-trawl-all-depth.rds"
 
 # add and scale predictors after filtering for survey(s) of interest
 data <- all_depth$data %>%
-  filter(depth_max>10) %>% # removes data if sensor stayed too near surface
+  filter(depth_m>10) %>% # removes data if sensor stayed too near surface
   # filter(ssid != 1) %>%
   # filter(ssid != 3) %>%
   # filter(ssid != 4) %>%
@@ -37,6 +37,16 @@ data <- data[data$fishing_event_id != 481861, ]
 #   DOY = lubridate::yday(date),
 #   shallow = ifelse(depth > 35, 0, 1)
 # )
+```
+
+Or use old data 
+```{r eval=FALSE}
+data <- readRDS("../tmb-sensor-explore/data/sensor-data-processed.rds")
+data <- data %>% mutate(depth = depth_m) %>% 
+  filter(depth_m >10) %>% # removes data if sensor stayed too near surface
+  gfplot:::scale_survey_predictors()
+
+data <- data[data$fishing_event_id != 481861, ]
 ```
 
 
@@ -69,14 +79,13 @@ unique(nd_16$year)
 nd <- rbind(nd_1, nd_3, nd_4, nd_16)
 # nd <- nd_4 # for faster test option
 nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
-
 ```
 
 Run sdmTMB model (if not done previously).
 ```{r eval=FALSE}
 # # choose the spatial range to model
-dat <- data %>% dplyr::filter(year > 2003) #%>% filter(ssid == 4)
-nd <- nd # %>% filter(ssid == 4)
+dat <- data %>% dplyr::filter(year > 2003) %>% select(year, ssid, X, Y, temperature_c, depth_scaled, depth_scaled2)
+nd <- nd #%>% filter(ssid == 4)
  
 spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 500)
 sdmTMB::plot_spde(spde)
@@ -97,16 +106,19 @@ m_temp <- sdmTMB::sdmTMB(dat,
 # #   1: In doTryCatch(return(expr), name, parentenv, handler) :
 # #   restarting interrupted promise evaluation
 # 
+# saveRDS(m_temp, file = "data/m_temp_post2003.rds")
 saveRDS(m_temp, file = "data/m_temp_allyears.rds")
 ```
 
 Calculate predicted values
 ```{r}
-m_temp <- readRDS("../VOCC/data/m_temp_allyears.rds")
+m_temp <- readRDS("../VOCC/data/m_temp_post2003.rds")
+# m_temp <- readRDS("../VOCC/data/m_temp_allyears.rds")
 
 # can also be filtered to include only year with multiple surveys 
 # m_temp <- readRDS("../VOCC/data/m_temp_allpost2003.rds")
 # nd <- nd %>% dplyr::filter(year > 2003)
+nd <- nd # %>% filter(ssid == 4)
 
 predictions <- predict(m_temp, newdata = nd)
 
