@@ -23,7 +23,7 @@ all_depth <- readRDS("../tmb-sensor-explore/data/dat-sensor-trawl-all-depth.rds"
 
 # add and scale predictors after filtering for survey(s) of interest
 data <- all_depth$data %>%
-  filter(depth_max>10) %>% # removes data if sensor stayed too near surface
+  filter(depth_max > 10) %>% # removes data if sensor stayed too near surface
   # filter(ssid != 1) %>%
   # filter(ssid != 3) %>%
   # filter(ssid != 4) %>%
@@ -42,8 +42,9 @@ data <- data[data$fishing_event_id != 481861, ]
 Or use old data 
 ```{r eval=FALSE}
 data <- readRDS("../tmb-sensor-explore/data/sensor-data-processed.rds")
-data <- data %>% mutate(depth = depth_m) %>% 
-  filter(depth_m >10) %>% # removes data if sensor stayed too near surface
+data <- data %>%
+  mutate(depth = depth_m) %>%
+  filter(depth_m > 10) %>% # removes data if sensor stayed too near surface
   gfplot:::scale_survey_predictors()
 
 data <- data[data$fishing_event_id != 481861, ]
@@ -55,7 +56,7 @@ Create prediction grids for each survey area so that only years with data are in
 # choose base year(s) to create grid from
 dummy_year <- c(2004, 2005)
 
-# create grids for each ssid separately 
+# create grids for each ssid separately
 ssid <- 1
 survey_abbrev <- "SYN QCS"
 nd_1 <- spatiotemporal_grid(data, ssid, survey_abbrev, dummy_year)
@@ -83,9 +84,9 @@ nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
 Run sdmTMB model (if not done previously).
 ```{r eval=FALSE}
 # # choose the spatial range to model
-dat <- data %>% dplyr::filter(year > 2003) #%>% select(year, ssid, X, Y, temperature_c, depth_scaled, depth_scaled2)
-nd <- nd #%>% filter(ssid == 4)
- 
+dat <- data %>% dplyr::filter(year > 2003) # %>% select(year, ssid, X, Y, temperature_c, depth_scaled, depth_scaled2)
+nd <- nd # %>% filter(ssid == 4)
+
 spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 500)
 sdmTMB::plot_spde(spde)
 
@@ -104,7 +105,7 @@ m_temp <- sdmTMB::sdmTMB(dat,
 # # Warning messages:
 # #   1: In doTryCatch(return(expr), name, parentenv, handler) :
 # #   restarting interrupted promise evaluation
-# 
+#
 # saveRDS(m_temp, file = "data/m_temp_post2003.rds")
 saveRDS(m_temp, file = "data/m_temp_allyears.rds")
 ```
@@ -127,7 +128,7 @@ plot_map <- function(dat, column = "est") {
     coord_fixed()
 }
 
-p <- plot_map(predictions , "est") +
+p <- plot_map(predictions, "est") +
   scale_fill_viridis_c(trans = "sqrt", option = "C") +
   ggtitle("Prediction (fixed effects + all random effects)")
 print(p)
@@ -135,13 +136,13 @@ print(p)
 
 Explore subsets ot the spatial range 
 ```{r eval=FALSE}
-predicted1 <- predictions %>% filter(ssid == 1) 
-predicted3 <- predictions %>% filter(ssid == 3) 
-predicted4 <- predictions %>% filter(ssid == 4) 
-predicted16 <- predictions %>% filter(ssid == 16) 
-predicted1n3 <- predictions %>% filter(ssid != 16) %>% filter(ssid != 4) %>% filter(year > 2004) 
+predicted1 <- predictions %>% filter(ssid == 1)
+predicted3 <- predictions %>% filter(ssid == 3)
+predicted4 <- predictions %>% filter(ssid == 4)
+predicted16 <- predictions %>% filter(ssid == 16)
+predicted1n3 <- predictions %>% filter(ssid != 16) %>% filter(ssid != 4) %>% filter(year > 2004)
 
-p <- plot_map(predicted1n3 , "est") +
+p <- plot_map(predicted1n3, "est") +
   scale_fill_viridis_c(trans = "sqrt", option = "C") +
   ggtitle("Prediction (fixed effects + all random effects)")
 print(p)
@@ -149,17 +150,17 @@ print(p)
 
 
 ```{r}
-out <- make_vector_data (predictions, 
+out <- make_vector_data(predictions,
   ssid = c(1),
   start_year = 2005,
-  input_cell_size = 2, 
+  input_cell_size = 2,
   scale_fac = 2,
   delta_t_total = 10,
   delta_t_step = 2,
   time_steps = 7,
   indices = c(1, 1, 1, 2, 3, 3, 3),
   thresholds = c(0.5) # vector of plus/minus threshold(s) to define climate match.
-  )
+)
 glimpse(out)
 ```
 
@@ -168,9 +169,9 @@ glimpse(out)
 gvocc <- plot_vocc(out,
   low_col = "white",
   mid_col = "white",
-  high_col = "grey97", 
+  high_col = "grey97",
   vec_aes = "distance",
-  vec_lwd_range = c(0.5,0.6),
+  vec_lwd_range = c(0.5, 0.6),
   max_vec_plotted = 100,
   fill_col = "var_1_s",
   fill_label = "Mean\ntemperature\n2005 & 2007",
@@ -198,6 +199,6 @@ gtrend
 # height = 7) # The height of the plot in inches
 
 gridExtra::grid.arrange(gtrend, gvocc, nrow = 1)
-#dev.off()
+# dev.off()
 ```
 
