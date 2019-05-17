@@ -30,7 +30,7 @@ plot_vocc <- function(df,
                       arrowhead_size = 0.015,
                       vec_lwd_range = c(0.7, 0.8),
                       vec_alpha = 1,
-                      max_vec_plotted = 100,
+                      max_vec_plotted = max(df$distance),
                       low_fill = "Steel Blue 4",
                       mid_fill = "white",
                       high_fill = "Red 3",
@@ -40,23 +40,20 @@ plot_vocc <- function(df,
                       coast = NULL,
                       contours = NULL) {
   df <- df[order(-df$distance), ] # order so smaller vectors are on top?
-  # Add arrows indicating target cells
-  if (!is.null(max_vec_plotted)) {
-    if (max(df$distance) > max_vec_plotted) {
+  
+  if (max(df$distance) > max_vec_plotted) {
       df[df$distance > max_vec_plotted, ]$target_X <- NA
       df[df$distance > max_vec_plotted, ]$target_Y <- NA
-    }
-    # browser()
+  }
 
-
-    gvocc <- ggplot2::ggplot(df, aes(x, y)) +
+  gvocc <- ggplot2::ggplot(df, aes(x, y)) +
       xlab("UTM") + ylab("UTM") +
       coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
       gfplot::theme_pbs()
 
-
-    if (!is.null(fill_col)) {
-      fill <- df[[fill_col]]
+  #### Add fill #### 
+  if (!is.null(fill_col)) {
+   fill <- df[[fill_col]]
 
       if (min(fill, na.rm = TRUE) > 0) {
         gvocc <- gvocc +
@@ -73,56 +70,21 @@ plot_vocc <- function(df,
       }
     }
 
-    # Add bathymetry
+    #### Add bathymetry ####
     if (!is.null(contours)) {
-      # add premade bathymetry layer (must be in utms)
-      isobath <- contours
-
+      # add premade contour layers (will all be same colour and must be in utms)
       gvocc <- gvocc +
         geom_path(
-          data = isobath[isobath$PID == 100, ],
-          aes_string(
-            x = "X", y = "Y",
-            group = "paste(PID, SID)"
-          ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey85"
-        ) +
-        geom_path(
-          data = isobath[isobath$PID == 200, ],
-          aes_string(
-            x = "X", y = "Y",
-            group = "paste(PID, SID)"
-          ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey70"
-        ) +
-        geom_path(
-          data = isobath[isobath$PID == 300, ],
+          data = contours,
           aes_string(
             x = "X", y = "Y",
             group = "paste(PID, SID)"
           ),
           inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey55"
-        ) +
-        geom_path(
-          data = isobath[isobath$PID == 400, ],
-          aes_string(
-            x = "X", y = "Y",
-            group = "paste(PID, SID)"
-          ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey40"
-        ) +
-        geom_path(
-          data = isobath[isobath$PID == 500, ],
-          aes_string(
-            x = "X", y = "Y",
-            group = "paste(PID, SID)"
-          ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey30"
-        )
+        ) 
     } else {
       # add bathymetry layer from gfplot
       try({
-        # browser()
         # convert coordinate data to lat lon
         df <- df %>%
           dplyr::mutate(X = x, Y = y) %>%
@@ -137,7 +99,8 @@ plot_vocc <- function(df,
         )
         isobath$PID2 <- as.factor(isobath$PID)
 
-        # add line to plot
+        # add lines to plot
+        # TODO: should functionize so that colours change automatically with contour PID
         gvocc <- gvocc +
           geom_path(
             data = isobath[isobath$PID == 100, ],
@@ -179,27 +142,14 @@ plot_vocc <- function(df,
             ),
             inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey30"
           )
-        # +
-        #   geom_path(
-        #     data = isobath,
-        #     aes_string(
-        #       x = "X", y = "Y",
-        #       group = "paste(PID, SID)", colour = "PID2"
-        #     ),
-        #     inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
-        #   ) +
-        #   scale_colour_manual(values = c("grey80","grey65","grey50","grey30","grey10")) +
-        #   guides(colour="none")
 
         gvocc
       }, silent = TRUE)
     }
 
 
-    # Add coast
-
+  #### Add coast #### 
     if (!is.null(coast)) {
-
       # add premade coast polygons layer (must be in utms)
       gvocc <- gvocc +
         geom_polygon(
@@ -230,11 +180,14 @@ plot_vocc <- function(df,
         gvocc
       }, silent = TRUE)
     }
+  
+  
+  ####  Add arrows indicating target cells #### 
+  if (!is.null(vec_aes)) {
+  vector <- as.vector(na.omit(df[[vec_aes]]))
 
-    vector <- as.vector(na.omit(df[[vec_aes]]))
-
-    gvocc <- gvocc +
-      geom_quiver(aes(x, y, # call modified internal function, arrowhead_size = distance/10,
+  gvocc <- gvocc +
+    geom_quiver(aes(x, y, # call modified internal function, arrowhead_size = distance/10,
         # ggquiver::geom_quiver(aes(x, y, # to call published package version
         u = target_X - x, v = target_Y - y,
         colour = vector,
@@ -253,6 +206,5 @@ plot_vocc <- function(df,
         alpha = 0.75, label = "NA"
       )
   }
-
   gvocc
 }

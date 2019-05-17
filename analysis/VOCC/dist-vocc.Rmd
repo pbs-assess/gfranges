@@ -23,7 +23,7 @@ all_depth <- readRDS("../tmb-sensor-explore/data/dat-sensor-trawl-all-depth.rds"
 
 # add and scale predictors after filtering for survey(s) of interest
 data <- all_depth$data %>%
-  filter(depth_m>10) %>% # removes data if sensor stayed too near surface
+  filter(depth_max>10) %>% # removes data if sensor stayed too near surface
   # filter(ssid != 1) %>%
   # filter(ssid != 3) %>%
   # filter(ssid != 4) %>%
@@ -84,7 +84,7 @@ nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
 Run sdmTMB model (if not done previously).
 ```{r eval=FALSE}
 # # choose the spatial range to model
-dat <- data %>% dplyr::filter(year > 2003) %>% select(year, ssid, X, Y, temperature_c, depth_scaled, depth_scaled2)
+dat <- data %>% dplyr::filter(year > 2003) #%>% select(year, ssid, X, Y, temperature_c, depth_scaled, depth_scaled2)
 nd <- nd #%>% filter(ssid == 4)
  
 spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 500)
@@ -112,8 +112,8 @@ saveRDS(m_temp, file = "data/m_temp_allyears.rds")
 
 Calculate predicted values
 ```{r}
-m_temp <- readRDS("../VOCC/data/m_temp_post2003.rds")
-# m_temp <- readRDS("../VOCC/data/m_temp_allyears.rds")
+# m_temp <- readRDS("../VOCC/data/m_temp_post2003.rds")
+ m_temp <- readRDS("../VOCC/data/m_temp_allyears.rds")
 
 # can also be filtered to include only year with multiple surveys 
 # m_temp <- readRDS("../VOCC/data/m_temp_allpost2003.rds")
@@ -134,6 +134,8 @@ p <- plot_map(predictions , "est") +
   ggtitle("Prediction (fixed effects + all random effects)")
 print(p)
 ```
+
+
 ```{r}
 # choose the spatial range to build raster on
 predicted1 <- predictions %>% filter(ssid == 1) 
@@ -174,7 +176,6 @@ saveRDS(rbrick, file = "analysis/data/rbrick-temp-hs-qcs.rds")
 
 
 ```{r}
-
 make_vector_data <- function(climate_data, 
   ssid = NULL,
   start_year = NULL,
@@ -186,13 +187,13 @@ make_vector_data <- function(climate_data,
   indices = c(1, 1, 2, 2, 2, 3, 3),
   thresholds = c(0.75)
   ) {
-#browser()
+
 if (!is.null(ssid)) climate_data <- climate_data[climate_data$ssid %in% ssid, ]
 if (!is.null(start_year)) climate_data <- climate_data %>% dplyr::filter(year >= start_year)
 
 #if (!identical(time_slices, length(indices)))
-  length_indices <- length(indices)
-  if(!isTRUE(time_slices==length_indices))
+length_indices <- length(indices)
+if(!isTRUE(time_slices==length_indices))
       stop("Must have an indice assigned to each time slice,",
       "therefore length('indices') must equal 'time_slices'.",
       call. = FALSE)
@@ -231,9 +232,6 @@ end_data <- list(var_1 = end_raster)
 # end_data <- list(var = var$end_raster[[i]])
 #}
 
-start_data #
-end_data  #
-  
 out <- dist_based_vocc(
   start_data = start_data,
   end_data = end_data,
@@ -241,21 +239,24 @@ out <- dist_based_vocc(
   y = "y",
   variable_names = c("index_1"), # what the layer within each element is called
   thresholds = thresholds,
-  cell_size =  input_cell_size*scal_fac,
+  cell_size =  input_cell_size*scale_fac,
   delta_t = delta_t_total,
   raster = TRUE
   )
 
 # FIXME: need to change function to deal with different time steps within a brick
-slopedat <-  calcslope(rbrick, delta_t = delta_t_step) # vocc::calcslope for comparison
+slopedat <-  calcslope(rbrick, delta_t_step = delta_t_step) # vocc::calcslope for comparison
 out <- left_join(out, slopedat, by = c("x", "y")) %>% select(-icell)
 out$C_per_decade <- out$slope * 10
-out$km_per_decade <- (out$distance/delta_t)*10 
+out$km_per_decade <- (out$distance/delta_t_total)*10 
 out
 }
 
+```
 
-make_vector_data (predictions, 
+
+```{r}
+out <- make_vector_data (predictions, 
   ssid = c(1, 3),
   start_year = 2005,
   input_cell_size = 2, 
@@ -266,4 +267,44 @@ make_vector_data (predictions,
   indices = c(1, 1, 2, 2, 2, 3, 3),
   thresholds = c(0.75)
   )
+glimpse(out)
 ```
+
+
+```{r}
+gvocc <- plot_vocc(out,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey97", 
+  vec_aes = "distance",
+  vec_lwd_range = c(0.5,0.6),
+  max_vec_plotted = 100,
+  fill_col = "var_1_s",
+  fill_label = "Mean\ntemperature\n2005 & 2007",
+  raster_alpha = 1,
+  vec_alpha = 0.8
+)
+gvocc
+```
+
+```{r}
+gtrend <- plot_vocc(out,
+  fill_col = "C_per_decade",
+  fill_label = "Temperature\ntrend (°C/decade)\nfor 2005-2017",
+  raster_alpha = 1,
+  vec_aes = NULL
+)
+gtrend
+```
+
+```{r}
+# png(file = "accasp-wg-fig.png",   # The directory you want to save the file in
+# res = 600,
+# units = 'in',
+# width = 10, # The width of the plot in inches
+# height = 7) # The height of the plot in inches
+
+gridExtra::grid.arrange(gtrend, gvocc, nrow = 1)
+#dev.off()
+```
+
