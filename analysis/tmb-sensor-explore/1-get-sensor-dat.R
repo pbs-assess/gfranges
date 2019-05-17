@@ -1,9 +1,9 @@
 # gfplot::get_sensor_attributes()
 
-
+# library(gfdata)
 # get and save sensor data from different surveys
 
-d_trawl <- gfplot::get_sensor_data_trawl(ssid = c(1, 3, 4, 16), spread_attributes = FALSE)
+d_trawl <- gfdata::get_sensor_data_trawl(ssid = c(1, 3, 4, 16), spread_attributes = FALSE)
 saveRDS(d_trawl, file = "analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
 
 # d_ll <- gfplot::get_sensor_data_ll_ctd(c(22, 36), sensor_min_max = TRUE)
@@ -12,6 +12,7 @@ saveRDS(d_trawl, file = "analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
 
 
 # get and save data for different species
+# pcod <- gfdata::get_survey_sets(join_sample_ids = TRUE, species = "pacific cod", ssid = c(1))
 
 pcod <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "pacific cod", ssid = c(1, 3, 4, 16))
 saveRDS(pcod, file = "analysis/tmb-sensor-explore/pacific-cod.rds")
