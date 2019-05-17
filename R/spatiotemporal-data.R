@@ -8,15 +8,15 @@
 #'
 make_raster_brick <- function(data,
                               scale_fac = 1,
-                              time_step = "year") {
-  d <- data[order(data[[time_step]]), ]
-  time_vec <- d[[time_step]]
+                              time_var = "year") {
+  d <- data[order(data[[time_var]]), ]
+  time_vec <- d[[time_var]]
 
-  # raster for each time_step
+  # raster for each unique value of time_var
   rlist <- list()
-  for (i in 1:length(unique(d[[time_step]]))) {
+  for (i in 1:length(unique(d[[time_var]]))) {
     # browser()
-    rlist[[i]] <- raster::rasterFromXYZ(d[time_vec == unique(d[[time_step]])[i], ] %>%
+    rlist[[i]] <- raster::rasterFromXYZ(d[time_vec == unique(d[[time_var]])[i], ] %>%
       dplyr::select(X, Y, est))
     rlist[[i]] <- raster::aggregate(rlist[[i]], fact = scale_fac)
   }
