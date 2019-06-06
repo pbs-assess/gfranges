@@ -7,24 +7,30 @@
 #' @export
 #'
 make_raster_brick <- function(data,
+                              parameter = "est",
                               scale_fac = 1,
                               time_var = "year") {
   d <- data[order(data[[time_var]]), ]
   time_vec <- d[[time_var]]
-
+  time_steps <- length(unique(d[[time_var]]))
+  
   # raster for each unique value of time_var
   rlist <- list()
   for (i in 1:length(unique(d[[time_var]]))) {
     # browser()
     rlist[[i]] <- raster::rasterFromXYZ(d[time_vec == unique(d[[time_var]])[i], ] %>%
-      dplyr::select(X, Y, est))
-    rlist[[i]] <- raster::aggregate(rlist[[i]], fact = scale_fac)
+      dplyr::select(X, Y, parameter))
+    if (isTRUE(scale_fac>1)) {
+      rlist[[i]] <- raster::aggregate(rlist[[i]], fact = scale_fac)
+    }
   }
 
   # stack rasters into layers -> rasterbrick
   rstack <- raster::stack(rlist[[1]], rlist[[2]])
-  for (i in 3:length(rlist)) {
+  if (isTRUE(time_steps > 2)) {
+    for (i in 3:length(rlist)) {
     rstack <- raster::stack(rstack, rlist[[i]])
+    } 
   }
   rbrick <- raster::brick(rstack)
   rbrick
