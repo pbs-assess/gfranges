@@ -38,18 +38,26 @@ plot_vocc <- function(df,
                       mid_col = "white",
                       high_col = "white",
                       coast = NULL,
-                      contours = NULL) {
+                      contours = NULL,
+                      axis_lables = FALSE,
+                      viridis_option = "D") {
   df <- df[order(-df$distance), ] # order so smaller vectors are on top?
 
   if (max(df$distance) > max_vec_plotted) {
     df[df$distance > max_vec_plotted, ]$target_X <- NA
     df[df$distance > max_vec_plotted, ]$target_Y <- NA
   }
-
-  gvocc <- ggplot2::ggplot(df, aes(x, y)) +
-    xlab("UTM") + ylab("UTM") +
-    coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
-    gfplot::theme_pbs()
+  
+  if (isFALSE(axis_lables)) {
+    gvocc <- ggplot2::ggplot(df, aes(x, y)) +
+      coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
+      gfplot::theme_pbs() + theme(axis.title.x=element_blank(), axis.title.y=element_blank()) 
+  } else {
+    gvocc <- ggplot2::ggplot(df, aes(x, y)) +
+      coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
+      gfplot::theme_pbs() + xlab("UTM") + ylab("UTM")
+  }
+  
 
   #### Add fill ####
   if (!is.null(fill_col)) {
@@ -58,7 +66,8 @@ plot_vocc <- function(df,
     if (min(fill, na.rm = TRUE) > 0) {
       gvocc <- gvocc +
         geom_raster(aes(fill = fill), alpha = raster_alpha) +
-        scale_fill_viridis_c(trans = "sqrt") +
+        
+        scale_fill_viridis_c(trans = "sqrt", option = viridis_option) +
         labs(fill = fill_label) +
         theme(legend.position = c(0.17, 0.17))
     } else {
@@ -206,5 +215,7 @@ plot_vocc <- function(df,
         alpha = 0.75, label = "NA"
       )
   }
+  
   gvocc
+  
 }
