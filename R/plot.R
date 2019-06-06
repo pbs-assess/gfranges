@@ -19,6 +19,13 @@
 #'    If NULL, will attempt to create them for xy values in df.
 #' @param contours Polygons of contour lines where (x = "X", y = "Y", group = "paste(PID, SID)").
 #'    If NULL, will attempt to create bathymetry layer for xy values in df using gfplot.
+#' @param arrowhead_size Changes head size for custom geom_quiver function.
+#' @param axis_lables Logical for inclusion of axis labels.
+#' @param viridis_option Change between viridis colormap options available in ggplot. 
+#' @param transform_col Apply transformation to colour scale. 
+#'    Accepts standard options (e.g. "sqrt") or custom transformations without quotes 
+#'    (e.g. fourth_root_power defined internally using scales::trans_new). 
+#'    Default is no transformation (no_trans).
 #'
 #' @export
 #'
@@ -40,7 +47,9 @@ plot_vocc <- function(df,
                       coast = NULL,
                       contours = NULL,
                       axis_lables = FALSE,
-                      viridis_option = "D") {
+                      viridis_option = "D",
+                      transform_col = no_trans
+  ) {
   df <- df[order(-df$distance), ] # order so smaller vectors are on top?
 
   if (max(df$distance) > max_vec_plotted) {
@@ -62,18 +71,22 @@ plot_vocc <- function(df,
   #### Add fill ####
   if (!is.null(fill_col)) {
     fill <- df[[fill_col]]
-
+    breaks <- scales::trans_breaks(transform_col[["transform"]], 
+      transform_col[["inverse"]], n=6)
+    labels <- function(x) { format(x, digits = 1) }
+    
     if (min(fill, na.rm = TRUE) > 0) {
       gvocc <- gvocc +
         geom_raster(aes(fill = fill), alpha = raster_alpha) +
-        
-        scale_fill_viridis_c(trans = "sqrt", option = viridis_option) +
+        scale_fill_viridis_c(option = viridis_option,
+          trans = transform_col, breaks = breaks, labels = labels) +
         labs(fill = fill_label) +
         theme(legend.position = c(0.17, 0.17))
     } else {
       gvocc <- gvocc +
         geom_raster(aes(fill = fill), alpha = raster_alpha) +
-        scale_fill_gradient2(low = low_fill, mid = mid_fill, high = high_fill) +
+        scale_fill_gradient2(low = low_fill, mid = mid_fill, high = high_fill, 
+          trans = transform_col, breaks = breaks, labels = labels) +
         labs(fill = fill_label) +
         theme(legend.position = c(0.17, 0.17))
     }
@@ -219,3 +232,15 @@ plot_vocc <- function(df,
   gvocc
   
 }
+
+fourth_root_power <- scales::trans_new(
+    name = "fourth root power",
+    transform = function(x) ifelse(x > 0, x^0.25, -(-x)^0.25),
+    inverse = function(x) ifelse(x > 0, x^4, -(-x)^4),
+    domain = c(Inf, Inf))
+
+no_trans <- scales::trans_new(
+  name = "no transformation",
+  transform = function(x) x,
+  inverse = function(x) x,
+  domain = c(Inf, Inf))
