@@ -160,12 +160,12 @@ print(p)
 out <- make_vector_data(temperature,
   ssid = c(1,3),
   start_time = 2005,
-  skip_time = 2011,
+  #skip_time = 2011,
   input_cell_size = 2,
   scale_fac = 1,
   delta_t_total = 10,
   delta_t_step = 2,
-  indices = c(1, 1, 1, 2, 2, 2),
+  indices = c(1, 1, 1, 2, 2, 2, 2),
   thresholds = c(0.5) # vector of plus/minus threshold(s) to define climate match.
 )
 # glimpse(out)
@@ -185,7 +185,8 @@ gvocc <- plot_vocc(out,
   raster_alpha = 1,
   vec_alpha = 0.25,
   axis_lables = FALSE,
-  viridis_option = "D"
+  viridis_option = "D",
+  transform_col = no_trans
 )
 gvocc <- gvocc + ggtitle("VOCC vectors for <0.5°C change")
 gvocc
@@ -196,7 +197,8 @@ gtrend <- plot_vocc(out,
   fill_col = "units_per_decade",
   fill_label = "°C per decade",
   raster_alpha = 1,
-  vec_aes = NULL
+  vec_aes = NULL,
+  transform_col = no_trans
 )
 gtrend <- gtrend + ggtitle("Bottom temperature trend 2005-2017")
 gtrend
@@ -252,7 +254,35 @@ gvocc
 # Biomass data
 
 ```{r}
-biomass <- readRDS("data/maturity-biomass-data-pop-1n3.rds")
+library(dplyr)
+library(ggplot2)
+library(gfplot)
+library(gfdata)
+
+events <- readRDS("analysis/VOCC/data/event-data-pop-1n3.rds")
+fish <- readRDS("analysis/VOCC/data/bio-data-pop-1n3.rds")
+
+biomass <- split_catch_maturity (events, fish, 
+  survey = c("SYN HS","SYN QCS"), 
+  years = NULL,
+  cutoff_quantile = c(.9995),
+  plot = TRUE
+)
+
+saveRDS(biomass, file = "analysis/VOCC/data/maturity-biomass-data-pop-1n3-re.rds")
+
+# disagreement between catch_weight and bio sample for single fishing event with 17 large POP. 
+# events[events$fishing_event_id==1506954,]$catch_weight
+# fish[fish$fishing_event_id==1506954,]$length
+# tidy_sets[tidy_sets$fishing_event_id==1506954,]$catch_weight
+
+```
+
+
+
+
+```{r}
+biomass <- readRDS("data/maturity-biomass-data-pop-1n3-re.rds")
 #doy <- data %>% select(fishing_event_id, DOY)
 #biomass <- left_join(biomass, doy)
 ```
@@ -312,11 +342,12 @@ Calculate predicted values
 adult_biomass <- readRDS("data/m_adult_biomass.rds")
 imm_biomass <- readRDS("data/m_imm_biomass.rds")
 
-nd <- nd %>% mutate(year = as.integer(year)) %>% 
-  # filter(ssid!=3) %>% 
+nd <- nd %>% mutate(year = as.integer(year)) %>%
+  # dplyr::filter(year > 2003) %>% 
+  filter(ssid!=3) %>% 
   filter(ssid!=4) %>% 
-  filter(ssid!=16) %>%
-  dplyr::filter(year > 2003) 
+  filter(ssid!=16) 
+#unique(biomass$year)
 
 adult_predictions <- predict(adult_biomass, newdata = nd)
 imm_predictions <- predict(imm_biomass, newdata = nd)
@@ -324,30 +355,28 @@ imm_predictions <- predict(imm_biomass, newdata = nd)
 
 ```{r}
 predictions <- adult_predictions
-predictions$est_exp <- exp(predictions$est)
-# sqrt_trans <- scales::trans_new(
-#   name = "logp",
-#   trans = function(x) sqrt(x),
-#   inverse = function(x) ((x))^2,
-#   breaks = scales::log_breaks()
-# )
+predictions$est_exp <- exp(predictions$est)*10000
+
+breaks <- scales::trans_breaks(fourth_root_power[["transform"]], fourth_root_power[["inverse"]], n=5) 
+labels <- function(x) { format(x, digits=1) }
+    
 p_adult <- plot_map(predictions, "est_exp") + 
-  scale_fill_viridis_c(trans = "sqrt", option = "C") +
+  scale_fill_viridis_c(trans = fourth_root_power, breaks=breaks, labels = labels, option = "C") +
   ggtitle("Pacific Ocean Perch mature biomass") + theme(legend.position = c(0.9, 0), legend.justification = c(0.9, 0), legend.title = element_blank() ) 
 print(p_adult)
 ```
 
 ```{r}
-adult_predictions$est_exp <- exp(adult_predictions$est)
+adult_predictions$est_exp <- exp(adult_predictions$est)*10000
 adult <- make_vector_data(adult_predictions,
   ssid = c(1,3),
   start_time = 2005,
-  skip_time = 2011,
+  #skip_time = 2011,
   input_cell_size = 2,
   scale_fac = 1,
   delta_t_total = 10,
   delta_t_step = 2,
-  indices = c(1, 1, 1, 2, 2, 2),
+  indices = c(1, 1, 1, 2, 2, 2, 2),
   variable_names = "est_exp",
   thresholds = c(0.001) # vector of plus/minus threshold(s) to define match.
 )
@@ -365,10 +394,11 @@ gvobiomass <- plot_vocc(adult,
   # vec_alpha = 0.7,
   # max_vec_plotted = 30,
   fill_col = "var_1_e",
-  fill_label = "Mean mature \nbiomass (kg/m2)\n in 2013-2017",
+  fill_label = "Mean mature \nbiomass (kg/ha)\n in 2011-2017",
   raster_alpha = 1,
   viridis_option = "C",
-  vec_aes = NULL
+  vec_aes = NULL,
+  transform_col = fourth_root_power
 )
 gvobiomass <- gvobiomass +
   ggtitle("Pacific Ocean Perch")
@@ -379,26 +409,27 @@ gvobiomass
 ```{r}
 biotrend_ad <- plot_vocc(adult,
   fill_col = "units_per_decade",
-  fill_label = "Mature \nbiomass trend \n(kg/m2/decade)\nfor 2005-2017",
+  fill_label = "Mature \nbiomass trend \n(kg/ha/decade)\nfor 2005-2017",
   raster_alpha = 1,
-  vec_aes = NULL
+  vec_aes = NULL,
+  transform_col = fourth_root_power
 )
 biotrend_ad
 ```
 
 ```{r}
 predictions <- imm_predictions
-predictions$est_exp <- exp(predictions$est)
+predictions$est_exp <- exp(predictions$est)*10000
 
 p <- plot_map(predictions, "est_exp") + 
-  scale_fill_viridis_c(trans = "sqrt", option = "C") +
+  scale_fill_viridis_c(trans = fourth_root_power, breaks=breaks, labels = labels, option = "C") +
   ggtitle("Prediction (fixed effects + all random effects)")
 print(p)
 ```
 
 
 ```{r}
-imm_predictions$est_exp <- exp(imm_predictions$est)
+imm_predictions$est_exp <- exp(imm_predictions$est)*10000
 
 out_im <- make_vector_data(imm_predictions,
   ssid = c(1,3),
@@ -418,16 +449,27 @@ out_im <- make_vector_data(imm_predictions,
 ```{r}
 biotrend_im <- plot_vocc(out_im,
   fill_col = "units_per_decade",
-  fill_label = "Immature \nbiomass trend \n(kg/m2/decade)\nfor 2005-2017",
+  fill_label = "Immature \nbiomass trend \n(kg/ha/decade)\nfor 2005-2017",
   raster_alpha = 1,
-  vec_aes = NULL
+  vec_aes = NULL,
+  transform_col = fourth_root_power
 )
 biotrend_im
+```
+```{r}
+png(file = "POP-maturity-year-re.png",   # The directory you want to save the file in
+res = 600,
+units = 'in',
+width = 8, # The width of the plot in inches
+height = 10)
+
+plot_mat_ogive(m)
+dev.off()
 ```
 
 
 ```{r}
-png(file = "exploratory-pop-figs.png",   # The directory you want to save the file in
+png(file = "exploratory-pop-figs-trans.png",   # The directory you want to save the file in
 res = 600,
 units = 'in',
 width = 14, # The width of the plot in inches
