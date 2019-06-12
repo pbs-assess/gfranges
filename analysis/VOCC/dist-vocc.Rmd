@@ -16,13 +16,6 @@ library(ggplot2)
 library(sdmTMB)
 library(gfranges)
 
-# Basic map function
-plot_map <- function(dat, column = "est") {
-  ggplot(dat, aes_string("X", "Y", fill = column)) +
-    geom_raster() +
-    facet_wrap(~year) +
-    coord_fixed() + theme(axis.title=element_blank())
-}
 ```
 
 Retrieve raw data
@@ -85,8 +78,8 @@ survey_abbrev <- "SYN WCHG"
 nd_16 <- spatiotemporal_grid(data, ssid, survey_abbrev, dummy_year = 2006)
 unique(nd_16$year)
 
-nd <- rbind(nd_1, nd_3, nd_4, nd_16)
-nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
+nd_all <- rbind(nd_1, nd_3, nd_4, nd_16)
+nd <- nd_all %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
 ```
 
 Run sdmTMB model (if not done previously).
@@ -122,42 +115,245 @@ Calculate predicted values
 ```{r}
 m_temp <- readRDS("../VOCC/data/m_temp_allyears.rds")
 
-# can also be filtered to exclude certain years
+# # must be filtered to match years in model
 # m_temp <- readRDS("../VOCC/data/m_temp_allpost2003.rds")
 # nd <- nd %>% dplyr::filter(year > 2003)
 
 temp <- predict(m_temp, newdata = nd)
+```
+
+Define subset of the spatial range 
+```{r eval=FALSE}
 temperature <- temp %>% 
   # filter(ssid!=3) %>% 
   filter(ssid!=4) %>% 
   filter(ssid!=16) %>% 
   filter(year>2004)
 
-glimpse(temperature)
+#glimpse(temperature)
 
-temp <- plot_map(temperature, "est") +
-  scale_fill_viridis_c(trans = "sqrt", option = "D") +
-  ggtitle("Bottom temperature") + theme(legend.position = "none") #c(0.9, 0), legend.justification = c(0.9, 0), legend.title = element_blank() ) 
+temp <-plot_facet_map(temperature, "est", transform_col = no_trans) + 
+  labs(fill="kg/ha") +
+  ggtitle("Bottom temperature")
 print(temp)
 ```
 
-Explore subsets ot the spatial range 
-```{r eval=FALSE}
-predicted1 <- predictions %>% filter(ssid == 1)
-predicted3 <- predictions %>% filter(ssid == 3)
-predicted4 <- predictions %>% filter(ssid == 4)
-predicted16 <- predictions %>% filter(ssid == 16)
-predicted1n3 <- predictions %>% filter(ssid != 16) %>% filter(ssid != 4) %>% filter(year > 2004)
 
-p <- plot_map(predicted1n3, "est") +
-  scale_fill_viridis_c(trans = "sqrt", option = "C") +
-  ggtitle("Prediction (fixed effects + all random effects)")
-print(p)
+Biannual changes starting 2005 and ending 2017
+```{r}
+out1 <- make_vector_data(temperature,
+  ssid = c(1,3),
+  start_time = 2005,
+  end_time = 2007,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(0.5) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc1 <- plot_vocc(out1,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2007",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "D",
+  transform_col = no_trans,
+  raster_limits = c(5, 13)
+)
+#gvocc1 <- gvocc1 + ggtitle("VOCC vectors for <1°C change in bottom temperature")
+gvocc1
 ```
 
+```{r}
+out2 <- make_vector_data(temperature,
+  ssid = c(1,3),
+  start_time = 2007,
+  end_time = 2009,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(0.5) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc2 <- plot_vocc(out2,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2009",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "D",
+  transform_col = no_trans,
+  raster_limits = c(5, 13)
+)
+
+#gvocc2 <- gvocc2 + ggtitle(" ")
+gvocc2
+```
 
 ```{r}
-out <- make_vector_data(temperature,
+out3 <- make_vector_data(temperature,
+  ssid = c(1,3),
+  start_time = 2009,
+  end_time = 2011,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(0.5) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc3 <- plot_vocc(out3,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2011",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "D",
+  transform_col = no_trans,
+  raster_limits = c(5, 13)
+)
+#gvocc3 <- gvocc3 + ggtitle(" ")
+gvocc3
+```
+
+```{r}
+out4 <- make_vector_data(temperature,
+  ssid = c(1,3),
+  start_time = 2011,
+  end_time = 2013,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(0.5) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc4 <- plot_vocc(out4,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2013",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "D",
+  transform_col = no_trans,
+  raster_limits = c(5, 13)
+)
+#gvocc4 <- gvocc4 + ggtitle(" ")
+gvocc4
+```
+
+```{r}
+out5 <- make_vector_data(temperature,
+  ssid = c(1,3),
+  start_time = 2013,
+  end_time = 2015,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(0.5) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc5 <- plot_vocc(out5,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2015",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "D",
+  transform_col = no_trans,
+  raster_limits = c(5, 13)
+)
+#gvocc5 <- gvocc5 + ggtitle(" ")
+gvocc5
+```
+
+```{r}
+out6 <- make_vector_data(temperature,
+  ssid = c(1,3),
+  start_time = 2015,
+  end_time = 2017,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(0.5) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc6 <- plot_vocc(out6,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2017",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "D",
+  transform_col = no_trans,
+  raster_limits = c(5, 13)
+)
+#gvocc6 <- gvocc6 + ggtitle(" ")
+gvocc6
+```
+
+```{r}
+png(file = "biannual_temp_change.png",   # The directory you want to save the file in
+res = 600,
+units = 'in',
+width = 10, # The width of the plot in inches
+height = 8) # The height of the plot in inches
+
+gridExtra::grid.arrange(gvocc1, gvocc2, gvocc3, gvocc4, gvocc5, gvocc6, nrow = 2, top = grid::textGrob("VOCC vectors for <0.5°C biannual changes in bottom temperature"))#,gp=gpar(fontsize=20,font=3)) 
+dev.off()
+```
+
+Cumulative change between last two decades 
+VOCC for 0.5 degree change and 1 degree change
+```{r}
+out0.5d <- make_vector_data(temperature,
   ssid = c(1,3),
   start_time = 2005,
   #skip_time = 2011,
@@ -168,12 +364,10 @@ out <- make_vector_data(temperature,
   indices = c(1, 1, 1, 2, 2, 2, 2),
   thresholds = c(0.5) # vector of plus/minus threshold(s) to define climate match.
 )
-# glimpse(out)
 ```
 
-
 ```{r}
-gvocc <- plot_vocc(out,
+gvocc <- plot_vocc(out0.5,
   low_col = "white",
   mid_col = "white",
   high_col = "grey87",
@@ -181,7 +375,7 @@ gvocc <- plot_vocc(out,
   vec_lwd_range = c(0.2, 0.5),
   max_vec_plotted = 100,
   fill_col = "var_1_e",
-  fill_label = "Mean\ntemperature\n2013-2017",
+  fill_label = "2013-2017",
   raster_alpha = 1,
   vec_alpha = 0.25,
   axis_lables = FALSE,
@@ -193,7 +387,41 @@ gvocc
 ```
 
 ```{r}
-gtrend <- plot_vocc(out,
+out1d <- make_vector_data(temperature,
+  ssid = c(1,3),
+  start_time = 2005,
+  #skip_time = 2011,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 10,
+  delta_t_step = 2,
+  indices = c(1, 1, 1, 2, 2, 2, 2),
+  thresholds = c(1) # vector of plus/minus threshold(s) to define climate match.
+)
+```
+
+```{r}
+gvocc1d <- plot_vocc(out1d,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 100,
+  fill_col = "var_1_e",
+  fill_label = "2013-2017",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "D",
+  transform_col = no_trans
+)
+gvocc1d <- gvocc1d + ggtitle("VOCC vectors for <1°C change")
+gvocc1d
+```
+
+```{r}
+gtrend <- plot_vocc(out1d,
   fill_col = "units_per_decade",
   fill_label = "°C per decade",
   raster_alpha = 1,
@@ -205,279 +433,17 @@ gtrend
 ```
 
 ```{r}
-# png(file = "accasp-wg-fig.png",   # The directory you want to save the file in
-# res = 600,
-# units = 'in',
-# width = 10, # The width of the plot in inches
-# height = 7) # The height of the plot in inches
-
-gridExtra::grid.arrange(gtrend, gvocc, nrow = 1)
-# dev.off()
-```
-
-Step through pairs of years?
-
-```{r}
-
-step1 <- make_vector_data(temperature,
-  ssid = c(1, 3),
-  start_time = 2007,
-  end_time = 2017,
-  skip_time = c(2011,2013),
-  input_cell_size = 2,
-  scale_fac = 2,
-  delta_t_total = 10,
-  delta_t_step = 2,
-  indices = c(1,1,2,2), 
-  thresholds = c(.75) # vector of plus/minus threshold(s) to define climate match.
-)
-
-gvocc <- plot_vocc(step1,
-  low_col = "white",
-  mid_col = "white",
-  high_col = "grey97",
-  vec_aes = "distance",
-  vec_lwd_range = c(0.5, 0.6),
-  max_vec_plotted = 100,
-  fill_col = "var_1_e",
-  fill_label = "Mean temperature\n2015 & 2017",
-  raster_alpha = 1,
-  vec_alpha = 0.8
-)
-gvocc
-```
-
-
-
-
-
-# Biomass data
-
-```{r}
-library(dplyr)
-library(ggplot2)
-library(gfplot)
-library(gfdata)
-
-events <- readRDS("analysis/VOCC/data/event-data-pop-1n3.rds")
-fish <- readRDS("analysis/VOCC/data/bio-data-pop-1n3.rds")
-
-biomass <- split_catch_maturity (events, fish, 
-  survey = c("SYN HS","SYN QCS"), 
-  years = NULL,
-  cutoff_quantile = c(.9995),
-  plot = TRUE
-)
-
-saveRDS(biomass, file = "analysis/VOCC/data/maturity-biomass-data-pop-1n3-re.rds")
-
-# disagreement between catch_weight and bio sample for single fishing event with 17 large POP. 
-# events[events$fishing_event_id==1506954,]$catch_weight
-# fish[fish$fishing_event_id==1506954,]$length
-# tidy_sets[tidy_sets$fishing_event_id==1506954,]$catch_weight
-
-```
-
-
-
-
-```{r}
-biomass <- readRDS("data/maturity-biomass-data-pop-1n3-re.rds")
-#doy <- data %>% select(fishing_event_id, DOY)
-#biomass <- left_join(biomass, doy)
-```
-
-```{r}
-p <- ggplot(biomass, aes(X, Y, size = density, colour = density)) + 
-  geom_point(alpha=0.5) + scale_colour_viridis_c(trans = "sqrt", option = "C", guide = "legend") + facet_wrap(~year)
-print(p)
-
-p <- ggplot(biomass, aes(X, Y, size = adult_density, colour = adult_density)) + 
-  geom_point(alpha=0.5) + scale_colour_viridis_c(trans = "sqrt", option = "C", guide = "legend") + facet_wrap(~year)
-print(p)
-
-p <- ggplot(biomass, aes(X, Y, size = imm_density, colour = imm_density))  +
-  geom_point(alpha=0.5) + scale_colour_viridis_c(trans = "sqrt", option = "C", guide = "legend") + facet_wrap(~year)
-print(p)
-```
-
-Run sdmTMB model (if not done previously).
-```{r eval=FALSE}
-# # choose the spatial range to model
-dat <- biomass %>% gfplot:::interp_survey_bathymetry() 
-dat <- dat$data %>% gfplot:::scale_survey_predictors()
-#nd <- nd %>% filter(ssid != 16) %>% filter(ssid != 4)
-
-spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 500)
-sdmTMB::plot_spde(spde)
-
-adult_biomass <- sdmTMB::sdmTMB(dat,
-  adult_density ~ 0 + as.factor(year),
-  time_varying = ~ 0 + depth_scaled + depth_scaled2,
-  time = "year", spde = spde,
-  family = tweedie(link = "log"),
-  ar1_fields = TRUE, 
-  include_spatial = TRUE,
-  silent = FALSE
-)
-
-imm_biomass <- sdmTMB::sdmTMB(dat,
-  imm_density ~ 0 + as.factor(year),
-  time_varying = ~ 0 + depth_scaled + depth_scaled2,
-  time = "year", spde = spde,
-  family = tweedie(link = "log"),
-  ar1_fields = FALSE, 
-  include_spatial = TRUE,
-  silent = FALSE
-)
-
-saveRDS(adult_biomass, file = "data/m_adult_biomass.rds")
-saveRDS(imm_biomass, file = "data/m_imm_biomass.rds")
-```
-
-
-
-Calculate predicted values
-```{r}
-adult_biomass <- readRDS("data/m_adult_biomass.rds")
-imm_biomass <- readRDS("data/m_imm_biomass.rds")
-
-nd <- nd %>% mutate(year = as.integer(year)) %>%
-  # dplyr::filter(year > 2003) %>% 
-  filter(ssid!=3) %>% 
-  filter(ssid!=4) %>% 
-  filter(ssid!=16) 
-#unique(biomass$year)
-
-adult_predictions <- predict(adult_biomass, newdata = nd)
-imm_predictions <- predict(imm_biomass, newdata = nd)
-```
-
-```{r}
-predictions <- adult_predictions
-predictions$est_exp <- exp(predictions$est)*10000
-
-breaks <- scales::trans_breaks(fourth_root_power[["transform"]], fourth_root_power[["inverse"]], n=5) 
-labels <- function(x) { format(x, digits=1) }
-    
-p_adult <- plot_map(predictions, "est_exp") + 
-  scale_fill_viridis_c(trans = fourth_root_power, breaks=breaks, labels = labels, option = "C") +
-  ggtitle("Pacific Ocean Perch mature biomass") + theme(legend.position = c(0.9, 0), legend.justification = c(0.9, 0), legend.title = element_blank() ) 
-print(p_adult)
-```
-
-```{r}
-adult_predictions$est_exp <- exp(adult_predictions$est)*10000
-adult <- make_vector_data(adult_predictions,
-  ssid = c(1,3),
-  start_time = 2005,
-  #skip_time = 2011,
-  input_cell_size = 2,
-  scale_fac = 1,
-  delta_t_total = 10,
-  delta_t_step = 2,
-  indices = c(1, 1, 1, 2, 2, 2, 2),
-  variable_names = "est_exp",
-  thresholds = c(0.001) # vector of plus/minus threshold(s) to define match.
-)
-#glimpse(adult )
-```
-
-
-```{r eval=FALSE}
-gvobiomass <- plot_vocc(adult,
-  # low_col = "yellow",
-  # mid_col = "grey",
-  # high_col = "black",
-  # vec_aes = "units_per_decade",
-  # vec_lwd_range = c(0.7,0.005 ),
-  # vec_alpha = 0.7,
-  # max_vec_plotted = 30,
-  fill_col = "var_1_e",
-  fill_label = "Mean mature \nbiomass (kg/ha)\n in 2011-2017",
-  raster_alpha = 1,
-  viridis_option = "C",
-  vec_aes = NULL,
-  transform_col = fourth_root_power
-)
-gvobiomass <- gvobiomass +
-  ggtitle("Pacific Ocean Perch")
-
-gvobiomass 
-```
-
-```{r}
-biotrend_ad <- plot_vocc(adult,
-  fill_col = "units_per_decade",
-  fill_label = "Mature \nbiomass trend \n(kg/ha/decade)\nfor 2005-2017",
-  raster_alpha = 1,
-  vec_aes = NULL,
-  transform_col = fourth_root_power
-)
-biotrend_ad
-```
-
-```{r}
-predictions <- imm_predictions
-predictions$est_exp <- exp(predictions$est)*10000
-
-p <- plot_map(predictions, "est_exp") + 
-  scale_fill_viridis_c(trans = fourth_root_power, breaks=breaks, labels = labels, option = "C") +
-  ggtitle("Prediction (fixed effects + all random effects)")
-print(p)
-```
-
-
-```{r}
-imm_predictions$est_exp <- exp(imm_predictions$est)*10000
-
-out_im <- make_vector_data(imm_predictions,
-  ssid = c(1,3),
-  start_time = 2005,
-  skip_time = 2011,
-  input_cell_size = 2,
-  scale_fac = 1,
-  delta_t_total = 10,
-  delta_t_step = 2,
-  indices = c(1, 1, 1, 2, 2, 2),
-  variable_names = "est_exp",
-  thresholds = c(0.0001) # vector of plus/minus threshold(s) to define match.
-)
-# glimpse(out_im)
-```
-
-```{r}
-biotrend_im <- plot_vocc(out_im,
-  fill_col = "units_per_decade",
-  fill_label = "Immature \nbiomass trend \n(kg/ha/decade)\nfor 2005-2017",
-  raster_alpha = 1,
-  vec_aes = NULL,
-  transform_col = fourth_root_power
-)
-biotrend_im
-```
-```{r}
-png(file = "POP-maturity-year-re.png",   # The directory you want to save the file in
+png(file = "temp-2005-2017-1n3.png",   # The directory you want to save the file in
 res = 600,
 units = 'in',
-width = 8, # The width of the plot in inches
-height = 10)
+width = 10, # The width of the plot in inches
+height = 7) # The height of the plot in inches
 
-plot_mat_ogive(m)
+gridExtra::grid.arrange(gtrend, gvocc, gvocc1d, nrow = 1)
 dev.off()
 ```
 
 
-```{r}
-png(file = "exploratory-pop-figs-trans.png",   # The directory you want to save the file in
-res = 600,
-units = 'in',
-width = 14, # The width of the plot in inches
-height = 12) # The height of the plot in inches
 
-gridExtra::grid.arrange(temp, gvocc, gtrend, 
-  # p_adult,
-    gvobiomass, 
-  biotrend_ad, biotrend_im, nrow = 2)
-dev.off()
-```
+
+
