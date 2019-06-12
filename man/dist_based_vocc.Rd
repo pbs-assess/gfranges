@@ -31,7 +31,7 @@ estimate this assuming that both major axes are likely to hold an analogue.}
 
 \item{raster}{Logical for whether climate data is in raster form.}
 
-\item{kNN}{Logical for whether to use kNN search for extra speed 
+\item{kNN}{Logical for whether to use kNN search for extra speed
 (but only returns 1 target cell per source).}
 }
 \description{

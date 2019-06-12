@@ -5,11 +5,14 @@
 \title{Plot climate change vectors}
 \usage{
 plot_vocc(df, fill_col = NULL, fill_label = NULL, raster_alpha = 1,
-  vec_aes = "distance", vec_lwd_range = c(0.7, 0.8), vec_alpha = 1,
-  max_vec_plotted = 100, low_fill = "Steel Blue 4",
-  mid_fill = "white", high_fill = "Red 3", low_col = "white",
-  mid_col = "white", high_col = "white", coast = NULL,
-  contours = NULL)
+  vec_aes = "distance", arrowhead_size = 0.015,
+  vec_lwd_range = c(0.7, 0.8), vec_alpha = 1,
+  max_vec_plotted = max(df$distance), min_vec_plotted = 4,
+  NA_label = "NA", low_fill = "Steel Blue 4", mid_fill = "white",
+  high_fill = "Red 3", low_col = "white", mid_col = "white",
+  high_col = "white", coast = NULL, contours = NULL,
+  axis_lables = FALSE, viridis_option = "D",
+  transform_col = "no_trans", raster_limits = NULL)
 }
 \arguments{
 \item{df}{Dataframe produced by dist_based_vocc function.}
@@ -22,11 +25,13 @@ plot_vocc(df, fill_col = NULL, fill_label = NULL, raster_alpha = 1,
 
 \item{vec_aes}{Vector name for any plotting variation.}
 
+\item{arrowhead_size}{Changes head size for custom geom_quiver function.}
+
 \item{vec_lwd_range}{Range in vector line widths.}
 
 \item{vec_alpha}{Vector transparency.}
 
-\item{max_vec_plotted}{Upper limit for vector lenths. 
+\item{max_vec_plotted}{Upper limit for vector lenths.
 Cells with no match within this distance will be labeled 'NA'.}
 
 \item{low_fill}{Colour of negative values if raster values span zero.}
@@ -41,11 +46,20 @@ Cells with no match within this distance will be labeled 'NA'.}
 
 \item{high_col}{High colour for vectors.}
 
-\item{coast}{Coast polygons where (x = "X", y = "Y", group = "PID"). 
+\item{coast}{Coast polygons where (x = "X", y = "Y", group = "PID").
 If NULL, will attempt to create them for xy values in df.}
 
 \item{contours}{Polygons of contour lines where (x = "X", y = "Y", group = "paste(PID, SID)").
 If NULL, will attempt to create bathymetry layer for xy values in df using gfplot.}
+
+\item{axis_lables}{Logical for inclusion of axis labels.}
+
+\item{viridis_option}{Change between viridis colormap options available in ggplot.}
+
+\item{transform_col}{Apply transformation to colour scale.
+Accepts standard options (e.g. "sqrt") or unquoted custom transformations
+defined using scales::trans_new (e.g. fourth_root_power).
+Default is to apply no transformation (no_trans).}
 }
 \description{
 Plot climate change vectors
