@@ -28,7 +28,7 @@
 #' m <- fit_mat_ogive(d, type = "length", sample_id_re = TRUE)
 #' plot_mat_ogive(m)
 #' }
-fit_mat_ogive <- function(dat,
+fit_mat_ogive_re <- function(dat,
                           type = c("age", "length"),
                           sample_id_re = FALSE,
                           year_re = FALSE,
