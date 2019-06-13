@@ -5,19 +5,37 @@ date: '2019-06-07'
 output: html_document
 ---
 
+Choose one value for each parameter:
+
+Species
 ```{r}
 species <- "Quillback Rockfish"
 species <- "Yelloweye Rockfish"
-species <- "North Pacific Spiny Dogfish" 
+species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
 species <- "Silvergray Rockfish"
 species <- "Arrowtooth Flounder"
 ```
 
-
+Region of interest
 ```{r}
-spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
-model_ssid <- c(1,3)
+region <- "Both odd year surveys"
+region <- "West Coast Vancouver Island"
+region <- "West Coast Haida Gwaii"
+region <- "Queen Charlotte Sound"
+region <- "Hecate Strait"
+region <- "Both West Coast surveys"
+
+## region <- "All synoptic surveys" # Probably not possible
 ```
+
+Is a new spatial needed?
+```{r}
+update_spatial_model <- TRUE
+update_spatial_model <- FALSE
+```
+
+
+Run all subsequent code...
 
 
 ```{r, message=FALSE, warning=FALSE}
@@ -30,16 +48,61 @@ library(gfranges)
 ```
 
 
-```{r, message=FALSE, warning=FALSE}
-survey_sets <- readRDS(paste0("raw/event-data-", spp, ""))
-fish <- readRDS(paste0("raw/bio-data-", spp, ""))
-bath <- readRDS("data/bathymetry-data")
-# for POP, exclude sample with unusually large fish that are impossible given recorded catch weight
-# fish <- fish[fish$fishing_event_id!=1506954,] 
+
+```{r}
+
+if(region == "Both odd year surveys") {
+survey <- c("SYN QCS","SYN HS")
+model_ssid <- c(1,3)
+years <- NULL
+}
+
+if(region == "West Coast Vancouver Island") {
+survey <- c("SYN WCVI")
+model_ssid <- c(4)
+years <- NULL
+}
+
+if(region == "West Coast Haida Gwaii") {
+survey <- c("SYN WCHG")
+model_ssid <- c(16)
+years <- NULL
+}
+
+if(region == "Queen Charlotte Sound") {
+survey <- c("SYN QCS")
+model_ssid <- c(1)
+years <- NULL
+}
+
+if(region == "Hecate Strait") {
+survey <- c("SYN HS")
+model_ssid <- c(3)
+years <- NULL
+}
+
+# if(region == "Both West Coast surveys") {
+# survey <- c("SYN WCVI","SYN WCHG")
+# model_ssid <- c(4,16)
+# years <- NULL
+# }
+
+# if(region == "All synoptic surveys") {
+# survey <- c("SYN QCS","SYN HS","SYN WCVI","SYN WCHG")
+# model_ssid <- c(1,3,4,16)
+# years <- NULL
+# }
+
+ssid_string <- paste0(model_ssid, collapse = "n")
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 ```
 
-Create prediction grids for each survey area so that only years with data are included
-```{r}
+Make prediction grids for all surveys and years, if not done before.
+```{r, message=FALSE, warning=FALSE}
+try(nd_all <- readRDS("data/nd_all_synoptic.rds"))
+
+if (!exists("nd_all")) {
+bath <- readRDS("data/bathymetry-data")
 # choose base year(s) to create grid from
 dummy_year <- c(2005,2006)
 dat <- bath$data %>% scale_survey_predictors()
@@ -67,36 +130,58 @@ unique(nd_16$year)
 nd_all <- rbind(nd_1, nd_3, nd_4, nd_16) %>%
   mutate(year = as.numeric(year)) 
 #nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
+
+saveRDS(nd_all, file = paste0("data/nd_all_synoptic.rds"))
+}
 ```
 
 
-Calculate maturity weighted biomass
-```{r, eval=FALSE}
+Calculate maturity weighted biomass if not done before
+```{r}
+try(biomass <- readRDS(paste0("data/data-by-maturity-", spp,"-", ssid_string, ".rds")))
+
+if (!exists("biomass")) {
+
+survey_sets <- readRDS(paste0("raw/event-data-", spp, ""))
+fish <- readRDS(paste0("raw/bio-data-", spp, ""))
+bath <- readRDS("data/bathymetry-data")
+# for POP, exclude sample with unusually large fish that are impossible given recorded catch weight
+# fish <- fish[fish$fishing_event_id!=1506954,] 
+
 maturity <- split_catch_maturity (survey_sets, fish, bath,
-  survey = c("SYN HS","SYN QCS"), 
-  years = NULL,
+  #survey = c("SYN QCS","SYN HS","SYN WCVI","SYN WCHG"), 
+  survey = survey,
+  years = years,
   cutoff_quantile = c(.9995),
   plot = TRUE
 )
 
-saveRDS(maturity$data, file = paste0("data/data-by-maturity-", spp, ".rds"))
+saveRDS(maturity$data, file = paste0("data/data-by-maturity-", spp, "-", ssid_string, ".rds"))
+}
+
 ```
 
-```{r, eval=FALSE}
-png(file = paste0("figs/", spp, "-mass-model.png"),   # The directory you want to save the file in
+
+
+```{r}
+if(exists("maturity")) {
+png(file = paste0("figs/", spp, "-mass-model-", ssid_string, ".png"),   # The directory you want to save the file in
 res = 600,
 units = 'in',
 width = 8, # The width of the plot in inches
 height = 10)
-
+  
 maturity$mass_model
 
 dev.off()
 print(maturity$mass_model)
+}
 ```
 
-```{r, eval=FALSE}
-png(file = paste0("figs/", spp, "-maturity-year-re.png"),   # The directory you want to save the file in
+
+```{r}
+if(exists("maturity")) {
+png(file = paste0("figs/", spp, "-maturity-", ssid_string, ".png"),   # The directory you want to save the file in
 res = 600,
 units = 'in',
 width = 8, # The width of the plot in inches
@@ -106,23 +191,24 @@ maturity$maturity
 
 dev.off()
 print(maturity$maturity)
-```
-
-Choose spatial zone
-```{r}
-biomass <- readRDS(paste0("data/data-by-maturity-", spp, ".rds"))
-data <- biomass %>% gfranges:::scale_survey_predictors()
-
-nd <- nd_all %>% filter(ssid %in% model_ssid) 
-data <- data %>% filter(ssid %in% model_ssid)
+}
 ```
 
 Run sdmTMB model (if not done previously).
 ```{r eval=FALSE}
+if (update_spatial_model) {
+
+biomass <- readRDS(paste0("data/data-by-maturity-", spp, "-", ssid_string, ".rds"))
+data <- biomass %>% gfranges:::scale_survey_predictors()
+
+nd <- nd_all %>% filter(ssid %in% model_ssid) 
+data <- data %>% filter(ssid %in% model_ssid)
+
 spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 500)
 sdmTMB::plot_spde(spde)
 
 if (any(names(data)=="adult_density")) {
+  
 adult_biomass <- sdmTMB::sdmTMB(data,
   adult_density ~ 0 + as.factor(year),
   time_varying = ~ 0 + depth_scaled + depth_scaled2,
@@ -146,9 +232,9 @@ imm_biomass <- sdmTMB::sdmTMB(data,
   silent = FALSE
 )
 
-saveRDS(adult_biomass, file = paste0("data/model-mature-biomass-", spp, "-1n3.rds"))
+saveRDS(adult_biomass, file = paste0("data/model-mature-biomass-", spp, "-", ssid_string, ".rds"))
 
-saveRDS(imm_biomass, file = paste0("data/model-imm-biomass-", spp, "-1n3.rds"))
+saveRDS(imm_biomass, file = paste0("data/model-imm-biomass-", spp, "-", ssid_string, ".rds"))
 
 } else {
 
@@ -162,47 +248,79 @@ total_biomass <- sdmTMB::sdmTMB(dat,
   silent = FALSE
 )
 
-saveRDS(total_biomass, file = paste0("data/model-total-biomass-", spp, "-1n3.rds"))
+saveRDS(total_biomass, file = paste0("data/model-total-biomass-", spp, "-", ssid_string, ".rds"))
 
+}
 }
 ```
 
 
-Calculate predicted values for available models
-#FIXME: tryCatch not working here, try this?
+Calculate predicted values for available models, if needed
 ```{r, error=TRUE}
+if (isFALSE(update_spatial_model)) {
+  try(adult_predictions <- readRDS(paste0("data/predictions-", spp, "-", ssid_string, "-mature-biomass.rds")))
+  try(imm_predictions <- readRDS(paste0("data/predictions-", spp, "-", ssid_string, "-imm-biomass.rds")))
+  try(predictions <- readRDS(paste0("data/predictions-", spp, "-", ssid_string, "-total-biomass.rds")))
+} 
+
+if (!exists("adult_predictions")) {  
 if (length(unique(fish$maturity_code))>2) {
-    adult_biomass <- readRDS(paste0("data/model-mature-biomass-", spp, "-1n3.rds"))
     nd$year<- as.integer(nd$year)
+      
+    adult_biomass <- readRDS(paste0("data/model-mature-biomass-", spp, "-", ssid_string, ".rds"))
     adult_predictions <- predict(adult_biomass, newdata = nd)
-    adult_predictions$est_exp <- exp(adult_predictions$est)*10000
-    max_raster <- quantile(adult_predictions$est_exp, .9999)
-    max_adult <-  round(max(adult_predictions$est_exp))
+    saveRDS(adult_predictions, file = paste0("data/predictions-", spp, "-", ssid_string, "-mature-biomass.rds"))
+    
+    imm_biomass <- readRDS(paste0("data/model-imm-biomass-", spp, "-", ssid_string, ".rds"))
+    imm_predictions <- predict(imm_biomass, newdata = nd)
+    saveRDS(imm_predictions, file = paste0("data/predictions-", spp, "-", ssid_string, "-imm-biomass.rds"))
+    
   } else {
     rm(adult_predictions)
-    total_biomass <- readRDS(paste0("data/model-total-biomass-", spp, "-1n3.rds"))
+    rm(imm_predictions) 
+    
+    if (!exists(predictions)) {  
+    total_biomass <- readRDS(paste0("data/model-total-biomass-", spp, "-", ssid_string, ".rds"))
     nd$year<- as.integer(nd$year)
     predictions <- predict(total_biomass, newdata = nd)
+    saveRDS(predictions, file = paste0("data/predictions-", spp, "-", ssid_string, "-total-biomass.rds"))
+    }
+    }
+}
+  
+if (exists("adult_predictions")) {
+    adult_predictions$est_exp <- exp(adult_predictions$est)*10000
+    imm_predictions$est_exp <- exp(imm_predictions$est)*10000
+    
+    adult_predictions$total_bio <- imm_predictions$est_exp + adult_predictions$est_exp
+    imm_predictions$prop_imm <- imm_predictions$est_exp/(adult_predictions$est_exp+imm_predictions$est_exp)
+    
+    max_raster <- quantile(adult_predictions$est_exp, .9999)
+    max_adult <-  round(max(adult_predictions$est_exp))
+
+} else {  
     predictions$total_bio <- exp(predictions$est)*10000
     max_raster <- quantile(predictions$total_bio, .9999)
     max_bio <-  round(max(predictions$total_bio))
-  }
+}
 ```
 
 ```{r, error=TRUE}
 if (exists("adult_predictions")) {
 p_adult <- plot_facet_map(adult_predictions, "est_exp", 
   transform_col = fourth_root_power, 
-  raster_limits = c(0, max_raster)) + 
+  raster_limits = c(0, max_raster),
+  legend_position = "none"
+  ) + 
   labs(fill="kg/ha") +
-  ggtitle(paste0("", species, " mature biomass (max =",max_adult,"kg/ha)"))
+  ggtitle(paste0("", species, " mature biomass \n(max = ", max_adult, " kg/ha)"))
 print(p_adult) 
 } else { 
   p_adult <- plot_facet_map(predictions, "total_bio", 
     #raster_limits = c(0, max_raster),
     transform_col = fourth_root_power) + 
   labs(fill="kg/ha") +
-  ggtitle(paste0("", species, " total biomass (max = ",max_bio,"kg/ha)"))
+  ggtitle(paste0("", species, " total biomass \n(max = ", max_bio, " kg/ha)"))
 print(p_adult) 
   }
 ```
@@ -211,55 +329,80 @@ print(p_adult)
 
 ```{r, message=FALSE, warning=FALSE}
 if (exists("adult_predictions")) {
+  predictions <- adult_predictions 
+} 
 
-out_mature1 <- make_vector_data(adult_predictions,
+if ( 1 %in% model_ssid) {
+out_mature1 <- make_vector_data(predictions,
   ssid = c(1),
   start_time = 2003,
   #start_time = 2005,
-  #skip_time = 2011,
+  skip_time = 2004,
   input_cell_size = 2,
   scale_fac = 1,
   delta_t_total = 10,
   delta_t_step = 2,
-  indices = c(1, 1, 1, 1, 1, 2, 2, 2, 2),
+  indices = c(1, 1, 1, 1, 2, 2, 2, 2),
   #indices = c(1, 1, 1, 2, 2, 2, 2),
   variable_names = "est_exp",
-  thresholds = c(0.001) # vector of plus/minus threshold(s) to define match.
+  thresholds = c(0.001) 
 )
+} else { out_mature1 <- NULL }
 
-out_mature3 <- make_vector_data(adult_predictions,
+if ( 3 %in% model_ssid) {  
+out_mature3 <- make_vector_data(predictions,
   ssid = c(3),
   start_time = 2005,
-  #skip_time = 2011,
   input_cell_size = 2,
   scale_fac = 1,
   delta_t_total = 10,
   delta_t_step = 2,
   indices = c(1, 1, 1, 2, 2, 2, 2),
   variable_names = "est_exp",
-  thresholds = c(0.001) # vector of plus/minus threshold(s) to define match.
+  thresholds = c(0.001) 
 )
+} else { out_mature3 <- NULL }
 
-out_mature <- rbind(out_mature1, out_mature3)
-} else { rm(out_mature)}
-```
 
-```{r, message=FALSE, warning=FALSE}
-out_total <- make_vector_data(predictions,
-  ssid = c(1,3),
-  start_time = 2005,
-  #skip_time = 2011,
+if ( 4 %in% model_ssid) {  
+out_mature4 <- make_vector_data(predictions,
+  ssid = c(4),
+  start_time = 2004,
   input_cell_size = 2,
   scale_fac = 1,
   delta_t_total = 10,
   delta_t_step = 2,
-  indices = c(1, 1, 1, 2, 2, 2, 2),
-  variable_names = "total_bio",
-  thresholds = c(0.001) # vector of plus/minus threshold(s) to define match.
+  indices = c(1, 1, 1, 1, 2, 2, 2, 2),
+  variable_names = "est_exp",
+  thresholds = c(0.001) 
 )
+} else { out_mature4 <- NULL }
+
+  
+if ( 16 %in% model_ssid) {  
+out_mature16 <- make_vector_data(predictions,
+  ssid = c(16),
+  start_time = 2004,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 10,
+  delta_t_step = 2,
+  indices = c(1, 1, 1, 1, 2, 2, 2, 2),
+  variable_names = "est_exp",
+  thresholds = c(0.001) 
+)
+} else { out_mature16 <- NULL }
+out_mature <- rbind(out_mature1, out_mature3, out_mature4, out_mature16)
+
+if (length(unique(fish$maturity_code))<2) {
+  out_total <- out_mature
+} 
 ```
 
+
+Optional plot of current total biomass 
 ```{r eval=FALSE}
+if (exists("out_total")) {
 current_biomass <- plot_vocc(out_total,
   fill_col = "var_1_e",
   fill_label = "Mean mature \nbiomass (kg/ha)\n in 2011-2017",
@@ -272,50 +415,36 @@ current_biomass <- current_biomass +
   ggtitle(paste0("", species, " total biomass"))
 
 current_biomass
+}
 ```
 
 
 ```{r, error=TRUE}
 if (exists("out_mature")) {
-data <- out_mature1
 data <- out_mature
 biotrend_ad <- plot_vocc(data,
   fill_col = "units_per_decade",
-  fill_label = "Mature \nbiomass trend \n(kg/ha/decade)\nfor 2003-2017",
+  fill_label = "Mature \nbiomass \ntrend \n(kg/ha/decade)",
   raster_alpha = 1,
   vec_aes = NULL,
-  transform_col = fourth_root_power
-)
+  # axis_lables = TRUE,
+  transform_col = fourth_root_power,
+  legend_position = c(0.2, 0.25)
+)+ ggtitle(paste0("", species, " ", min(unique(adult_predictions[["year"]])), "-", max(unique(adult_predictions[["year"]]))))
 biotrend_ad
 } else {
   biotrend_ad <- plot_vocc(out_total,
   fill_col = "units_per_decade",
-  fill_label = "Biomass trend \n(kg/ha/decade)\nfor 2003-2017",
+  fill_label = "Biomass \ntrend \n(kg/ha/decade)",
   raster_alpha = 1,
   vec_aes = NULL,
-  transform_col = fourth_root_power
-)
+  # axis_lables = TRUE,
+  transform_col = fourth_root_power,
+  legend_position = c(0.2, 0.25)
+)+ ggtitle(paste0("", species, " ", min(unique(predictions[["year"]])), "-", max(unique(predictions[["year"]]))))
 biotrend_ad
 }
 ```
-
-```{r, error=TRUE}
-if (length(unique(fish$maturity_code))>2) {
-    imm_biomass <- readRDS(paste0("data/model-imm-biomass-", spp, "-1n3.rds"))
-    
-    nd$year<- as.integer(nd$year)
-    imm_predictions <- predict(imm_biomass, newdata = nd)
-    imm_predictions$est_exp <- exp(imm_predictions$est)*10000
-    
-    predictions <- adult_predictions
-    predictions$prop_imm <- imm_predictions$est_exp/(adult_predictions$est_exp+imm_predictions$est_exp)
-    predictions$total_bio <- imm_predictions$est_exp + adult_predictions$est_exp
-
-  }else{ 
-    rm(imm_predictions) 
-}
-```
-
 
 
 ```{r}
@@ -323,7 +452,7 @@ if (exists("imm_predictions")) {
 p_imm <- plot_facet_map(imm_predictions, "est_exp", transform_col = fourth_root_power, 
   raster_limits = c(0, max_raster)) + 
   labs(fill="kg/ha") +
-  ggtitle(paste0("", species, " immature biomass"))
+  ggtitle(paste0("", species, " immature biomass \n "))
 p_imm
 } else {
   p_imm <- grid::grid.rect(gp=grid::gpar(col="white"))
@@ -333,38 +462,72 @@ p_imm
 
 ```{r, message=FALSE, warning=FALSE}
 if (exists("imm_predictions")) {
+  predictions <- imm_predictions 
 
-out_im1 <- make_vector_data(imm_predictions,
+if ( 1 %in% model_ssid) {
+out_im1 <- make_vector_data(predictions,
   ssid = c(1),
   start_time = 2003,
   #start_time = 2005,
-  #skip_time = 2011,
+  skip_time = 2004,
   input_cell_size = 2,
   scale_fac = 1,
   delta_t_total = 10,
   delta_t_step = 2,
-  indices = c(1, 1, 1, 1, 1, 2, 2, 2, 2),
+  indices = c(1, 1, 1, 1, 2, 2, 2, 2),
   #indices = c(1, 1, 1, 2, 2, 2, 2),
   variable_names = "est_exp",
-  thresholds = c(0.0001) # vector of plus/minus threshold(s) to define match.
+  thresholds = c(0.001) 
 )
+} else { out_im1 <- NULL }
 
-out_im3 <- make_vector_data(imm_predictions,
+if ( 3 %in% model_ssid) {  
+out_im3 <- make_vector_data(predictions,
   ssid = c(3),
   start_time = 2005,
-  #skip_time = 2011,
   input_cell_size = 2,
   scale_fac = 1,
   delta_t_total = 10,
   delta_t_step = 2,
   indices = c(1, 1, 1, 2, 2, 2, 2),
   variable_names = "est_exp",
-  thresholds = c(0.0001) # vector of plus/minus threshold(s) to define match.
+  thresholds = c(0.001) 
 )
-# glimpse(out_im)
+} else { out_im3 <- NULL }
 
-out_imm <- rbind(out_im1, out_im3)
-} else { rm(out_imm)}
+
+if ( 4 %in% model_ssid) {  
+out_im4 <- make_vector_data(predictions,
+  ssid = c(4),
+  start_time = 2004,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 10,
+  delta_t_step = 2,
+  indices = c(1, 1, 1, 1, 2, 2, 2, 2),
+  variable_names = "est_exp",
+  thresholds = c(0.001) 
+)
+} else { out_im4 <- NULL }
+
+  
+if ( 16 %in% model_ssid) {  
+out_im16 <- make_vector_data(predictions,
+  ssid = c(16),
+  start_time = 2004,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 10,
+  delta_t_step = 2,
+  indices = c(1, 1, 1, 1, 2, 2, 2, 2),
+  variable_names = "est_exp",
+  thresholds = c(0.001) 
+)
+} else { out_im16 <- NULL }
+out_imm <- rbind(out_im1, out_im3, out_im4, out_im16)
+
+} else { rm(out_imm) }
+
 ```
 
 ```{r}
@@ -373,31 +536,36 @@ data <- out_im1
 data <- out_imm
 biotrend_im <- plot_vocc(data,
   fill_col = "units_per_decade",
-  fill_label = "Immature \nbiomass trend \n(kg/ha/decade)\nfor 2003-2017",
+  fill_label = "Immature \nbiomass \ntrend \n(kg/ha/decade)",
   raster_alpha = 1,
   vec_aes = NULL,
-  transform_col = fourth_root_power
-)
+  transform_col = fourth_root_power,
+  #axis_lables = TRUE,
+  legend_position = c(0.2, 0.25)
+) + ggtitle(paste0("", species, " ", min(unique(imm_predictions[["year"]])), "-", max(unique(imm_predictions[["year"]]))))
 biotrend_im
 } else { biotrend_im <- grid::grid.rect(gp=grid::gpar(col="white"))}
 ```
 
-#FIXME: failing
+
 ```{r}
 if (exists("imm_predictions")) {
 
-p_prop_imm <- plot_facet_map(predictions, "prop_imm") + 
-  labs(fill="% by mass") +
+p_prop_imm <- plot_facet_map(imm_predictions, "prop_imm") + 
+  labs(fill="% \nby mass") +
   ggtitle(paste0("", species, " proportion immature"))
 print(p_prop_imm)
 
 } else { p_prop_imm <- grid::grid.rect(gp=grid::gpar(col="white"))}
 ```
 
-Calculate predicted values for temperature
+Retrieve (or calculate) predicted values for temperature
 ```{r, eval=FALSE}
-m_temp <- readRDS("../VOCC/data/m_temp_allyears.rds")
-temperature <- predict(m_temp, newdata = nd_all)
+# m_temp <- readRDS("../VOCC/data/m_temp_allyears.rds")
+# temperature <- predict(m_temp, newdata = nd_all)
+# saveRDS(temperature, file = "data/predicted_temp_allyears.rds")
+
+temperature <- readRDS("data/predicted_temp_allyears.rds")
 temperature <- filter(temperature, ssid %in% model_ssid)
 ```
 
@@ -410,17 +578,18 @@ print(temp)
 
 
 ```{r, eval=FALSE}
-png(file = paste0("figs/exploratory-", spp, "-figs.png"),   # The directory you want to save the file in
+png(file = paste0("figs/exploratory-", spp, "-", ssid_string, ".png"),   # The directory you want to save the file in
 res = 600,
 units = 'in',
-width = 14, # The width of the plot in inches
-height = 12) # The height of the plot in inches
+width = 9.5, # The width of the plot in inches
+height = 12.5) # The height of the plot in inches
 
 gridExtra::grid.arrange(
     p_adult, p_imm, 
-    p_prop_imm, #current_biomass, 
     biotrend_ad, biotrend_im, 
-    temp,
-    nrow = 2)
+    #current_biomass, 
+    p_prop_imm, temp,
+    nrow = 3)
 dev.off()
+
 ```
