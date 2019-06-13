@@ -52,7 +52,8 @@ plot_vocc <- function(df,
                       axis_lables = FALSE,
                       viridis_option = "D",
                       transform_col = no_trans,
-                      raster_limits = NULL
+                      raster_limits = NULL,
+                      legend_position = c(0.2, 0.2)
   ) {
   df <- df[order(-df$distance), ] # order so smaller vectors are on top?
   df[df$distance < min_vec_plotted, ]$target_X <- NA
@@ -63,13 +64,21 @@ plot_vocc <- function(df,
     df[df$distance > max_vec_plotted, ]$target_Y <- NA
   }
 
+  width_X <- max(df$x, na.rm = TRUE) - min(df$x, na.rm = TRUE)
+  width_Y <- max(df$y, na.rm = TRUE) - min(df$y, na.rm = TRUE)
+  diffxy <- width_X - width_Y
+  #browser()
+  if (diffxy < -6) {buffer_X <- c(-(abs(diffxy)/2), abs(diffxy)/2)} else { buffer_X <- c(-3,3)}
+  if (diffxy > 6) {buffer_Y <- c(-(abs(diffxy)/2), abs(diffxy)/2)} else { buffer_Y <- c(-3,3)}
+  
+  
   if (isFALSE(axis_lables)) {
     gvocc <- ggplot2::ggplot(df, aes(x, y)) +
-      coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
+      coord_fixed(xlim = range(df$x) + buffer_X, ylim = range(df$y) + buffer_Y) +
       gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
   } else {
     gvocc <- ggplot2::ggplot(df, aes(x, y)) +
-      coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
+      coord_fixed(xlim = range(df$x) + buffer, ylim = range(df$y) + c(-3, 3)) +
       gfplot::theme_pbs() + xlab("UTM") + ylab("UTM")
   }
 
@@ -95,7 +104,7 @@ plot_vocc <- function(df,
           trans = transform_col, breaks = breaks, labels = labels, limits = raster_limits
         ) +
         labs(fill = fill_label) +
-        theme(legend.position = c(0.17, 0.17))
+        theme(legend.position = legend_position)
     } else {
       gvocc <- gvocc +
         geom_raster(aes(fill = fill), alpha = raster_alpha) +
@@ -104,7 +113,7 @@ plot_vocc <- function(df,
           trans = transform_col, breaks = breaks, labels = labels
         ) +
         labs(fill = fill_label) +
-        theme(legend.position = c(0.17, 0.17))
+        theme(legend.position = legend_position)
     }
   }
 
@@ -270,17 +279,31 @@ plot_facet_map <- function(df, column = "est",
                            X = "X", Y = "Y",
                            viridis_option = "C",
                            transform_col = no_trans,
-                           raster_limits = NULL
+                           raster_limits = NULL,
+                           legend_position = "right"
   ) {
 
   breaks <- scales::trans_breaks(transform_col[["transform"]],
     transform_col[["inverse"]],
     n = 5
   )
+  
   labels <- function(x) {
     format(x, digits = 1)
   }
   
+  width_X <- max(df$X, na.rm = TRUE) - min(df$X, na.rm = TRUE)
+  width_Y <- max(df$Y, na.rm = TRUE) - min(df$Y, na.rm = TRUE)
+  diffxy <- width_X - width_Y
+  
+  if (diffxy < -6) {buffer_X <- c(-(abs(diffxy)/2), abs(diffxy)/2)} else { buffer_X <- c(-3,3)}
+  if (diffxy > 6) {buffer_Y <- c(-(abs(diffxy)/2), abs(diffxy)/2)} else { buffer_Y <- c(-3,3)}
+  
+  anno <- data.frame(year = unique(df$year)) 
+  anno$x <- max(df$X)-(width_X*0.1)
+  anno$y <- max(df$Y)-(width_Y*0.1)
+
+
   
   gfacet <- ggplot(df, aes_string(X, Y, fill = column)) +
     geom_raster() +
@@ -289,8 +312,12 @@ plot_facet_map <- function(df, column = "est",
       trans = transform_col, breaks = breaks, labels = labels, limits = raster_limits
     ) +
     facet_wrap(~year) +
-    coord_fixed(xlim = range(df$X) + c(-3, 3), ylim = range(df$Y) + c(-3, 3)) +
-    gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+    coord_fixed(
+      xlim = range(df$X) + buffer_X, 
+      ylim = range(df$Y) + buffer_Y) +
+    gfplot::theme_pbs() + 
+    theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
+      legend.position = legend_position, strip.text = element_blank())
   # theme(legend.position = c(0.9, 0),
   #   legend.justification = c(0.9, 0),
   #   legend.title = element_blank())
@@ -369,7 +396,14 @@ plot_facet_map <- function(df, column = "est",
     geom_polygon(
       data = coast, aes_string(x = X, y = Y, group = "PID"),
       fill = "grey87", col = "grey70", lwd = 0.2
-    )
+    ) 
+  
+  # add year labels
+  # convert coordinate data back to utms
+  
+  gfacet <- gfacet +
+    geom_text(data = anno, aes(label = year, x = x, y = y), 
+      size = 3, col = "grey40", inherit.aes = FALSE) 
   gfacet
 }
 
