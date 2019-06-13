@@ -33,7 +33,7 @@ if (is.null(years)) years <- unique(survey_sets[["year"]])
 species <- fish$species_common_name[1]
 fish <- fish %>% filter(survey_abbrev %in% survey) %>% filter (year %in% years)
 survey_sets <- survey_sets %>% filter(survey_abbrev %in% survey) %>% filter (year %in% years)
-#browser()
+
 # use internal version of tidy_survey_sets to include ssid and month columns
 tidy_sets <- tidy_survey_sets(survey_sets, survey = survey, years = years) 
 tidy_sets <- add_missing_depths(tidy_sets, survey = survey, years = years, bath = bath) 
@@ -118,7 +118,7 @@ data <- sets_w_ratio %>%
 
 if (plot) {
   maturity_plot <- plot_mat_ogive(m) + 
-    ggplot2::ggtitle(paste("Length at maturity for", species, ""))
+    ggplot2::ggtitle(paste("Length at maturity for", species, "surveys", ssid_string, ""))
   
   mass_plot <- ggplot(fish_maturity, aes(length, new_mass, colour= as.factor(sex))) + 
     geom_point(size = 1.5, alpha=0.35, shape = 1) + 
@@ -126,7 +126,7 @@ if (plot) {
     scale_color_viridis_d(begin= 0.1, end=0.6) + 
     facet_wrap(~year) + theme_pbs() + 
     xlab("") + ylab("Weight (open circles are estimates)") + labs(colour = "Sex") +
-    ggplot2::ggtitle(paste("Length-weight relationship for", species, ""))
+    ggplot2::ggtitle(paste("Length-weight relationship for", species, "surveys", ssid_string, ""))
   
   #gridExtra::grid.arrange(mass_plot, maturity_plot, nrow = 2)
   print(maturity_plot)
