@@ -219,6 +219,7 @@ plot_mat_ogive <- function(object,
                              if (object$type[[1]] == "age") "Age at maturity" else "Length at maturity",
                            rug = TRUE, rug_n = 1500, x_max = 1.75,
                            prediction_type = c("all", "male", "female", "none")) {
+
   if (object$sample_id_re) {
     if (object$year_re) {
       b <- glmmTMB::fixef(object$model)[[1L]]

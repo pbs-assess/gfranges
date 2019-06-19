@@ -30,13 +30,30 @@ split_catch_maturity <- function(survey_sets, fish, bath,
   ){
 
 if (is.null(years)) years <- unique(survey_sets[["year"]])  
+
 species <- fish$species_common_name[1]
-fish <- fish %>% filter(survey_abbrev %in% survey) %>% filter (year %in% years)
+
+fish_test <- fish %>% filter (year %in% years) %>% group_by(survey_abbrev)  
+
+total_maturity <- fish_test %>% mutate(maturity_levels = length(unique(maturity_code))) 
+total_levels <- unique(total_maturity$maturity_levels)
+
+if (min(total_levels<3)) {
+  fish <- fish %>% filter (year %in% years)
+  survey <- unique(fish$survey_abbrev)
+  
+} else {
+  fish <- fish %>% filter(survey_abbrev %in% survey) %>% filter (year %in% years)
+  }
+
 survey_sets <- survey_sets %>% filter(survey_abbrev %in% survey) %>% filter (year %in% years)
 
 # use internal version of tidy_survey_sets to include ssid and month columns
 tidy_sets <- tidy_survey_sets(survey_sets, survey = survey, years = years) 
 tidy_sets <- add_missing_depths(tidy_sets, survey = survey, years = years, bath = bath) 
+
+model_ssid <- unique(tidy_sets$ssid)
+ssid_string <- paste0(model_ssid, collapse = "n")
 
 # TMB model to estimate mass of length only fish
 f_mass <- gfplot::fit_length_weight(fish, sex = "female", method == "tmb")
@@ -117,20 +134,20 @@ data <- sets_w_ratio %>%
   mutate(adult_density = density*mass_ratio_mature, imm_density = density*(1-mass_ratio_mature))
 
 if (plot) {
-  maturity_plot <- plot_mat_ogive(m) + 
-    ggplot2::ggtitle(paste("Length at maturity for", species, "surveys", ssid_string, ""))
+  try(maturity_plot <- gfranges::plot_mat_ogive(m) + 
+    ggplot2::ggtitle(paste("Length at maturity for", species, "surveys", ssid_string, "")))
   
-  mass_plot <- ggplot(fish_maturity, aes(length, new_mass, colour= as.factor(sex))) + 
+  try(mass_plot <- ggplot(fish_maturity, aes(length, new_mass, colour= as.factor(sex))) + 
     geom_point(size = 1.5, alpha=0.35, shape = 1) + 
     geom_point(aes(length, weight), shape = 16, size = 1.25, alpha=0.65) + 
     scale_color_viridis_d(begin= 0.1, end=0.6) + 
     facet_wrap(~year) + theme_pbs() + 
     xlab("") + ylab("Weight (open circles are estimates)") + labs(colour = "Sex") +
-    ggplot2::ggtitle(paste("Length-weight relationship for", species, "surveys", ssid_string, ""))
+    ggplot2::ggtitle(paste("Length-weight relationship for", species, "surveys", ssid_string, "")))
   
   #gridExtra::grid.arrange(mass_plot, maturity_plot, nrow = 2)
-  print(maturity_plot)
-  print(mass_plot)
+  try(print(maturity_plot))
+  try(print(mass_plot))
 }
 
 list(data = data, maturity = maturity_plot, mass_model = mass_plot)
