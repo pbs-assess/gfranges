@@ -85,7 +85,7 @@ nd <- nd_all %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
 Run sdmTMB model (if not done previously).
 ```{r eval=FALSE}
 # # choose the spatial range to model
-dat <- data %>% dplyr::filter(year > 2003) # %>% select(year, ssid, X, Y, temperature_c, depth_scaled, depth_scaled2)
+dat <- data #%>% dplyr::filter(year > 2003) # %>% select(year, ssid, X, Y, temperature_c, depth_scaled, depth_scaled2)
 #nd <- nd_1 # %>% filter(ssid == 4)
 
 spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 500)
