@@ -113,12 +113,16 @@ Make prediction grids for all surveys and years, if not done before.
 try(nd_all <- readRDS("data/nd_all_synoptic.rds"))
 
 if (!exists("nd_all")) {
-  bath <- readRDS("data/bathymetry-data")
-
+  
   # choose base year(s) to create grid from
   dummy_year <- c(2005, 2006)
-  dat <- bath$data %>% scale_survey_predictors()
+  
+  # bath <- readRDS("data/bathymetry-data")
+  # dat <- bath$data %>% scale_survey_predictors()
 
+  newcov <- readRDS("data/new_covariates.rds")
+  dat <- newcov %>% gfranges::scale_survey_predictors()
+  
   # create grids for each ssid separately
   ssid <- 1
   survey_abbrev <- "SYN QCS"
@@ -209,7 +213,10 @@ Run sdmTMB model (if not done previously).
 ```{r eval=FALSE}
 if (update_spatial_model) {
   biomass <- readRDS(paste0("data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds"))
-  data <- biomass %>% gfranges:::scale_survey_predictors()
+  covars <- readRDS("event-covariates.rds")
+  data <- left_join(biomass, covars)
+  
+  data <- data %>% gfranges:::scale_survey_predictors()
 
   data <- data %>% filter(ssid %in% model_ssid)
 
