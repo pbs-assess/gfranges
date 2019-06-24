@@ -1,5 +1,19 @@
-
 library(dplyr)
+
+events <- readRDS("analysis/VOCC/data/events-trawled.rds")
+
+substrate <- readRDS("analysis/VOCC/data/events-w-substrate.rds")
+
+substrate2 <- as_tibble(substrate) 
+substrate2 <- substrate2 %>% dplyr::select(fishing_event_id, mixed, muddy, sandy, rocky)
+
+events <- as_tibble(events)
+events_w_covs <- left_join(events, substrate2)
+
+saveRDS(events_w_covs, file = "analysis/VOCC/data/events_covariates.rds")
+
+
+
 
 # put prediction data in raster form
 nd_all <- readRDS("analysis/VOCC/data/nd_all_synoptic.rds")

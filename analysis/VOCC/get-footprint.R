@@ -1,3 +1,40 @@
+library(tidyverse)
+
+# Add "trawled" column to event data
+
+# put event data in sf form
+bath <- readRDS("analysis/VOCC/data/bathymetry-data") 
+events <- bath$data %>% mutate(X=X*1000, Y=Y*1000) # change utms to meters from Kms
+glimpse(events)
+
+trawl_footprint <- sf::st_read(dsn="analysis/VOCC/data/trawl-footprint",layer="Trawl_footprint")
+trawl_footprint <- sf::st_transform(trawl_footprint, crs = 4326)
+
+xx <- events %>%
+  sf::st_as_sf(coords = c("lon", "lat"),
+    crs = 4326, remove = FALSE)
+
+int <- sf::st_intersects(trawl_footprint, xx)
+
+events_in_trawled_area <- xx$fishing_event_id[unlist(int)]
+xx$trawled <- if_else(xx$fishing_event_id %in% events_in_trawled_area, 1, 0)
+
+# # plot to see if working correctly
+# plot(sf::st_geometry(trawl_footprint))
+# plot(sf::st_geometry(xx[,"fishing_event_id"]), col = "black", pch = 4, cex = 0.25,
+#   add = TRUE, reset = FALSE)
+# xx_trawled <- xx %>% filter(trawled == 1)
+# plot(sf::st_geometry(xx_trawled[,"fishing_event_id"]), col = "red", pch = 4, cex = 0.25,
+#   add = TRUE, reset = FALSE)
+
+saveRDS(xx, file = "analysis/VOCC/data/events-trawled.rds")
+
+
+
+###################
+
+# add trawled footprint to prediction grid in raster form
+
 library(rgdal)
 library(raster)
 
@@ -32,7 +69,6 @@ shp2raster <- function(shp, mask.raster, label, value, transform = FALSE, proj.f
   return(r)
 }
 
-
 # retrieve trawl shapefile
 trawl_footprint <-readOGR(dsn="analysis/VOCC/data/trawl-footprint",layer="Trawl_footprint")
 plot(trawl_footprint)
@@ -66,28 +102,5 @@ saveRDS(trawl, file = "analysis/VOCC/data/trawl-footprint.rds")
 
 
 
-# put event data in raster form
-bath <- readRDS("analysis/VOCC/data/bathymetry-data") 
-events <- bath$data %>% mutate(X=X*1000, Y=Y*1000) # change utms to meters from Kms
-glimpse(events)
+#####################################
 
-# DO NOT RUN!!!!!
-# event_raster <- raster::rasterFromXYZ( 
-#   events %>% dplyr::select(X, Y, fishing_event_id), 
-#   crs = proj.to, digits = 0.01)
-
-saveRDS(event_raster, file = "analysis/VOCC/data/event-raster.rds")
-
-
-footprint <- shp2raster(shp = trawl_footprint,
-  mask.raster = event_raster, label = "trawled", 
-  transform = TRUE, proj.from = proj.from, proj.to = proj.to, value = 1)
-
-coords <- as.data.frame(raster::rasterToPoints(footprint))[, c("x", "y")]
-trawled <- as.data.frame(raster::rasterToPoints(footprint))[, 3]
-glimpse(trawled)
-trawl <- cbind(coords, trawled)
-trawl$X <- trawl$x/1000
-trawl$Y <- trawl$y/1000
-
-saveRDS(trawl, file = "analysis/VOCC/data/trawl-footprint.rds")
