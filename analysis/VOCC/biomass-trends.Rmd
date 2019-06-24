@@ -23,24 +23,33 @@ dir.create(file.path("figs", spp))
 dir.create(file.path("data", spp))
 ```
 
-Region of interest
-```{r}
-region <- "Both odd year surveys"
-region <- "West Coast Vancouver Island"
-region <- "West Coast Haida Gwaii"
-# region <- "Queen Charlotte Sound"
-# region <- "Hecate Strait"
-# region <- "Both West Coast surveys"
-region <- "All synoptic surveys" # Probably not possible
-```
-
 Is a new spatial needed?
 ```{r}
 update_spatial_model <- TRUE
-# update_spatial_model <- FALSE
 priors <- FALSE
 # priors <- TRUE
+
+# Choose region to update model for:
+
+region <- "Both odd year surveys"
+region <- "West Coast Vancouver Island"
+region <- "West Coast Haida Gwaii"
+
+# region <- "Queen Charlotte Sound"
+# region <- "Hecate Strait"
+# region <- "Both West Coast surveys"
 ```
+
+
+If not...
+```{r}
+update_spatial_model <- FALSE
+priors <- FALSE
+# priors <- TRUE
+region <- "All synoptic surveys" 
+```
+
+
 
 
 Run all subsequent code...
@@ -117,12 +126,9 @@ if (!exists("nd_all")) {
   # choose base year(s) to create grid from
   dummy_year <- c(2005, 2006)
   
-  # bath <- readRDS("data/bathymetry-data")
-  # dat <- bath$data %>% scale_survey_predictors()
+  bath <- readRDS("data/bathymetry-data")
+  dat <- bath$data %>% scale_survey_predictors()
 
-  newcov <- readRDS("data/new_covariates.rds")
-  dat <- newcov %>% gfranges::scale_survey_predictors()
-  
   # create grids for each ssid separately
   ssid <- 1
   survey_abbrev <- "SYN QCS"
@@ -144,11 +150,15 @@ if (!exists("nd_all")) {
   nd_16 <- spatiotemporal_grid(dat, ssid, survey_abbrev, dummy_year)
   unique(nd_16$year)
 
-  nd_all <- rbind(nd_1, nd_3, nd_4, nd_16) %>%
-    mutate(year = as.numeric(year))
+  nd_all <- rbind(nd_1, nd_3, nd_4, nd_16) %>% 
+    mutate(year = as.numeric(year)) 
+  
+  newcov <- readRDS("data/new_covariates.rds") %>% dplyr::select(X, Y, trawled, muddy, rocky)
+  nd_all <- left_join(nd_all, newcov, by=c("X", "Y"))
+  
   # nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
 
-  saveRDS(nd_all, file = paste0("data/", spp, "/nd_all_synoptic.rds"))
+  saveRDS(nd_all, file = paste0("data/nd_all_synoptic.rds"))
 }
 ```
 
@@ -213,8 +223,8 @@ Run sdmTMB model (if not done previously).
 ```{r eval=FALSE}
 if (update_spatial_model) {
   biomass <- readRDS(paste0("data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds"))
-  covars <- readRDS("event-covariates.rds")
-  data <- left_join(biomass, covars)
+  covars <- readRDS("data/event-covariates.rds")
+  data <- dplyr::left_join(biomass,covars)
   
   data <- data %>% gfranges:::scale_survey_predictors()
 
@@ -241,7 +251,7 @@ if (update_spatial_model) {
   if (any(names(data) == "adult_density")) {
     starttime1 <- Sys.time()
     adult_biomass <- sdmTMB::sdmTMB(data,
-      adult_density ~ 0 + as.factor(year),
+      adult_density ~ 0 + as.factor(year) + trawled + muddy + rocky,
       time_varying = ~ 0 + depth_scaled + depth_scaled2,
       time = "year", spde = spde,
       family = tweedie(link = "log"),
@@ -254,12 +264,12 @@ if (update_spatial_model) {
     endtime1 <- Sys.time()
     time1 <- round(starttime1 - endtime1)
 
-    saveRDS(adult_biomass, file = paste0("data/", spp, "/model-mature-biomass-", spp, "-", ssid_string, "-priors-", priors, time1, ".rds"))
+    saveRDS(adult_biomass, file = paste0("data/", spp, "/model-mature-biomass-", spp, "-", ssid_string, "-priors-", priors, time1, "-newcovs.rds"))
 
 
     starttime2 <- Sys.time()
     imm_biomass <- sdmTMB::sdmTMB(data,
-      imm_density ~ 0 + as.factor(year),
+      imm_density ~ 0 + as.factor(year) + trawled + muddy + rocky,
       time_varying = ~ 0 + depth_scaled + depth_scaled2,
       time = "year", spde = spde,
       family = tweedie(link = "log"),
@@ -272,11 +282,11 @@ if (update_spatial_model) {
     endtime2 <- Sys.time()
     time2 <- round(starttime2 - endtime2)
 
-    saveRDS(imm_biomass, file = paste0("data/", spp, "/model-imm-biomass-", spp, "-", ssid_string, "-priors-", priors, time2, ".rds"))
+    saveRDS(imm_biomass, file = paste0("data/", spp, "/model-imm-biomass-", spp, "-", ssid_string, "-priors-", priors, time2, "-newcovs.rds"))
   } else {
     starttime3 <- Sys.time()
     total_biomass <- sdmTMB::sdmTMB(dat,
-      density ~ 0 + as.factor(year),
+      density ~ 0 + as.factor(year)+ trawled + muddy + rocky,
       time_varying = ~ 0 + depth_scaled + depth_scaled2,
       time = "year", spde = spde,
       family = tweedie(link = "log"),
@@ -289,7 +299,7 @@ if (update_spatial_model) {
     endtime3 <- Sys.time()
     time3 <- round(starttime3 - endtime3)
 
-    saveRDS(total_biomass, file = paste0("data/", spp, "/model-total-biomass-", spp, "-", ssid_string, "-priors-", priors, ".rds"))
+    saveRDS(total_biomass, file = paste0("data/", spp, "/model-total-biomass-", spp, "-", ssid_string, "-priors-", priors, "-newcovs.rds"))
   }
 }
 ```
@@ -349,7 +359,8 @@ if (isFALSE(update_spatial_model)) {
 if (!exists("adult_predictions")) {
   if (length(unique(fish$maturity_code)) > 2) {
     nd_all <- readRDS(paste0("data/nd_all_synoptic.rds"))
-    nd <- nd_all %>% filter(ssid %in% model_ssid)
+    nd <- nd_all %>% filter(ssid %in% model_ssid) 
+    nd <- na.omit(nd)
     nd$year <- as.integer(nd$year)
 
     adult_biomass <- readRDS(list.files(
@@ -379,6 +390,7 @@ if (!exists("adult_predictions")) {
     if (!exists(predictions)) {
       nd_all <- readRDS(paste0("data/nd_all_synoptic.rds"))
       nd <- nd_all %>% filter(ssid %in% model_ssid)
+      nd <- na.omit(nd)
       nd$year <- as.integer(nd$year)
 
       total_biomass <- readRDS(paste0("data/", spp, "/model-total-biomass-", spp, "-", ssid_string, "-priors-", priors, ".rds"))

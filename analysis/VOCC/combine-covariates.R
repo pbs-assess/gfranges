@@ -1,16 +1,17 @@
 library(dplyr)
 
 events <- readRDS("analysis/VOCC/data/events-trawled.rds")
-
+events2 <- events %>% dplyr::select(-catch_weight, -present, -density,-X, -Y, -depth, -akima_depth)
+glimpse(events)
 substrate <- readRDS("analysis/VOCC/data/events-w-substrate.rds")
 
 substrate2 <- as_tibble(substrate) 
 substrate2 <- substrate2 %>% dplyr::select(fishing_event_id, mixed, muddy, sandy, rocky)
 
-events <- as_tibble(events)
-events_w_covs <- left_join(events, substrate2)
+events2 <- as_tibble(events2)
+events_w_covs <- left_join(events2, substrate2)
 
-saveRDS(events_w_covs, file = "analysis/VOCC/data/events_covariates.rds")
+saveRDS(events_w_covs, file = "analysis/VOCC/data/event-covariates.rds")
 
 
 
