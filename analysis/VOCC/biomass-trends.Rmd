@@ -12,8 +12,6 @@ Species
 species <- "Quillback Rockfish"
 # species <- "Yelloweye Rockfish"
 # priors <- TRUE
-covariates <- "+trawled+mixed+rocky"
-
 
 species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
 species <- "Silvergray Rockfish"
@@ -23,10 +21,11 @@ species <- "Lingcod"
 
 # Choose covariates  
 ```{r}
-covariates <- "+trawled+muddy+rocky+mixed"
-covariates <- "+trawled+mixed+rocky"
 covariates <- "+muddy+mixed+rocky"
 covariates <- "+mixed+rocky"
+
+covariates <- "+trawled+muddy+rocky+mixed"
+covariates <- "+trawled+mixed+rocky"
 covariates <- "+trawled+mixed"
 ```
 
@@ -75,7 +74,7 @@ library(gfdata)
 library(sdmTMB)
 library(gfranges)
 
-
+covs <- gsub("\\+", "-", covariates)
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 # folder to hold figs for this species
@@ -234,24 +233,25 @@ if (update_spatial_model) {
   covars <- readRDS("data/event-covariates.rds")
   data <- dplyr::left_join(biomass,covars)
   
-  data <- data %>% gfranges:::scale_survey_predictors()
+  # scale predictors before filtering to ensure mean and SD are global
+  data <- data %>% gfranges:::scale_survey_predictors() 
 
   data <- data %>% filter(ssid %in% model_ssid)
 
-  if (region == "All synoptic surveys") {
-    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 1200)
-  }
+  # if (region == "All synoptic surveys") {
+  #   spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 1200)
+  # }
 
   if (region == "Both odd year surveys") {
-    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 500)
-  }
-
-  if (region == "West Coast Vancouver Island") {
     spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 400)
   }
 
+  if (region == "West Coast Vancouver Island") {
+    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 200)
+  }
+
   if (region == "West Coast Haida Gwaii") {
-    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 300)
+    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 200)
   }
 
   sdmTMB::plot_spde(spde)
@@ -263,7 +263,7 @@ if (update_spatial_model) {
     starttime1 <- Sys.time()
     adult_biomass <- sdmTMB::sdmTMB(data,
       adult_formula,
-      time_varying = ~ 0 + depth_scaled + depth_scaled2,
+      time_varying = ~ 0 + depth_scaled + depth_scaled2 + trawled,
       time = "year", spde = spde,
       family = tweedie(link = "log"),
       ar1_fields = TRUE,
@@ -275,14 +275,18 @@ if (update_spatial_model) {
     endtime1 <- Sys.time()
     time1 <- round(starttime1 - endtime1)
 
-    saveRDS(adult_biomass, file = paste0("data/", spp, "/mod-mat-biomass-", spp, covariates, "-", ssid_string, "-prior-", priors, time1, ".rds"))
+    #saveRDS(adult_biomass, 
+    # file = paste0("data/", spp, "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, time1, ".rds"))
+    saveRDS(adult_biomass, 
+      file = paste0("data/", spp, "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+
 
     imm_formula <- as.formula(paste("imm_density ~ 0 + as.factor(year)", covariates, ""))
     
     starttime2 <- Sys.time()
     imm_biomass <- sdmTMB::sdmTMB(data, 
       imm_formula,
-      time_varying = ~ 0 + depth_scaled + depth_scaled2,
+      time_varying = ~ 0 + depth_scaled + depth_scaled2 + trawled,
       time = "year", spde = spde,
       family = tweedie(link = "log"),
       ar1_fields = FALSE,
@@ -294,7 +298,11 @@ if (update_spatial_model) {
     endtime2 <- Sys.time()
     time2 <- round(starttime2 - endtime2)
 
-    saveRDS(imm_biomass, file = paste0("data/", spp, "/mod-imm-biomass-", spp, covariates, "-", ssid_string, "-prior-", priors, time2, ".rds"))
+    #saveRDS(imm_biomass, 
+    # file = paste0("data/", spp, "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, time2, ".rds"))
+    saveRDS(imm_biomass, 
+     file = paste0("data/", spp, "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+    
   } else {
     starttime3 <- Sys.time()
     dens_formula <- as.formula(paste("density ~ 0 + as.factor(year)", covariates, ""))
@@ -313,10 +321,20 @@ if (update_spatial_model) {
     endtime3 <- Sys.time()
     time3 <- round(starttime3 - endtime3)
 
-    saveRDS(total_biomass, file = paste0("data/", spp, "/model-total-biomass-", spp, covariates, "-", ssid_string, "-prior-", priors, ".rds"))
+    saveRDS(total_biomass, file = paste0("data/", spp, "/model-total-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
   }
 }
 ```
+
+
+```{r eval=FALSE}
+k <- length(adult_biomass$model$par)
+nll <- adult_biomass$model$objective
+AIC <- 2*k+2*nll
+AIC #(-5500.438)
+```
+
+
 
 Calculate predicted values for available models, if needed
 ```{r, error=TRUE}
@@ -327,9 +345,9 @@ rm(predictions)
 
 if (isFALSE(update_spatial_model)) {
   if (region != "All synoptic surveys") {
-    try(adult_predictions <- readRDS(paste0("data/", spp, "/predictions-", spp, covariates, "-", ssid_string, "-mature-biomass-prior-", priors, ".rds")))
-    try(imm_predictions <- readRDS(paste0("data/", spp, "/predictions-", spp, covariates, "-", ssid_string, "-imm-biomass-prior-", priors, ".rds")))
-    try(predictions <- readRDS(paste0("data/", spp, "/predictions-", spp, covariates, "-", ssid_string, "-total-biomass-prior-", priors, ".rds")))
+    try(adult_predictions <- readRDS(paste0("data/", spp, "/predictions-", spp, covs, "-", ssid_string, "-mature-biomass-prior-", priors, ".rds")))
+    try(imm_predictions <- readRDS(paste0("data/", spp, "/predictions-", spp, covs, "-", ssid_string, "-imm-biomass-prior-", priors, ".rds")))
+    try(predictions <- readRDS(paste0("data/", spp, "/predictions-", spp, covs, "-", ssid_string, "-total-biomass-prior-", priors, ".rds")))
   } else {
     # Bind together predictions from different models
     try ({
@@ -375,12 +393,14 @@ if (!exists("adult_predictions")) {
  
   if (length(unique(fish$maturity_code)) > 2) {
 
-    adult_biomass <- readRDS(list.files(
-      path = paste0("data/", spp, "/"),
-      #pattern = paste0("mod-mat-biomass-", spp, "-", ssid_string, "-prior-", priors, "-*"),
-      pattern = paste0("mod-mat-biomass-", spp, covariates, "-", ssid_string, "-prior-", priors, "-*"),
-      all.files = F, full.names = T
-    ))
+    # adult_biomass <- readRDS(list.files(
+    #   path = paste0("data/", spp, "/"),
+    #   #pattern = paste0("mod-mat-biomass-", spp, "-", ssid_string, "-prior-", priors, "-*"),
+    #   pattern = paste0("mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, "-*"),
+    #   all.files = F, full.names = T
+    # ))
+    
+     adult_biomass <- readRDS(paste0("data/", spp, "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
     
     nd_all <- readRDS(paste0("data/nd_all_synoptic.rds"))
     nd <- nd_all %>% filter(ssid %in% model_ssid) %>% filter(year %in% unique(adult_biomass$data$year))
@@ -389,18 +409,21 @@ if (!exists("adult_predictions")) {
 
     adult_predictions <- predict(adult_biomass, newdata = nd)
     saveRDS(adult_predictions,
-      file = paste0("data/", spp, "/predictions-", spp, covariates,"-", ssid_string, "-mature-biomass-prior-", priors, ".rds")
+      file = paste0("data/", spp, "/predictions-", spp, covs,"-", ssid_string, "-mature-biomass-prior-", priors, ".rds")
     )
 
-    imm_biomass <- readRDS(list.files(
-      path = paste0("data/", spp, "/"),
-      #pattern = paste0("model-imm-biomass-", spp, "-", ssid_string, "-prior-", priors, "-*"),
-      pattern = paste0("mod-imm-biomass-", spp, covariates, "-", ssid_string, "-prior-", priors, "-*"),
-      all.files = F, full.names = T
-    ))
+    # imm_biomass <- readRDS(list.files(
+    #   path = paste0("data/", spp, "/"),
+    #   #pattern = paste0("model-imm-biomass-", spp, "-", ssid_string, "-prior-", priors, "-*"),
+    #   pattern = paste0("mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, "-*"),
+    #   all.files = F, full.names = T
+    # ))
+    
+    imm_biomass <- readRDS(paste0("data/", spp, "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+    
     imm_predictions <- predict(imm_biomass, newdata = nd)
     saveRDS(imm_predictions,
-      file = paste0("data/", spp, "/predictions-", spp, covariates,"-", ssid_string, "-imm-biomass-prior-", priors, ".rds")
+      file = paste0("data/", spp, "/predictions-", spp, covs,"-", ssid_string, "-imm-biomass-prior-", priors, ".rds")
     )
   } else {
     rm(adult_predictions)
@@ -412,10 +435,10 @@ if (!exists("adult_predictions")) {
       nd <- na.omit(nd)
       nd$year <- as.integer(nd$year)
 
-      total_biomass <- readRDS(paste0("data/", spp, "/model-total-biomass-", spp, covariates, "-", ssid_string, "-prior-", priors, ".rds"))
+      total_biomass <- readRDS(paste0("data/", spp, "/model-total-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
       nd$year <- as.integer(nd$year)
       predictions <- predict(total_biomass, newdata = nd)
-      saveRDS(predictions, file = paste0("data/", spp, "/predictions-", spp, covariates,"-", ssid_string, "-total-biomass-prior-", priors, ".rds"))
+      saveRDS(predictions, file = paste0("data/", spp, "/predictions-", spp, covs,"-", ssid_string, "-total-biomass-prior-", priors, ".rds"))
     }
   }
 }
@@ -427,9 +450,9 @@ Bind together predictions from different models
 if (region == "All synoptic surveys") {
   if (isFALSE(update_spatial_model)) {
     try(
-      pred1n3 <- readRDS(paste0("data/", spp, "/predictions-", spp, covariates, "-1n3-mature-biomass-prior-", priors, ".rds")),
-      pred4 <- readRDS(paste0("data/", spp, "/predictions-", spp, covariates, "-4-mature-biomass-prior-", priors, ".rds")),
-      pred16 <- readRDS(paste0("data/", spp, "/predictions-", spp, covariates, "-16-mature-biomass-prior-", priors, ".rds")),
+      pred1n3 <- readRDS(paste0("data/", spp, "/predictions-", spp, covs, "-1n3-mature-biomass-prior-", priors, ".rds")),
+      pred4 <- readRDS(paste0("data/", spp, "/predictions-", spp, covs, "-4-mature-biomass-prior-", priors, ".rds")),
+      pred16 <- readRDS(paste0("data/", spp, "/predictions-", spp, covs, "-16-mature-biomass-prior-", priors, ".rds")),
 
       adult_predictions <- rbind(pred1n3, pred4, pred16),
       model_ssid <- unique(adult_predictions$ssid),
@@ -437,9 +460,9 @@ if (region == "All synoptic surveys") {
     )
 
     try(
-      pred1n3_imm <- readRDS(paste0("data/", spp, "/predictions-", spp, covariates, "-1n3-imm-biomass-prior-", priors, ".rds")),
-      pred4_imm <- readRDS(paste0("data/", spp, "/predictions-", spp, covariates, "-4-imm-biomass-prior-", priors, ".rds")),
-      pred16_imm <- readRDS(paste0("data/", spp, "/predictions-", spp, covariates, "-16-imm-biomass-prior-", priors, ".rds")),
+      pred1n3_imm <- readRDS(paste0("data/", spp, "/predictions-", spp, covs, "-1n3-imm-biomass-prior-", priors, ".rds")),
+      pred4_imm <- readRDS(paste0("data/", spp, "/predictions-", spp, covs, "-4-imm-biomass-prior-", priors, ".rds")),
+      pred16_imm <- readRDS(paste0("data/", spp, "/predictions-", spp, covs, "-16-imm-biomass-prior-", priors, ".rds")),
 
       imm_predictions <- rbind(pred1n3_imm, pred4_imm, pred16_imm),
       model_ssid <- unique(imm_predictions$ssid),
@@ -633,39 +656,51 @@ if (16 %in% model_ssid) {
 out_mature <- rbind(out_mature1, out_mature3, out_mature4, out_mature16)
 
 saveRDS(out_mature,
-  file = paste0("data/", spp, "/trends-", spp, covariates, "-", ssid_string, "-mature-biomass-priors-", priors, ".rds")
+  file = paste0("data/", spp, "/trends-", spp, covs, "-", ssid_string, "-mature-biomass-priors-", priors, ".rds")
 )
 
 if (!exists("adult_predictions")) {
   out_total <- out_mature
   saveRDS(out_total,
-    file = paste0("data/", spp, "/trends-", spp, covariates, "-", ssid_string, "-total-biomass-priors-", priors, ".rds")
+    file = paste0("data/", spp, "/trends-", spp, covs, "-", ssid_string, "-total-biomass-priors-", priors, ".rds")
   )
 }
 ```
 
 
-Optional plot of current total biomass 
-```{r eval=FALSE}
-if (exists("out_total")) {
-  current_biomass <- plot_vocc(out_total,
-    fill_col = "var_1_e",
-    fill_label = "Mean mature \nbiomass (kg/ha)\n in 2011-2017",
-    raster_alpha = 1,
-    viridis_option = "C",
-    vec_aes = NULL,
-    transform_col = fourth_root_power
-  )
-  current_biomass <- current_biomass +
-    ggtitle(paste0("", species, " total biomass"))
-
-  current_biomass
-}
+Attempting to plot of current mature biomass with trawl footprint...
+```{r }
+# if (exists("out_mature")) {
+#   
+#   trawl_footprint <- sf::st_read(dsn="data/trawl-footprint",layer="Trawl_footprint")
+#   proj.to <- "+proj=utm +zone=9 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+# 
+#   trawl_footprint <- sf::st_transform(trawl_footprint, crs = proj.to)
+# 
+#   
+#   current_biomass <- plot_vocc(out_mature,
+#     fill_col = "var_1_e",
+#     fill_label = "Mean mature \nbiomass (kg/ha)\n in 2011-2017",
+#     raster_alpha = 1,
+#     viridis_option = "C",
+#     vec_aes = NULL,
+#     transform_col = fourth_root_power
+#   )
+#   current_biomass <- current_biomass +
+#   #ggplot(trawl_footprint) + #, aes(x=x/1000, y=y/1000)
+#     geom_sf(data= trawl_footprint, aes(geometry=geometry/1000), inherit.aes = FALSE) #+
+#     #coord_sf(datum = NULL) 
+#   
+#   +
+#     ggtitle(paste0("", species, " total biomass"))  
+# 
+#   current_biomass
+# }
 ```
 
 
 ```{r, error=TRUE}
-try(out_mature <- readRDS(paste0("data/", spp, "/trends-", spp, covariates, "-", ssid_string, "-mature-biomass-priors-", priors, ".rds")))
+try(out_mature <- readRDS(paste0("data/", spp, "/trends-", spp, covs, "-", ssid_string, "-mature-biomass-priors-", priors, ".rds")))
 
 if (exists("out_mature")) {
   data <- out_mature
@@ -681,7 +716,7 @@ if (exists("out_mature")) {
   ) + ggtitle(paste0("", species, " ", min(unique(adult_predictions[["year"]])), "-", max(unique(adult_predictions[["year"]]))))
   biotrend_ad
 } else {
-  try(out_total <- readRDS(paste0("data/", spp, "/trends-", spp, covariates, "-", ssid_string, "-total-biomass-priors-", priors, ".rds")))
+  try(out_total <- readRDS(paste0("data/", spp, "/trends-", spp, covs, "-", ssid_string, "-total-biomass-priors-", priors, ".rds")))
 
   biotrend_ad <- plot_vocc(out_total,
     fill_col = "units_per_decade",
@@ -834,7 +869,7 @@ if (exists("imm_predictions")) {
 
   out_imm <- rbind(out_im1, out_im3, out_im4, out_im16)
   saveRDS(out_imm,
-    file = paste0("data/", spp, "/trends-", spp, covariates, "-", ssid_string, "-immature-biomass-priors-", priors, ".rds")
+    file = paste0("data/", spp, "/trends-", spp, covs, "-", ssid_string, "-immature-biomass-priors-", priors, ".rds")
   )
 } else {
   rm(out_imm)
@@ -842,7 +877,7 @@ if (exists("imm_predictions")) {
 ```
 
 ```{r}
-try(out_imm <- readRDS(paste0("data/", spp, "/trends-", spp, covariates, "-", ssid_string, "-immature-biomass-priors-", priors, ".rds")))
+try(out_imm <- readRDS(paste0("data/", spp, "/trends-", spp, covs, "-", ssid_string, "-immature-biomass-priors-", priors, ".rds")))
 
 
 if (exists("out_imm")) {
@@ -894,7 +929,7 @@ print(temp)
 
 ```{r}
 png(
-  file = paste0("figs/", spp, "/trends-", spp, covariates, "-", ssid_string, "-priors-", priors, ".png"), # The directory you want to save the file in
+  file = paste0("figs/", spp, "/trends-", spp, covs, "-", ssid_string, "-priors-", priors, ".png"), # The directory you want to save the file in
   res = 600,
   units = "in",
   width = 11, # The width of the plot in inches
@@ -912,7 +947,7 @@ dev.off()
 biomass_plots <- c(p_adult, p_imm)
 
 png(
-  file = paste0("figs/", spp, "/biomass-", spp, covariates, "-", ssid_string, "-priors-", priors, ".png"), # The directory you want to save the file in
+  file = paste0("figs/", spp, "/biomass-", spp, covs, "-", ssid_string, "-priors-", priors, ".png"), # The directory you want to save the file in
   res = 600,
   units = "in",
   width = 16, # The width of the plot in inches
@@ -927,7 +962,7 @@ dev.off()
 
 ```{r}
 png(
-  file = paste0("figs/", spp, "/exploratory-", spp, covariates, "-", ssid_string, "-priors-", priors, ".png"), # The directory you want to save the file in
+  file = paste0("figs/", spp, "/exploratory-", spp, covs, "-", ssid_string, "-priors-", priors, ".png"), # The directory you want to save the file in
   res = 600,
   units = "in",
   width = 9.5, # The width of the plot in inches
