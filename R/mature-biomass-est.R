@@ -14,7 +14,7 @@
 #' events <- readRDS("analysis/VOCC/data/event-data-pop-1n3.rds")
 #' fish <- readRDS("analysis/VOCC/data/bio-data-pop-1n3.rds")
 #' 
-#' biomass <- split_catch_maturity (events, fish, 
+#' biomass <- split_catch_maturity (events, fish, bath
 #'   survey = c("SYN HS","SYN QCS"), 
 #'   years = NULL,
 #'   cutoff_quantile = 0.9995,
