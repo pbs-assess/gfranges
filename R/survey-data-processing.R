@@ -110,14 +110,38 @@ if (sum(is.na(dat$depth)) > 0) {
 #' @export
 #' 
 #' @rdname survey-spatial-modelling
-scale_survey_predictors <- function(dat) {
-  mutate(dat,
-    depth_mean = mean(log(depth), na.rm = TRUE),
-    depth_sd = sd(log(depth), na.rm = TRUE),
-    depth_scaled = (log(depth) - depth_mean[1]) / depth_sd[1],
-    depth_scaled2 = depth_scaled^2,
-    X10 = X / 10, Y10 = Y / 10 # to put spatial decay parameter on right scale
-  )
+scale_survey_predictors <- function(dat, 
+  predictors = c(quo(log_depth)) 
+  ) {
+  # to put spatial decay parameter on right scale
+  
+  if (predictors) {
+    for (i in seq_len(length(predictors))) {
+        
+      var <- predictors[[i]]
+        
+        var_mean <- paste0(quo_name(var),"_mean") 
+        var_sd <- paste0(quo_name(var),"_sd")
+        var_scaled <- paste0(quo_name(var),"_scaled")
+        var_scaled2 <- paste0(quo_name(var),"_scaled2")
+        
+        mean <- dat[1,var_mean]
+        
+         dat <- mutate(dat,
+          !! var_mean := mean(!! var, na.rm = TRUE),
+          !! var_sd := sd(!! var, na.rm = TRUE)
+        )
+          
+         mean <- dat[1,var_mean]
+         sd <- dat[1,var_sd]
+
+         dat <- mutate(dat,
+         !! var_scaled := ((!! var) - mean) / sd,
+         !! var_scaled2 := (((!! var) - mean) / sd)*(((!! var) - mean) / sd)
+    )
+    }
+  }
+  dat <- mutate(dat, X10 = X / 10, Y10 = Y / 10) 
 }
 
 
