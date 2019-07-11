@@ -285,8 +285,6 @@ ggplot(d_trawl, aes(X, Y, colour = depth)) +
 saveRDS(d_trawl, "analysis/tmb-sensor-explore/data/all-sensor-data-processed.rds")
 
 
-#saveRDS(.d_trawl, file = "analysis/VOCC/data/")
-
 
 # disagreement between catch_weight and bio sample for single fishing event with 17 large POP. 
 # events[events$fishing_event_id==1506954,]$catch_weight
