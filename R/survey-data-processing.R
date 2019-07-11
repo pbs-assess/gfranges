@@ -107,6 +107,9 @@ if (sum(is.na(dat$depth)) > 0) {
 
 #' Scale survey predictors
 #' 
+#' @param dat 
+#' @param predictors List of variable names must by wrapped in 'quo()'.
+#'
 #' @export
 #' 
 #' @rdname survey-spatial-modelling
