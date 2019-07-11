@@ -110,13 +110,12 @@ if (sum(is.na(dat$depth)) > 0) {
 #' @export
 #' 
 #' @rdname survey-spatial-modelling
-scale_survey_predictors <- function(dat, 
+scale_predictors <- function(dat, 
   predictors = c(quo(log_depth)) 
   ) {
   # to put spatial decay parameter on right scale
   
-  if (predictors) {
-    for (i in seq_len(length(predictors))) {
+  for (i in seq_len(length(predictors))) {
         
       var <- predictors[[i]]
         
@@ -124,22 +123,21 @@ scale_survey_predictors <- function(dat,
         var_sd <- paste0(quo_name(var),"_sd")
         var_scaled <- paste0(quo_name(var),"_scaled")
         var_scaled2 <- paste0(quo_name(var),"_scaled2")
-        
-        mean <- dat[1,var_mean]
+        var_scaled3 <- paste0(quo_name(var),"_scaled3")
         
          dat <- mutate(dat,
           !! var_mean := mean(!! var, na.rm = TRUE),
           !! var_sd := sd(!! var, na.rm = TRUE)
         )
           
-         mean <- dat[1,var_mean]
-         sd <- dat[1,var_sd]
-
+         avg <- dat[[1,var_mean]]
+         sd <- dat[[1,var_sd]]
+         
          dat <- mutate(dat,
-         !! var_scaled := ((!! var) - mean) / sd,
-         !! var_scaled2 := (((!! var) - mean) / sd)*(((!! var) - mean) / sd)
+         !! var_scaled := ((!! var) - avg) / sd,
+         !! var_scaled2 := (((!! var) - avg) / sd)*(((!! var) - avg) / sd),
+         !! var_scaled3 := (((!! var) - avg) / sd)*(((!! var) - avg) / sd)*(((!! var) - avg) / sd)
     )
-    }
   }
   dat <- mutate(dat, X10 = X / 10, Y10 = Y / 10) 
 }
