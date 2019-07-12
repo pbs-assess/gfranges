@@ -29,8 +29,12 @@ make_vector_data <- function(data,
                              indices = c(1, 2),
                              variable_names = "est", 
                              thresholds = c(0.75)) {
-  
+
   var_number <- length(variable_names)
+  
+  # if (!identical(time_steps, length(indices)))
+  length_indices <- length(indices)
+  length_time_steps <- length(unique(data[[time_var]]))
   
   if (isTRUE(var_number==1)) {
     
@@ -38,10 +42,7 @@ make_vector_data <- function(data,
   if (!is.null(start_time)) data <- data %>% dplyr::filter(.data[[time_var]] >= start_time)
   if (!is.null(end_time)) data <- data %>% dplyr::filter(.data[[time_var]] <= end_time)
   if (!is.null(skip_time)) data <- data %>% dplyr::filter(!.data[[time_var]] %in% skip_time)
-  
-  # if (!identical(time_steps, length(indices)))
-  length_indices <- length(indices)
-  length_time_steps <- length(unique(data[[time_var]]))
+
   if (!isTRUE(length_time_steps == length_indices)) {
     stop("Must have an indice assigned to each time step,",
       "therefore length('indices') must equal 'time_steps'.",
@@ -69,6 +70,12 @@ make_vector_data <- function(data,
   # data with just one climate variable
   start_data <- list(var_1 = start_raster)
   end_data <- list(var_1 = end_raster)
+  
+  
+  # FIXME: need to change function to deal with different time steps within a brick
+  slopedat <- calcslope(rbrick, delta_t_step = delta_t_step) # vocc::calcslope for comparison
+  slopedat$units_per_decade <- slopedat$slope * 10
+  
 } else {
   
   # check that data list is equal in length to varaible_names vector
@@ -79,16 +86,28 @@ make_vector_data <- function(data,
     )
   }
   
-  for (i in seq_len(variable_names)) {
-  data <- data[[i]] 
+  start_raster <- list()
+  end_raster <- list()
+  start_data <- list()
+  end_data <- list()
+  slopedat <- list()
+  
+  for (i in seq_len(var_number)) {
+  d <- data[[i]] 
   parameter <- variable_names[[i]]
   
-  if (!is.null(ssid)) data <- data[data$ssid %in% ssid, ]
-  if (!is.null(start_time)) data <- data %>% dplyr::filter(.data[[time_var]] >= start_time)
-  if (!is.null(end_time)) data <- data %>% dplyr::filter(.data[[time_var]] <= end_time)
-  if (!is.null(skip_time)) data <- data %>% dplyr::filter(.data[[time_var]] != skip_time)
+  if (!is.null(ssid)) d <- d[d$ssid %in% ssid, ]
+  if (!is.null(start_time)) d <- d %>% dplyr::filter(.data[[time_var]] >= start_time)
+  if (!is.null(end_time)) d <- d %>% dplyr::filter(.data[[time_var]] <= end_time)
+  if (!is.null(skip_time)) d <- d %>% dplyr::filter(.data[[time_var]] != skip_time)
   
-  rbrick <- make_raster_brick(data, parameter = parameter, time_var = time_var, scale_fac = scale_fac)
+  rbrick <- make_raster_brick(d, 
+    parameter = parameter, time_var = time_var, scale_fac = scale_fac)
+  slopedat[[i]] <- calcslope(rbrick, delta_t_step = delta_t_step) # vocc::calcslope for comparison
+  x <- slopedat[[i]]$x
+  y <- slopedat[[i]]$y
+  slopedat[[i]]$units_per_decade <- slopedat[[i]]$slope * 10
+  
   if (isTRUE(length_indices > 2)) {
     mnraster_brick <- raster::stackApply(rbrick, indices = indices, fun = mean)
     start_raster[[i]] <- mnraster_brick[[1]]
@@ -97,9 +116,19 @@ make_vector_data <- function(data,
     start_raster[[i]] <- rbrick[[1]]
     end_raster[[i]] <- rbrick[[2]]
   }
-  start_data[[i]] <- paste("var_",i, "") = start_raster[[i]]
-  end_data[[i]] <- paste("var_",i, "") = end_raster[[i]]
+  
+  start_data[[i]] <- start_raster[[i]]
+  names(start_data[[i]]) <- paste0("var_", i, "")
+  end_data[[i]] <- end_raster[[i]]
+  names(end_data[[i]]) <- paste0("var_", i, "") 
+  
   }
+
+  names(slopedat) <- variable_names
+  slopedat <- as.data.frame(slopedat)
+  slopedat$x <- x
+  slopedat$y <- y
+  
 }
   out <- dist_based_vocc(
     start_data = start_data,
@@ -113,11 +142,7 @@ make_vector_data <- function(data,
     raster = TRUE
   )
 
-    
-  # FIXME: need to change function to deal with different time steps within a brick
-  slopedat <- calcslope(rbrick, delta_t_step = delta_t_step) # vocc::calcslope for comparison
-  out <- left_join(out, slopedat, by = c("x", "y")) %>% select(-icell)
-  out$units_per_decade <- out$slope * 10
+  out <- left_join(out, slopedat, by = c("x", "y")) 
   out$km_per_decade <- (out$distance / delta_t_total) * 10
   out
 }
