@@ -14,9 +14,7 @@
 #' @param low_fill Colour of negative values if raster values span zero.
 #' @param mid_fill Colour of zero value raster cells.
 #' @param high_fill Colour of positive values if raster values span zero.
-#' @param low_col Low colour for vectors.
-#' @param mid_col Middle colour for vectors.
-#' @param high_col High colour for vectors.
+#' @param vec_col Colour of vectors.
 #' @param coast Coast polygons where (x = "X", y = "Y", group = "PID").
 #'    If NULL, will attempt to create them for xy values in df.
 #' @param contours Polygons of contour lines where (x = "X", y = "Y", group = "paste(PID, SID)").
@@ -24,6 +22,7 @@
 #' @param arrowhead_size Changes head size for custom geom_quiver function.
 #' @param axis_lables Logical for inclusion of axis labels.
 #' @param viridis_option Change between viridis colormap options available in ggplot.
+#' @param viridis_dir Option to flip scale by giving value of -1.
 #' @param transform_col Apply transformation to colour scale.
 #'    Accepts standard options (e.g. "sqrt") or unquoted custom transformations
 #'    defined using scales::trans_new (e.g. fourth_root_power).
@@ -50,13 +49,12 @@ plot_vocc <- function(df,
                       low_fill = "Steel Blue 4",
                       mid_fill = "white",
                       high_fill = "Red 3",
-                      low_col = "white",
-                      mid_col = "white",
-                      high_col = "white",
+                      vec_col = "white",
                       coast = NULL,
                       contours = NULL,
                       axis_lables = FALSE,
                       viridis_option = "D",
+                      viridis_dir = 1,
                       transform_col = no_trans,
                       raster_limits = NULL,
                       legend_position = c(0.2, 0.2)
@@ -116,7 +114,7 @@ plot_vocc <- function(df,
     }  else {
     gvocc <- gvocc +
       geom_raster(aes(fill = fill), alpha = raster_alpha) +
-      scale_fill_viridis_c(
+      scale_fill_viridis_c(direction = viridis_dir,
         option = viridis_option, na.value = "red",
         trans = transform_col, breaks = breaks, labels = labels, limits = raster_limits
       ) +
@@ -244,14 +242,15 @@ plot_vocc <- function(df,
     vector <- as.vector(na.omit(df[[vec_aes]]))
 
     gvocc <- gvocc +
-      geom_quiver(aes(x, y, # call modified internal function, arrowhead_size = distance/10,
-        # ggquiver::geom_quiver(aes(x, y, # to call published package version
+      geom_quiver(aes(x, y,
         u = target_X - x, v = target_Y - y,
-        colour = vector,
         size = vector
-      ), vecsize = 0, arrowhead_size = arrowhead_size, alpha = vec_alpha, inherit.aes = FALSE) +
-      scale_size_continuous(range = vec_lwd_range) +
-      scale_colour_gradient2(low = low_col, mid = mid_col, high = high_col)
+        ), 
+        colour = vec_col, vecsize = 0, 
+        arrowhead_size = arrowhead_size, 
+        alpha = vec_alpha, 
+        inherit.aes = FALSE) +
+      scale_size_continuous(range = vec_lwd_range) 
 
 
     # add NAs to plot where grid cells have no target cell within the distance range of 'max_vec_plotted'
