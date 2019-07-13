@@ -6,6 +6,8 @@
 #' @param y Numeric vector of y coordinates.
 #' @param variable_names Vector of columns/layers names within each data element.
 #' @param thresholds Vector of plus/minus threshold(s) to define climate match.
+#' @param match_logic Vector of logical functions.
+#'   Default of 'NULL' will create a vector of "==" for all data elements.
 #' @param cell_size Cell size in raster or distance to nearest data point.
 #' @param max_dist Distance reported when no analogue found. Default will
 #'  estimate this assuming that both major axes are likely to hold an analogue.
@@ -13,6 +15,7 @@
 #' @param raster Logical for whether climate data is in raster form.
 #' @param kNN Logical for whether to use kNN search for extra speed
 #'  (but only returns 1 target cell per source).
+
 #'
 #' @export
 #'
@@ -22,6 +25,7 @@ dist_based_vocc <- function(start_data,
                             y = "y",
                             variable_names = c("var.1", "var.2"),
                             thresholds = c(0.13, 0.1), # plus/minus thresholds to define climate match
+                            match_logic = NULL,
                             cell_size = 2, # works best if >/= 1
                             max_dist = NULL,
                             delta_t = 50, # time difference between start and end
@@ -36,12 +40,20 @@ dist_based_vocc <- function(start_data,
     )
   }
 
+  if (is.null(match_logic)) {
+    match_logic <- c(rep("==", times = length(variable_names)))
+  } else {
+    if (!identical(length(variable_names), length((thresholds)))) {
+      stop("Need `match_logic` function for each varible.")
+    }
+  }
+
   data <- data_lists_to_dfs(start_data, end_data, x = x, y = y, variable_names, raster)
   data <- data %>% dplyr::mutate(id = 1:nrow(data)) # add cell id
 
   # Apply difference threshold using rounding
   if (!identical(length(variable_names), length((thresholds)))) {
-    stop("Must have `thresholds` value for all `varible_names`.")
+    stop("Must have `thresholds` value for each varible.")
   }
 
   round_fact <- c()
@@ -52,16 +64,16 @@ dist_based_vocc <- function(start_data,
   data$e <- c()
   s <- c()
   e <- c()
-  # for (i in seq_len(nrow(data))) {
+
   for (k in seq_along(thresholds)) {
-    round_fact <- 1 / (thresholds[k] * 2) # inverse for rounding, double for plus/minus
-    start[[k]] <- round(data[, (2 + k)] * round_fact) / round_fact # rounded start values
-    end[[k]] <- round(data[, (2 + n_variables + k)] * round_fact) / round_fact # rounded end values
     # FIXME: Need a better way to assess matching values...
-    # thinking about alternative way of using thresholds
-    # start[[k]] <- round(data[, (2 + k)] + thresholds[k], digits = 1)
-    # end[[k]] <- round(data[, (2 + n_variables + k)], digits = 1)
-    #
+    round_fact <- 1 / (thresholds[k] * 2) # inverse for rounding, double for plus/minus
+
+    start_round <- data[, (2 + k)] * round_fact
+    end_round <- data[, (2 + n_variables + k)] * round_fact
+
+    start[[k]] <- round(if_else(start_round == 0.5, 1, start_round)) / round_fact # rounded start values
+    end[[k]] <- round(if_else(end_round == 0.5, 1, end_round)) / round_fact # rounded end values
 
     if (k == 1) {
       s <- paste(as.vector(start[[k]]))
@@ -80,7 +92,7 @@ dist_based_vocc <- function(start_data,
   if (kNN) {
     dist_tab <- dist_kNN_search(data, s, e, u)
   } else {
-    dist_tab <- dist_simple_search(as.data.frame(data), variable_names, s, e, u)
+    dist_tab <- dist_simple_search(as.data.frame(data), variable_names, s, e, u, match_logic)
   }
 
   if (is.null(max_dist)) {
@@ -92,7 +104,6 @@ dist_based_vocc <- function(start_data,
 
   # calculate speed in units of distance by time in same units as `max_dist` and `delta_t`
   dist_tab$speed <- dist_tab$distance / delta_t
-  # round(dist_tab, digits = 2)
   dplyr::full_join(data, dist_tab, by = c("id", "x", "y"))
 }
 
@@ -156,13 +167,23 @@ data_lists_to_dfs <- function(start_data,
 }
 
 # internal function to find nearest analogue(s) for each location
-dist_simple_search <- function(data, variable_names, s, e, u) {
+dist_simple_search <- function(data, variable_names, s, e, u, match_logic) {
   sid <- list() # empty list for source IDs
   tid <- list() # empty list for target IDs
   d <- list() # empty list for distances
   n_variables <- length(variable_names)
+
   match <- function(u) {
-    c(u == data$e)
+    u_split <- as.numeric(strsplit(u, " ")[[1]])
+    # e_split <- purrr::map_df(strsplit(e, " "), ~data.frame(t(as.numeric(.x))))
+    e_split <- purrr::map_df(strsplit(e, " "), function(x) data.frame(t(as.numeric(x))))
+    matches <- matrix(nrow = nrow(e_split), ncol = ncol(e_split))
+    for (j in seq_along(variable_names)) {
+      matches[, j] <- vapply(seq_len(nrow(e_split)), function(i)
+        eval(rlang::parse_expr(paste(e_split[i, j], match_logic[[j]], u_split[j]))), FUN.VALUE = logical(1))
+    }
+    # c(u == data$e)
+    apply(matches, 1, all)
   } # function finding climate matches of u with e
   m <- sapply(u, match) # list of climate matches for unique values
   X <- data$x # x coords
@@ -176,7 +197,8 @@ dist_simple_search <- function(data, variable_names, s, e, u) {
     # out[[i]] <- tibble::tibble()
 
     if (sum(mi, na.rm = TRUE) > 0) { # search unless no-analogue climate
-      d_all <- vector(mode = "numeric", length = length(mi)) # empty vector for distances between all analagous points
+      # empty vector for distances between all analagous points
+      d_all <- vector(mode = "numeric", length = length(mi)) 
       for (k in seq_along(mi)) {
         if (mi[k]) {
           d_all[k] <- sqrt((X[i] - X[k])^2 + (Y[i] - Y[k])^2)
@@ -212,6 +234,7 @@ dist_simple_search <- function(data, variable_names, s, e, u) {
       out[[i]]$n_targets <- rep(n_targets, n_targets)
       out[[i]]$mean_target_X <- rep(mean_target_X, n_targets)
       out[[i]]$mean_target_Y <- rep(mean_target_Y, n_targets)
+      
     } else { # else statement for no-analogue climates
 
       d[[i]] <- Inf # flag distances as infinity for no analogues
@@ -252,7 +275,9 @@ dist_kNN_search <- function(data, s, e, u) {
 
       tid[[i]] <- txy[knn[, 1], "id"] # the IDs of the closest matches
       d[[i]] <- sqrt(knn[, 2]) # their corresponding geographic distances
+      
     } else { # else statement for no-analogue climates
+      
       tid[[i]] <- rep(NA, nrow(sxy)) # flag destinations as missing for no analogues
       d[[i]] <- rep(Inf, nrow(sxy)) # flag distances as infinity for no analogues
     }
