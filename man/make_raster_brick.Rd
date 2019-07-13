@@ -10,9 +10,11 @@ make_raster_brick(data, parameter = "est", scale_fac = 1,
 \arguments{
 \item{data}{Dataframe of spatial grid for multiple time slices.}
 
+\item{parameter}{Name of column with raster values.}
+
 \item{scale_fac}{Controls how the original projection is aggregated.}
 
-\item{time_step}{Name of column containing time grouping variable.}
+\item{time_var}{Name of column with time variable.}
 }
 \description{
 Make raster brick from dataframe of predicted values through time

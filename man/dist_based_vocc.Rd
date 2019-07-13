@@ -6,8 +6,8 @@
 \usage{
 dist_based_vocc(start_data, end_data, x = "x", y = "y",
   variable_names = c("var.1", "var.2"), thresholds = c(0.13, 0.1),
-  cell_size = 2, max_dist = NULL, delta_t = 50, raster = FALSE,
-  kNN = FALSE)
+  match_logic = NULL, cell_size = 2, max_dist = NULL, delta_t = 50,
+  raster = FALSE, kNN = FALSE)
 }
 \arguments{
 \item{start_data}{Named list containing starting climate data.}
@@ -21,6 +21,9 @@ dist_based_vocc(start_data, end_data, x = "x", y = "y",
 \item{variable_names}{Vector of columns/layers names within each data element.}
 
 \item{thresholds}{Vector of plus/minus threshold(s) to define climate match.}
+
+\item{match_logic}{Vector of logical functions.
+Default of 'NULL' will create a vector of "==" for all data elements.}
 
 \item{cell_size}{Cell size in raster or distance to nearest data point.}
 

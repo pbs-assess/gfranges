@@ -11,7 +11,8 @@ calcslope(rx, delta_t_step = 2, na.rm = TRUE)
 
 \item{na.rm}{Logical for if NAs are removed.}
 
-\item{delta_t}{Number of time steps between layers, if not 1 allows slope to be calculated for a single unit of time.}
+\item{delta_t}{Number of time steps between layers, 
+if not 1 allows slope to be calculated for a single unit of time.}
 }
 \description{
 Calculate trend in varible for pixels in a raster brick

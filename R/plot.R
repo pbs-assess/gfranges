@@ -9,7 +9,7 @@
 #' @param vec_alpha Vector transparency.
 #' @param max_vec_plotted Upper limit for vector lengths.
 #'   Cells with no match less than this distance will be labeled with [NA_label].
-#' @param min_vec_plotted Lower limit for vector lengths actually plotted.  
+#' @param min_vec_plotted Lower limit for vector lengths actually plotted.
 #' @param NA_label Symbol used to indicate cells with no analog. Default is "NA".
 #' @param low_fill Colour of negative values if raster values span zero.
 #' @param mid_fill Colour of zero value raster cells.
@@ -27,8 +27,8 @@
 #'    Accepts standard options (e.g. "sqrt") or unquoted custom transformations
 #'    defined using scales::trans_new (e.g. fourth_root_power).
 #'    Default is to apply no transformation (no_trans).
-#' @param white_zero If TRUE, will always plot on custom fill scale. 
-#'    Default will plot on this scale only if raster has negative values.  
+#' @param white_zero If TRUE, will always plot on custom fill scale.
+#'    Default will plot on this scale only if raster has negative values.
 #' @param raster_limits Range of values to plot; those in excess will be red. Default of "NULL" plots full range.
 #' @param legend_position Vector of coordinates for legend placement. Or "none" to remove legend.
 #'
@@ -57,27 +57,34 @@ plot_vocc <- function(df,
                       viridis_dir = 1,
                       transform_col = no_trans,
                       raster_limits = NULL,
-                      legend_position = c(0.2, 0.2)
-  ) {
-  
+                      legend_position = c(0.2, 0.25)) {
+
   # order so smaller vectors are on top?
-  df <- df[order(-df$distance), ] 
+  df <- df[order(-df$distance), ]
   df[df$distance < min_vec_plotted, ]$target_X <- NA
   df[df$distance < min_vec_plotted, ]$target_Y <- NA
-  
+
   if (max(df$distance) > max_vec_plotted) {
     df[df$distance > max_vec_plotted, ]$target_X <- NA
     df[df$distance > max_vec_plotted, ]$target_Y <- NA
   }
 
-  # Set plot boundaries so that dimensions are close to square 
+  # Set plot boundaries so that dimensions are close to square
   width_X <- max(df$x, na.rm = TRUE) - min(df$x, na.rm = TRUE)
   width_Y <- max(df$y, na.rm = TRUE) - min(df$y, na.rm = TRUE)
   diffxy <- width_X - width_Y
-  if (diffxy < -6) {buffer_X <- c(-(abs(diffxy)/2), abs(diffxy)/2)} else { buffer_X <- c(-3,3)}
-  if (diffxy > 6) {buffer_Y <- c(-(abs(diffxy)/2), abs(diffxy)/2)} else { buffer_Y <- c(-3,3)}
-  
-  
+  if (diffxy < -6) {
+    buffer_X <- c(-(abs(diffxy) / 2), abs(diffxy) / 2)
+  } else {
+    buffer_X <- c(-3, 3)
+  }
+  if (diffxy > 6) {
+    buffer_Y <- c(-(abs(diffxy) / 2), abs(diffxy) / 2)
+  } else {
+    buffer_Y <- c(-3, 3)
+  }
+
+
   if (isFALSE(axis_lables)) {
     gvocc <- ggplot2::ggplot(df, aes(x, y)) +
       coord_fixed(xlim = range(df$x) + buffer_X, ylim = range(df$y) + buffer_Y) +
@@ -92,12 +99,13 @@ plot_vocc <- function(df,
   #### Add fill ####
   if (!is.null(fill_col)) {
     fill <- df[[fill_col]]
-    
+
     breaks <- scales::trans_breaks(transform_col[["transform"]],
       transform_col[["inverse"]],
-      n = 6)
-    
-    
+      n = 6
+    )
+
+
     labels <- function(x) {
       format(x, digits = 1, scientific = FALSE)
     }
@@ -111,17 +119,17 @@ plot_vocc <- function(df,
         ) +
         labs(fill = fill_label) +
         theme(legend.position = legend_position)
-    }  else {
-    gvocc <- gvocc +
-      geom_raster(aes(fill = fill), alpha = raster_alpha) +
-      scale_fill_viridis_c(direction = viridis_dir,
-        option = viridis_option, na.value = "red",
-        trans = transform_col, breaks = breaks, labels = labels, limits = raster_limits
-      ) +
-      labs(fill = fill_label) +
-      theme(legend.position = legend_position)
-  } 
-    
+    } else {
+      gvocc <- gvocc +
+        geom_raster(aes(fill = fill), alpha = raster_alpha) +
+        scale_fill_viridis_c(
+          direction = viridis_dir,
+          option = viridis_option, na.value = "red",
+          trans = transform_col, breaks = breaks, labels = labels, limits = raster_limits
+        ) +
+        labs(fill = fill_label) +
+        theme(legend.position = legend_position)
+    }
   }
 
   #### Add bathymetry ####
@@ -238,23 +246,23 @@ plot_vocc <- function(df,
 
   ####  Add arrows indicating target cells ####
   if (!is.null(vec_aes)) {
-
     vector <- as.vector(na.omit(df[[vec_aes]]))
 
     gvocc <- gvocc +
       geom_quiver(aes(x, y,
         u = target_X - x, v = target_Y - y,
         size = vector
-        ), 
-        colour = vec_col, vecsize = 0, 
-        arrowhead_size = arrowhead_size, 
-        alpha = vec_alpha, 
-        inherit.aes = FALSE) +
-      scale_size_continuous(range = vec_lwd_range) 
+      ),
+      colour = vec_col, vecsize = 0,
+      arrowhead_size = arrowhead_size,
+      alpha = vec_alpha,
+      inherit.aes = FALSE
+      ) +
+      scale_size_continuous(range = vec_lwd_range)
 
 
     # add NAs to plot where grid cells have no target cell within the distance range of 'max_vec_plotted'
-    
+
     gvocc <- gvocc +
       guides(colour = "none", size = "none") +
       geom_text(
@@ -279,28 +287,34 @@ plot_facet_map <- function(df, column = "est",
                            viridis_option = "C",
                            transform_col = no_trans,
                            raster_limits = NULL,
-                           legend_position = "right"
-  ) {
-
+                           legend_position = "right") {
   breaks <- scales::trans_breaks(transform_col[["transform"]],
     transform_col[["inverse"]],
     n = 5
   )
-  
+
   labels <- function(x) {
     format(x, digits = 1)
   }
-  
+
   width_X <- max(df$X, na.rm = TRUE) - min(df$X, na.rm = TRUE)
   width_Y <- max(df$Y, na.rm = TRUE) - min(df$Y, na.rm = TRUE)
   diffxy <- width_X - width_Y
-  
-  if (diffxy < -6) {buffer_X <- c(-(abs(diffxy)/2), abs(diffxy)/2)} else { buffer_X <- c(-3,3)}
-  if (diffxy > 6) {buffer_Y <- c(-(abs(diffxy)/2), abs(diffxy)/2)} else { buffer_Y <- c(-3,3)}
-  
-  anno <- data.frame(year = unique(df$year)) 
-  anno$x <- max(df$X)-(width_X*0.1)
-  anno$y <- max(df$Y)-(width_Y*0.1)
+
+  if (diffxy < -6) {
+    buffer_X <- c(-(abs(diffxy) / 2), abs(diffxy) / 2)
+  } else {
+    buffer_X <- c(-3, 3)
+  }
+  if (diffxy > 6) {
+    buffer_Y <- c(-(abs(diffxy) / 2), abs(diffxy) / 2)
+  } else {
+    buffer_Y <- c(-3, 3)
+  }
+
+  anno <- data.frame(year = unique(df$year))
+  anno$x <- max(df$X) - (width_X * 0.1)
+  anno$y <- max(df$Y) - (width_Y * 0.1)
 
   gfacet <- ggplot(df, aes_string(X, Y, fill = column)) +
     geom_raster() +
@@ -310,17 +324,20 @@ plot_facet_map <- function(df, column = "est",
     ) +
     facet_wrap(~year) +
     coord_fixed(
-      xlim = range(df$X) + buffer_X, 
-      ylim = range(df$Y) + buffer_Y) +
-    gfplot::theme_pbs() + 
-    theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
-      legend.position = legend_position, strip.text = element_blank())
+      xlim = range(df$X) + buffer_X,
+      ylim = range(df$Y) + buffer_Y
+    ) +
+    gfplot::theme_pbs() +
+    theme(
+      axis.title.x = element_blank(), axis.title.y = element_blank(),
+      legend.position = legend_position, strip.text = element_blank()
+    )
 
   # convert coordinate data to lat lon
   df <- df %>%
     dplyr::mutate(X = X, Y = Y) %>%
     gfplot:::utm2ll(., utm_zone = 9)
-  
+
   #### Add bathymetry ####
   # add bathymetry layer from gfplot
   # select bathymetry lines (output in utm) for area defined in lat lon
@@ -389,14 +406,16 @@ plot_facet_map <- function(df, column = "est",
     geom_polygon(
       data = coast, aes_string(x = X, y = Y, group = "PID"),
       fill = "grey87", col = "grey70", lwd = 0.2
-    ) 
-  
+    )
+
   # add year labels
   # convert coordinate data back to utms
-  
+
   gfacet <- gfacet +
-    geom_text(data = anno, aes(label = year, x = x, y = y), 
-      size = 3, col = "grey40", inherit.aes = FALSE) 
+    geom_text(
+      data = anno, aes(label = year, x = x, y = y),
+      size = 3, col = "grey40", inherit.aes = FALSE
+    )
   gfacet
 }
 

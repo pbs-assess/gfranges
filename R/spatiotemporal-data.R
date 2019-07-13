@@ -1,8 +1,9 @@
 #' Make raster brick from dataframe of predicted values through time
 #'
 #' @param data Dataframe of spatial grid for multiple time slices.
+#' @param parameter Name of column with raster values.
+#' @param time_var Name of column with time variable.
 #' @param scale_fac Controls how the original projection is aggregated.
-#' @param time_step Name of column containing time grouping variable.
 #'
 #' @export
 #'
@@ -13,14 +14,14 @@ make_raster_brick <- function(data,
   d <- data[order(data[[time_var]]), ]
   time_vec <- d[[time_var]]
   time_steps <- length(unique(d[[time_var]]))
-  
+
   # raster for each unique value of time_var
   rlist <- list()
   for (i in 1:length(unique(d[[time_var]]))) {
     # browser()
     rlist[[i]] <- raster::rasterFromXYZ(d[time_vec == unique(d[[time_var]])[i], ] %>%
       dplyr::select(X, Y, parameter))
-    if (isTRUE(scale_fac>1)) {
+    if (isTRUE(scale_fac > 1)) {
       rlist[[i]] <- raster::aggregate(rlist[[i]], fact = scale_fac)
     }
   }
@@ -29,8 +30,8 @@ make_raster_brick <- function(data,
   rstack <- raster::stack(rlist[[1]], rlist[[2]])
   if (isTRUE(time_steps > 2)) {
     for (i in 3:length(rlist)) {
-    rstack <- raster::stack(rstack, rlist[[i]])
-    } 
+      rstack <- raster::stack(rstack, rlist[[i]])
+    }
   }
   rbrick <- raster::brick(rstack)
   rbrick
@@ -46,7 +47,11 @@ make_raster_brick <- function(data,
 #'
 #' @export
 #'
-spatiotemporal_grid <- function(data, ssid = NULL, survey_abbrev = NULL, dummy_year, cell_width = 2) {
+spatiotemporal_grid <- function(data,
+                                ssid = NULL,
+                                survey_abbrev = NULL,
+                                dummy_year,
+                                cell_width = 2) {
   if (ssid) {
     dat <- data[data$ssid == ssid, ]
     grid_locs <- gfplot:::make_prediction_grid(
@@ -62,6 +67,7 @@ spatiotemporal_grid <- function(data, ssid = NULL, survey_abbrev = NULL, dummy_y
     # )$grid
     #
   }
+
   grid_locs <- dplyr::rename(grid_locs, depth = akima_depth)
   grid_locs$year <- NULL
 

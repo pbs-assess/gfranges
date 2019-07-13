@@ -6,7 +6,7 @@
 \usage{
 plot_facet_map(df, column = "est", X = "X", Y = "Y",
   viridis_option = "C", transform_col = no_trans,
-  raster_limits = NULL)
+  raster_limits = NULL, legend_position = "right")
 }
 \arguments{
 \item{df}{Dataframe.}
