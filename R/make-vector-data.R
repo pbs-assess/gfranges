@@ -15,7 +15,7 @@
 #' @param variable_names Name(s) of column containing parameter(s).
 #' @param thresholds Vector of plus/minus threshold(s) to define match for parameter(s) values.
 #' @importFrom rlang .data
-#' 
+#'
 #' @export
 make_vector_data <- function(data,
                              ssid = NULL,
@@ -29,7 +29,8 @@ make_vector_data <- function(data,
                              delta_t_step = 2,
                              indices = c(1, 2),
                              variable_names = "est",
-                             thresholds = c(0.75)) {
+                             thresholds = c(0.75),
+                             match_logic = NULL) {
   var_number <- length(variable_names)
 
   # if (!identical(time_steps, length(indices)))
@@ -134,6 +135,7 @@ make_vector_data <- function(data,
     y = "y",
     variable_names = c(rep("index_1", var_number)), # what the layer within each element is called
     thresholds = thresholds,
+    match_logic = match_logic,
     cell_size = input_cell_size * scale_fac,
     delta_t = delta_t_total,
     raster = TRUE
