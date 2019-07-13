@@ -23,10 +23,12 @@ species <- "Lingcod"
 ```{r}
 covariates <- "+muddy+mixed+rocky"
 covariates <- "+mixed+rocky"
+covariates <- "+muddy+any_rock"
 
-covariates <- "+trawled+muddy+rocky+mixed"
-covariates <- "+trawled+mixed+rocky"
-covariates <- "+trawled+mixed"
+# covariates <- "+trawled+muddy+rocky+mixed"
+# covariates <- "+trawled+mixed+rocky"
+# covariates <- "+trawled+mixed"
+
 ```
 
 
@@ -126,7 +128,7 @@ if (region == "West Coast Haida Gwaii") {
 
 Make prediction grids for all surveys and years, if not done before.
 ```{r, message=FALSE, warning=FALSE}
-try(nd_all <- readRDS("data/nd_all_synoptic.rds"))
+#try(nd_all <- readRDS("data/nd_all_synoptic.rds"))
 
 if (!exists("nd_all")) {
   
@@ -160,7 +162,7 @@ if (!exists("nd_all")) {
   nd_all <- rbind(nd_1, nd_3, nd_4, nd_16) %>% 
     mutate(year = as.numeric(year)) 
   
-  newcov <- readRDS("data/new_covariates.rds") %>% dplyr::select(X, Y, trawled, muddy, rocky, mixed)
+  newcov <- readRDS("data/new_covariates.rds") %>% dplyr::select(X, Y, trawled, muddy, rocky, mixed, any_rock)
   nd_all <- left_join(nd_all, newcov, by=c("X", "Y"))
   
   # nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
@@ -185,7 +187,7 @@ if (!exists("biomass")) {
   maturity <- split_catch_maturity(survey_sets, fish, bath,
     # survey = c("SYN QCS","SYN HS","SYN WCVI","SYN WCHG"),
     # survey = c("SYN HS", "SYN WCHG"),
-    survey = survey,
+     survey = survey,
     years = years,
     cutoff_quantile = c(.9995),
     plot = TRUE

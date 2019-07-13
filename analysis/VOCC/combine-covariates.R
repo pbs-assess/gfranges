@@ -10,8 +10,10 @@ substrate2 <- substrate2 %>% dplyr::select(fishing_event_id, mixed, muddy, sandy
 
 events2 <- as_tibble(events2)
 events_w_covs <- left_join(events2, substrate2)
+events_w_covs$any_rock <- events_w_covs$rocky + events_w_covs$mixed
 
 saveRDS(events_w_covs, file = "analysis/VOCC/data/event-covariates.rds")
+events_w_covs <- readRDS("analysis/VOCC/data/event-covariates.rds")
 
 
 
@@ -57,12 +59,12 @@ glimpse(nd_test)
 
 #View(nd_test)
 
-
 nd_combind <- nd_test %>% select(-x, -y, -substrate_100m_1step)
+nd_combind$any_rock <- nd_combind$rocky + nd_combind$mixed
 
-
+glimpse(nd_combind)
 saveRDS(nd_combind, file = "analysis/VOCC/data/new_covariates.rds")
-
+#nd_combind <- readRDS("analysis/VOCC/data/new_covariates.rds")
 
 
 # THIS SHOULD probably be done by make grids so that only years with samples are created...
