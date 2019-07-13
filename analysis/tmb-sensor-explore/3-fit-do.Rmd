@@ -67,10 +67,21 @@ get_diag <- function(m, response = "log_do", variable = "depth_scaled") {
   print(g)
   
   g <- plot_map(predictions, "est_rf") +
-    ggtitle("Spatial random effects only") +
+    ggtitle("All random effects only") +
     scale_colour_gradient2()
   print(g)
-    
+   
+  g <- plot_map(predictions, "omega_s") +
+    ggtitle("Spatial random effects only") +
+    scale_colour_gradient2()
+ print(g)
+   
+   g <- plot_map(predictions, "epsilon_st") +
+    ggtitle("Spatiotemporal random effects only") +
+    facet_wrap(~year) +
+    scale_colour_gradient2()
+ print(g)
+ 
   g <- ggplot(predictions, aes_string("est", response)) +
     geom_point() +
     facet_wrap(~year) +
@@ -83,7 +94,7 @@ get_diag <- function(m, response = "log_do", variable = "depth_scaled") {
     geom_smooth()
   print(g)
   
-  g <- ggplot(predictions, aes(predictions[[variable]], residuals)) +
+  g <- ggplot(predictions, aes_string(variable, "residuals")) +
     geom_point() +
     geom_smooth() +
     facet_wrap(~year)
@@ -92,7 +103,8 @@ get_diag <- function(m, response = "log_do", variable = "depth_scaled") {
   g <- ggplot(predictions, aes(X, Y, colour = residuals)) +
     geom_point() +
     coord_fixed() +
-    scale_color_gradient2()
+    scale_color_gradient2()+
+    facet_wrap(~year)
   print(g)
   
   aic <- function(m) {
@@ -141,6 +153,15 @@ ggplot(d_trawl, aes(raw_depth, temp, colour = DOY, size = sqrt(temp_range))) +
   scale_color_viridis_c()
 ```
 
+
+
+```{r}
+ggplot(d_trawl, aes(temp, log_do, colour = DOY, size = sqrt(temp_range))) +
+  geom_point() +
+  facet_wrap(~year) +
+  scale_color_viridis_c()
+```
+
 ```{r}
 ggplot(d_trawl, aes(DOY, -depth , colour = do_mlpl)) + geom_point() + facet_wrap(~year) +
   scale_color_viridis_c() + ylab("-log(depth)")
@@ -176,11 +197,13 @@ spde <- make_spde(d_trawl1$X, d_trawl1$Y, n_knots = 800)
 plot_spde(spde)
 ```
 
-```{r}
+Test temp model on this subset of data
+DOY doesn't improve model
+```{r eval=FALSE}
     starttime1 <- Sys.time()
 
-    temp_model_all <- sdmTMB::sdmTMB(d_trawl1,
-      temp_scaled ~ 0 + as.factor(year),
+    temp_model_DOY <- sdmTMB::sdmTMB(d_trawl1,
+      temp_scaled ~ 0 + as.factor(year), # + DOY_scaled,
       time_varying = ~ 0 + depth_scaled + depth_scaled2,
       time = "year", spde = spde,
       family = gaussian(link = "identity"),
@@ -193,18 +216,20 @@ plot_spde(spde)
     endtime1 <- Sys.time()
     time1 <- round(starttime1 - endtime1)
 
-#saveRDS(do_model, file = (here::here("analysis/tmb-sensor-explore/models/model-do-1n3.rds")))
-time1
+saveRDS(temp_model_all, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-2008-on.rds")))
+
+# saveRDS(temp_model_DOY, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-2008-on-DOY.rds")))
+# time1
+# temp_model_DOY
 temp_model_all
 ```
 
-```{r}
+```{r eval=FALSE}
 get_diag(temp_model_all, response = "temp_scaled", variable = "depth_scaled")
 ```
 
 Add temperature predictions to newdata grid for DO predictions
 ```{r}
-
 temperature <- readRDS(here::here("analysis/VOCC/data/predicted_temp_allyears.rds"))
 years <- unique(d_trawl1$year) 
 temperature <- filter(temperature, year %in% years)
@@ -214,6 +239,7 @@ temperature$temp <- temperature$est
 #temperature$temp_scaled2 <- temperature$est^2
 temperature$raw_depth <- temperature$depth
 temperature$depth <- log(temperature$depth)
+temperature$DOY_scaled <- 0
 
 newdata <- temperature %>% 
   select(-est, - est_non_rf, -est_rf, -omega_s, -zeta_s, -epsilon_st, -temperature_c) %>%
@@ -221,19 +247,15 @@ newdata <- temperature %>%
   mutate(depth = raw_depth)
 
 glimpse(newdata)
-
-
 ```
 
-
-
-
-```{r}
+Current best model of DO
+```{r eval=FALSE}
     starttime1 <- Sys.time()
 
-    do_model_depth2 <- sdmTMB::sdmTMB(d_trawl1,
-      log_do ~ 0 + as.factor(year) + temp_scaled + temp_scaled2,
-      time_varying = ~ 0 + depth_scaled + depth_scaled2, #+ depth_scaled3,
+    do_model_re_DOY <- sdmTMB::sdmTMB(d_trawl1,
+      log_do ~ 0 + as.factor(year) + temp_scaled + temp_scaled2 ,
+      time_varying = ~ 0 + DOY_scaled + depth_scaled + depth_scaled2 + depth_scaled3,
       time = "year", spde = spde,
       family = gaussian(link = "identity"),
       ar1_fields = TRUE,
@@ -245,83 +267,158 @@ glimpse(newdata)
     endtime1 <- Sys.time()
     time1 <- round(starttime1 - endtime1)
 
-saveRDS(do_model_depth2, file = (here::here("analysis/tmb-sensor-explore/models/model-do-depth2.rds")))
+saveRDS(do_model_re_DOY, file = (here::here("analysis/tmb-sensor-explore/models/model-do-re-DOY.rds")))
 time1
-do_model_depth2
+do_model_re_DOY
 ```
+
+```{r}
+do_model_re_DOY <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-re-DOY.rds"))
+do_model_re_DOY
+```
+
+```{r}
+get_diag(do_model_all_fe, response = "log_do", variable = "depth_scaled")
+
+```
+
 
 ```{r}
 do_model_DOY <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-all-DOY.rds"))
+do_model_DOY
 
-get_diag(do_model_DOY,response = "log_do", variable = "log_depth_scaled")
+get_diag(do_model_DOY, response = "log_do", variable = "depth_scaled")
 
-get_diag(do_model_DOY,response = "log_do", variable = "temp_scaled")
+# get_diag(do_model_DOY, response = "log_do", variable = "temp_scaled")
 ```
 
-```{r}
+Other models tried:
+
+```{r eval=FALSE}
+do_model_DOY <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-DOY.rds"))
+do_model_DOY
+#p_nd <- predict(do_model_DOY, newdata = newdata)
+get_diag(do_model_DOY, response = "log_do", variable = "depth_scaled")
+
+```
+
+```{r eval=FALSE}
+do_model_depth2 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-depth2.rds"))
+do_model_depth2
+get_diag(do_model_depth2,response = "log_do", variable = "depth_scaled")
+#p_nd <- predict(do_model_depth2, newdata = newdata)
+```
+
+```{r eval = FALSE}
 do_model_depth3 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-depth3.rds"))
-
 get_diag(do_model_depth3,response = "log_do")
+#p_nd <- predict(do_model_depth3, newdata = newdata)
+```
 
-p_nd <- predict(do_model_depth3, newdata = newdata)
+```{r eval=FALSE}
+do_model_all <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-all.rds"))
+#p_nd <- predict(do_model_all, newdata = newdata)
+do_model_all
+get_diag(do_model_all, response = "log_do", variable = "depth_scaled")
+```
 
+
+Predict DO for whole grid using quadratic of predicted temperature values and mean DOY
+```{r}
+p_nd <- predict(do_model_DOY, newdata = newdata)
+p_nd$do_est <- exp(p_nd$est)
+
+p_nd <- p_nd %>% filter(depth>15)
+hist(p_nd$do_est)
+
+max(p_nd$do_est)
+max(d_trawl1$do_mlpl)
 glimpse(p_nd)
+min(p_nd$raw_depth)
+min(d_trawl1$raw_depth)
+p_nd[p_nd$do_est>8, ]
+
+
+p_nd <- p_nd %>% filter(depth>15)
+p_nd_filtered[p_nd_filtered$do_est>8, ]
+
+saveRDS(p_nd, file = (here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds")))
 ```
 
 ```{r}
 plot_map_raster <- function(dat, column = "est") {
   ggplot(dat, aes_string("X", "Y", fill = column)) +
     geom_raster() +
-    facet_wrap(~year) +
     coord_fixed()
 }
 
-p_nd$do_est <- exp(p_nd$est)
-hist(p_nd$do_est)
-max(p_nd$do_est)
-
 plot_map_raster(p_nd, "do_est") +
-  scale_fill_viridis_c(trans = "log",) +
-#  scale_fill_viridis_c(trans = "sqrt", option = "C") +
+  scale_fill_viridis_c(trans = "log") +
+  facet_wrap(~year) +
   ggtitle("Prediction (fixed effects + all random effects)")
+
 ```
 
-
-```{r}
-do_model1 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-1.rds"))
-get_diag(do_model1)
-```
-
-
-```{r}
-plot_map_raster(p_nd, "est") +
-  scale_fill_viridis_c(trans = "sqrt", option = "C") +
-  ggtitle("Prediction (fixed effects + all random effects)")
-```
 
 ```{r}
 plot_map_raster(p_nd, "est_non_rf") +
   ggtitle("Prediction (fixed effects only)") +
-  scale_fill_viridis_c(trans = "sqrt")
+  facet_wrap(~year) +
+  scale_fill_viridis_c()
+```
+
+```{r}
+plot_map_raster(p_nd, "est_rf") +
+  ggtitle("Prediction (all random effects only)") +
+  facet_wrap(~year) +
+  scale_fill_viridis_c()
 ```
 
 ```{r, eval=FALSE}
 #glimpse(p_nd)
 plot_map_raster(p_nd, "omega_s") +
   ggtitle("Spatial random effects only") +
-  facet_wrap(~year) +
-  scale_fill_gradient2(low = "navy", mid = "white", high = "darkred")
+   scale_fill_gradient2( high = "Steel Blue 4",
+  low = "Red 3")+
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 ```
 
 ```{r}
 plot_map_raster(p_nd, "epsilon_st") +
   ggtitle("Spatiotemporal random effects only") +
   facet_wrap(~year) +
-  scale_fill_gradient2(low = "navy", mid = "white", high = "darkred")
+  scale_fill_gradient2( high = "Steel Blue 4",
+  low = "Red 3")
 ```
 
+```{r}
+p_nd1 <- p_nd %>% filter(ssid!=16) %>% filter(ssid!=4)
+plot_map_raster(p_nd1, "epsilon_st") +
+  ggtitle("Spatiotemporal random effects only") +
+  facet_wrap(~year) +
+  scale_fill_gradient2( high = "Steel Blue 4",
+  low = "Red 3", limits = c(-0.4,0.5)) +
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+```
+```{r}
+p_nd4 <- p_nd %>% filter(ssid==4) #%>% filter(ssid!=4)
+plot_map_raster(p_nd4, "epsilon_st") +
+  ggtitle("Spatiotemporal random effects only") +
+  facet_wrap(~year) +
+  scale_fill_gradient2( high = "Steel Blue 4",
+  low = "Red 3", limits = c(-0.4,0.5)) +
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+```
 
-
+```{r}
+p_nd16 <- p_nd %>% filter(ssid==16) #%>% filter(ssid!=4)
+plot_map_raster(p_nd16, "epsilon_st") +
+  ggtitle("Spatiotemporal random effects only") +
+  facet_wrap(~year) +
+  scale_fill_gradient2( high = "Steel Blue 4",
+  low = "Red 3", limits = c(-0.4,0.5)) +
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+```
 
 ```{r}
 #do_cog <- get_cog(p_nd)
