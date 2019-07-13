@@ -14,7 +14,8 @@
 #'    where 1 = starting time step(s), 2 = end time step(s).
 #' @param variable_names Name(s) of column containing parameter(s).
 #' @param thresholds Vector of plus/minus threshold(s) to define match for parameter(s) values.
-#'
+#' @importFrom rlang .data
+#' 
 #' @export
 make_vector_data <- function(data,
                              ssid = NULL,
@@ -37,9 +38,9 @@ make_vector_data <- function(data,
 
   if (isTRUE(var_number == 1)) {
     if (!is.null(ssid)) data <- data[data$ssid %in% ssid, ]
-    if (!is.null(start_time)) data <- data %>% dplyr::filter(rlang::.data[[time_var]] >= start_time)
-    if (!is.null(end_time)) data <- data %>% dplyr::filter(rlang::.data[[time_var]] <= end_time)
-    if (!is.null(skip_time)) data <- data %>% dplyr::filter(!rlang::.data[[time_var]] %in% skip_time)
+    if (!is.null(start_time)) data <- data %>% dplyr::filter(.data[[time_var]] >= start_time)
+    if (!is.null(end_time)) data <- data %>% dplyr::filter(.data[[time_var]] <= end_time)
+    if (!is.null(skip_time)) data <- data %>% dplyr::filter(!.data[[time_var]] %in% skip_time)
 
     if (!isTRUE(length_time_steps == length_indices)) {
       stop("Must have an indice assigned to each time step,",
@@ -94,9 +95,9 @@ make_vector_data <- function(data,
       parameter <- variable_names[[i]]
 
       if (!is.null(ssid)) d <- d[d$ssid %in% ssid, ]
-      if (!is.null(start_time)) d <- d %>% dplyr::filter(rlang::.data[[time_var]] >= start_time)
-      if (!is.null(end_time)) d <- d %>% dplyr::filter(rlang::.data[[time_var]] <= end_time)
-      if (!is.null(skip_time)) d <- d %>% dplyr::filter(rlang::.data[[time_var]] != skip_time)
+      if (!is.null(start_time)) d <- d %>% dplyr::filter(.data[[time_var]] >= start_time) # .data uses rlang
+      if (!is.null(end_time)) d <- d %>% dplyr::filter(.data[[time_var]] <= end_time)
+      if (!is.null(skip_time)) d <- d %>% dplyr::filter(.data[[time_var]] != skip_time)
 
       rbrick <- make_raster_brick(d,
         parameter = parameter, time_var = time_var, scale_fac = scale_fac
