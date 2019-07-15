@@ -8,7 +8,7 @@ make_vector_data(data, ssid = NULL, start_time = NULL,
   end_time = NULL, skip_time = NULL, input_cell_size = 2,
   scale_fac = 1, time_var = "year", delta_t_total = 10,
   delta_t_step = 2, indices = c(1, 2), variable_names = "est",
-  thresholds = c(0.75))
+  thresholds = c(0.75), max_thresholds = NULL, match_logic = NULL)
 }
 \arguments{
 \item{data}{List of dataframes each containing output from predict.}
@@ -37,6 +37,12 @@ where 1 = starting time step(s), 2 = end time step(s).}
 \item{variable_names}{Name(s) of column containing parameter(s).}
 
 \item{thresholds}{Vector of plus/minus threshold(s) to define match for parameter(s) values.}
+
+\item{max_thresholds}{Optional vector of plus thresholds.
+Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.}
+
+\item{match_logic}{An optional vector of logical functions applied to rounded climate values.
+If max_thresholds are not provided, the default of 'NULL' will apply symmetrical plus/minus thresholds to raw climate values.}
 }
 \description{
 Make VOCC vector data from sdmTMB output predict funciton

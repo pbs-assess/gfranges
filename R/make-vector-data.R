@@ -11,9 +11,13 @@
 #' @param delta_t_total Mean time between start and end values.
 #' @param delta_t_step Time between each time step in same units as above.
 #' @param indices Vector of length equal to number of time steps retained for analysis,
-#'    where 1 = starting time step(s), 2 = end time step(s).
+#'  where 1 = starting time step(s), 2 = end time step(s).
 #' @param variable_names Name(s) of column containing parameter(s).
 #' @param thresholds Vector of plus/minus threshold(s) to define match for parameter(s) values.
+#' @param max_thresholds Optional vector of plus thresholds.
+#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.
+#' @param match_logic An optional vector of logical functions applied to rounded climate values.
+#'  If max_thresholds are not provided, the default of 'NULL' will apply symmetrical plus/minus thresholds to raw climate values.
 #' @importFrom rlang .data
 #'
 #' @export
@@ -30,6 +34,7 @@ make_vector_data <- function(data,
                              indices = c(1, 2),
                              variable_names = "est",
                              thresholds = c(0.75),
+                             max_thresholds = NULL,
                              match_logic = NULL) {
   var_number <- length(variable_names)
 
@@ -135,6 +140,7 @@ make_vector_data <- function(data,
     y = "y",
     variable_names = c(rep("index_1", var_number)), # what the layer within each element is called
     thresholds = thresholds,
+    max_thresholds = max_thresholds,
     match_logic = match_logic,
     cell_size = input_cell_size * scale_fac,
     delta_t = delta_t_total,

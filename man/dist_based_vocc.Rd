@@ -5,9 +5,9 @@
 \title{Velocity of climate change based on distance}
 \usage{
 dist_based_vocc(start_data, end_data, x = "x", y = "y",
-  variable_names = c("var.1", "var.2"), thresholds = c(0.13, 0.1),
-  match_logic = NULL, cell_size = 2, max_dist = NULL, delta_t = 50,
-  raster = FALSE, kNN = FALSE)
+  variable_names = c("var.1", "var.2"), thresholds = c(Inf, Inf),
+  max_thresholds = NULL, match_logic = NULL, cell_size = 2,
+  max_dist = NULL, delta_t = 50, raster = FALSE, kNN = FALSE)
 }
 \arguments{
 \item{start_data}{Named list containing starting climate data.}
@@ -20,10 +20,13 @@ dist_based_vocc(start_data, end_data, x = "x", y = "y",
 
 \item{variable_names}{Vector of columns/layers names within each data element.}
 
-\item{thresholds}{Vector of plus/minus threshold(s) to define climate match.}
+\item{thresholds}{Vector of plus/minus, or just minus, threshold(s) to define climate match.}
 
-\item{match_logic}{Vector of logical functions.
-Default of 'NULL' will create a vector of "==" for all data elements.}
+\item{max_thresholds}{Optional vector of plus thresholds.
+Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.}
+
+\item{match_logic}{An optional vector of logical functions applied to rounded climate values.
+If max_thresholds are not provided, the default of 'NULL' will apply symmetrical plus/minus thresholds to raw climate values.}
 
 \item{cell_size}{Cell size in raster or distance to nearest data point.}
 
@@ -35,7 +38,7 @@ estimate this assuming that both major axes are likely to hold an analogue.}
 \item{raster}{Logical for whether climate data is in raster form.}
 
 \item{kNN}{Logical for whether to use kNN search for extra speed
-(but only returns 1 target cell per source).}
+(but uses rounding, symmetrical thresholds, and only returns 1 target cell per source).}
 }
 \description{
 Velocity of climate change based on distance
