@@ -13,13 +13,16 @@
 #' @param indices Vector of length equal to number of time steps retained for analysis,
 #'  where 1 = starting time step(s), 2 = end time step(s).
 #' @param variable_names Name(s) of column containing parameter(s).
-#' @param plus_minus Vector of plus/minus threshold(s) to define a symetical climate match.
+#' @param round_fact Speed up searches by rounding (1 = integers; 10 = 10ths; 100 = 100ths).
+#'  If NULL, will use 10x precision of the plus_minus threshold when `match_logic` = NULL.
 #' @param min_thresholds Optional vector of negative thresholds.
-#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.
+#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.
 #' @param max_thresholds Optional vector of positive thresholds.
-#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.
-#' @param match_logic An optional vector of logical functions applied to rounded climate values.
-#'  If max_thresholds are not provided, the default of 'NULL' will apply symmetrical plus/minus thresholds to raw climate values.
+#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.
+#' @param plus_minus Vector of plus/minus threshold(s) to define a symmetical (default = 1 unit) climate match.
+#' @param match_logic An optional vector of logical functions applied using 'rounding' of allnclimate values.
+#'  If max_thresholds are not provided, the default of 'NULL' applies symmetrical plus/minus thresholds.
+#'  
 #' @importFrom rlang .data
 #'
 #' @export
@@ -35,10 +38,10 @@ make_vector_data <- function(data,
                              delta_t_step = 2,
                              indices = c(1, 2),
                              variable_names = "est",
-                             plus_minus = c(0.75),
-                             min_thresholds = NULL,
-                             max_thresholds = NULL,
-                             round_fact = NULL,
+                             round_fact = NULL, # NULL applies 10th of the plus/minus threshold
+                             min_thresholds = NULL, # c(1) and round_fact = 10 to apply 1 unit thresholds
+                             max_thresholds = NULL, # c(1,1) to apply symmetrical 1 unit thresholds
+                             plus_minus = c(0.5), # default symmetrical thresholds of 1 unit
                              match_logic = NULL) {
   var_number <- length(variable_names)
 
@@ -143,10 +146,10 @@ make_vector_data <- function(data,
     x = "x",
     y = "y",
     variable_names = c(rep("index_1", var_number)), # what the layer within each element is called
-    plus_minus = plus_minus,
+    round_fact = round_fact,    
     min_thresholds = min_thresholds,    
     max_thresholds = max_thresholds,
-    round_fact = round_fact,
+    plus_minus = plus_minus,
     match_logic = match_logic,
     cell_size = input_cell_size * scale_fac,
     delta_t = delta_t_total,

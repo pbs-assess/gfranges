@@ -5,13 +5,15 @@
 #' @param x Numeric vector of x coordinates.
 #' @param y Numeric vector of y coordinates.
 #' @param variable_names Vector of columns/layers names within each data element.
-#' @param plus_minus Vector of plus/minus threshold(s) to define a symetical climate match.
+#' @param round_fact Speed up searches by rounding (1 = integers; 10 = 10ths; 100 = 100ths).
+#'  If NULL, will use 10x precision of the plus_minus threshold when `match_logic` = NULL.
 #' @param min_thresholds Optional vector of negative thresholds.
-#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.
+#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.
 #' @param max_thresholds Optional vector of positive thresholds.
-#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.
-#' @param match_logic An optional vector of logical functions applied to rounded climate values.
-#'  If max_thresholds are not provided, the default of 'NULL' will apply symmetrical plus/minus thresholds to raw climate values.
+#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.
+#' @param plus_minus Vector of plus/minus threshold(s) to define a symmetical (default = 1 unit) climate match.
+#' @param match_logic An optional vector of logical functions applied using 'rounding' of allnclimate values.
+#'  If max_thresholds are not provided, the default of 'NULL' applies symmetrical plus/minus thresholds.
 #' @param cell_size Cell size in raster or distance to nearest data point.
 #' @param max_dist Distance reported when no analogue found. Default will
 #'  estimate this assuming that both major axes are likely to hold an analogue.
@@ -27,14 +29,14 @@ dist_based_vocc <- function(start_data,
                             x = "x",
                             y = "y",
                             variable_names = c("var.1", "var.2"),
-                            plus_minus = c(0.5, 0.5), # plus/minus thresholds to define climate match using rounding for speed
-                            round_fact = NULL, 
-                            min_thresholds = NULL,
-                            max_thresholds = NULL,
-                            match_logic = NULL,
+                            round_fact = NULL, # NULL applies 10th of the plus/minus threshold
+                            min_thresholds = NULL, # c(1,1) and round_fact = 10 to apply 1 unit thresholds
+                            max_thresholds = NULL, # c(1,1) to apply symmetrical 1 unit thresholds
+                            plus_minus = c(0.5, 0.5), # default symmetrical thresholds of 1 unit
+                            match_logic = NULL, # use c("==","==") to apply fastest rounding based search
                             cell_size = 2, # works best if >/= 1
                             max_dist = NULL,
-                            delta_t = 50, # time difference between start and end
+                            delta_t = 10, # time difference between start and end
                             raster = FALSE,
                             kNN = FALSE) {
 
@@ -49,6 +51,29 @@ dist_based_vocc <- function(start_data,
   data <- data_lists_to_dfs(start_data, end_data, x = x, y = y, variable_names, raster)
   data <- data %>% dplyr::mutate(id = 1:nrow(data)) # add cell id
 
+  if (!is.null(match_logic)) {
+    if (!identical(length(variable_names), length(match_logic))) {
+      stop("Need `match_logic` function for each varible.")
+    }
+    if (!identical(length(variable_names), length((plus_minus)))) {
+      stop("Must have `plus_minus` value for each varible.")
+    }
+    warning(
+      "Matching determined using rounding method is faster, but may be less precise."
+    )
+  } else {
+    if (is.null(max_thresholds)) {
+      min_thresholds <- plus_minus * 2
+      max_thresholds <- plus_minus * 2
+    } else {
+      if (!identical(length(min_thresholds), length(max_thresholds))) {
+        stop("Need `max_thresholds` and `min_thresholds` of equal lengths.")
+      }
+    }
+    if (!identical(length(variable_names), length(max_thresholds))) {
+      stop("Need threshold values for each varible.")
+    }
+  }
 
   round_fact <- c()
   start <- list()
@@ -61,14 +86,10 @@ dist_based_vocc <- function(start_data,
 
 
   for (k in seq_along(variable_names)) {
-    
+
     # if using match_logic and rounding to speed up process
     if (!is.null(match_logic)) {
       # Apply difference threshold using rounding
-      if (!identical(length(variable_names), length((plus_minus)))) {
-        stop("Must have `plus_minus` value for each varible.")
-      }
-      
       round_fact <- 1 / (plus_minus[k] * 2) # inverse for rounding, double for plus/minus
       # if we add 1/100th of round_factor, we can ensure that values ending in 5 round up...
       # but maybe inconsistent up-down rounding would average out to more realistic results?
@@ -76,21 +97,14 @@ dist_based_vocc <- function(start_data,
       start[[k]] <- round(start_round) / round_fact # rounded start values
       end_round <- data[, (2 + n_variables + k)] * round_fact #+ round_fact/100
       end[[k]] <- round(end_round) / round_fact # rounded end values
-      warning(
-        "Start and end values are both rounded."
-      )
-      
     } else {
-      # what if we don't round values and use "<=", ">=" thresholds instead?
-      # this is really very slow!...
-      
+      # use "<=", ">=" thresholds instead of rounding
       # set rounding thresholds to reduce the number of unique initial values without introducing rounding error
-      # this is slow but did finish in 10 min for ssid == 4 
-      if (is.null(round_fact)) round_fact <- 1 / plus_minus[k]*10 # inverse for rounding, *10 for greater precision  
-      start_round <- data[, (2 + k)] * round_fact 
+      if (is.null(round_fact)) round_fact <- 1 / (plus_minus[k] * 2) * 10 # 10x precision of threshold values
+      start_round <- data[, (2 + k)] * round_fact
       start[[k]] <- round(start_round) / round_fact # rounded start values
-      end_round <- data[, (2 + n_variables + k)] * round_fact*10
-      end[[k]] <- round(end_round) / (round_fact*10) # rounded end values
+      end_round <- data[, (2 + n_variables + k)] * round_fact * 10
+      end[[k]] <- round(end_round) / (round_fact * 10) # rounded end values
     }
 
     if (k == 1) {
@@ -110,7 +124,14 @@ dist_based_vocc <- function(start_data,
   if (kNN) {
     dist_tab <- dist_kNN_search(data, s, e, u)
   } else {
-    dist_tab <- dist_simple_search(as.data.frame(data), variable_names, s, e, u, plus_minus, min_thresholds, max_thresholds, match_logic)
+    dist_tab <- dist_simple_search(as.data.frame(data),
+      variable_names = variable_names,
+      s = s, e = e, u = u,
+      plus_minus = plus_minus,
+      min_thresholds = min_thresholds,
+      max_thresholds = max_thresholds,
+      match_logic = match_logic
+    )
   }
 
   if (is.null(max_dist)) {
@@ -185,33 +206,17 @@ data_lists_to_dfs <- function(start_data,
 }
 
 # internal function to find nearest analogue(s) for each location
-dist_simple_search <- function(data, variable_names, s, e, u, plus_minus, min_thresholds, max_thresholds, match_logic) {
-  
-  if (is.null(match_logic)) {
-    # match_logic <- c(rep("==", times = length(variable_names)))
-    if (is.null(min_thresholds)) min_thresholds <- plus_minus*2 
-    if (is.null(max_thresholds)) {
-      max_thresholds <- plus_minus*2
-    } else {
-      if (!identical(length(min_thresholds), length(max_thresholds))) {
-        stop("Need `max_thresholds` and `min_thresholds` lengths to be equal.")
-      }
-      if (!identical(length(variable_names), length(max_thresholds))) {
-        stop("Need threshold values for each varible.")
-      }
-    }
-  } else {
-    if (!identical(length(variable_names), length(match_logic))) {
-      stop("Need `match_logic` function for each varible.")
-    }
-  }
-
-
+dist_simple_search <- function(data,
+                               variable_names,
+                               s, e, u,
+                               plus_minus, match_logic,
+                               min_thresholds, max_thresholds) {
   sid <- list() # empty list for source IDs
   tid <- list() # empty list for target IDs
   d <- list() # empty list for distances
   n_variables <- length(variable_names)
 
+  # function finding climate matches of u with e
   match <- function(u) {
     u_split <- as.numeric(strsplit(u, " ")[[1]])
     # e_split <- purrr::map_df(strsplit(e, " "), ~data.frame(t(as.numeric(.x))))
@@ -223,24 +228,26 @@ dist_simple_search <- function(data, variable_names, s, e, u, plus_minus, min_th
     matches_both <- matrix(nrow = nrow(e_split), ncol = ncol(e_split))
 
     for (j in seq_len(length(variable_names))) {
-      if (!is.null(match_logic)) {
-        matches_round[, j] <- vapply(seq_len(nrow(e_split)), function(i)
-          eval(rlang::parse_expr(paste(e_split[i, j], match_logic[[j]], u_split[j]))), FUN.VALUE = logical(1))
-      } else {
-        #browser()
+      if (is.null(match_logic)) {
         matches_upper[, j] <- e_split[, j] <= u_split[j] + max_thresholds[j]
         matches_lower[, j] <- e_split[, j] >= u_split[j] - min_thresholds[j]
         matches_both[, j] <- vapply(seq_len(nrow(e_split)), function(i)
           all(matches_lower[i, j], matches_upper[i, j]), FUN.VALUE = logical(1))
+      } else {
+        matches_round[, j] <- vapply(seq_len(nrow(e_split)), function(i)
+          eval(rlang::parse_expr(paste(e_split[i, j], match_logic[[j]], u_split[j]))),
+        FUN.VALUE = logical(1)
+        )
       }
     }
-    # c(u == data$e)
+
     if (!is.null(match_logic)) {
       apply(matches_round, 1, all)
     } else {
       apply(matches_both, 1, all)
     }
-  } # function finding climate matches of u with e
+  }
+
   m <- sapply(u, match) # list of climate matches for unique values
   X <- data$x # x coords
   Y <- data$y # y coords
@@ -250,16 +257,15 @@ dist_simple_search <- function(data, variable_names, s, e, u, plus_minus, min_th
   for (i in seq_along(data$s)) { # loop for all grid cells in both time periods
     mi <- m[, u == s[i]] # recalls list of climate matches for s[i]
     sxy <- data[i, ] # coordinates of i-th unique combination in start
-    # out[[i]] <- tibble::tibble()
 
     if (sum(mi, na.rm = TRUE) > 0) { # search unless no-analogue climate
       # empty vector for distances between all analagous points
       d_all <- vector(mode = "numeric", length = length(mi))
       for (k in seq_along(mi)) {
         if (mi[k]) {
+          # distances to all matches
           d_all[k] <- sqrt((X[i] - X[k])^2 + (Y[i] - Y[k])^2)
-        } # distances to all matches
-        else {
+        } else {
           d_all[k] <- NA
         }
       }
@@ -271,7 +277,6 @@ dist_simple_search <- function(data, variable_names, s, e, u, plus_minus, min_th
       out[[i]] <- data.frame(tid = tid[[i]])
       out[[i]]$target_X <- as.vector(na.omit(txy$x))
       mean_target_X <- mean(as.vector(na.omit(txy$x)))
-      # out[[i]][["target_X"]] <- na.omit(txy$x)
       out[[i]]$target_Y <- as.vector(na.omit(txy$y))
       mean_target_Y <- mean(as.vector(na.omit(txy$y)))
       n_targets <- nrow(out[[i]])
@@ -282,7 +287,10 @@ dist_simple_search <- function(data, variable_names, s, e, u, plus_minus, min_th
 
       value_k <- list()
       for (k in seq_along(variable_names)) {
-        value_k[[i]] <- round(mean(as.numeric(na.omit(txy[, (2 + n_variables + k)])), na.rm = TRUE), digits = 2)
+        value_k[[i]] <-
+          round(mean(as.numeric(na.omit(txy[, (2 + n_variables + k)])),
+            na.rm = TRUE
+          ), digits = 2)
       }
 
       target_values <- paste(as.vector(value_k[[i]]))

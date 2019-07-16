@@ -5,10 +5,10 @@
 \title{Velocity of climate change based on distance}
 \usage{
 dist_based_vocc(start_data, end_data, x = "x", y = "y",
-  variable_names = c("var.1", "var.2"), plus_minus = c(0.5, 0.5),
-  round_fact = NULL, min_thresholds = NULL, max_thresholds = NULL,
-  match_logic = NULL, cell_size = 2, max_dist = NULL, delta_t = 50,
-  raster = FALSE, kNN = FALSE)
+  variable_names = c("var.1", "var.2"), round_fact = NULL,
+  min_thresholds = NULL, max_thresholds = NULL, plus_minus = c(0.5,
+  0.5), match_logic = NULL, cell_size = 2, max_dist = NULL,
+  delta_t = 10, raster = FALSE, kNN = FALSE)
 }
 \arguments{
 \item{start_data}{Named list containing starting climate data.}
@@ -21,16 +21,19 @@ dist_based_vocc(start_data, end_data, x = "x", y = "y",
 
 \item{variable_names}{Vector of columns/layers names within each data element.}
 
-\item{plus_minus}{Vector of plus/minus threshold(s) to define a symetical climate match.}
+\item{round_fact}{Speed up searches by rounding (1 = integers; 10 = 10ths; 100 = 100ths).
+If NULL, will use 10x precision of the plus_minus threshold when `match_logic` = NULL.}
 
 \item{min_thresholds}{Optional vector of negative thresholds.
-Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.}
+Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.}
 
 \item{max_thresholds}{Optional vector of positive thresholds.
-Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.}
+Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.}
 
-\item{match_logic}{An optional vector of logical functions applied to rounded climate values.
-If max_thresholds are not provided, the default of 'NULL' will apply symmetrical plus/minus thresholds to raw climate values.}
+\item{plus_minus}{Vector of plus/minus threshold(s) to define a symmetical (default = 1 unit) climate match.}
+
+\item{match_logic}{An optional vector of logical functions applied using 'rounding' of allnclimate values.
+If max_thresholds are not provided, the default of 'NULL' applies symmetrical plus/minus thresholds.}
 
 \item{cell_size}{Cell size in raster or distance to nearest data point.}
 

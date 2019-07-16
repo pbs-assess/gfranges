@@ -9,7 +9,7 @@ end_data <- list(
 )
 
 
-# using rounding and match_logic difference of 1.5 - 0.55 is identified as > 1.0
+# using rounding and match_logic a difference of 1.5 - 0.55 is identified as > 1.0
 dist_based_vocc(
   start_data = start_data,
   end_data = end_data,
@@ -30,10 +30,10 @@ dist_based_vocc(
   end_data = end_data,
   x = "x",
   y = "y",
-  variable_names = c("do_est", "temp"), # what the layer within each element is called
+  variable_names = c("do_est", "temp"), 
   round_fact = 10,
-  min_thresholds = c(1, 1), # vectors of actual threshold values
-  max_thresholds = c(1, 1),
+  min_thresholds = c(1, 1), # vectors of actual lower threshold values plus_minus*2
+  max_thresholds = c(1, 1), # vectors of actual higher threshold values plus_minus*2
   cell_size = 1,
   delta_t = 1,
   raster = FALSE
@@ -46,7 +46,7 @@ dist_based_vocc(
   end_data = end_data,
   x = "x",
   y = "y",
-  variable_names = c("do_est", "temp"), # what the layer within each element is called
+  variable_names = c("do_est", "temp"), 
   round_fact = 10,
   min_thresholds = c(1, 1),
   max_thresholds = c(Inf, 1),
