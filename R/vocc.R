@@ -5,8 +5,10 @@
 #' @param x Numeric vector of x coordinates.
 #' @param y Numeric vector of y coordinates.
 #' @param variable_names Vector of columns/layers names within each data element.
-#' @param thresholds Vector of plus/minus, or just minus, threshold(s) to define climate match.
-#' @param max_thresholds Optional vector of plus thresholds.
+#' @param plus_minus Vector of plus/minus threshold(s) to define a symetical climate match.
+#' @param min_thresholds Optional vector of negative thresholds.
+#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.
+#' @param max_thresholds Optional vector of positive thresholds.
 #'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.
 #' @param match_logic An optional vector of logical functions applied to rounded climate values.
 #'  If max_thresholds are not provided, the default of 'NULL' will apply symmetrical plus/minus thresholds to raw climate values.
@@ -25,7 +27,9 @@ dist_based_vocc <- function(start_data,
                             x = "x",
                             y = "y",
                             variable_names = c("var.1", "var.2"),
-                            thresholds = c(Inf, Inf), # plus/minus thresholds (or min_thresholds) to define climate match
+                            plus_minus = c(0.5, 0.5), # plus/minus thresholds to define climate match using rounding for speed
+                            round_fact = NULL, 
+                            min_thresholds = NULL,
                             max_thresholds = NULL,
                             match_logic = NULL,
                             cell_size = 2, # works best if >/= 1
@@ -45,10 +49,6 @@ dist_based_vocc <- function(start_data,
   data <- data_lists_to_dfs(start_data, end_data, x = x, y = y, variable_names, raster)
   data <- data %>% dplyr::mutate(id = 1:nrow(data)) # add cell id
 
-  # Apply difference threshold using rounding
-  if (!identical(length(variable_names), length((thresholds)))) {
-    stop("Must have `thresholds` value for each varible.")
-  }
 
   round_fact <- c()
   start <- list()
@@ -60,19 +60,37 @@ dist_based_vocc <- function(start_data,
   e <- c()
 
 
-  for (k in seq_along(thresholds)) {
+  for (k in seq_along(variable_names)) {
+    
+    # if using match_logic and rounding to speed up process
     if (!is.null(match_logic)) {
-      round_fact <- 1 / (thresholds[k] * 2) # inverse for rounding, double for plus/minus
+      # Apply difference threshold using rounding
+      if (!identical(length(variable_names), length((plus_minus)))) {
+        stop("Must have `plus_minus` value for each varible.")
+      }
+      
+      round_fact <- 1 / (plus_minus[k] * 2) # inverse for rounding, double for plus/minus
       # if we add 1/100th of round_factor, we can ensure that values ending in 5 round up...
       # but maybe inconsistent up-down rounding would average out to more realistic results?
       start_round <- data[, (2 + k)] * round_fact #+ round_fact/100
       start[[k]] <- round(start_round) / round_fact # rounded start values
       end_round <- data[, (2 + n_variables + k)] * round_fact #+ round_fact/100
       end[[k]] <- round(end_round) / round_fact # rounded end values
+      warning(
+        "Start and end values are both rounded."
+      )
+      
     } else {
       # what if we don't round values and use "<=", ">=" thresholds instead?
-      start[[k]] <- data[, (2 + k)]
-      end[[k]] <- data[, (2 + n_variables + k)]
+      # this is really very slow!...
+      
+      # set rounding thresholds to reduce the number of unique initial values without introducing rounding error
+      # this is slow but did finish in 10 min for ssid == 4 
+      if (is.null(round_fact)) round_fact <- 1 / plus_minus[k]*10 # inverse for rounding, *10 for greater precision  
+      start_round <- data[, (2 + k)] * round_fact 
+      start[[k]] <- round(start_round) / round_fact # rounded start values
+      end_round <- data[, (2 + n_variables + k)] * round_fact*10
+      end[[k]] <- round(end_round) / (round_fact*10) # rounded end values
     }
 
     if (k == 1) {
@@ -92,7 +110,7 @@ dist_based_vocc <- function(start_data,
   if (kNN) {
     dist_tab <- dist_kNN_search(data, s, e, u)
   } else {
-    dist_tab <- dist_simple_search(as.data.frame(data), variable_names, s, e, u, thresholds, max_thresholds, match_logic)
+    dist_tab <- dist_simple_search(as.data.frame(data), variable_names, s, e, u, plus_minus, min_thresholds, max_thresholds, match_logic)
   }
 
   if (is.null(max_dist)) {
@@ -167,15 +185,19 @@ data_lists_to_dfs <- function(start_data,
 }
 
 # internal function to find nearest analogue(s) for each location
-dist_simple_search <- function(data, variable_names, s, e, u, thresholds, max_thresholds, match_logic) {
+dist_simple_search <- function(data, variable_names, s, e, u, plus_minus, min_thresholds, max_thresholds, match_logic) {
+  
   if (is.null(match_logic)) {
     # match_logic <- c(rep("==", times = length(variable_names)))
-    min_thresholds <- thresholds
+    if (is.null(min_thresholds)) min_thresholds <- plus_minus*2 
     if (is.null(max_thresholds)) {
-      max_thresholds <- thresholds
+      max_thresholds <- plus_minus*2
     } else {
       if (!identical(length(min_thresholds), length(max_thresholds))) {
         stop("Need `max_thresholds` and `min_thresholds` lengths to be equal.")
+      }
+      if (!identical(length(variable_names), length(max_thresholds))) {
+        stop("Need threshold values for each varible.")
       }
     }
   } else {
@@ -200,18 +222,14 @@ dist_simple_search <- function(data, variable_names, s, e, u, thresholds, max_th
     matches_upper <- matrix(nrow = nrow(e_split), ncol = ncol(e_split))
     matches_both <- matrix(nrow = nrow(e_split), ncol = ncol(e_split))
 
-    for (j in seq_along(variable_names)) {
+    for (j in seq_len(length(variable_names))) {
       if (!is.null(match_logic)) {
         matches_round[, j] <- vapply(seq_len(nrow(e_split)), function(i)
           eval(rlang::parse_expr(paste(e_split[i, j], match_logic[[j]], u_split[j]))), FUN.VALUE = logical(1))
       } else {
-        # browser()
-        matches_upper[, j] <- vapply(seq_len(nrow(e_split)), function(i)
-          eval(rlang::parse_expr(paste(e_split[i, j], "<=", u_split[j] + max_thresholds[j]))), FUN.VALUE = logical(1))
-
-        matches_lower[, j] <- vapply(seq_len(nrow(e_split)), function(i)
-          eval(rlang::parse_expr(paste(e_split[i, j], ">=", u_split[j] - min_thresholds[j]))), FUN.VALUE = logical(1))
-
+        #browser()
+        matches_upper[, j] <- e_split[, j] <= u_split[j] + max_thresholds[j]
+        matches_lower[, j] <- e_split[, j] >= u_split[j] - min_thresholds[j]
         matches_both[, j] <- vapply(seq_len(nrow(e_split)), function(i)
           all(matches_lower[i, j], matches_upper[i, j]), FUN.VALUE = logical(1))
       }

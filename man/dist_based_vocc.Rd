@@ -5,9 +5,10 @@
 \title{Velocity of climate change based on distance}
 \usage{
 dist_based_vocc(start_data, end_data, x = "x", y = "y",
-  variable_names = c("var.1", "var.2"), thresholds = c(Inf, Inf),
-  max_thresholds = NULL, match_logic = NULL, cell_size = 2,
-  max_dist = NULL, delta_t = 50, raster = FALSE, kNN = FALSE)
+  variable_names = c("var.1", "var.2"), plus_minus = c(0.5, 0.5),
+  round_fact = NULL, min_thresholds = NULL, max_thresholds = NULL,
+  match_logic = NULL, cell_size = 2, max_dist = NULL, delta_t = 50,
+  raster = FALSE, kNN = FALSE)
 }
 \arguments{
 \item{start_data}{Named list containing starting climate data.}
@@ -20,9 +21,12 @@ dist_based_vocc(start_data, end_data, x = "x", y = "y",
 
 \item{variable_names}{Vector of columns/layers names within each data element.}
 
-\item{thresholds}{Vector of plus/minus, or just minus, threshold(s) to define climate match.}
+\item{plus_minus}{Vector of plus/minus threshold(s) to define a symetical climate match.}
 
-\item{max_thresholds}{Optional vector of plus thresholds.
+\item{min_thresholds}{Optional vector of negative thresholds.
+Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.}
+
+\item{max_thresholds}{Optional vector of positive thresholds.
 Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.}
 
 \item{match_logic}{An optional vector of logical functions applied to rounded climate values.

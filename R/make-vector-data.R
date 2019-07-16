@@ -13,8 +13,10 @@
 #' @param indices Vector of length equal to number of time steps retained for analysis,
 #'  where 1 = starting time step(s), 2 = end time step(s).
 #' @param variable_names Name(s) of column containing parameter(s).
-#' @param thresholds Vector of plus/minus threshold(s) to define match for parameter(s) values.
-#' @param max_thresholds Optional vector of plus thresholds.
+#' @param plus_minus Vector of plus/minus threshold(s) to define a symetical climate match.
+#' @param min_thresholds Optional vector of negative thresholds.
+#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.
+#' @param max_thresholds Optional vector of positive thresholds.
 #'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` is NULL.
 #' @param match_logic An optional vector of logical functions applied to rounded climate values.
 #'  If max_thresholds are not provided, the default of 'NULL' will apply symmetrical plus/minus thresholds to raw climate values.
@@ -33,8 +35,10 @@ make_vector_data <- function(data,
                              delta_t_step = 2,
                              indices = c(1, 2),
                              variable_names = "est",
-                             thresholds = c(0.75),
+                             plus_minus = c(0.75),
+                             min_thresholds = NULL,
                              max_thresholds = NULL,
+                             round_fact = NULL,
                              match_logic = NULL) {
   var_number <- length(variable_names)
 
@@ -57,8 +61,8 @@ make_vector_data <- function(data,
 
     # FIXME: need way of determining how many variables(in separate dataframes) are in dataset
     # if (!is.list(data)) {
-    # if (length(thresholds) > 1)
-    #       stop("If multiple climate variables (and corresponding thresholds),",
+    # if (length(plus_minus) > 1)
+    #       stop("If multiple climate variables (and corresponding plus_minus),",
     #         "data must be in list form.", call. = FALSE)
     parameter <- variable_names
     rbrick <- make_raster_brick(data, parameter = parameter, time_var = time_var, scale_fac = scale_fac)
@@ -139,8 +143,10 @@ make_vector_data <- function(data,
     x = "x",
     y = "y",
     variable_names = c(rep("index_1", var_number)), # what the layer within each element is called
-    thresholds = thresholds,
+    plus_minus = plus_minus,
+    min_thresholds = min_thresholds,    
     max_thresholds = max_thresholds,
+    round_fact = round_fact,
     match_logic = match_logic,
     cell_size = input_cell_size * scale_fac,
     delta_t = delta_t_total,
