@@ -10,10 +10,10 @@ plot_vocc(df, fill_col = NULL, fill_label = NULL, raster_alpha = 1,
   max_vec_plotted = max(df$distance), min_vec_plotted = 4,
   NA_label = "NA", white_zero = min(fill, na.rm = TRUE) < 0,
   low_fill = "Steel Blue 4", mid_fill = "white", high_fill = "Red 3",
-  vec_col = "white", coast = NULL, contours = NULL,
+  vec_col = "grey37", coast = NULL, contours = NULL,
   axis_lables = FALSE, viridis_option = "D", viridis_dir = 1,
   transform_col = no_trans, raster_limits = NULL,
-  legend_position = c(0.2, 0.25))
+  raster_cell_size = 2, legend_position = c(0.2, 0.25))
 }
 \arguments{
 \item{df}{Dataframe produced by dist_based_vocc function.}
@@ -68,6 +68,8 @@ defined using scales::trans_new (e.g. fourth_root_power).
 Default is to apply no transformation (no_trans).}
 
 \item{raster_limits}{Range of values to plot; those in excess will be red. Default of "NULL" plots full range.}
+
+\item{raster_cell_size}{Raster cell width. Used to centre NA_label.}
 
 \item{legend_position}{Vector of coordinates for legend placement. Or "none" to remove legend.}
 }

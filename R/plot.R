@@ -31,6 +31,7 @@
 #'    Default will plot on this scale only if raster has negative values.
 #' @param raster_limits Range of values to plot; those in excess will be red. Default of "NULL" plots full range.
 #' @param legend_position Vector of coordinates for legend placement. Or "none" to remove legend.
+#' @param raster_cell_size Raster cell width. Used to centre NA_label.
 #'
 #' @export
 #'
@@ -49,7 +50,7 @@ plot_vocc <- function(df,
                       low_fill = "Steel Blue 4",
                       mid_fill = "white",
                       high_fill = "Red 3",
-                      vec_col = "white",
+                      vec_col = "grey37",
                       coast = NULL,
                       contours = NULL,
                       axis_lables = FALSE,
@@ -57,10 +58,11 @@ plot_vocc <- function(df,
                       viridis_dir = 1,
                       transform_col = no_trans,
                       raster_limits = NULL,
+                      raster_cell_size = 2,
                       legend_position = c(0.2, 0.25)) {
 
   # order so smaller vectors are on top?
-  df <- df[order(-df$distance), ]
+  df <- df[order(df$distance), ]
   df[df$distance < min_vec_plotted, ]$target_X <- NA
   df[df$distance < min_vec_plotted, ]$target_Y <- NA
 
@@ -88,7 +90,8 @@ plot_vocc <- function(df,
   if (isFALSE(axis_lables)) {
     gvocc <- ggplot2::ggplot(df, aes(x, y)) +
       coord_fixed(xlim = range(df$x) + buffer_X, ylim = range(df$y) + buffer_Y) +
-      gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+      gfplot::theme_pbs() + 
+      theme(axis.title.x = element_blank(), axis.title.y = element_blank())
   } else {
     gvocc <- ggplot2::ggplot(df, aes(x, y)) +
       coord_fixed(xlim = range(df$x) + buffer, ylim = range(df$y) + c(-3, 3)) +
@@ -107,7 +110,7 @@ plot_vocc <- function(df,
 
 
     labels <- function(x) {
-      format(x, digits = 1, scientific = FALSE)
+      format(x, digits = 2, scientific = FALSE)
     }
 
     if (white_zero) {
@@ -115,7 +118,8 @@ plot_vocc <- function(df,
         geom_raster(aes(fill = fill), alpha = raster_alpha) +
         scale_fill_gradient2(
           low = low_fill, mid = mid_fill, high = high_fill,
-          trans = transform_col, breaks = breaks, labels = labels
+          trans = transform_col, breaks = breaks, labels = labels,
+          limits = raster_limits
         ) +
         labs(fill = fill_label) +
         theme(legend.position = legend_position)
@@ -125,7 +129,8 @@ plot_vocc <- function(df,
         scale_fill_viridis_c(
           direction = viridis_dir,
           option = viridis_option, na.value = "red",
-          trans = transform_col, breaks = breaks, labels = labels, limits = raster_limits
+          trans = transform_col, breaks = breaks, labels = labels, 
+          limits = raster_limits
         ) +
         labs(fill = fill_label) +
         theme(legend.position = legend_position)
@@ -246,7 +251,7 @@ plot_vocc <- function(df,
 
   ####  Add arrows indicating target cells ####
   if (!is.null(vec_aes)) {
-    vector <- as.vector(na.omit(df[[vec_aes]]))
+    vector <- 0.25 #as.vector(na.omit(df[[vec_aes]]))
 
     gvocc <- gvocc +
       geom_quiver(aes(x, y,
@@ -266,10 +271,12 @@ plot_vocc <- function(df,
     gvocc <- gvocc +
       guides(colour = "none", size = "none") +
       geom_text(
-        data = df[df$distance > max_vec_plotted, ], aes(x, y), inherit.aes = FALSE,
-        size = 2, colour = "grey99",
+        data = df[df$distance > max_vec_plotted, ], 
+        aes(x = x , y = y + raster_cell_size/2), inherit.aes = FALSE,
+        size = 2, colour = vec_col,
         alpha = 0.75, label = NA_label
       )
+   
   }
 
   gvocc
@@ -433,5 +440,21 @@ no_trans <- scales::trans_new(
   name = "no trans",
   transform = function(x) x,
   inverse = function(x) x,
+  domain = c(Inf, Inf)
+)
+
+#' @export
+sqrt <- scales::trans_new(
+  name = "sqrt",
+  transform = function(x) ifelse(x > 0, sqrt(x), -sqrt(-x)),
+  inverse = function(x) ifelse(x > 0, x^2, -(x^2)),
+  domain = c(Inf, Inf)
+)
+
+#' @export
+log10 <- scales::trans_new(
+  name = "log10",
+  transform = function(x) ifelse(x > 0, log10(x), -log10(-x)),
+  inverse = function(x) ifelse(x > 0, 10^x, -(10^x)),
   domain = c(Inf, Inf)
 )

@@ -79,7 +79,7 @@ GeomQuiver <- ggplot2::ggproto(
       default.units = "native",
       gp = grid::gpar(
         col = alpha(trans$colour, trans$alpha),
-        lwd = trans$size * .pt,
+        lwd = trans$size,# * .pt,
         lty = trans$linetype,
         lineend = lineend
       ),
