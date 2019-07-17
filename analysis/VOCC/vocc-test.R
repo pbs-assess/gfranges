@@ -1,11 +1,11 @@
 start_data <- list(
-  data.frame(x = c(1, 2, 3, 4), y = c(1, 2, 3, 4), do_est = c(1.50, 1.01, 1.01, 1.01)),
-  data.frame(x = c(1, 2, 3, 4), y = c(1, 2, 3, 4),   temp = c(1.01, 1.01, 1.01, 1.01))
+  data.frame(x = c(1, 2, 3, 4), y = c(1, 2, 3, 4),   do = c(1.50, 1.01, 1.01, 1.01)),
+  data.frame(x = c(1, 2, 3, 4), y = c(1, 2, 3, 4), temp = c(1.01, 1.01, 1.01, 1.01))
 )
 
 end_data <- list(
-  data.frame(x = c(1, 2, 3, 4), y = c(1, 2, 3, 4), do_est = c(0.55, 1.00, 1.00, 10.0)),
-  data.frame(x = c(1, 2, 3, 4), y = c(1, 2, 3, 4),   temp = c(1.00, 1.45, 1.00, 1.00))
+  data.frame(x = c(1, 2, 3, 4), y = c(1, 2, 3, 4),   do = c(0.55, 1.00, 1.00, 10.0)),
+  data.frame(x = c(1, 2, 3, 4), y = c(1, 2, 3, 4), temp = c(1.00, 1.45, 1.00, 1.00))
 )
 
 
@@ -15,8 +15,8 @@ dist_based_vocc(
   end_data = end_data,
   x = "x",
   y = "y",
-  variable_names = c("do_est", "temp"), # what the layer within each element is called
-  plus_minus = c(0.5, 0.5), # vector of plus/minus threshold(s) to define climate match 
+  variable_names = c("do", "temp"), # what the layer within each element is called
+  plus_minus = c(0.5, 0.5), # vector of plus/minus threshold(s) to define climate match
   match_logic = c("==", "=="), # will impliment rounding and max_thresholds will be ignored
   cell_size = 1,
   delta_t = 1,
@@ -30,7 +30,7 @@ dist_based_vocc(
   end_data = end_data,
   x = "x",
   y = "y",
-  variable_names = c("do_est", "temp"), 
+  variable_names = c("do", "temp"),
   round_fact = 10,
   min_thresholds = c(1, 1), # vectors of actual lower threshold values plus_minus*2
   max_thresholds = c(1, 1), # vectors of actual higher threshold values plus_minus*2
@@ -46,7 +46,7 @@ dist_based_vocc(
   end_data = end_data,
   x = "x",
   y = "y",
-  variable_names = c("do_est", "temp"), 
+  variable_names = c("do", "temp"),
   round_fact = 10,
   min_thresholds = c(1, 1),
   max_thresholds = c(Inf, 1),

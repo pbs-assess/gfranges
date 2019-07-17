@@ -23,8 +23,8 @@ m_do1$model$par
 exp(m_do1$model$par[["ln_phi"]])
 
 get_diag <- function(m, response = "log_do_mlpl") {
-  predictions1 <- predict(m)
-  predictions1$data$residuals <- residuals(m)
+  predictions <- predict(m)
+  predictions$residuals <- residuals(m)
   
   plot_map <- function(dat, column = "est") {
     ggplot(dat, aes_string("X", "Y", colour = column)) +
@@ -32,40 +32,40 @@ get_diag <- function(m, response = "log_do_mlpl") {
       coord_fixed()
   }
   
-  g <- plot_map(predictions1$data, "est") +
+  g <- plot_map(predictions, "est") +
     scale_colour_viridis_c() +
     ggtitle("Prediction (fixed effects + all random effects)")
   print(g)
   
-  g <- plot_map(predictions1$data, "est_fe") +
+  g <- plot_map(predictions, "est_fe") +
     ggtitle("Prediction (fixed effects only)") +
     scale_colour_viridis_c()
   print(g)
   
-  g <- plot_map(predictions1$data, "est_re_s") +
+  g <- plot_map(predictions, "est_re_s") +
     ggtitle("Spatial random effects only") +
     scale_colour_gradient2()
   print(g)
   
-  g <- ggplot(predictions1$data, aes_string("est", response)) +
+  g <- ggplot(predictions1, aes_string("est", response)) +
     geom_point() +
     facet_wrap(~year) +
     coord_fixed() +
     geom_abline()
   print(g)
   
-  g <- ggplot(predictions1$data, aes(est, residuals)) +
+  g <- ggplot(predictions, aes(est, residuals)) +
     geom_point() +
     geom_smooth()
   print(g)
   
-  g <- ggplot(predictions1$data, aes(depth_scaled, residuals)) +
+  g <- ggplot(predictions, aes(depth_scaled, residuals)) +
     geom_point() +
     geom_smooth() +
     facet_wrap(~year)
   print(g)
   
-  g <- ggplot(predictions1$data, aes(X, Y, colour = residuals)) +
+  g <- ggplot(predictions, aes(X, Y, colour = residuals)) +
     geom_point() +
     coord_fixed() +
     scale_color_gradient2()
@@ -78,7 +78,7 @@ get_diag <- function(m, response = "log_do_mlpl") {
   }
   
   print("R^2:")
-  r2 <- cor(predictions1$data$est, predictions1$data[[response]])^2
+  r2 <- cor(predictions$est, predictions[[response]])^2
   print(r2)
   
   print("")

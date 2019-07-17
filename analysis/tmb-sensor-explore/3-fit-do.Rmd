@@ -10,11 +10,6 @@ library(tidyverse)
 library(gfplot)
 library(sdmTMB)
 library(gfranges)
-
-#library(future)
-#library(dplyr)
-
-# plan(multiprocess)
 ```
 
 Load data
@@ -167,14 +162,11 @@ ggplot(d_trawl, aes(DOY, -depth , colour = do_mlpl)) + geom_point() + facet_wrap
   scale_color_viridis_c() + ylab("-log(depth)")
 ```
 
-
 ```{r}
 hist(d_trawl$do_mlpl)
 # log do_mlpl to allow gaussian 
 hist(d_trawl$log_do)
 ```
-
-
 
 ```{r}
 # # filter surveys if desired
@@ -185,10 +177,7 @@ hist(d_trawl$log_do)
   # filter(ssid != 16) %>%
   # remove obvious sensor fails, d_trawl %>% filter(depth_max<10), fishing event ids = 481861, 2179089
   # filter(depth_m_max>10) %>% 
-
 ```
-
-
 
 ```{r}
 
@@ -253,9 +242,9 @@ Current best model of DO
 ```{r eval=FALSE}
     starttime1 <- Sys.time()
 
-    do_model_re_DOY <- sdmTMB::sdmTMB(d_trawl1,
-      log_do ~ 0 + as.factor(year) + temp_scaled + temp_scaled2 ,
-      time_varying = ~ 0 + DOY_scaled + depth_scaled + depth_scaled2 + depth_scaled3,
+    do_model_all_DOY <- sdmTMB::sdmTMB(d_trawl1,
+      log_do ~ 0 + as.factor(year) + temp_scaled + temp_scaled2 + DOY_scaled,
+      time_varying = ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
       time = "year", spde = spde,
       family = gaussian(link = "identity"),
       ar1_fields = TRUE,
@@ -267,20 +256,12 @@ Current best model of DO
     endtime1 <- Sys.time()
     time1 <- round(starttime1 - endtime1)
 
-saveRDS(do_model_re_DOY, file = (here::here("analysis/tmb-sensor-explore/models/model-do-re-DOY.rds")))
+saveRDS(do_model_all_DOY, file = (here::here("analysis/tmb-sensor-explore/models/model-do-all-DOY2.rds")))
 time1
-do_model_re_DOY
+do_model_all_DOY
 ```
 
-```{r}
-do_model_re_DOY <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-re-DOY.rds"))
-do_model_re_DOY
-```
 
-```{r}
-get_diag(do_model_all_fe, response = "log_do", variable = "depth_scaled")
-
-```
 
 
 ```{r}
@@ -293,6 +274,13 @@ get_diag(do_model_DOY, response = "log_do", variable = "depth_scaled")
 ```
 
 Other models tried:
+
+```{r eval=FALSE}
+#with both DOY and depth as time-varying random effects
+do_model_re_DOY <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-re-DOY.rds"))
+do_model_re_DOY
+get_diag(do_model_re_DOY, response = "log_do", variable = "depth_scaled")
+```
 
 ```{r eval=FALSE}
 do_model_DOY <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-DOY.rds"))
@@ -356,7 +344,6 @@ plot_map_raster(p_nd, "do_est") +
   scale_fill_viridis_c(trans = "log") +
   facet_wrap(~year) +
   ggtitle("Prediction (fixed effects + all random effects)")
-
 ```
 
 

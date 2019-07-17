@@ -4,7 +4,7 @@
 # get and save sensor data from different surveys
 
 d_trawl <- gfdata::get_sensor_data_trawl(ssid = c(1, 3, 4, 16), spread_attributes = FALSE)
-saveRDS(d_trawl, file = "analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
+saveRDS(d_trawl, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl.rds")
 
 # d_ll <- gfplot::get_sensor_data_ll_ctd(c(22, 36), sensor_min_max = TRUE)
 # saveRDS(d_ll, file = "analysis/tmb-sensor-explore/dat-sensor-ll.rds")
@@ -15,10 +15,10 @@ saveRDS(d_trawl, file = "analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
 # pcod <- gfdata::get_survey_sets(join_sample_ids = TRUE, species = "pacific cod", ssid = c(1))
 
 pcod <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "pacific cod", ssid = c(1, 3, 4, 16))
-saveRDS(pcod, file = "analysis/tmb-sensor-explore/pacific-cod.rds")
+saveRDS(pcod, file = "analysis/tmb-sensor-explore/data/pacific-cod.rds")
 
 pop <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "pacific ocean perch", ssid = c(1, 3, 4, 16))
-saveRDS(pop, file = "analysis/tmb-sensor-explore/pacific-ocean-perch.rds")
+saveRDS(pop, file = "analysis/tmb-sensor-explore/data/pacific-ocean-perch.rds")
 
 # dovsol <- gfplot::get_survey_sets(join_sample_ids = TRUE, species = "dover sole", ssid = c(1, 3, 4, 16))
 # saveRDS(dovsol, file = "analysis/tmb-sensor-explore/dover-sole.rds")
@@ -26,9 +26,9 @@ saveRDS(pop, file = "analysis/tmb-sensor-explore/pacific-ocean-perch.rds")
 
 # explore data
 
-d_trawl <- readRDS("analysis/tmb-sensor-explore/dat-sensor-trawl.rds")
-#surv <- readRDS("../gfsynopsis/report/data-cache/pacific-cod.rds")$survey_sets
-surv <- readRDS("analysis/tmb-sensor-explore/pacific-cod.rds")
+d_trawl <- readRDS("analysis/tmb-sensor-explore/data/dat-sensor-trawl.rds")
+# surv <- readRDS("../gfsynopsis/report/data-cache/pacific-cod.rds")$survey_sets
+surv <- readRDS("analysis/tmb-sensor-explore/data/pacific-cod.rds")
 
 library(tidyverse)
 
@@ -38,12 +38,12 @@ d_trawl <- d_trawl %>%
   distinct() %>%
   reshape2::dcast(fishing_event_id + year + ssid + survey_desc ~ attribute, value.var = "avg")
 
-surv_fish <- surv %>% select(year, ssid, fishing_event_id, survey_series_id, longitude, latitude, density_kgpm2) %>%
+surv_fish <- surv %>%
+  select(year, ssid, fishing_event_id, survey_series_id, longitude, latitude, density_kgpm2) %>%
   distinct() %>%
   rename(ssid = survey_series_id)
 
-d_trawl <- left_join(surv_fish, d_trawl) #%>%
-  filter(ssid == 1)
+d_trawl <- left_join(surv_fish, d_trawl) # %>% filter(ssid == 1)
 
 d_trawl2 <- rename(d_trawl, X = longitude, Y = latitude)
 d_trawl <- as_tibble(gfplot:::ll2utm(d_trawl2, utm_zone = 9))
@@ -91,5 +91,4 @@ ggplot(d_trawl, aes(X, Y, colour = depth_scaled2)) +
   facet_wrap(~year) +
   scale_color_viridis_c()
 
-saveRDS(d_trawl, "analysis/tmb-sensor-explore/sensor-data-processed.rds")
-
+saveRDS(d_trawl, "analysis/tmb-sensor-explore/data/sensor-data-processed.rds")
