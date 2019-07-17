@@ -1,0 +1,441 @@
+---
+title: "Distanced-based VOCC analysis for HS and QCS"
+author: "Philina English"
+date: '2019-07-11'
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(gfranges)
+```
+
+
+Load predicted values
+```{r}
+pred_temp_do <- readRDS(here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds"))
+```
+
+Define subset of the spatial range 
+```{r eval=FALSE}
+predicted1 <- pred_temp_do %>% filter(ssid != 4) %>% filter(ssid != 16)
+predicted <- list(predicted1, predicted1)
+
+#unique(predicted1$year)
+
+do <- plot_facet_map(predicted[[1]], "do_est", transform_col = no_trans) +
+  labs(fill = "ml/L") +
+  ggtitle("Bottom DO")
+print(do)
+```
+
+
+Biannual changes starting 2009 and ending 2017
+```{r}
+unique(predicted[[1]]$year)
+
+out1 <- make_vector_data(predicted,
+  variable_names = c("do_est", "temp"),
+  start_time = 2009,
+  end_time = 2011,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),  
+  # match_logic = c(">=", "=="),
+  # plus_minus = c(1, 1)) # vector of plus/minus threshold(s) to define climate match.
+  min_thresholds = c(0.5, 3),
+  max_thresholds = c(Inf, 1),
+  round_fact = 10
+  )
+out1$do_est.units_per_decade <- out1$do_est.units_per_decade / 5
+out1$temp.units_per_decade <- out1$temp.units_per_decade / 5
+
+gvocc1a <- plot_vocc(out1,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  min_vec_plotted = 5,
+  NA_label = "*",
+  fill_col = "do_est.units_per_decade",
+  fill_label = "ml/L DO",
+  high_fill = "Steel Blue 4",
+  low_fill = "Red 3",
+  raster_alpha = 1,
+  # transform_col = fourth_root_power,
+  raster_limits = c(-2, 2.5),
+  axis_lables = FALSE)
+
+gvocc1b <- plot_vocc(out1,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  min_vec_plotted = 5,
+  NA_label = "*",
+  fill_col = "temp.units_per_decade",
+  fill_label = "°C",
+  raster_alpha = 1,
+  vec_alpha = 0.5,
+  # transform_col = fourth_root_power,
+  raster_limits = c(-2, 2.5),
+  axis_lables = FALSE)
+
+
+gvocc1 <- gridExtra::grid.arrange(gvocc1b, gvocc1a, nrow = 1, top = "Change between 2009 and 2011")
+```
+
+```{r}
+out2 <- make_vector_data(predicted,
+  variable_names = c("do_est", "temp"),
+ # ssid = c(4),
+  start_time = 2011,
+  end_time = 2013,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  min_thresholds = c(0.5, 3),
+  max_thresholds = c(Inf, 1),
+  round_fact = 10)
+out2$do_est.units_per_decade <- out2$do_est.units_per_decade / 5
+out2$temp.units_per_decade <- out2$temp.units_per_decade / 5
+
+gvocc2a <- plot_vocc(out2,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  min_vec_plotted = 5,
+  NA_label = "*",
+  fill_col = "do_est.units_per_decade",
+  fill_label = "ml/L DO",
+  high_fill = "Steel Blue 4",
+  low_fill = "Red 3",
+  raster_alpha = 1,
+  vec_alpha = 0.5,
+  # transform_col = fourth_root_power,
+     raster_limits = c(-2, 2.5),
+  axis_lables = FALSE)
+
+gvocc2b <- plot_vocc(out2,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  min_vec_plotted = 5,
+  NA_label = "*",
+  fill_col = "temp.units_per_decade",
+  fill_label = "°C",
+  raster_alpha = 1,
+  vec_alpha = 0.5,
+  # transform_col = fourth_root_power,
+     raster_limits = c(-2, 2.5),
+  axis_lables = FALSE)
+
+gvocc2 <- gridExtra::grid.arrange(gvocc2b, gvocc2a, nrow = 1, top = "Change between 2011 and 2013")
+```
+
+
+```{r}
+out3 <- make_vector_data(predicted,
+  variable_names = c("do_est", "temp"),
+ #  ssid = c(4),
+  start_time = 2013,
+  end_time = 2015,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  min_thresholds = c(0.5, 3),
+  max_thresholds = c(Inf, 1),
+  round_fact = 10)
+out3$do_est.units_per_decade <- out3$do_est.units_per_decade / 5
+out3$temp.units_per_decade <- out3$temp.units_per_decade / 5
+View(out3)
+
+gvocc3a <- plot_vocc(out3,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  min_vec_plotted = 5,
+  NA_label = "*",
+  fill_col = "do_est.units_per_decade",
+  fill_label = "ml/L DO",
+  high_fill = "Steel Blue 4",
+  low_fill = "Red 3",
+  raster_alpha = 1,
+  vec_alpha = 0.5,
+  # transform_col = fourth_root_power,
+   raster_limits = c(-2, 2.5),
+  axis_lables = FALSE)
+
+gvocc3b <- plot_vocc(out3,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  min_vec_plotted = 5,
+  NA_label = "*",
+  fill_col = "temp.units_per_decade",
+  fill_label = "°C",
+  raster_alpha = 1,
+  vec_alpha = 0.5,
+  # transform_col = fourth_root_power,
+   raster_limits = c(-2, 2.5),
+  axis_lables = FALSE)
+
+gvocc3 <- gridExtra::grid.arrange(gvocc3b, gvocc3a, nrow = 1, top = "Change between 2013 and 2015")
+```
+
+
+```{r}
+out4 <- make_vector_data(predicted,
+  variable_names = c("do_est", "temp"),
+ #  ssid = c(4),
+  start_time = 2015,
+  end_time = 2017,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  min_thresholds = c(0.5, 3),
+  max_thresholds = c(Inf, 1),
+  round_fact = 10)
+out4$do_est.units_per_decade <- out4$do_est.units_per_decade / 5
+out4$temp.units_per_decade <- out4$temp.units_per_decade / 5
+
+
+gvocc4a <- plot_vocc(out4,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  min_vec_plotted = 5,
+  NA_label = "*",
+  fill_col = "do_est.units_per_decade",
+  fill_label = "ml/L DO",
+  high_fill = "Steel Blue 4",
+  low_fill = "Red 3",
+  raster_alpha = 1,
+  vec_alpha = 0.5,
+  # transform_col = fourth_root_power,
+  raster_limits = c(-4, 2.5),
+  axis_lables = FALSE)
+
+gvocc4b <- plot_vocc(out4,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  min_vec_plotted = 5,
+  NA_label = "*",
+  fill_col = "temp.units_per_decade",
+  fill_label = "°C",
+  raster_alpha = 1,
+  vec_alpha = 0.5,
+  # transform_col = fourth_root_power,
+  raster_limits = c(-4, 2.5),
+  axis_lables = FALSE)
+
+gvocc4 <- gridExtra::grid.arrange(gvocc4b, gvocc4a, nrow = 1, top = "Change between 2015 and 2017")
+```
+
+
+
+```{r}
+out6 <- make_vector_data(predicted,
+  variable_names = c("do_est", "temp"),
+ #  ssid = c(4),
+  start_time = 2014,
+  skip_time = 2016,
+  end_time = 2018,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 4,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  min_thresholds = c(0.5, 3),
+  max_thresholds = c(Inf, 1),
+  round_fact = 10)
+out6$do_est.units_per_decade <- out6$do_est.units_per_decade / 5
+out6$temp.units_per_decade <- out6$temp.units_per_decade / 5
+
+
+gvocc6a <- plot_vocc(out6,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  min_vec_plotted = 5,
+  NA_label = "*",
+  fill_col = "do_est.units_per_decade",
+  fill_label = "ml/L DO",
+  high_fill = "Steel Blue 4",
+  low_fill = "Red 3",
+  raster_alpha = 1,
+  vec_alpha = 0.5,
+  # transform_col = fourth_root_power,
+  # raster_limits = c(-2, 2),
+  axis_lables = FALSE)
+
+gvocc6b <- plot_vocc(out6,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  min_vec_plotted = 5,
+  NA_label = "*",
+  fill_col = "temp.units_per_decade",
+  fill_label = "°C",
+  raster_alpha = 1,
+  vec_alpha = 0.5,
+  # transform_col = fourth_root_power,
+  # raster_limits = c(-2, 2),
+  axis_lables = FALSE)
+
+gvocc6 <- gridExtra::grid.arrange(gvocc6b, gvocc6a, nrow = 1, top = "Change between 2014 and 2018")
+```
+
+
+
+```{r}
+png(
+  file = "figs/biannual-temp-do-1n3-asym3-inf.png", 
+  res = 600,
+  units = "in",
+  width = 8, 
+  height = 15
+) 
+gridExtra::grid.arrange(gvocc1, gvocc2, gvocc3, gvocc4, nrow = 4, top = grid::textGrob("VOCC vectors for <0.5 ml/L biannual decrease in bottom DO and -3 to +1 °C")) 
+dev.off()
+```
+
+Cumulative change between last two decades 
+VOCC for 1 ml/L change and 1 degree change
+```{r}
+starttime1 <- Sys.time()
+out0.5d <- make_vector_data(predicted1,
+  variable_names = c("do_est"),
+ #  ssid = c(4),
+  start_time = 2009,
+  #skip_time = 2017,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 5,
+  delta_t_step = 2,
+  indices = c(1, 1, 1, 2, 2),
+  min_thresholds = c(0.2),
+  max_thresholds = c(Inf),
+  round_fact = 10
+)
+endtime1 <- Sys.time()
+time1 <- round(starttime1 - endtime1)
+View(out0.5d)
+```
+
+```{r}
+do <- plot_vocc(out0.5d,
+  fill_col = "var_1_s",
+  fill_label = "ml/L",
+  raster_alpha = 1,
+  #viridis_option = "A",
+  raster_limits = c(0, 6.5),
+  vec_aes = NULL)
+
+do <- do + ggtitle("Mean DO 2007-2013")
+do
+```
+
+
+```{r}
+# truncate extreme values of DO for plot
+# out0.5d$units_per_decade[out0.5d$units_per_decade > 3] <- 3
+# View(out0.5d)
+
+gvocc <- plot_vocc(out0.5d,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 60,
+  fill_col = "units_per_decade",
+  fill_label = "ml/L DO\nper decade",
+  raster_alpha = 1,
+  vec_alpha = 0.55,
+  axis_lables = FALSE,
+  viridis_option = "C",
+  viridis_dir = -1,
+  NA_label = ".",
+  min_vec_plotted = 5,
+  raster_limits = c(-2.5, 1.5),
+  high_fill = "Steel Blue 4",
+  low_fill = "Red 3")
+gvocc <- gvocc + ggtitle("VOCC >0.2 ml/L decline")
+gvocc
+```
+
+```{r}
+out0.5t <- make_vector_data(predicted1,
+  variable_names = c("temp"),
+ #  ssid = c(4),
+  start_time = 2009,
+  #skip_time = 2017,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 5,
+  delta_t_step = 2,
+  indices = c(1, 1, 1, 2, 2),
+  min_thresholds = c(3),
+  max_thresholds = c(0.5),
+  round_fact = 10
+)
+#out0.5t$units_per_decade[out0.5t$units_per_decade < 0.1] <- out0.5t$units_per_decade[out0.5t$units_per_decade < 0.1]-0.1
+View(out0.5t)
+```
+
+```{r}
+temp <- plot_vocc(out0.5t,
+  fill_col = "var_1_s",
+  fill_label = "°C ",
+  raster_alpha = 1,
+  viridis_option = "C",
+  raster_limits = c(5, 11),
+  vec_aes = NULL
+  )
+
+temp <- temp + ggtitle("Mean temperature 2007-2013")
+temp
+```
+
+```{r}
+vocct <- plot_vocc(out0.5t,
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 80,
+  fill_col = "units_per_decade",
+  fill_label = "°C per \ndecade",
+  NA_label = ".",
+  vec_alpha = 0.55,
+  min_vec_plotted = 5,
+  raster_limits = c(-0.5, 2),
+  raster_alpha = 1)
+vocct <- vocct + ggtitle("VOCC >0.5 °C increase")
+vocct
+```
+
+
+
+```{r}
+png(
+  file = "figs/vocc-temp-do-2009-2017-1n3.png", 
+  res = 600,
+  units = "in",
+  width = 7, 
+  height = 7
+) 
+
+gridExtra::grid.arrange(do, temp, gvocc, vocct,  nrow = 2)
+dev.off()
+```
+
+
+
+
+
