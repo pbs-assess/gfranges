@@ -59,7 +59,7 @@ dist_based_vocc <- function(start_data,
       stop("Must have `plus_minus` value for each varible.")
     }
     warning(
-      "Matching determined using rounding method is faster, but may be less precise."
+      "Matching determined using this method is faster, but may be less precise."
     )
   } else {
     if (is.null(max_thresholds)) {
@@ -285,15 +285,22 @@ dist_simple_search <- function(data,
       out[[i]]$y <- rep(sxy$y, n_targets)
       out[[i]]$distance <- rep(d[[i]], n_targets)
 
-      value_k <- list()
+      value_k <- data.frame()
+      v <- list()
       for (k in seq_along(variable_names)) {
-        value_k[[i]] <-
+        value_k[i,k] <-
           round(mean(as.numeric(na.omit(txy[, (2 + n_variables + k)])),
             na.rm = TRUE
           ), digits = 2)
+  
+        if (k == 1) {
+          v[[i]] <- paste(as.vector(value_k[[i,k]]))
+        } else {
+          v[[i]] <- paste(v[[i]], as.vector(value_k[[i,k]]))
+        }
       }
 
-      target_values <- paste(as.vector(value_k[[i]]))
+      target_values <- paste(as.vector(v[[i]]))
       out[[i]]$target_values <- rep(target_values, n_targets)
       out[[i]]$n_targets <- rep(n_targets, n_targets)
       out[[i]]$mean_target_X <- rep(mean_target_X, n_targets)
