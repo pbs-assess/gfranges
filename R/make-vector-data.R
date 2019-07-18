@@ -22,7 +22,7 @@
 #' @param plus_minus Vector of plus/minus threshold(s) to define a symmetical (default = 1 unit) climate match.
 #' @param match_logic An optional vector of logical functions applied using 'rounding' of allnclimate values.
 #'  If max_thresholds are not provided, the default of 'NULL' applies symmetrical plus/minus thresholds.
-#'  
+#'
 #' @importFrom rlang .data
 #'
 #' @export
@@ -47,26 +47,22 @@ make_vector_data <- function(data,
 
   # if (!identical(time_steps, length(indices)))
   length_indices <- length(indices)
-  length_time_steps <- length(unique(data[[time_var]]))
+
 
   if (isTRUE(var_number == 1)) {
     if (!is.null(ssid)) data <- data[data$ssid %in% ssid, ]
     if (!is.null(start_time)) data <- data %>% dplyr::filter(.data[[time_var]] >= start_time)
     if (!is.null(end_time)) data <- data %>% dplyr::filter(.data[[time_var]] <= end_time)
     if (!is.null(skip_time)) data <- data %>% dplyr::filter(!.data[[time_var]] %in% skip_time)
-
+    
+    length_time_steps <- length(unique(data[[time_var]]))
+    
     if (!isTRUE(length_time_steps == length_indices)) {
-      stop("Must have an indice assigned to each time step,",
-        "therefore length('indices') must equal 'time_steps'.",
+      stop("Must have an indice assigned to each unique time step retained in analysis.",
         call. = FALSE
       )
     }
 
-    # FIXME: need way of determining how many variables(in separate dataframes) are in dataset
-    # if (!is.list(data)) {
-    # if (length(plus_minus) > 1)
-    #       stop("If multiple climate variables (and corresponding plus_minus),",
-    #         "data must be in list form.", call. = FALSE)
     parameter <- variable_names
     rbrick <- make_raster_brick(data, parameter = parameter, time_var = time_var, scale_fac = scale_fac)
 
@@ -92,8 +88,8 @@ make_vector_data <- function(data,
     # check that data list is equal in length to varaible_names vector
     if (!identical(length(variable_names), length((data)))) {
       stop(
-        "Must have a list element for each varible, ",
-        "therefore `data` must be of the same length as `varible_names`."
+        "Need list of dataframes (or rasters) with a dataframe (or raster) for each variable. 
+        If multiple variables are found in one dataframe, it can be duplicated as is."
       )
     }
 
@@ -111,10 +107,18 @@ make_vector_data <- function(data,
       if (!is.null(start_time)) d <- d %>% dplyr::filter(.data[[time_var]] >= start_time) # .data uses rlang
       if (!is.null(end_time)) d <- d %>% dplyr::filter(.data[[time_var]] <= end_time)
       if (!is.null(skip_time)) d <- d %>% dplyr::filter(.data[[time_var]] != skip_time)
-
+      length_time_steps <- length(unique(d[[time_var]]))
+      
+      if (!isTRUE(length_time_steps == length_indices)) {
+        stop("Must have an indice assigned to each unique time step retained in analysis.",
+          call. = FALSE
+        )
+      }
+      
       rbrick <- make_raster_brick(d,
         parameter = parameter, time_var = time_var, scale_fac = scale_fac
       )
+
       slopedat[[i]] <- calcslope(rbrick, delta_t_step = delta_t_step) # vocc::calcslope for comparison
       x <- slopedat[[i]]$x
       y <- slopedat[[i]]$y
@@ -146,8 +150,8 @@ make_vector_data <- function(data,
     x = "x",
     y = "y",
     variable_names = c(rep("index_1", var_number)), # what the layer within each element is called
-    round_fact = round_fact,    
-    min_thresholds = min_thresholds,    
+    round_fact = round_fact,
+    min_thresholds = min_thresholds,
     max_thresholds = max_thresholds,
     plus_minus = plus_minus,
     match_logic = match_logic,
