@@ -574,28 +574,28 @@ m_temp_rw <- sdmTMB(d_trawl,
 )
 
 predictions_rw <- predict(m_temp_rw)
-predictions_rw$data$residuals <- residuals(m_temp_rw)
-cor(predictions_rw$data$est, predictions_rw$data$temperature_c)^2 #
+predictions_rw$residuals <- residuals(m_temp_rw)
+cor(predictions_rw$est, predictions_rw$temperature_c)^2 #
 # aic(m_temp3_rw)
 ```
 
 Residual plots:
 ```{r}
-ggplot(predictions_rw$data, aes(est, residuals)) +
+ggplot(predictions_rw, aes(est, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
 ```
 
 ```{r}
-ggplot(predictions_rw$data, aes(depth_scaled, residuals)) +
+ggplot(predictions_rw, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
 ```
 
 ```{r}
-ggplot(predictions_rw$data, aes(depth_scaled, residuals)) +
+ggplot(predictions_rw, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth()
 ```
@@ -611,97 +611,205 @@ m_temp3 <- sdmTMB(d_trawl,
 )
 
 predictions3 <- predict(m_temp3)
-predictions3$data$residuals <- residuals(m_temp3)
-cor(predictions3$data$est, predictions3$data$temperature_c)^2 #
+predictions3$residuals <- residuals(m_temp3)
+cor(predictions3$est, predictions3$temperature_c)^2 #
 ```
 
 ```{r}
-ggplot(predictions3$data, aes(est, residuals)) +
+ggplot(predictions3, aes(est, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
 ```
 
 ```{r}
-ggplot(predictions3$data, aes(depth_scaled, residuals)) +
+ggplot(predictions3, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
 ```
 
 ```{r}
-ggplot(predictions3$data, aes(depth_scaled, residuals)) +
+ggplot(predictions3, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth()
 ```
 
-
-# A functions for plotting our predictions:
-
-```{r}
-plot_map <- function(dat, column = "est") {
-  ggplot(dat, aes_string("X", "Y", colour = column)) +
-    geom_point() +
-    facet_wrap(~year) +
-    coord_fixed()
-}
-
-plot_map_raster <- function(dat, column = "est") {
-  ggplot(dat, aes_string("X", "Y", fill = column)) +
-    geom_raster() +
-    facet_wrap(~year) +
-    coord_fixed()
-}
-```
-
-
-## Plotting predictions
 #FIXME: DON'T HAVE SST TEMP FOR PREDICITON GRID YET...
 
+
+
+
+## Plotting predictions from saved temperature model
+
 ```{r}
-qcs_grid$depth_scaled3 <- (qcs_grid$depth_scaled)^3
-predictions_nd <- predict(m_temp3_rw, newdata = qcs_grid)
-# saveRDS(predictions3_rw_nd$data, file = "qcs-temp.rds")
+p_nd <- readRDS("../VOCC/data/predicted_temp_allyears.rds")
+# View(p_nd)
 ```
 
 ```{r}
-plot_map_raster(predictions_nd$data, "est") +
-  scale_fill_viridis_c(trans = "sqrt", option = "C") +
+plot_map_raster <- function(dat, column = "est") {
+    ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    coord_fixed()+
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+}
+
+plot_map_raster(p_nd, "est") +
+  scale_fill_viridis_c(trans = "log") +
+  facet_wrap(~year) +
   ggtitle("Prediction (fixed effects + all random effects)")
 ```
 
-```{r}
-plot_map_raster(predictions_nd$data, "est_fe") +
-  ggtitle("Prediction (fixed effects only)") +
-  scale_fill_viridis_c(trans = "sqrt")
-```
-
-```{r, eval=FALSE}
-plot_map_raster(predictions_nd$data, "est_re_s") +
-  ggtitle("Spatial random effects only") +
-  scale_fill_gradient2(low = "navy", mid = "white", high = "darkred")
-```
 
 ```{r}
-plot_map_raster(predictions_nd$data, "est_re_st") +
-  ggtitle("Spatiotemporal random effects only") +
-  scale_fill_gradient2(low = "navy", mid = "white", high = "darkred")
-```
+p_nd1 <- p_nd %>% filter(ssid!=16) %>% filter(ssid!=4)
 
-
-```{r}
-ggplot(predictions3_rw$data, aes(temperature_c, est)) +
-  geom_point() +
+breaks <- scales::trans_breaks(no_trans[["transform"]], no_trans[["inverse"]],n = 6)
+labels <- function(x) format(x, digits = 2, scientific = FALSE)
+ 
+pred_1 <- plot_map_raster(p_nd1, "est") +
+  scale_fill_viridis_c(labels = labels, 
+    #trans = "sqrt",
+    option = "C",
+    #breaks = c(0,2,4,6,8), 
+    limits = c(5, 11), 
+    na.value = "red") +
   facet_wrap(~year) +
-  coord_fixed() +
-  xlim(3, 15) +
-  ylim(3, 15) +
-  geom_abline()
+  labs(fill = "°C") + 
+  theme(legend.position = "none") +
+  ggtitle("Prediction (fixed effects + all random effects)") 
+pred_1
+```
+
+```{r}
+p_nd4 <- p_nd %>% filter(ssid==4)
+pred_4 <- plot_map_raster(p_nd4, "est") +
+  scale_fill_viridis_c(labels = labels, 
+     #trans = "sqrt",
+    option = "C",
+    #breaks = c(0,2,4,6,8), 
+    limits = c(5, 11), 
+    na.value = "black")+
+  facet_wrap(~year) + 
+  theme(legend.position = c(.85,.12)) +
+  labs(fill = "°C")
+  #ggtitle(" ")
+pred_4
+```
+
+```{r}
+plot_map_raster(p_nd, "est_non_rf") +
+  ggtitle("Prediction (fixed effects only)") +
+  facet_wrap(~year) +
+  scale_fill_viridis_c()
+```
+
+```{r}
+plot_map_raster(p_nd, "est_rf") +
+  ggtitle("Prediction (all random effects only)") +
+  facet_wrap(~year) +
+  scale_fill_viridis_c()
+```
+
+```{r}
+#glimpse(p_nd)
+
+omega_s_all <- plot_map_raster(p_nd, "omega_s") +
+  ggtitle("Spatial random effects only") +
+   scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1.5,2.5))+
+  labs(fill = "") + 
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = c(.82,.75))
+
+omega_s_all
+```
+
+```{r}
+ plot_map_raster(p_nd, "epsilon_st") +
+  ggtitle("Spatiotemporal random effects only") +
+  facet_wrap(~year) +
+  scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3")
+```
+
+```{r}
+p_nd1 <- p_nd %>% filter(ssid!=16) %>% filter(ssid!=4)
+st_1n3 <- plot_map_raster(p_nd1, "epsilon_st") +
+  ggtitle("Spatiotemporal random effects") +
+  facet_wrap(~year) +
+  scale_fill_gradient2(
+    low = "Steel Blue 4",
+    high = "Red 3", 
+    limits = c(-1,1), 
+    na.value = "red") +
+  labs(fill = "epsilon") + 
+  gfplot::theme_pbs() + 
+  theme(
+  legend.position = "none", 
+  axis.title.x = element_blank(), axis.title.y = element_blank())
+st_1n3
+```
+
+```{r}
+p_nd4 <- p_nd %>% filter(ssid==4) #%>% filter(ssid!=4)
+st_4 <- plot_map_raster(p_nd4, "epsilon_st") +
+  #ggtitle(" ") +
+  facet_wrap(~year) +
+  scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1,1)) +
+          labs(fill = " ") + 
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = c(.85,.15))
+st_4
+```
+
+
+
+
+
+```{r}
+p_nd16 <- p_nd %>% filter(ssid==16) #%>% filter(ssid!=4)
+st_16 <- plot_map_raster(p_nd16, "epsilon_st") +
+  #ggtitle(" ") +
+  facet_wrap(~year) +
+  scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1,1)) +
+  xlim(65,345) +
+    ylim(5800,6100) +
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = "none")
+st_16
 ```
 
 
 ```{r}
-temp_cog <- get_cog(predictions_nd)
+png(
+  file = "figs/temp-predictions.png", 
+  res = 600,
+  units = "in",
+  width = 11, 
+  height = 10
+) 
+
+gridExtra::grid.arrange(
+  grobs = list(pred_1, st_1n3, omega_s_all, pred_4, st_4, st_16 ),
+  widths = c(2, 2, 1.75),
+  heights = c(2, 1.35),
+  layout_matrix = rbind(c(1, 2, 3),
+                        c(4, 5, 6)),
+  top = grid::textGrob("Bottom temperature estimates from sdmTMB model")
+)
+
+# gridExtra::grid.arrange( nrow = 2, heights = c(2,1.5), 
+#   top = grid::textGrob("Dissolved oxygen estimates from sdmTMB model")) 
+dev.off()
+```
+
+
+
+
+
+```{r}
+temp_cog <- get_cog(p_nd)
 
 temp_cog %>%
   reshape2::dcast(year ~ coord, value.var = "est") %>%

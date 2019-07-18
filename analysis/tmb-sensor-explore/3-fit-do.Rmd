@@ -158,6 +158,27 @@ ggplot(d_trawl, aes(temp, log_do, colour = DOY, size = sqrt(temp_range))) +
 ```
 
 ```{r}
+ggplot(d_trawl, aes(temp, do_mlpl, colour = as.factor(ssid))) +
+  geom_point() +
+  facet_wrap(~year) +
+  scale_color_viridis_d()
+```
+
+```{r}
+ggplot(filter(d_trawl, year==2016), aes(temp, do_mlpl, colour = as.factor(ssid))) +
+  geom_point() +
+  #facet_wrap(~year) +
+  scale_color_viridis_d(begin=0.65)
+```
+
+```{r}
+ggplot(filter(d_trawl, year==2017), aes(temp, do_mlpl, colour = as.factor(ssid))) +
+  geom_point() +
+  #facet_wrap(~year) +
+  scale_color_viridis_d(end = 0.35)
+```
+
+```{r}
 ggplot(d_trawl, aes(DOY, -depth , colour = do_mlpl)) + geom_point() + facet_wrap(~year) +
   scale_color_viridis_c() + ylab("-log(depth)")
 ```
@@ -333,11 +354,17 @@ p_nd_filtered[p_nd_filtered$do_est>8, ]
 saveRDS(p_nd, file = (here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds")))
 ```
 
+
+Plot predictions from saved DO predictions file
+
 ```{r}
+p_nd <- readRDS((here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds")))
+
 plot_map_raster <- function(dat, column = "est") {
-  ggplot(dat, aes_string("X", "Y", fill = column)) +
+    ggplot(dat, aes_string("X", "Y", fill = column)) +
     geom_raster() +
-    coord_fixed()
+    coord_fixed()+
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 }
 
 plot_map_raster(p_nd, "do_est") +
@@ -346,6 +373,32 @@ plot_map_raster(p_nd, "do_est") +
   ggtitle("Prediction (fixed effects + all random effects)")
 ```
 
+
+```{r}
+p_nd1 <- p_nd %>% filter(ssid!=16) %>% filter(ssid!=4)
+
+breaks <- scales::trans_breaks(no_trans[["transform"]], no_trans[["inverse"]],n = 6)
+labels <- function(x) format(x, digits = 2, scientific = FALSE)
+ 
+pred_1 <- plot_map_raster(p_nd1, "do_est") +
+  scale_fill_viridis_c(labels = labels, breaks = c(0,2,4,6,8), limits = c(0, 9), na.value = "red") +
+  facet_wrap(~year) +
+  labs(fill = "ml/L DO") +
+  ggtitle("Prediction (fixed effects + all random effects)") + 
+  theme(legend.position = c(.85,.25))
+pred_1
+```
+
+```{r}
+p_nd4 <- p_nd %>% filter(ssid==4)
+pred_4 <- plot_map_raster(p_nd4, "do_est") +
+  scale_fill_viridis_c(labels = labels, breaks = c(0,2,4,6,8), limits = c(0, 9), na.value = "red")+
+  facet_wrap(~year) +
+  labs(fill = "ml/L DO") +
+  #ggtitle(" ")+ 
+  theme(legend.position = "none")
+pred_4
+```
 
 ```{r}
 plot_map_raster(p_nd, "est_non_rf") +
@@ -363,15 +416,19 @@ plot_map_raster(p_nd, "est_rf") +
 
 ```{r, eval=FALSE}
 #glimpse(p_nd)
-plot_map_raster(p_nd, "omega_s") +
+
+omega_s_all <- plot_map_raster(p_nd, "omega_s") +
   ggtitle("Spatial random effects only") +
    scale_fill_gradient2( high = "Steel Blue 4",
-  low = "Red 3")+
-gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+  low = "Red 3", limits = c(-0.65,1))+
+  labs(fill = " ") + 
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = c(.82,.75))
+
+omega_s_all
 ```
 
 ```{r}
-plot_map_raster(p_nd, "epsilon_st") +
+ plot_map_raster(p_nd, "epsilon_st") +
   ggtitle("Spatiotemporal random effects only") +
   facet_wrap(~year) +
   scale_fill_gradient2( high = "Steel Blue 4",
@@ -380,31 +437,67 @@ plot_map_raster(p_nd, "epsilon_st") +
 
 ```{r}
 p_nd1 <- p_nd %>% filter(ssid!=16) %>% filter(ssid!=4)
-plot_map_raster(p_nd1, "epsilon_st") +
-  ggtitle("Spatiotemporal random effects only") +
+st_1n3 <- plot_map_raster(p_nd1, "epsilon_st") +
+  ggtitle("Spatiotemporal random effects") +
   facet_wrap(~year) +
   scale_fill_gradient2( high = "Steel Blue 4",
-  low = "Red 3", limits = c(-0.4,0.5)) +
-gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
-```
-```{r}
-p_nd4 <- p_nd %>% filter(ssid==4) #%>% filter(ssid!=4)
-plot_map_raster(p_nd4, "epsilon_st") +
-  ggtitle("Spatiotemporal random effects only") +
-  facet_wrap(~year) +
-  scale_fill_gradient2( high = "Steel Blue 4",
-  low = "Red 3", limits = c(-0.4,0.5)) +
-gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+  low = "Red 3", limits = c(-0.5,0.5)) +
+        labs(fill = " ") + 
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = c(.85,.25))
+st_1n3
 ```
 
 ```{r}
-p_nd16 <- p_nd %>% filter(ssid==16) #%>% filter(ssid!=4)
-plot_map_raster(p_nd16, "epsilon_st") +
-  ggtitle("Spatiotemporal random effects only") +
+p_nd4 <- p_nd %>% filter(ssid==4) #%>% filter(ssid!=4)
+st_4 <- plot_map_raster(p_nd4, "epsilon_st") +
+  #ggtitle(" ") +
   facet_wrap(~year) +
   scale_fill_gradient2( high = "Steel Blue 4",
-  low = "Red 3", limits = c(-0.4,0.5)) +
-gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+  low = "Red 3", limits = c(-0.5,0.5)) +
+          labs(fill = "epsilon") + 
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = "none")
+st_4
+```
+
+
+
+
+
+```{r}
+p_nd16 <- p_nd %>% filter(ssid==16) #%>% filter(ssid!=4)
+st_16 <- plot_map_raster(p_nd16, "epsilon_st") +
+  #ggtitle(" ") +
+  facet_wrap(~year) +
+  scale_fill_gradient2( high = "Steel Blue 4",
+  low = "Red 3", limits = c(-0.5,0.5)) +
+  xlim(65,345) +
+    ylim(5800,6100) +
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = "none")
+st_16
+```
+
+
+```{r}
+png(
+  file = "figs/do-predictions.png", 
+  res = 600,
+  units = "in",
+  width = 11, 
+  height = 6.5
+) 
+
+gridExtra::grid.arrange(
+  grobs = list(pred_1, st_1n3, omega_s_all, pred_4, st_4, st_16 ),
+  widths = c(2, 2, 1.75),
+  heights = c(2, 1.5),
+  layout_matrix = rbind(c(1, 2, 3),
+                        c(4, 5, 6)),
+  top = grid::textGrob("Dissolved oxygen estimates from sdmTMB model")
+)
+
+# gridExtra::grid.arrange( nrow = 2, heights = c(2,1.5), 
+#   top = grid::textGrob("Dissolved oxygen estimates from sdmTMB model")) 
+dev.off()
 ```
 
 ```{r}

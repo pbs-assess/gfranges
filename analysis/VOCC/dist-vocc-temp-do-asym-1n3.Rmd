@@ -309,8 +309,7 @@ gridExtra::grid.arrange(gvocc1, gvocc2, gvocc3, gvocc4, nrow = 4, top = grid::te
 dev.off()
 ```
 
-Cumulative change between last two decades 
-VOCC for 1 ml/L change and 1 degree change
+Cumulative change during survey period
 ```{r}
 starttime1 <- Sys.time()
 out0.5d <- make_vector_data(predicted1,
@@ -330,6 +329,7 @@ out0.5d <- make_vector_data(predicted1,
 endtime1 <- Sys.time()
 time1 <- round(starttime1 - endtime1)
 View(out0.5d)
+time1 
 ```
 
 ```{r}
@@ -431,7 +431,7 @@ png(
   height = 7
 ) 
 
-gridExtra::grid.arrange(do, temp, gvocc, vocct,  nrow = 2)
+gridExtra::grid.arrange(temp, do, vocct, gvocc, nrow = 2)
 dev.off()
 ```
 

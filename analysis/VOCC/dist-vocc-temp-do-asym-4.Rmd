@@ -20,9 +20,9 @@ pred_temp_do <- readRDS(here::here("analysis/tmb-sensor-explore/models/predicted
 
 Define subset of the spatial range 
 ```{r eval=FALSE}
-predicted <- pred_temp_do %>% filter(ssid == 4)
+predicted1 <- pred_temp_do %>% filter(ssid == 4)
 
-predicted <- list(predicted, predicted)
+predicted <- list(predicted1, predicted1)
 
 do <- plot_facet_map(predicted[[1]], "do_est", transform_col = no_trans) +
   labs(fill = "ml/L") +
@@ -344,10 +344,11 @@ dev.off()
 Cumulative change between last two decades 
 VOCC for 1 ml/L change and 1 degree change
 ```{r}
+unique(predicted1$year)
 starttime1 <- Sys.time()
-out0.5d <- make_vector_data(predicted,
+out0.5d <- make_vector_data(predicted1,
   variable_names = c("do_est"),
-  ssid = c(4),
+  #ssid = c(4),
   start_time = 2008,
   skip_time = 2016,
   input_cell_size = 2,
@@ -367,8 +368,8 @@ time1 <- round(starttime1 - endtime1)
 
 
 ```{r}
-do <- plot_vocc(out0.5d,
-  fill_col = "1_s",
+do4 <- plot_vocc(out0.5d,
+  fill_col = "var_1_s",
   fill_label = "ml/L",
   raster_alpha = 1,
   vec_aes = NULL,
@@ -376,33 +377,20 @@ do <- plot_vocc(out0.5d,
   raster_limits = c(0, 5 )
   )
 
-do <- do + ggtitle("Mean DO 2008-2012")
-do
-```
-
-
-```{r}
-temp <- plot_vocc(out0.5d,
-  fill_col = "2_s",
-  fill_label = "°C ",
-  raster_alpha = 1,
-  vec_aes = NULL,
-  viridis_option = "C",
-  raster_limits = c(4, 8.5)
-  )
-
-temp <- temp + ggtitle("Mean temperature 2008-2012")
-temp
+do4 <- do4 + ggtitle("Mean DO 2008-2012")
+do4
 ```
 
 
 
+
+
 ```{r}
-gvocc <- plot_vocc(out0.5d,
+voccd4 <- plot_vocc(out0.5d,
   vec_aes = "distance",
   vec_lwd_range = c(0.2, 0.5),
   max_vec_plotted = 100,
-  fill_col = "do_est.units_per_decade",
+  fill_col = "units_per_decade",
   fill_label = "ml/L DO\nper decade",
   raster_alpha = 1,
   vec_alpha = 0.75,
@@ -414,41 +402,63 @@ gvocc <- plot_vocc(out0.5d,
   low_fill = "Red 3",
   min_vec_plotted = 5,
   raster_limits = c(-1.75, 1.75))
-gvocc <- gvocc + ggtitle("VOCC <0.2 ml/L decline (excludes 2016)")
-gvocc
+voccd4 <- voccd4 + ggtitle("VOCC <0.2 ml/L decline (excludes 2016)")
+voccd4
 ```
 
 ```{r}
-out0.5t <- make_vector_data(predicted,
+out0.5t <- make_vector_data(predicted1,
   variable_names = c("temp"),
-  ssid = c(4),
+  #ssid = c(4),
   start_time = 2008,
   skip_time = 2016,
   input_cell_size = 2,
   scale_fac = 1,
   delta_t_total = 6,
   delta_t_step = 2,
-  indices = c(1, 1, 2, 2, 2),
+  indices = c(1, 1, 1, 2, 2),
   min_thresholds = c(3),
   max_thresholds = c(0.5),
   round_fact = 10
 )
-out0.5t$temp.units_per_decade[out0.5t$temp.units_per_decade < 0.1] <- out0.5t$temp.units_per_decade[out0.5t$temp.units_per_decade < 0.1]-0.1
-View(out0.5t)
+```
 
-vocct <- plot_vocc(out0.5t,
+
+
+```{r}
+temp4 <- plot_vocc(out0.5t,
+  fill_col = "var_1_s",
+  fill_label = "°C ",
+  raster_alpha = 1,
+  vec_aes = NULL,
+  viridis_option = "C",
+  raster_limits = c(4.5, 11)
+  )
+
+temp4 <- temp4 + ggtitle("Mean temperature 2008-2012")
+temp4
+```
+
+```{r}
+# tweak few lowest values to appear as negative
+# this way plot will use scale consistent with values spanning 0
+out0.5t$units_per_decade[out0.5t$units_per_decade < 0.1] <- out0.5t$units_per_decade[out0.5t$units_per_decade < 0.1]-0.1
+# View(out0.5t)
+
+vocct4 <- plot_vocc(out0.5t,
   vec_aes = "distance",
   vec_lwd_range = c(0.2, 0.5),
   max_vec_plotted = 100,
-  fill_col = "temp.units_per_decade",
+  fill_col = "units_per_decade",
   fill_label = "°C per \ndecade",
   vec_alpha = 0.75,
   raster_alpha = 1,
   min_vec_plotted = 5,
-  raster_limits = c(-0.1, 1.5))
-vocct <- vocct + ggtitle("VOCC <0.5 °C increase (excludes 2016)")
-vocct
+  raster_limits = c(-0.5, 2))
+vocct4 <- vocct4 + ggtitle("VOCC <0.5 °C increase (excludes 2016)")
+vocct4
 ```
+
 
 ```{r}
 png(
@@ -459,7 +469,7 @@ png(
   height = 7
 ) 
 
-gridExtra::grid.arrange( do, temp, gvocc, vocct,  nrow = 2)
+gridExtra::grid.arrange(temp4, do4, vocct4, voccd4, nrow = 2)
 dev.off()
 ```
 
