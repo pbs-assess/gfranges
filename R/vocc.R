@@ -231,8 +231,9 @@ dist_simple_search <- function(data,
       if (is.null(match_logic)) {
         matches_upper[, j] <- e_split[, j] <= u_split[j] + max_thresholds[j]
         matches_lower[, j] <- e_split[, j] >= u_split[j] - min_thresholds[j]
-        matches_both[, j] <- vapply(seq_len(nrow(e_split)), function(i)
-          all(matches_lower[i, j], matches_upper[i, j]), FUN.VALUE = logical(1))
+        matches_both[, j] <- matches_upper[, j] & matches_lower[, j]
+        #matches_both[, j] <- vapply(seq_len(nrow(e_split)), function(i)
+        #  all(matches_lower[i, j], matches_upper[i, j]), FUN.VALUE = logical(1))
       } else {
         matches_round[, j] <- vapply(seq_len(nrow(e_split)), function(i)
           eval(rlang::parse_expr(paste(e_split[i, j], match_logic[[j]], u_split[j]))),
