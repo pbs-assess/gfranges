@@ -25,10 +25,10 @@ dist_based_vocc(start_data, end_data, x = "x", y = "y",
 If NULL, will use 10x precision of the plus_minus threshold when `match_logic` = NULL.}
 
 \item{min_thresholds}{Optional vector of negative thresholds.
-Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.}
+Include if sensitivity to climate is not symmetrical and `match_logic` = NULL.}
 
 \item{max_thresholds}{Optional vector of positive thresholds.
-Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.}
+Include if sensitivity to climate is not symmetrical and `match_logic` = NULL.}
 
 \item{plus_minus}{Vector of plus/minus threshold(s) to define a symmetical (default = 1 unit) climate match.}
 

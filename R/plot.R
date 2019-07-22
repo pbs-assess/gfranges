@@ -61,16 +61,17 @@ plot_vocc <- function(df,
                       raster_cell_size = 2,
                       legend_position = c(0.2, 0.25)) {
 
+  if (!is.null(vec_aes)) {
   # order so smaller vectors are on top?
   df <- df[order(df$distance), ]
   df[df$distance < min_vec_plotted, ]$target_X <- NA
   df[df$distance < min_vec_plotted, ]$target_Y <- NA
-
   if (max(df$distance) > max_vec_plotted) {
     df[df$distance > max_vec_plotted, ]$target_X <- NA
     df[df$distance > max_vec_plotted, ]$target_Y <- NA
   }
-
+  }
+  
   # Set plot boundaries so that dimensions are close to square
   width_X <- max(df$x, na.rm = TRUE) - min(df$x, na.rm = TRUE)
   width_Y <- max(df$y, na.rm = TRUE) - min(df$y, na.rm = TRUE)

@@ -8,9 +8,9 @@
 #' @param round_fact Speed up searches by rounding (1 = integers; 10 = 10ths; 100 = 100ths).
 #'  If NULL, will use 10x precision of the plus_minus threshold when `match_logic` = NULL.
 #' @param min_thresholds Optional vector of negative thresholds.
-#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.
+#'  Include if sensitivity to climate is not symmetrical and `match_logic` = NULL.
 #' @param max_thresholds Optional vector of positive thresholds.
-#'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.
+#'  Include if sensitivity to climate is not symmetrical and `match_logic` = NULL.
 #' @param plus_minus Vector of plus/minus threshold(s) to define a symmetical (default = 1 unit) climate match.
 #' @param match_logic An optional vector of logical functions applied using 'rounding' of allnclimate values.
 #'  If max_thresholds are not provided, the default of 'NULL' applies symmetrical plus/minus thresholds.
