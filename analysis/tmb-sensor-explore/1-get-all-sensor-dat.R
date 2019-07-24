@@ -121,7 +121,7 @@ bath$data$year <- as.double(bath$data$year)
 d_trawl5 <- left_join(all_sensor, bath$data, by = "fishing_event_id") %>% mutate(
   ssid = coalesce(ssid.x, ssid.y),
   year = coalesce(year.x, year.y)
-) %>% select(-year.x, -year.y, -ssid.x, -ssid.y)
+) %>% select(-year.x, -year.y, -ssid.x, -ssid.y, -present, -catch_weight, -density)
 
 
 # get fishing event locations for sensor samples not included as valid survey samples
@@ -165,8 +165,12 @@ d_trawl$Y <- d_trawl$lat
 d_trawl <- as_tibble(gfplot:::ll2utm(d_trawl, utm_zone = 9))
 
 # d_trawl[d_trawl$fishing_event_id == 308835,]$year <- 2003
-d_trawl <- readRDS("analysis/tmb-sensor-explore/data/all-sensor-data-processed.rds")
 
+
+saveRDS(d_trawl, "analysis/tmb-sensor-explore/data/all-sensor-data-processed.rds")
+
+
+d_trawl <- readRDS("analysis/tmb-sensor-explore/data/all-sensor-data-processed.rds")
 
 glimpse(d_trawl)
 View(d_trawl)
@@ -220,5 +224,3 @@ ggplot(d_trawl, aes(X, Y, colour = depth)) +
   facet_wrap(~year) +
   scale_color_viridis_c()
 
-
-saveRDS(d_trawl, "analysis/tmb-sensor-explore/data/all-sensor-data-processed.rds")
