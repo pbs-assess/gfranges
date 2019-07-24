@@ -49,7 +49,6 @@ load_bath <- function(utm_zone = 9) {
 
 #' Interpolate survey bathymetry
 #' @export
-#' @rdname survey-spatial-modelling
 interp_survey_bathymetry <- function(dat, utm_zone = 9) {
   .dat <- dat[is.na(dat$depth), , drop = FALSE]
   # reduce size first for speed:
@@ -90,7 +89,6 @@ interp_survey_bathymetry <- function(dat, utm_zone = 9) {
 #'
 #' @export
 #'
-#' @rdname survey-spatial-modelling
 add_missing_depths <- function(dat, survey, years, bath) {
   if (sum(is.na(dat$depth)) > 0) {
     bath <- bath$data
@@ -114,7 +112,6 @@ add_missing_depths <- function(dat, survey, years, bath) {
 #'
 #' @export
 #'
-#' @rdname survey-spatial-modelling
 scale_predictors <- function(dat,
                              predictors = c(quo(log_depth))) {
   # to put spatial decay parameter on right scale
