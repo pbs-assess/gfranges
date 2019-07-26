@@ -148,7 +148,7 @@ plot_vocc <- function(df,
           x = "X", y = "Y",
           group = "paste(PID, SID)"
         ),
-        inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey55"
+        inherit.aes = FALSE, lwd = 0.1, alpha = 0.4, colour = "grey55"
       )
   } else {
     # add bathymetry layer from gfplot
@@ -176,7 +176,7 @@ plot_vocc <- function(df,
             x = "X", y = "Y",
             group = "paste(PID, SID)"
           ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey85"
+          inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey85"
         ) +
         geom_path(
           data = isobath[isobath$PID == 200, ],
@@ -184,7 +184,7 @@ plot_vocc <- function(df,
             x = "X", y = "Y",
             group = "paste(PID, SID)"
           ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey70"
+          inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey70"
         ) +
         geom_path(
           data = isobath[isobath$PID == 300, ],
@@ -192,7 +192,7 @@ plot_vocc <- function(df,
             x = "X", y = "Y",
             group = "paste(PID, SID)"
           ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey55"
+          inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey55"
         ) +
         geom_path(
           data = isobath[isobath$PID == 400, ],
@@ -200,7 +200,7 @@ plot_vocc <- function(df,
             x = "X", y = "Y",
             group = "paste(PID, SID)"
           ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey40"
+          inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey40"
         ) +
         geom_path(
           data = isobath[isobath$PID == 500, ],
@@ -208,7 +208,7 @@ plot_vocc <- function(df,
             x = "X", y = "Y",
             group = "paste(PID, SID)"
           ),
-          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey30"
+          inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey30"
         )
 
       gvocc
@@ -338,6 +338,8 @@ plot_facet_map <- function(df, column = "est",
     gfplot::theme_pbs() +
     theme(
       axis.title.x = element_blank(), axis.title.y = element_blank(),
+      axis.text.x = element_blank(), axis.text.y = element_blank(), 
+      axis.ticks = element_blank(),
       legend.position = legend_position, strip.text = element_blank()
     )
 
@@ -366,7 +368,7 @@ plot_facet_map <- function(df, column = "est",
         x = X, y = Y,
         group = "paste(PID, SID)"
       ),
-      inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey85"
+      inherit.aes = FALSE, lwd = 0.1, alpha = 0.4, colour = "grey85"
     ) +
     geom_path(
       data = isobath[isobath$PID == 200, ],
@@ -374,7 +376,7 @@ plot_facet_map <- function(df, column = "est",
         x = X, y = Y,
         group = "paste(PID, SID)"
       ),
-      inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey70"
+      inherit.aes = FALSE, lwd = 0.1, alpha = 0.4, colour = "grey70"
     ) +
     geom_path(
       data = isobath[isobath$PID == 300, ],
@@ -382,7 +384,7 @@ plot_facet_map <- function(df, column = "est",
         x = X, y = Y,
         group = "paste(PID, SID)"
       ),
-      inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey55"
+      inherit.aes = FALSE, lwd = 0.1, alpha = 0.4, colour = "grey55"
     ) +
     geom_path(
       data = isobath[isobath$PID == 400, ],
@@ -390,7 +392,7 @@ plot_facet_map <- function(df, column = "est",
         x = X, y = Y,
         group = "paste(PID, SID)"
       ),
-      inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey40"
+      inherit.aes = FALSE, lwd = 0.1, alpha = 0.4, colour = "grey40"
     ) +
     geom_path(
       data = isobath[isobath$PID == 500, ],
@@ -398,7 +400,7 @@ plot_facet_map <- function(df, column = "est",
         x = X, y = Y,
         group = "paste(PID, SID)"
       ),
-      inherit.aes = FALSE, lwd = 0.4, alpha = 0.4, colour = "grey30"
+      inherit.aes = FALSE, lwd = 0.1, alpha = 0.4, colour = "grey30"
     )
 
   #### Add coast ####
@@ -422,7 +424,7 @@ plot_facet_map <- function(df, column = "est",
   gfacet <- gfacet +
     geom_text(
       data = anno, aes(label = year, x = x, y = y),
-      size = 3, col = "grey40", inherit.aes = FALSE
+      size = 2, col = "grey40", inherit.aes = FALSE
     )
   gfacet
 }

@@ -805,9 +805,6 @@ dev.off()
 ```
 
 
-
-
-
 ```{r}
 temp_cog <- get_cog(p_nd)
 
