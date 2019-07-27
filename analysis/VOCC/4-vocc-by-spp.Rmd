@@ -1,0 +1,209 @@
+---
+title: "Biomass predictions and VOCC"
+author: "Philina English"
+date: '2019-07-18'
+output: html_document
+---
+
+This file calls models built by "1-biomass-models.Rmd" and stiches the predictions together.
+
+Species
+```{r}
+# # Species run so far...
+# species <- "Arrowtooth Flounder"
+# species <- "Pacific Cod"
+# species <- "Sablefish"
+# species <- "Silvergray Rockfish"
+species <- "Lingcod"
+# species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
+# species <- "Quillback Rockfish"
+# species <- "Pacific Ocean Perch"
+# species <- "Yelloweye Rockfish"
+```
+
+Region 
+```{r}
+# region <- "All synoptic surveys"
+
+# region <- "Both odd year surveys"
+region <- "West Coast Vancouver Island"
+# region <- "West Coast Haida Gwaii"
+```
+
+Choose model details
+```{r}
+update_spatial_model <- FALSE
+priors <- FALSE
+# priors <- TRUE
+
+# covariates <- "+muddy+mixed+rocky"
+# covariates <- "+mixed+rocky"
+covariates <- "+muddy+any_rock"
+# covariates <- "+trawled+muddy+rocky+mixed"
+# covariates <- "+trawled+mixed+rocky"
+# covariates <- "+trawled+mixed"
+```
+
+
+Run all subsequent code...
+```{r global_options, include=FALSE}
+covs <- gsub("\\+", "-", covariates)
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+
+# folder to hold figs for this species
+dir.create(file.path("figs", spp))
+dir.create(file.path("data", spp))
+
+knitr::opts_chunk$set(fig.width=11, fig.height=8.5, 
+                      #fig.path=paste0("figs/", spp, "/"),
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(gfplot)
+library(gfdata)
+library(sdmTMB)
+library(gfranges)
+
+#fish <- readRDS(paste0("raw/bio-data-", spp, ""))
+
+if (region == "All synoptic surveys") {
+  survey <- c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG")
+  model_ssid <- c(1, 3, 4, 16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+if (region == "Both odd year surveys") {
+  survey <- c("SYN QCS", "SYN HS")
+  model_ssid <- c(1, 3)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+if (region == "West Coast Vancouver Island") {
+  survey <- c("SYN WCVI")
+  model_ssid <- c(4)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+if (region == "West Coast Haida Gwaii") {
+  survey <- c("SYN WCHG")
+  model_ssid <- c(16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+```
+
+```{r}
+rm(adult_predictions)
+rm(imm_predictions)
+rm(predictions)
+
+adult_predictions <- readRDS(paste0("data/", spp, 
+      "/all-predictions-", spp, covs, "-mat-biomass-prior-", priors, ".rds"))
+adult_predictions <- filter(adult_predictions, ssid %in% model_ssid)
+
+imm_predictions <- readRDS(paste0("data/", spp, 
+      "/all-predictions-", spp, covs, "-imm-biomass-prior-", priors, ".rds"))
+
+imm_predictions <- filter(imm_predictions, ssid %in% model_ssid)
+
+```
+
+```{r}
+glimpse(adult_predictions)
+adult_change <- make_trend_data(adult_predictions,
+        ssid = c(4),
+        start_time = 2008,
+        skip_time = 2016,
+        input_cell_size = 2,
+        scale_fac = 1,
+        delta_t_total = 6,
+        delta_t_step = 2,
+        indices = c(1, 1, 1, 2, 2),
+        variable_names = "est_exp"
+      )
+```
+
+Import vectors for single climate variable at a time
+```{r}
+variable_names <- c("DO")
+
+declining_var <- "do_est"
+min_threshold <- 0.2
+vocc <- readRDS(paste0("data/", 
+      "vocc-", ssid_string, declining_var, min_threshold, "decline.rds"))
+
+# increasing_var <- "temp" 
+# max_threshold <- 0.5
+# vocc <- readRDS(paste0("data/", 
+#       "vocc-", ssid_string, increasing_var, max_threshold, "increase.rds"))
+```
+
+
+
+
+```{r}
+glimpse(adult_change)
+#unique(adult_predictions$ssid)
+glimpse(vocc)
+
+start <- adult_change %>% rename(start_density = var_1_s, end_density = var_1_e) %>% select(icell, x, y, start_density, end_density)
+end <- adult_change %>% rename(start_density = var_1_s, end_density = var_1_e, target_X = x, target_Y = y) %>% select(icell,  start_density, end_density, target_X, target_Y) 
+
+if (length(variable_names) == 1) {
+vectors <- vocc  %>% mutate(start_cell = icell, vector_id = paste0(id, "_to_", tid), 
+  initial_value = var_1_s, source_end_value = var_1_e, target_value = as.numeric(target_values)) %>% 
+  filter(distance > 1) %>%
+  select(vector_id, start_cell, x, y, target_X, target_Y, distance, initial_value, source_end_value, target_value, km_per_decade, N)
+} else {
+vectors <- vocc  %>% mutate(start_cell = icell, vector_id = paste0(id, "_to_", tid), 
+  initial_value = s, source_end_value = e, target_value = target_values) %>% 
+  filter(distance > 1) %>%
+  select(vector_id, start_cell, x, y, target_X, target_Y, distance, initial_value, source_end_value, target_value, km_per_decade, N) # need to replace N ...
+}
+vector_source <- left_join(vectors, start, by=c("x", "y")) %>% mutate(cell_type = "source")
+vector_target <- left_join(vectors, end, by=c("target_X", "target_Y")) %>% mutate(cell_type = "target")
+
+glimpse(vector_source)
+glimpse(vector_target)
+
+vectors <- rbind(vector_source, vector_target)
+glimpse(vectors)
+```
+
+```{r}
+do_vect_plot <- ggplot(filter(vectors, distance < 100), aes(distance, y = end_density-start_density, group = cell_type, colour= cell_type)) + 
+  geom_jitter(width = 0.25, alpha = 0.45, size = 2) + 
+  ylab(paste("Change in biomass over", vectors$N[1], "years")) + 
+  xlab(paste("Distance traveled to maintain DO decline of <", min_threshold, "")) + 
+  scale_colour_viridis_d(begin = 0.1, end = 0.5) + gfplot::theme_pbs() + theme(legend.position = c(0.8,0.8)) + ggtitle(paste(survey, species))
+do_vect_plot 
+```
+
+
+```{r}
+test <- lmerTest::lmer(end_density ~ cell_type * distance + start_density  + (1|vector_id), data = filter(vectors, distance < 30))
+summary(test)
+```
+
+
+```{r}
+png(
+  file = paste0("figs/", spp, "/vocc-biomass-change", spp, ssid_string, ".png"),
+  res = 600,
+  units = "in",
+  width = 5,
+  height = 4
+)
+
+do_vect_plot 
+dev.off()
+```
+
+
