@@ -5,81 +5,92 @@ date: '2019-07-18'
 output: html_document
 ---
 
-This file calls models built by "1-biomass-models.Rmd" and stiches the predictions together.
+This file ...
 
 Species
+
 ```{r}
 # # Species run so far...
-# species <- "Arrowtooth Flounder"
-# species <- "Pacific Cod"
-# species <- "Sablefish"
+ species <- "Arrowtooth Flounder"
+ species <- "Pacific Cod"
+ species <- "Sablefish"
 # species <- "Silvergray Rockfish"
-species <- "Lingcod"
-# species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
-# species <- "Quillback Rockfish"
-# species <- "Pacific Ocean Perch"
+#  species <- "Lingcod"
+#  species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
+#  species <- "Quillback Rockfish"
+#  species <- "Pacific Ocean Perch"
 # species <- "Yelloweye Rockfish"
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 ```
 
 Region 
 ```{r}
 # region <- "All synoptic surveys"
-
-# region <- "Both odd year surveys"
-region <- "West Coast Vancouver Island"
+ region <- "Both odd year surveys"
+ region <- "West Coast Vancouver Island"
 # region <- "West Coast Haida Gwaii"
 ```
 
-Choose model details
+Make climate vectors for biannual changes between surveys
 ```{r}
-update_spatial_model <- FALSE
-priors <- FALSE
-# priors <- TRUE
+trend <- FALSE
+start_time <- 2015
+end_time <- 2018
 
-# covariates <- "+muddy+mixed+rocky"
-# covariates <- "+mixed+rocky"
-covariates <- "+muddy+any_rock"
-# covariates <- "+trawled+muddy+rocky+mixed"
-# covariates <- "+trawled+mixed+rocky"
-# covariates <- "+trawled+mixed"
+
+climate <- "temperature"
+temp_threshold <- c(1)
+optimal_temp <- 7 # yellow-eye 4
+
+climate <- "do"
+do_threshold <- c(0.5)
+optimal_do <- 2.5 # yellow-eye 4
+
+
+# climate <- "DO and temperature"
+# max_thresholds <- c(Inf, 1)
+# min_thresholds <- c(0.5, Inf)
+
+```
+
+Make climate vectors for average changes and lower threshold values
+```{r}
+# trend <- TRUE
+# 
+# climate <- "temperature"
+# temp_trend_threshold <- c(0.25)
+
+# climate <- "DO"
+# do_trend_threshold <- c(0.2)
+
+# climate <- "both DO and temperature"
+# min_trend_thresholds <- c(0.2, Inf)
+# max_trend_thresholds <- c(Inf, 0.5)
 ```
 
 
 Run all subsequent code...
 ```{r global_options, include=FALSE}
-covs <- gsub("\\+", "-", covariates)
-spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
-
-# folder to hold figs for this species
-dir.create(file.path("figs", spp))
-dir.create(file.path("data", spp))
-
-knitr::opts_chunk$set(fig.width=11, fig.height=8.5, 
-                      #fig.path=paste0("figs/", spp, "/"),
-                      echo=FALSE, warning=FALSE, message=FALSE)
-```
-
-```{r, message=FALSE, warning=FALSE}
 library(dplyr)
 library(ggplot2)
 library(gfplot)
 library(gfdata)
 library(sdmTMB)
-library(gfranges)
+#library(gfranges)
 
-#fish <- readRDS(paste0("raw/bio-data-", spp, ""))
+knitr::opts_chunk$set(
+  fig.width = 11, fig.height = 8.5,
+  echo = FALSE, warning = FALSE, message = FALSE
+)
+```
 
-if (region == "All synoptic surveys") {
-  survey <- c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG")
-  model_ssid <- c(1, 3, 4, 16)
-  ssid_string <- paste0(model_ssid, collapse = "n")
-  years <- NULL
-}
-
+```{r, message=FALSE, warning=FALSE}
 if (region == "Both odd year surveys") {
   survey <- c("SYN QCS", "SYN HS")
   model_ssid <- c(1, 3)
   ssid_string <- paste0(model_ssid, collapse = "n")
+  trend_indices_do <- c(1, 1, 1, 2, 2)
+  trend_indices_temp <- c(1, 1, 1, 2, 2)
   years <- NULL
 }
 
@@ -87,6 +98,8 @@ if (region == "West Coast Vancouver Island") {
   survey <- c("SYN WCVI")
   model_ssid <- c(4)
   ssid_string <- paste0(model_ssid, collapse = "n")
+  trend_indices_do <- c(1, 1, 1, 2, 2)
+  trend_indices_temp <- c(1, 1, 1, 2, 2, 2)
   years <- NULL
 }
 
@@ -94,116 +107,769 @@ if (region == "West Coast Haida Gwaii") {
   survey <- c("SYN WCHG")
   model_ssid <- c(16)
   ssid_string <- paste0(model_ssid, collapse = "n")
+  trend_indices_do <- c(1, 1, 1, 2, 2)
+  trend_indices_temp <- c(1, 1, 1, 2, 2)
   years <- NULL
+}
+```
+
+
+```{r}
+# Set default cell sizes and scale
+input_cell_size <- 2
+scale_fac <- 1
+delta_t_step <- 2
+skip_time <- NULL
+
+if (climate == "temperature") {
+  variable_names <- c("temp")
+  min_thresholds <- c(Inf)
+  delta_threshold <- temp_threshold
+  optimal_value <- optimal_temp
+  
+  if (trend) {
+    max_thresholds <- temp_trend_threshold
+    start_time <- 2008 # change if can add back in prior 2008 data
+    end_time <- NULL
+    delta_t_total <- 6 # change if can add back in prior 2008 data
+    indices <- trend_indices_temp
+  } else {
+    max_thresholds <- temp_threshold
+    indices <- c(1, 2)
+    delta_t_total <- 2
+  }
+}
+
+if (climate == "do") {
+  variable_names <- c("do_est")
+  max_thresholds <- c(Inf)
+  delta_threshold <- -1*(do_threshold)
+  optimal_value <- optimal_do
+  
+  if (trend) {
+    min_thresholds <- do_trend_threshold
+    start_time <- 2008
+    skip_time <- 2016
+    end_time <- NULL
+    delta_t_total <- 6
+    indices <- trend_indices_do
+  } else {
+    min_thresholds <- do_threshold
+    indices <- c(1, 2)
+    delta_t_total <- 2
+  }
+}
+
+if (climate == "do and temperature") {
+  variable_names <- c("do_est", "temp")
+
+  if (trend) {
+    min_thresholds <- min_trend_thresholds
+    max_thresholds <- max_trend_thresholds
+    start_time <- 2008
+    skip_time <- 2016
+    end_time <- NULL
+    delta_t_total <- 6
+    indices <- trend_indices_do
+  } else {
+    min_thresholds <- min_thresholds
+    max_thresholds <- max_thresholds
+    indices <- c(1, 2)
+    delta_t_total <- 2
+  }
+}
+
+min_string <- paste0(min_thresholds, collapse = "-")
+max_string <- paste0(max_thresholds, collapse = "-")
+climate <- gsub(" ", "-", gsub("\\/", "-", tolower(climate)))
+```
+
+
+Calculate climate vectors
+```{r}
+rm(vocc)
+try({
+  vocc <- readRDS(paste0("data/vocc-", ssid_string,"-", climate, "-",  
+    min_string,"-", max_string, "-", start_time, "-", delta_t_total, ".rds"))
+})
+
+if (!exists("vocc")) {
+pred_temp_do <- readRDS(here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds"))
+
+if (length(variable_names) > 1) {
+  climate_predictions <- replicate(length(variable_names), pred_temp_do, simplify = FALSE)
+} else {
+  climate_predictions <- pred_temp_do
+}
+
+starttime <- Sys.time()
+vocc <- make_vector_data(climate_predictions,
+  variable_names = variable_names,
+  ssid = model_ssid,
+  start_time = start_time,
+  end_time = end_time,
+  skip_time = skip_time,
+  input_cell_size = input_cell_size,
+  scale_fac = scale_fac,
+  delta_t_total = delta_t_total,
+  delta_t_step = delta_t_step,
+  indices = indices,
+  min_thresholds = min_thresholds,
+  max_thresholds = max_thresholds,
+  round_fact = 10
+)
+endtime <- Sys.time()
+time_vocc <- round(starttime - endtime)
+
+vocc$var_1_min <- min_thresholds[1]
+vocc$var_2_min <- min_thresholds[2]
+vocc$var_1_max<- max_thresholds[1]
+vocc$var_2_max<- max_thresholds[2]
+
+saveRDS(vocc, file = paste0("data/vocc-", ssid_string,"-", climate, "-",  
+  min_string,"-", max_string, "-", start_time, "-", delta_t_total, ".rds"))
 }
 
 ```
 
+
+
+
+Get matching biomass data for the above time periods
+
+Get all biomass predictions 
 ```{r}
+priors <- FALSE
+# priors <- TRUE
+
+covariates <- "+muddy+any_rock"
+
+covs <- gsub("\\+", "-", covariates)
+
 rm(adult_predictions)
 rm(imm_predictions)
 rm(predictions)
 
-adult_predictions <- readRDS(paste0("data/", spp, 
-      "/all-predictions-", spp, covs, "-mat-biomass-prior-", priors, ".rds"))
-adult_predictions <- filter(adult_predictions, ssid %in% model_ssid)
+try({
+  adult_predictions <- readRDS(paste0("data/", spp,
+  "/all-predictions-", spp, covs, "-mat-biomass-prior-", priors, ".rds"))
+})
 
-imm_predictions <- readRDS(paste0("data/", spp, 
-      "/all-predictions-", spp, covs, "-imm-biomass-prior-", priors, ".rds"))
+try({
+  imm_predictions <- readRDS(paste0("data/", spp,
+  "/all-predictions-", spp, covs, "-imm-biomass-prior-", priors, ".rds"))
+})
 
-imm_predictions <- filter(imm_predictions, ssid %in% model_ssid)
+try({
+  predictions <- readRDS(paste0("data/", spp,
+  "/all-predictions-", spp, covs, "-total-biomass-prior-", priors, ".rds"))
+})
 
-```
+if (!exists("adult_predictions")) adult_predictions <- NULL
+if (!exists("imm_predictions")) imm_predictions <- NULL
+if (!exists("predictions")) predictions <- NULL
 
-```{r}
-glimpse(adult_predictions)
-adult_change <- make_trend_data(adult_predictions,
-        ssid = c(4),
-        start_time = 2008,
-        skip_time = 2016,
-        input_cell_size = 2,
-        scale_fac = 1,
-        delta_t_total = 6,
-        delta_t_step = 2,
-        indices = c(1, 1, 1, 2, 2),
-        variable_names = "est_exp"
-      )
-```
-
-Import vectors for single climate variable at a time
-```{r}
-variable_names <- c("DO")
-
-declining_var <- "do_est"
-min_threshold <- 0.2
-vocc <- readRDS(paste0("data/", 
-      "vocc-", ssid_string, declining_var, min_threshold, "decline.rds"))
-
-# increasing_var <- "temp" 
-# max_threshold <- 0.5
-# vocc <- readRDS(paste0("data/", 
-#       "vocc-", ssid_string, increasing_var, max_threshold, "increase.rds"))
-```
-
-
-
-
-```{r}
-glimpse(adult_change)
-#unique(adult_predictions$ssid)
-glimpse(vocc)
-
-start <- adult_change %>% rename(start_density = var_1_s, end_density = var_1_e) %>% select(icell, x, y, start_density, end_density)
-end <- adult_change %>% rename(start_density = var_1_s, end_density = var_1_e, target_X = x, target_Y = y) %>% select(icell,  start_density, end_density, target_X, target_Y) 
-
-if (length(variable_names) == 1) {
-vectors <- vocc  %>% mutate(start_cell = icell, vector_id = paste0(id, "_to_", tid), 
-  initial_value = var_1_s, source_end_value = var_1_e, target_value = as.numeric(target_values)) %>% 
-  filter(distance > 1) %>%
-  select(vector_id, start_cell, x, y, target_X, target_Y, distance, initial_value, source_end_value, target_value, km_per_decade, N)
-} else {
-vectors <- vocc  %>% mutate(start_cell = icell, vector_id = paste0(id, "_to_", tid), 
-  initial_value = s, source_end_value = e, target_value = target_values) %>% 
-  filter(distance > 1) %>%
-  select(vector_id, start_cell, x, y, target_X, target_Y, distance, initial_value, source_end_value, target_value, km_per_decade, N) # need to replace N ...
-}
-vector_source <- left_join(vectors, start, by=c("x", "y")) %>% mutate(cell_type = "source")
-vector_target <- left_join(vectors, end, by=c("target_X", "target_Y")) %>% mutate(cell_type = "target")
-
-glimpse(vector_source)
-glimpse(vector_target)
-
-vectors <- rbind(vector_source, vector_target)
-glimpse(vectors)
-```
-
-```{r}
-do_vect_plot <- ggplot(filter(vectors, distance < 100), aes(distance, y = end_density-start_density, group = cell_type, colour= cell_type)) + 
-  geom_jitter(width = 0.25, alpha = 0.45, size = 2) + 
-  ylab(paste("Change in biomass over", vectors$N[1], "years")) + 
-  xlab(paste("Distance traveled to maintain DO decline of <", min_threshold, "")) + 
-  scale_colour_viridis_d(begin = 0.1, end = 0.5) + gfplot::theme_pbs() + theme(legend.position = c(0.8,0.8)) + ggtitle(paste(survey, species))
-do_vect_plot 
-```
-
-
-```{r}
-test <- lmerTest::lmer(end_density ~ cell_type * distance + start_density  + (1|vector_id), data = filter(vectors, distance < 30))
-summary(test)
-```
-
-
-```{r}
-png(
-  file = paste0("figs/", spp, "/vocc-biomass-change", spp, ssid_string, ".png"),
-  res = 600,
-  units = "in",
-  width = 5,
-  height = 4
+biomass_list <- list(
+  adult = adult_predictions, 
+  imm = imm_predictions, 
+  total = predictions
 )
 
-do_vect_plot 
-dev.off()
+biomass_list <- biomass_list[!sapply(biomass_list, is.null)]
+```
+
+Extract biomass values to match spatial and temporal range of climate vectors
+```{r}
+vocc_by_sp <- list()
+for (i in seq_along(biomass_list)){
+
+biomass_change <- make_trend_data(biomass_list[[i]],
+  ssid = model_ssid,
+  start_time = start_time,
+  skip_time = skip_time,
+  end_time = end_time,
+  input_cell_size = input_cell_size,
+  scale_fac = scale_fac,
+  delta_t_total = delta_t_total,
+  delta_t_step = delta_t_step,
+  indices = indices,
+  variable_names = "est_exp"
+)
+
+start <- biomass_change %>% 
+  rename(start_density = var_1_s, end_density = var_1_e) %>% 
+  select(icell, x, y, start_density, end_density)
+
+end <- biomass_change %>% 
+  rename(start_density = var_1_s, end_density = var_1_e, target_X = x, target_Y = y) %>% 
+  select(icell, start_density, end_density, target_X, target_Y)
+
+source_density <- biomass_change %>% rename(source_density = var_1_s) %>% select(source_density, x, y)
+
+if (length(variable_names) == 1) {
+  vectors <- vocc %>%
+    mutate(
+      start_cell = icell, vector_id = paste0(id, "_to_", tid),
+      initial_value = var_1_s, source_end_value = var_1_e, target_value = as.numeric(target_values)
+    ) %>%
+    filter(distance > 1)  %>%
+    select(vector_id, start_cell, x, y, target_X, target_Y, distance, 
+      initial_value, source_end_value, target_value, 
+      km_per_decade, N) 
+  if (climate == "do") vectors <- vectors %>% filter(source_end_value < (optimal_do - do_threshold))
+  if (climate == "temperature") vectors <- vectors %>% filter(source_end_value > (optimal_temp + temp_threshold))
+
+} else {
+  vectors <- vocc %>%
+    mutate(
+      start_cell = icell, vector_id = paste0(id, "_to_", tid),
+      initial_value = s, source_end_value = e, target_value = target_values
+    ) %>%
+    filter(distance > 1) %>%
+    select(vector_id, start_cell, x, y, target_X, target_Y, distance, 
+      initial_value, source_end_value, target_value, 
+      km_per_decade, N) 
+  if (climate == "do") vectors <- vectors %>% filter(source_end_value < (optimal_do - do_threshold))
+  if (climate == "temperature") vectors <- vectors %>% filter(source_end_value > (optimal_temp + temp_threshold))
+
+}
+
+vector_source <- left_join(vectors, start, by = c("x", "y")) %>% 
+  mutate(cell_type = "source", end_climate = source_end_value, source_density = start_density) 
+
+vector_target <- left_join(vectors, end, by = c("target_X", "target_Y")) %>% 
+  mutate(cell_type = "target", end_climate = target_value)
+vector_target <- left_join(vector_target, source_density, by = c("x", "y")) #%>%  
+  # filter(end_climate > 2)
+
+vocc_by_sp[[i]] <- rbind(vector_source, vector_target) %>% 
+  filter(!is.na(icell)) %>% filter(source_density > 0.000001) %>% 
+  mutate(perc_change = (end_density - start_density)/start_density, 
+    cell_type = as.factor(cell_type)) %>% 
+  rename(X = x, Y = y)
+
+icells <- vocc_by_sp[[i]] %>% distinct(icell, .keep_all = TRUE)
+mean.change <- mean(icells$perc_change, na.rm = TRUE)
+sd.change <- sd(icells$perc_change, na.rm = TRUE)
+
+mean.density <- mean(icells$source_density, na.rm = TRUE)
+sd.density <- sd(icells$source_density, na.rm = TRUE)
+
+mean.climate <- mean(icells$end_climate, na.rm = TRUE)
+sd.climate <- sd(icells$end_climate, na.rm = TRUE)
+
+# glimpse(icells)
+# range(icells$perc_change)
+# range(vocc_by_sp[[i]]$perc_change)
+
+Xmax <- quantile(vocc_by_sp[[i]]$X, 0.9995)
+Xmin <- quantile(vocc_by_sp[[i]]$X, 0.0005)
+
+vocc_by_sp[[i]] <- vocc_by_sp[[i]] %>% mutate(std_change = (perc_change)/sd.change, 
+  std_source_density = (source_density - mean.density)/(sd.density*2), 
+  std_end_climate = (end_climate - mean.climate)/(sd.climate*2),
+  mean_change = mean.change, sd_change = sd.change,
+  mean_source_density = mean.density, sd_density = sd.density,
+  mean_climate = mean.climate, sd_climate = sd.climate,
+  std_end_climate2 = std_end_climate^2, 
+  distance = (ifelse(distance > 100, 100, distance)) - input_cell_size, # set intercept at scale of cells
+  distance2 = distance*distance
+  ) %>% filter ( X >= Xmin & X <= Xmax )
+
+# range(vocc_by_sp[[i]]$X)
+
+#glimpse(vocc_by_sp[[i]])
+}
+names(vocc_by_sp) <- names(biomass_list)
+```
+
+Check final climate-biomass relationship
+```{r}
+data <- vocc_by_sp[["adult"]]
+#glimpse(data)
+
+mature_plot <- ggplot(data, aes(x = end_climate, y = (end_density # - start_density
+  ), colour = cell_type, #size = start_density, 
+  group = cell_type)) +
+  geom_jitter(width = 0.05, alpha = 0.45) + #, size = 2
+  geom_smooth(method="lm", formula = y ~ x + I(x^2) + I(x^3)) +
+  #   , aes(x = end_climate, y = (end_density #- start_density
+  #  )), inherit.aes = FALSE) +
+  scale_size_continuous(guide = "none") +
+  scale_y_continuous(trans = fourth_root_power) +
+  ylab(paste("Final biomass")) +
+  xlab(paste("Final value of", climate,"for all cells")) +
+  scale_colour_viridis_d(begin = 0.1, end = 0.5) + 
+  gfplot::theme_pbs() + theme(legend.position = c(0.8, 0.8)) + 
+  ggtitle(paste(survey, "mature", species))
+
+mature_plot
+```
+
+Check distance threshold of 50 looks reasonable
+```{r}
+data <- vocc_by_sp[["adult"]]
+#data <- filter(vocc_by_sp[["adult"]], distance > 1 & distance < 100)
+
+mature_plot2 <- ggplot(data, aes(distance, y = std_change, 
+  group = cell_type, size = start_density, colour = end_climate)) +
+  geom_jitter(width = 0.05, alpha = 0.45) + #, size = 2
+  geom_smooth(method="lm", formula = y~x+I(x^2) )+
+  facet_wrap(~cell_type) +#, scales = "free") +
+  scale_size_continuous(guide = "none") +
+  # scale_y_continuous(trans = fourth_root_power) +
+  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  xlab(paste("Distance traveled to maintain <", min_thresholds, " decline or", max_thresholds, "increase in", climate,"")) +
+  scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
+  # scale_colour_viridis_d(begin = 0.1, end = 0.5) + 
+  gfplot::theme_pbs() + theme(legend.position = c(0.8, 0.8)) + 
+  ggtitle(paste(survey, "mature", species))
+
+mature_plot2
+```
+
+
+```{r warnings=FALSE}
+data <- vocc_by_sp[["adult"]]
+#data <- filter(vocc_by_sp[["adult"]], distance < 50)
+#data <- filter(vocc_by_sp[["adult"]], distance > 4 & distance < 50)
+
+mature_plot3 <- ggplot(data, aes(x = source_density, y = std_change, 
+    colour = end_climate, 
+    alpha = 1/(distance+ input_cell_size), #size = 1/distance,
+    group = cell_type)) +
+  geom_jitter(width = 0.01) +
+  geom_smooth(method="lm") +
+  facet_wrap(~cell_type) + #, scales = "free") +
+  scale_alpha_continuous(guide = "none") +
+  scale_size_continuous(guide = "none") +
+  scale_x_continuous(trans = sqrt) +
+  # scale_y_continuous(trans = fourth_root_power) +
+  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  xlab(paste("Source density (dark points are closer to source)")) +
+  scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
+  gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
+  ggtitle(paste(survey, "mature", species, "(mean biomass change =", round(data$mean_change[1], digits = 4), "kg/ha)"))
+
+mature_plot3
+```
+
+
+
+```{r}
+data <- vocc_by_sp[["adult"]]
+data <- filter(vocc_by_sp[["adult"]], distance < 50)
+
+mature_plot4 <- ggplot(filter(data, distance < 10), aes(source_density, y = std_change , 
+    colour = end_climate, 
+    alpha = 1/(distance+ input_cell_size), #size = 1/distance,
+    group = cell_type)) +
+  geom_jitter(width = 0.01) +
+  geom_smooth(method="lm") +
+  facet_wrap(~cell_type) +#, scales = "free") +
+  scale_alpha_continuous(guide = "none") +
+  scale_size_continuous(guide = "none") +
+  scale_x_continuous(trans = sqrt) +
+  #scale_y_continuous(trans = fourth_root_power) +
+  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  xlab(paste("Source density (dark points are closer to source)")) +
+  scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
+  gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
+  ggtitle(paste(survey, "mature", species, "(mean biomass change =", round(data$mean_change[1], digits = 4), "kg/ha)"))
+
+mature_plot4
+```
+
+
+
+```{r}
+data <- vocc_by_sp[["adult"]]
+data <- filter(vocc_by_sp[["adult"]], distance < 50)
+
+mature_plot5 <- ggplot(data, aes(x = end_climate - initial_value , y = #std_change
+    (end_density - start_density)
+  , colour = cell_type, size = start_density)) +
+  geom_jitter(width = 0.05, alpha = 0.45) + #, size = 2
+  scale_size_continuous(guide = "none") +
+  #scale_y_continuous(trans = fourth_root_power) +
+  ylab(paste("kg/ha change in biomass over", vectors$N[1], "years")) +
+  xlab(paste("Change in", climate,"")) +
+  scale_colour_viridis_d(begin = 0.1, end = 0.5) + 
+  gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
+  ggtitle(paste(survey, "mature", species))
+mature_plot5
+```
+
+
+```{r}
+# test <- lmerTest::lmer(log(end_density) ~ cell_type * std_source_density + cell_type * distance + 
+#             std_end_climate + std_end_climate2 + 
+#             (1 | vector_id), 
+#  #   offset = log(start_density), 
+#  #   family = Gamma(link = "inverse")
+#      data = data)
+# hist(data$end_density)
+# hist(data$std_change)
+data <- vocc_by_sp[["adult"]]
+
+test2 <- lmerTest::lmer(std_change ~ cell_type * std_source_density + 
+    cell_type * distance + cell_type * distance2 +
+    std_end_climate + std_end_climate2 + (1 | vector_id), REML = F, data = data)
+
+summary(test2)
+plot(test2)
+```
+
+Robust lmm
+```{r eval=FALSE}
+library(lme4)
+data <- vocc_by_sp[["adult"]]
+
+test3 <- robustlmm::rlmer(std_change ~ cell_type * std_source_density + 
+    cell_type * distance + cell_type * distance2 + 
+    std_end_climate + std_end_climate2 + (1 | vector_id), data = data)
+
+summary(test3)
+plot(test3, ask = FALSE)
+```
+
+Boosted regression
+```{r}
+data <- vocc_by_sp[["adult"]]
+
+m <- gbm::gbm(
+  std_change ~ source_density + end_climate + distance + cell_type + X + Y , 
+  data = data, 
+  distribution = "gaussian",
+  n.trees = 2000, 
+  interaction.depth = 3, 
+  shrinkage = 0.02
+  )
+
+# m <- gbm3::gbmt(end_density ~ start_density + source_density + end_climate + 
+#   distance + cell_type + X + Y, data = data, distribution = gbm_dist("Gamma"))
+```
+
+```{r}
+summary(m)
+```
+
+
+```{r}
+plot(m,1)
+plot(m,2)
+plot(m,3)
+plot(m,4)
+plot(m,c(1,2))
+plot(m,c(1,3))
+plot(m,c(1,4))
+plot(m,c(2,3))
+plot(m,c(2,4))
+plot(m,c(1,2,4))
+plot(m,c(2,3,4))
+plot(m,c(5,6))
+```
+
+
+
+```{r}
+data <- vocc_by_sp[["adult"]]
+
+  if (region == "Both odd year surveys") {
+    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 200)
+  }
+
+  if (region == "West Coast Vancouver Island") {
+    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 100)
+  }
+
+  if (region == "West Coast Haida Gwaii") {
+    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 60)
+  }
+
+  sdmTMB::plot_spde(spde)
+```
+
+
+```{r}
+#data$end_climate2 <- data$end_climate^2
+#data <- vocc_by_sp[["adult"]]
+data$std_source_density2 <- data$std_source_density^2
+test <- sdmTMB(data = data,
+      std_change ~ cell_type * std_source_density + cell_type * std_source_density2 +
+    cell_type * distance + cell_type * distance2 + 
+      std_end_climate + std_end_climate2, 
+      # std_change ~ cell_type * source_density + cell_type * distance  + end_climate + end_climate2,
+      spde = spde, # control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+      silent = TRUE)
+test
+```
+
+```{r}
+p <- predict(test)
+p$residuals <- residuals(test)
+#idata$resids <- p$residuals
+#glimpse(p)
+ggplot(p, aes(est, residuals)) +
+  geom_point(alpha=0.4) +
+  ylim(-8,8) +
+  geom_smooth()
+
+plot_map_raster <- function(dat, column = "est") {
+    ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    coord_fixed()+
+    gfplot::theme_pbs() + 
+    theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+}
+
+plot_map_raster(p, "est")
+plot_map_raster(p, "est_rf")
+plot_map_raster(p, "omega_s")
+plot_map_raster(p, "residuals")
+
+```
+
+
+Check final climate-biomass relationship
+```{r}
+idata <- vocc_by_sp[["imm"]]
+#glimpse(data)
+
+immature_plot1 <- ggplot(idata, aes(x = end_climate, y = (end_density # - start_density
+  ), colour = cell_type, #size = start_density, 
+  group = cell_type)) +
+  geom_jitter(width = 0.05, alpha = 0.45) + #, size = 2
+  geom_smooth(method="lm", formula = y ~ x + I(x^2) + I(x^3)) +
+  #geom_smooth() +
+  scale_size_continuous(guide = "none") +
+  scale_y_continuous(trans = fourth_root_power) +
+  ylab(paste("Final biomass")) +
+  xlab(paste("Final value of", climate,"for all cells")) +
+  scale_colour_viridis_d(begin = 0.1, end = 0.5) + 
+  gfplot::theme_pbs() + theme(legend.position = c(0.8, 0.8)) + 
+  ggtitle(paste(survey, "immature", species))
+
+immature_plot1
+```
+
+Check distance threshold of 50 looks reasonable
+```{r warnings=FALSE}
+idata <- vocc_by_sp[["imm"]]
+#data <- filter(vocc_by_sp[["adult"]], distance > 1 & distance < 100)
+
+immature_plot2 <- ggplot(idata, aes(distance, y = std_change, 
+  group = cell_type, size = start_density, colour = end_climate)) +
+  geom_jitter(width = 0.05, alpha = 0.45) + #, size = 2
+  geom_smooth(method="lm", formula = y~x+I(x^2) )+
+  facet_wrap(~cell_type) + #, scales = "free") +
+  scale_size_continuous(guide = "none") +
+  scale_y_continuous(trans = sqrt) +
+  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  xlab(paste("Distance traveled to maintain <", min_thresholds, " decline or", max_thresholds, "increase in", climate,"")) +
+  scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
+  # scale_colour_viridis_d(begin = 0.1, end = 0.5) + 
+  gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
+  ggtitle(paste(survey, "immature", species))
+
+immature_plot2
+```
+
+
+```{r warnings=FALSE}
+idata <- vocc_by_sp[["imm"]]
+#idata <- filter(vocc_by_sp[["imm"]], distance < 50)
+#idata <- filter(vocc_by_sp[[""imm"]], distance > 4 & distance < 50)
+
+immature_plot3 <- ggplot(idata, aes(x = source_density, y = std_change, 
+    colour = end_climate, 
+    alpha = 1/(distance+ input_cell_size), #size = 1/distance,
+    group = cell_type)) +
+  geom_jitter(width = 0.01) +
+  geom_smooth(method="lm") +
+  facet_wrap(~cell_type) + #, scales = "free") +
+  scale_alpha_continuous(guide = "none") +
+  scale_size_continuous(guide = "none") +
+  scale_x_continuous(trans = sqrt) +
+  scale_y_continuous(trans = sqrt) +
+  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  xlab(paste("Source density (dark points are closer to source)")) +
+  scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
+  gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
+  ggtitle(paste(survey, "immature", species, "(mean biomass change =", round(data$mean_change[1], digits = 4), "kg/ha)"))
+
+immature_plot3
+```
+
+
+
+```{r warnings=FALSE}
+idata <- vocc_by_sp[["imm"]]
+idata <- filter(vocc_by_sp[["imm"]], distance < 50)
+
+immature_plot4 <- ggplot(filter(idata, distance < 10), aes(source_density, y = std_change , 
+    colour = end_climate, 
+    alpha = 1/(distance+ input_cell_size), #size = 1/distance,
+    group = cell_type)) +
+  geom_jitter(width = 0.01) +
+  geom_smooth(method="lm") +
+  facet_wrap(~cell_type) +#, scales = "free") +
+  scale_alpha_continuous(guide = "none") +
+  scale_size_continuous(guide = "none") +
+  scale_x_continuous(trans = sqrt) +
+  scale_y_continuous(trans = sqrt) +
+  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  xlab(paste("Source density (dark points are closer to source)")) +
+  scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
+  gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
+  ggtitle(paste(survey, "immature", species, "(mean biomass change =", round(data$mean_change[1], digits = 4), "kg/ha)"))
+
+immature_plot4
+```
+
+
+
+```{r}
+idata <- vocc_by_sp[["imm"]]
+idata <- filter(vocc_by_sp[["imm"]], distance < 50)
+
+immature_plot5 <- ggplot(idata, aes(x = end_climate - initial_value , y = (end_density - start_density
+  ), colour = cell_type, size = start_density)) +
+  geom_jitter(width = 0.05, alpha = 0.45) + #, size = 2
+  scale_size_continuous(guide = "none") +
+  #scale_y_continuous(trans = fourth_root_power) +
+  ylab(paste("kg/ha change in biomass over", vectors$N[1], "years")) +
+  xlab(paste("Change in", climate,"")) +
+  scale_colour_viridis_d(begin = 0.1, end = 0.5) + 
+  gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
+  ggtitle(paste(survey, "immature", species))
+immature_plot5
+```
+
+
+```{r}
+idata <- vocc_by_sp[["imm"]]
+
+itest <- lmerTest::lmer(std_change ~ 
+      cell_type * std_source_density + 
+      cell_type * distance + cell_type * distance2 +
+      std_end_climate + std_end_climate2 + (1 | vector_id), 
+      REML = F, data = idata)
+summary(itest)
+plot(itest)
+```
+```{r eval=FALSE}
+library(lme4)
+itest3 <- robustlmm::rlmer(std_change ~ cell_type * std_source_density + 
+    cell_type * distance + cell_type * distance2 + 
+    std_end_climate + std_end_climate2 + (1 | vector_id), data = idata)
+summary(itest3)
+plot(itest3, ask = FALSE)
+```
+
+
+```{r}
+mi <- gbm::gbm(
+  std_change ~ source_density + end_climate + distance + cell_type + X + Y , 
+  data = idata, 
+  distribution = "gaussian",
+  n.trees = 2000, 
+  interaction.depth = 3, 
+  shrinkage = 0.02
+  )
+
+# m <- gbm3::gbmt(end_density ~ start_density + source_density + end_climate + 
+#   distance + cell_type + X + Y, data = data, distribution = gbm_dist("Gamma"))
+```
+
+```{r}
+summary(mi)
+```
+
+
+```{r}
+plot(mi,1)
+plot(mi,2)
+plot(mi,3)
+plot(mi,4)
+plot(mi,c(1,2))
+plot(mi,c(1,3))
+plot(mi,c(1,4))
+plot(mi,c(2,3))
+plot(mi,c(2,4))
+plot(mi,c(1,2,4))
+plot(mi,c(2,3,4))
+plot(mi,c(5,6))
+```
+
+
+
+```{r}
+  if (region == "Both odd year surveys") {
+    ispde <- sdmTMB::make_spde(idata$X, idata$Y, n_knots = 200)
+  }
+
+  if (region == "West Coast Vancouver Island") {
+    ispde <- sdmTMB::make_spde(idata$X, idata$Y, n_knots = 100)
+  }
+
+  if (region == "West Coast Haida Gwaii") {
+    ispde <- sdmTMB::make_spde(idata$X, idata$Y, n_knots = 60)
+  }
+
+  sdmTMB::plot_spde(ispde)
+```
+
+
+```{r }
+#glimpse(idata)
+
+idata$std_source_density2 <- idata$std_source_density^2
+itest <- sdmTMB(data = idata, 
+      std_change ~ cell_type * std_source_density + cell_type * std_source_density2 + 
+      cell_type * distance + cell_type * distance2 + 
+      std_end_climate + std_end_climate2, 
+      spde = ispde, silent = TRUE)
+itest
+
+```
+
+```{r}
+ip <- predict(itest)
+ip$residuals <- residuals(itest)
+#idata$resids <- p$residuals
+#glimpse(p)
+ggplot(ip, aes(est, residuals)) +
+  geom_point(alpha=0.4) +
+  ylim(-8,8) +
+  geom_smooth()
+
+plot_map_raster <- function(dat, column = "est") {
+    ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    coord_fixed()+
+    gfplot::theme_pbs() + 
+    theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+}
+
+plot_map_raster(ip, "est")
+plot_map_raster(ip, "est_rf")
+plot_map_raster(ip, "omega_s")
+plot_map_raster(ip, "residuals")
+```
+
+
+```{r}
+# png(
+#   file = paste0("figs/", spp, "/vocc-biomass-change", spp, ssid_string, ".png"),
+#   res = 600,
+#   units = "in",
+#   width = 5,
+#   height = 4
+# )
+# 
+# do_vect_plot
+# dev.off()
 ```
 
 
