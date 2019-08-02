@@ -19,18 +19,18 @@ species <- params$species
 # species <- "Pacific Cod"
 # species <- "Sablefish"
 # species <- "Silvergray Rockfish"
-# species <- "Lingcod"
+ species <- "Lingcod"
 # species <- "North Pacific Spiny Dogfish" # using all data for maturity thresholds
 # species <- "Quillback Rockfish" # no maturity classes and WCHG not work
 # species <- "Pacific Ocean Perch" 
-species <- "Yelloweye Rockfish"
+# species <- "Yelloweye Rockfish"
 ```
 
 Region 
 ```{r}
-# region <- "Both odd year surveys"
-  region <- "West Coast Vancouver Island"
- region <- "West Coast Haida Gwaii"
+ region <- "Both odd year surveys"
+region <- "West Coast Vancouver Island"
+#  region <- "West Coast Haida Gwaii"
 ```
 
 Choose model details
@@ -38,9 +38,9 @@ Choose model details
 priors <- FALSE
 # priors <- TRUE
 
-# covariates <- ""
-
-  covariates <- "+muddy+any_rock"
+covariates <- ""
+covs <- gsub("\\+", "-", "+muddy+any_rock")
+covariates <- "+muddy+any_rock"
 
 # covariates <- "+muddy+mixed+rocky"
 # covariates <- "+mixed+rocky"
@@ -52,7 +52,7 @@ priors <- FALSE
 
 Run all subsequent code...
 ```{r global_options, include=FALSE}
-covs <- gsub("\\+", "-", covariates)
+# covs <- gsub("\\+", "-", covariates)
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 # folder to hold figs for this species
@@ -212,9 +212,9 @@ if (exists("maturity")) {
 try(print(maturity$maturity))
 ```
 
-Run climate independent sdmTMB model
+Load and filter data 
 ```{r}
-  biomass <- readRDS(paste0(
+biomass <- readRDS(paste0(
     "data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds"
     ))
   covars <- readRDS("data/event-covariates.rds")
@@ -225,7 +225,11 @@ Run climate independent sdmTMB model
   data <- gfranges::scale_predictors(data, predictors = c(quo(depth)))
        # c(quo(log_depth), quo(mixed), quo(muddy), quo(sandy), quo(rocky), quo(any_rock)))
   data <- data %>% mutate(depth = raw_depth) %>% filter(ssid %in% model_ssid)
+```
 
+Run climate independent sdmTMB model
+```{r}
+  
   if (region == "Both odd year surveys") {
     spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 400)
   }
@@ -298,7 +302,7 @@ Run climate independent sdmTMB model
     
     total_biomass <- sdmTMB::sdmTMB(data,
       dens_formula,
-      time_varying = ~ 0 + depth_scaled + depth_scaled2,
+      time_varying = ~ 0 + depth_scaled + depth_scaled2 + trawled,
       time = "year", spde = spde,
       family = tweedie(link = "log"),
       ar1_fields = TRUE,
@@ -320,7 +324,7 @@ Run climate independent sdmTMB model
 Save predictions for full spatial grid
 
 ```{r}
-
+#covs <- gsub("\\+", "-", covariates)
 fish <- readRDS(paste0("raw/bio-data-", spp, ""))
 
 rm(adult_predictions)
@@ -331,15 +335,17 @@ rm(predictions)
 if (length(unique(fish$maturity_code)) > 2) {
   
     nd_all <- readRDS(paste0("data/nd_all_synoptic.rds"))
+    adult_biomass <- readRDS(paste0("data/", spp, 
+      "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
+    ))
+    
     nd <- nd_all %>% 
       filter(ssid %in% model_ssid) %>% 
       filter(year %in% unique(adult_biomass$data$year))
     nd <- na.omit(nd)
     nd$year <- as.integer(nd$year)
 
-    adult_biomass <- readRDS(paste0("data/", spp, 
-      "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
-    ))
+
     adult_predictions <- predict(adult_biomass, newdata = nd)
     saveRDS(adult_predictions, file = paste0("data/", spp, 
       "/predictions-", spp, covs, "-", ssid_string, "-mature-biomass-prior-", priors, ".rds"
