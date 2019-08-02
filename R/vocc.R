@@ -75,7 +75,7 @@ dist_based_vocc <- function(start_data,
     }
   }
 
-  round_fact <- c()
+  #round_fact <- c()
   start <- list()
   end <- list()
   n_variables <- length(variable_names)
