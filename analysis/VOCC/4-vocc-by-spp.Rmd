@@ -315,7 +315,7 @@ if (length(variable_names) == 1) {
     filter(distance > 1)  %>%
     select(vector_id, start_cell, x, y, target_X, target_Y, distance, 
       initial_value, source_end_value, target_value, 
-      km_per_decade, N) 
+      km_per_decade, timespan) 
   if (climate == "do") vectors <- vectors %>% filter(source_end_value < (optimal_do - do_threshold))
   if (climate == "temperature") vectors <- vectors %>% filter(source_end_value > (optimal_temp + temp_threshold))
 
@@ -328,7 +328,7 @@ if (length(variable_names) == 1) {
     filter(distance > 1) %>%
     select(vector_id, start_cell, x, y, target_X, target_Y, distance, 
       initial_value, source_end_value, target_value, 
-      km_per_decade, N) 
+      km_per_decade, timespan) 
   if (climate == "do") vectors <- vectors %>% filter(source_end_value < (optimal_do - do_threshold))
   if (climate == "temperature") vectors <- vectors %>% filter(source_end_value > (optimal_temp + temp_threshold))
 
@@ -360,10 +360,11 @@ sd.climate <- sd(icells$end_climate, na.rm = TRUE)
 
 # glimpse(icells)
 # range(icells$perc_change)
-# range(vocc_by_sp[[i]]$perc_change)
+# range(vocc_by_sp[[i]]$std_change)
 
 Xmax <- quantile(vocc_by_sp[[i]]$X, 0.9995)
 Xmin <- quantile(vocc_by_sp[[i]]$X, 0.0005)
+std_max <- quantile(vocc_by_sp[[i]]$std_change, 0.9995)
 
 vocc_by_sp[[i]] <- vocc_by_sp[[i]] %>% mutate(std_change = (perc_change)/sd.change, 
   std_source_density = (source_density - mean.density)/(sd.density*2), 
@@ -418,7 +419,7 @@ mature_plot2 <- ggplot(data, aes(distance, y = std_change,
   facet_wrap(~cell_type) +#, scales = "free") +
   scale_size_continuous(guide = "none") +
   # scale_y_continuous(trans = fourth_root_power) +
-  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  ylab(paste("Standardized change in biomass over", vectors$timespan[1], "years")) +
   xlab(paste("Distance traveled to maintain <", min_thresholds, " decline or", max_thresholds, "increase in", climate,"")) +
   scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
   # scale_colour_viridis_d(begin = 0.1, end = 0.5) + 
@@ -444,8 +445,8 @@ mature_plot3 <- ggplot(data, aes(x = source_density, y = std_change,
   scale_alpha_continuous(guide = "none") +
   scale_size_continuous(guide = "none") +
   scale_x_continuous(trans = sqrt) +
-  # scale_y_continuous(trans = fourth_root_power) +
-  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  scale_y_continuous(trans = sqrt) +
+  ylab(paste("Standardized change in biomass over", vectors$timespan[1], "years")) +
   xlab(paste("Source density (dark points are closer to source)")) +
   scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
   gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
@@ -471,7 +472,7 @@ mature_plot4 <- ggplot(filter(data, distance < 10), aes(source_density, y = std_
   scale_size_continuous(guide = "none") +
   scale_x_continuous(trans = sqrt) +
   #scale_y_continuous(trans = fourth_root_power) +
-  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  ylab(paste("Standardized change in biomass over", vectors$timespan[1], "years")) +
   xlab(paste("Source density (dark points are closer to source)")) +
   scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
   gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
@@ -492,7 +493,7 @@ mature_plot5 <- ggplot(data, aes(x = end_climate - initial_value , y = #std_chan
   geom_jitter(width = 0.05, alpha = 0.45) + #, size = 2
   scale_size_continuous(guide = "none") +
   #scale_y_continuous(trans = fourth_root_power) +
-  ylab(paste("kg/ha change in biomass over", vectors$N[1], "years")) +
+  ylab(paste("kg/ha change in biomass over", vectors$timespan[1], "years")) +
   xlab(paste("Change in", climate,"")) +
   scale_colour_viridis_d(begin = 0.1, end = 0.5) + 
   gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
@@ -606,6 +607,7 @@ test
 ```
 
 ```{r}
+
 p <- predict(test)
 p$residuals <- residuals(test)
 #idata$resids <- p$residuals
@@ -665,7 +667,7 @@ immature_plot2 <- ggplot(idata, aes(distance, y = std_change,
   facet_wrap(~cell_type) + #, scales = "free") +
   scale_size_continuous(guide = "none") +
   scale_y_continuous(trans = sqrt) +
-  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  ylab(paste("Standardized change in biomass over", vectors$timespan[1], "years")) +
   xlab(paste("Distance traveled to maintain <", min_thresholds, " decline or", max_thresholds, "increase in", climate,"")) +
   scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
   # scale_colour_viridis_d(begin = 0.1, end = 0.5) + 
@@ -692,7 +694,7 @@ immature_plot3 <- ggplot(idata, aes(x = source_density, y = std_change,
   scale_size_continuous(guide = "none") +
   scale_x_continuous(trans = sqrt) +
   scale_y_continuous(trans = sqrt) +
-  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  ylab(paste("Standardized change in biomass over", vectors$timespan[1], "years")) +
   xlab(paste("Source density (dark points are closer to source)")) +
   scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
   gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
@@ -718,7 +720,7 @@ immature_plot4 <- ggplot(filter(idata, distance < 10), aes(source_density, y = s
   scale_size_continuous(guide = "none") +
   scale_x_continuous(trans = sqrt) +
   scale_y_continuous(trans = sqrt) +
-  ylab(paste("Standardized change in biomass over", vectors$N[1], "years")) +
+  ylab(paste("Standardized change in biomass over", vectors$timespan[1], "years")) +
   xlab(paste("Source density (dark points are closer to source)")) +
   scale_colour_viridis_c(begin = 0.1, end = 0.9, name = paste("end", climate)) + 
   gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
@@ -738,7 +740,7 @@ immature_plot5 <- ggplot(idata, aes(x = end_climate - initial_value , y = (end_d
   geom_jitter(width = 0.05, alpha = 0.45) + #, size = 2
   scale_size_continuous(guide = "none") +
   #scale_y_continuous(trans = fourth_root_power) +
-  ylab(paste("kg/ha change in biomass over", vectors$N[1], "years")) +
+  ylab(paste("kg/ha change in biomass over", vectors$timespan[1], "years")) +
   xlab(paste("Change in", climate,"")) +
   scale_colour_viridis_d(begin = 0.1, end = 0.5) + 
   gfplot::theme_pbs() + theme(legend.position = c(0.9, 0.8)) + 
@@ -856,6 +858,39 @@ plot_map_raster(ip, "est")
 plot_map_raster(ip, "est_rf")
 plot_map_raster(ip, "omega_s")
 plot_map_raster(ip, "residuals")
+```
+
+
+```{r}
+m <- test
+
+varnames <- colnames(m$tmb_data$X_ij)
+#b_j <- m$model$par
+#source_intercept <- .sd[1,]
+#target_intercept <- b_j[2]
+#source_slope <- b_j[3]
+
+.sd <- summary(m$sd_report)
+.sd <- as.data.frame(.sd)
+names(.sd) <- c("beta","se")
+.sd$ci <- .sd$se*1.96
+var <- varnames
+var[1] <- "intercept"
+.sd <- .sd[1:length(var), ]
+row.names(.sd) <- NULL
+.sd <-cbind(var, .sd)
+
+.sd$species <- spp 
+.sd$climate <- climate 
+.sd$min_thresholds <- min_thresholds
+.sd$max_thresholds <- max_thresholds
+.sd$optimum <- optimal_value
+.sd$start_time <- start_time
+.sd$timespan <- delta_t_total
+
+# intercept = mean std percent change in biomass for cell with avarage source biomass
+data$mean_source_density[1]
+range(data$source_density)
 ```
 
 

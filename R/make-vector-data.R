@@ -147,7 +147,6 @@ make_vector_data <- function(data,
     slopedat$x <- x
     slopedat$y <- y
     slopedat$icell <- icell ####
-    slopedat$N <- delta_t_step
   }
   out <- dist_based_vocc(
     start_data = start_data,
@@ -167,5 +166,6 @@ make_vector_data <- function(data,
 
   out <- left_join(out, slopedat, by = c("x", "y"))
   out$km_per_decade <- (out$distance / delta_t_total) * 10
+  out$timespan <- delta_t_total
   out
 }
