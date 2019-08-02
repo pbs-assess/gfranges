@@ -44,7 +44,7 @@ make_vector_data <- function(data,
                              plus_minus = c(0.5), # default symmetrical thresholds of 1 unit
                              match_logic = NULL) {
   var_number <- length(variable_names)
-
+  # browser()
   # if (!identical(time_steps, length(indices)))
   length_indices <- length(indices)
 
@@ -54,9 +54,11 @@ make_vector_data <- function(data,
     if (!is.null(start_time)) data <- data %>% dplyr::filter(.data[[time_var]] >= start_time)
     if (!is.null(end_time)) data <- data %>% dplyr::filter(.data[[time_var]] <= end_time)
     if (!is.null(skip_time)) data <- data %>% dplyr::filter(!.data[[time_var]] %in% skip_time)
-    
+
+#browser()
+
     length_time_steps <- length(unique(data[[time_var]]))
-    
+
     if (!isTRUE(length_time_steps == length_indices)) {
       stop("Must have an indice assigned to each unique time step retained in analysis.",
         call. = FALSE
@@ -122,6 +124,7 @@ make_vector_data <- function(data,
       slopedat[[i]] <- calcslope(rbrick, delta_t_step = delta_t_step) # vocc::calcslope for comparison
       x <- slopedat[[i]]$x
       y <- slopedat[[i]]$y
+      icell <- slopedat[[i]]$icell ####
       slopedat[[i]]$units_per_decade <- slopedat[[i]]$slope * 10
 
       if (isTRUE(length_indices > 2)) {
@@ -143,6 +146,8 @@ make_vector_data <- function(data,
     slopedat <- as.data.frame(slopedat)
     slopedat$x <- x
     slopedat$y <- y
+    slopedat$icell <- icell ####
+    slopedat$N <- delta_t_step
   }
   out <- dist_based_vocc(
     start_data = start_data,
