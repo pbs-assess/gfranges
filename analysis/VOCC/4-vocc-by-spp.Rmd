@@ -50,7 +50,7 @@ optimal_do <- 2 # yellow-eye 4
 climate <- "do and temperature"
 max_thresholds <- c(Inf, 0.75)
 min_thresholds <- c(0.25, Inf)
-optimal_value <- c(6.5, 2)
+optimal_value <- c(2, 6.5)
 ```
 
 Make climate vectors for average changes and lower threshold values
@@ -184,7 +184,7 @@ min_string <- paste0(min_thresholds, collapse = "-")
 max_string <- paste0(max_thresholds, collapse = "-")
 
 optimal_string <- paste0(optimal_value, collapse = "-")
-climate_string <- gsub(" ", "-", gsub("\\/", "-", tolower(climate_string)))
+climate_string <- gsub(" ", "-", gsub("\\/", "-", tolower(climate)))
 ```
 
 
@@ -316,15 +316,14 @@ vocc_plot_do <- plot_vocc(vocc,
   #raster_limits = c(5, 13)
 ) + ggtitle("do") 
   
-plot <- gridExtra::grid.arrange(
+vocc_plot <- gridExtra::grid.arrange(
   vocc_plot_temp, vocc_plot_do,
   ncol = 2,
-  top = grid::textGrob(paste(climate, "-", optimal_value, "-",
-    min_string,"to", max_string, "-", start_time, "-", delta_t_total, ".rds"))
+  top = grid::textGrob(paste("do of ", optimal_value[1], "less", min_thresholds[1],"or temperature of ", optimal_value[2], "plus", max_thresholds[2], " over ", start_time, "-", start_time + delta_t_total, ""))
 ) 
 
 }
-
+vocc_plot
 ```
 
 Get matching biomass data for the above time periods
@@ -436,23 +435,24 @@ if (length(variable_names) == 1) {
   vectors <- cbind(vectors, source_end) 
   
   for (j in seq_along(variable_names)){
-  vectors <- vectors %>% filter( paste0("X",j) < (optimal_value[j] - min_thresholds[j]) )
+  browser()
+    vectors <-  filter( vectors, paste0("X",j) < (optimal_value[j] - min_thresholds[j]) )
   }
  
 }
 
 if (length(vectors[ ,2]) == 0) {
   try({other_coefs <- readRDS("data/vocc-by-spp-sdmTMB-coefs.RDS")})
-  
+  coefs <- other_coefs[1,]
   coefs$var <- "NA"
   coefs$beta <- "NA"
   coefs$se <- "NA"
   coefs$species <- spp 
   coefs$lifestage <- "NA"
   coefs$climate <- climate 
-  coefs$min_thresholds <- min_thresholds
-  coefs$max_thresholds <- max_thresholds
-  coefs$optimum <- optimal_value
+  coefs$min_thresholds <- min_string
+  coefs$max_thresholds <- max_string
+  coefs$optimum <- optimal_string
   coefs$start_time <- start_time
   coefs$timespan <- delta_t_total
   coefs$region <- region
@@ -950,8 +950,8 @@ immature_plot5
 ```
 
 ## Immature models
-
 ### Regular mixed-model
+
 ```{r}
 idata <- vocc_by_sp[["imm"]]
 
