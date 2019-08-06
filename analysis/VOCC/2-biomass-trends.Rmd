@@ -12,15 +12,15 @@ This file calls models built by "1-biomass-models.Rmd" and stiches the predictio
 Species
 ```{r}
 # # Species run so far...
-species <- "Arrowtooth Flounder"
- species <- "Pacific Cod"
-species <- "Sablefish"
- species <- "Silvergray Rockfish"
-species <- "Lingcod"
- species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
+ species <- "Arrowtooth Flounder"
+#  species <- "Pacific Cod"
+# species <- "Sablefish"
+#  species <- "Silvergray Rockfish"
+# species <- "Lingcod"
+#  species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
 # species <- "Quillback Rockfish"
- species <- "Pacific Ocean Perch"
- species <- "Yelloweye Rockfish"
+# species <- "Pacific Ocean Perch"
+# species <- "Yelloweye Rockfish"
 ```
 
 Region 
@@ -193,7 +193,7 @@ if (exists("adult_predictions")) {
   adult_predictions$total_bio <- imm_predictions$est_exp + adult_predictions$est_exp
   imm_predictions$prop_imm <- imm_predictions$est_exp / (adult_predictions$est_exp + imm_predictions$est_exp)
 
-  max_raster <- quantile(adult_predictions$est_exp, .999)
+  max_raster <- quantile(adult_predictions$est_exp, 0.999)
   max_adult <- signif(max(adult_predictions$est_exp), digits = 2)
   
   saveRDS(adult_predictions, file = paste0("data/", spp, 

@@ -7,19 +7,18 @@ output: html_document
 
 Species
 ```{r}
-
+#species <- params$species
 # # Species run so far...
+species <- "Arrowtooth Flounder"
 # species <- "Pacific Cod"
 # species <- "Sablefish"
 # species <- "Silvergray Rockfish"
- species <- "Lingcod"
+# species <- "Lingcod"
 # species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
+
 # species <- "Quillback Rockfish"
 # species <- "Pacific Ocean Perch"
-
 # species <- "Yelloweye Rockfish"
-# species <- "Arrowtooth Flounder"
-
 ```
 
 
