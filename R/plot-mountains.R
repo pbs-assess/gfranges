@@ -102,6 +102,43 @@ time_varying_density <- function(m, predictor = "depth") {
   pred_density
 }
 
+time_varying_density3 <- function(m, predictor = "depth") {
+  get_y_hat <- function(b0, b1, b2, b3, year, 
+    predictor, mean_column, sd_column
+  ) {
+    
+    x_pred <- seq(min(m$data[[predictor]], na.rm = TRUE), max(m$data[[predictor]], na.rm = TRUE), length.out = 300)
+    
+    data.frame(
+      x = (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]]), # if depth, actually is log_depth so must exp(x) for raw depth
+      y_hat = exp(b0 + b1 * x_pred + b2 * x_pred^2 + b3 * x_pred^3), # leave these values as predicted for un-trawled zone
+      year = year
+    )
+    
+  }
+  r <- m$tmb_obj$report()
+  r$b_rw_t
+  b_j <- m$model$par
+  n_t <- nrow(r$b_rw_t)
+  yrs <- sort(unique(m$data$year))
+  ssid <- m$data$ssid
+  
+  pred_density <- purrr::map_df(seq_len(n_t), function(.t) {
+    get_y_hat(
+      b0 = b_j[.t],
+      b1 = r$b_rw_t[.t, 1],
+      b2 = r$b_rw_t[.t, 2],
+      b3 = r$b_rw_t[.t, 3],
+      year = yrs[.t],
+      sd_column = paste0(predictor, "_sd"),
+      mean_column = paste0(predictor, "_mean"),
+      predictor = paste0(predictor, "_scaled")
+    )
+  })
+  pred_density
+}
+
+
 #' Calculate density curve for scaled, quadratic parameters with non-AR1 year interaction
 #'
 #' @param m Output of sdmTMB model
@@ -177,8 +214,6 @@ fixed_density <- function(m, predictor = "temp") {
       b0 = b_j[.t],
       b1 = b_j[n_t + 1],
       b2 = b_j[n_t + 2],
-     # b3 = b_j[n_t + 3 + .t],
-     # b4 = b_j[n_t + 4 + .t],
       year = yrs[.t],
       sd_column = paste0(predictor, "_sd"),
       mean_column = paste0(predictor, "_mean"),
@@ -188,3 +223,35 @@ fixed_density <- function(m, predictor = "temp") {
   pred_density
 }
 
+fixed_density3 <- function(m, predictor = "temp") {
+  get_y_hat <- function(b0, b1, b2, b3, year, 
+    predictor, mean_column, sd_column
+  ) {
+    x_pred <- seq(min(m$data[[predictor]], na.rm = TRUE), max(m$data[[predictor]], na.rm = TRUE), length.out = 300)
+    data.frame(
+      x = x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]],
+      y_hat = exp(b0 + b1 * x_pred + b2 * x_pred^2 + b3 * x_pred^3), 
+      year = year
+    )
+    
+  }
+  
+  r <- m$tmb_obj$report()
+  b_j <- m$model$par
+  yrs <- sort(unique(m$data$year))
+  n_t <- length(yrs)
+  
+  pred_density <- purrr::map_df(seq_len(n_t), function(.t) {
+    get_y_hat(
+      b0 = b_j[.t],
+      b1 = b_j[n_t + 1],
+      b2 = b_j[n_t + 2],
+      b3 = b_j[n_t + 3],
+      year = yrs[.t],
+      sd_column = paste0(predictor, "_sd"),
+      mean_column = paste0(predictor, "_mean"),
+      predictor = paste0(predictor, "_scaled")
+    )
+  })
+  pred_density
+}

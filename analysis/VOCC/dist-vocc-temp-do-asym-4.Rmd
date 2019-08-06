@@ -16,14 +16,12 @@ library(gfranges)
 Load predicted values
 ```{r}
 pred_temp_do <- readRDS(here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds"))
+predicted1 <- pred_temp_do %>% filter(ssid == 4)
+predicted <- list(predicted1, predicted1)
 ```
 
 Define subset of the spatial range 
 ```{r eval=FALSE}
-predicted1 <- pred_temp_do %>% filter(ssid == 4)
-
-predicted <- list(predicted1, predicted1)
-
 do <- plot_facet_map(predicted[[1]], "do_est", transform_col = no_trans) +
   labs(fill = "ml/L") +
   ggtitle("Bottom DO")
@@ -342,12 +340,17 @@ dev.off()
 ```
 
 Cumulative change between last two decades 
-VOCC for 1 ml/L change and 1 degree change
+
+VOCC for declining levels of DO
 ```{r}
 unique(predicted1$year)
 starttime1 <- Sys.time()
+
+declining_var <- "do_est"
+min_threshold <- 0.2
+
 out0.5d <- make_vector_data(predicted1,
-  variable_names = c("do_est"),
+  variable_names = c(declining_var),
   #ssid = c(4),
   start_time = 2008,
   skip_time = 2016,
@@ -356,12 +359,15 @@ out0.5d <- make_vector_data(predicted1,
   delta_t_total = 6,
   delta_t_step = 2,
   indices = c(1, 1, 1, 2, 2),
-  min_thresholds = c(0.2),
+  min_thresholds = c(min_threshold),
   max_thresholds = c(Inf),
   round_fact = 10
 )
 endtime1 <- Sys.time()
 time1 <- round(starttime1 - endtime1)
+
+saveRDS(out0.5d, file = paste0("data/", 
+      "vocc-", ssid_string, declining_var, min_threshold, "decline.rds"))
 
 ```
 
@@ -400,15 +406,18 @@ voccd4 <- plot_vocc(out0.5d,
   NA_label = "*",
   high_fill = "Steel Blue 4",
   low_fill = "Red 3",
-  min_vec_plotted = 5,
+  min_vec_plotted = 2,
   raster_limits = c(-1.75, 1.75))
-voccd4 <- voccd4 + ggtitle("VOCC <0.2 ml/L decline (excludes 2016)")
+voccd4 <- voccd4 + ggtitle("VOCC <1 ml/L decline (excludes 2016)")
 voccd4
 ```
 
 ```{r}
+increasing_var <- "temp" 
+max_threshold <- 0.5
+
 out0.5t <- make_vector_data(predicted1,
-  variable_names = c("temp"),
+  variable_names = c(increasing_var),
   #ssid = c(4),
   start_time = 2008,
   skip_time = 2016,
@@ -417,10 +426,14 @@ out0.5t <- make_vector_data(predicted1,
   delta_t_total = 6,
   delta_t_step = 2,
   indices = c(1, 1, 1, 2, 2),
-  min_thresholds = c(3),
-  max_thresholds = c(0.5),
+  min_thresholds = c(Inf),
+  max_thresholds = c(max_threshold),
   round_fact = 10
 )
+
+
+saveRDS(out0.5t, file = paste0("data/", 
+      "vocc-", ssid_string, increasing_var, max_threshold, "increase.rds"))
 ```
 
 
@@ -440,11 +453,6 @@ temp4
 ```
 
 ```{r}
-# tweak few lowest values to appear as negative
-# this way plot will use scale consistent with values spanning 0
-out0.5t$units_per_decade[out0.5t$units_per_decade < 0.1] <- out0.5t$units_per_decade[out0.5t$units_per_decade < 0.1]-0.1
-# View(out0.5t)
-
 vocct4 <- plot_vocc(out0.5t,
   vec_aes = "distance",
   vec_lwd_range = c(0.2, 0.5),
@@ -453,16 +461,17 @@ vocct4 <- plot_vocc(out0.5t,
   fill_label = "°C per \ndecade",
   vec_alpha = 0.75,
   raster_alpha = 1,
-  min_vec_plotted = 5,
+  min_vec_plotted = 2,
+  white_zero = TRUE,
   raster_limits = c(-0.5, 2))
-vocct4 <- vocct4 + ggtitle("VOCC <0.5 °C increase (excludes 2016)")
+vocct4 <- vocct4 + ggtitle("VOCC <0.5°C increase (excludes 2016)")
 vocct4
 ```
 
 
 ```{r}
 png(
-  file = "figs/vocc-temp-do-2008-2018-4-asym.png", 
+  file = "figs/vocc-temp-do-2008-2018-4-asym-1.png", 
   res = 600,
   units = "in",
   width = 7, 
