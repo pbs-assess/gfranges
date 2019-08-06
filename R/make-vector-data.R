@@ -166,6 +166,7 @@ make_vector_data <- function(data,
 
   out <- left_join(out, slopedat, by = c("x", "y"))
   out$km_per_decade <- (out$distance / delta_t_total) * 10
+  out$start_time <- min(data[[time_var]])
   out$timespan <- delta_t_total
   out
 }
