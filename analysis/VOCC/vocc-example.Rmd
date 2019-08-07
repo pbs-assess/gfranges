@@ -14,29 +14,38 @@ pred_temp_do <- readRDS(here::here("predicted-DO.rds"))
 Choose settings spatial and temporal settings
 ```{r}
 region <- "West Coast Vancouver Island"
-trend <- FALSE
+trend <- TRUE # IF TREND will automatically apply different thresholds for average change
+
+# set years if not using an average trend
+if (!trend) { 
 start_time <- 2008
 end_time <- 2011
+} 
 ```
 
 
 Choose what variables to base vectors on 
 ```{r}
 # JUST TEMPERATURE
-# climate <- "temperature"
-# temp_threshold <- c(0.75)
-# optimal_temp <- 6.5 
+climate <- "temperature"
+temp_threshold <- c(0.75)
+optimal_temp <- 6.5
+temp_trend_threshold <- c(0.25) 
 
-# JUST DO
+# # JUST DO
 # climate <- "do"
 # do_threshold <- c(0.25)
 # optimal_do <- 2 
+# do_trend_threshold <- c(0.1)  
 
-# BOTH
-climate <- "do and temperature"
-max_thresholds <- c(Inf, 0.75)
-min_thresholds <- c(0.25, Inf)
-optimal_value <- c(2, 6.5)
+# # BOTH
+# climate <- "do and temperature"
+# max_thresholds <- c(Inf, 0.75)
+# min_thresholds <- c(0.25, Inf)
+# optimal_value <- c(2, 6.5) 
+# # should be lower than used for raw changes
+# min_trend_thresholds <- c(0.1, Inf) 
+# max_trend_thresholds <- c(Inf, 0.25)
 ```
 
 
@@ -206,8 +215,7 @@ vocc_plot <- plot_vocc(vocc,
   vec_alpha = 0.25,
   axis_lables = FALSE,
   transform_col = no_trans
-)
-vocc_plot + ggtitle(climate)
+) + ggtitle(paste("Temperature within", max_thresholds, "°C"))
 }
 
 if (climate == "do") {
@@ -226,8 +234,7 @@ vocc_plot <- plot_vocc(vocc,
   vec_alpha = 0.25,
   axis_lables = FALSE,
   transform_col = no_trans
-)
-vocc_plot + ggtitle(climate)
+) + ggtitle(paste("DO within", min_thresholds, "ml/L") )
 }
 
 if (climate == "do and temperature") {
