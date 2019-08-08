@@ -63,8 +63,12 @@ make_trend_data <- function(data,
     }
     # make sparate named lists containing climate rasters or dataframes
     # data with just one climate variable
-    start_data <- list(var_1 = start_raster)
-    end_data <- list(var_1 = end_raster)
+    # start_data <- list(var_1 = start_raster)
+    # end_data <- list(var_1 = end_raster)
+    start_data <- list(start_raster)
+    names(start_data)[[1]] <- parameter
+    end_data <- list(end_raster)
+    names(end_data)[[1]] <- parameter
     
     
     # FIXME: need to change function to deal with different time steps within a brick
@@ -121,9 +125,12 @@ make_trend_data <- function(data,
       }
       
       start_data[[i]] <- start_raster[[i]]
-      names(start_data[[i]]) <- paste0("var_", i, "")
+      #names(start_data)[[i]] <- paste0("var_", i, "")
+      names(start_data)[[i]] <- parameter
+      
       end_data[[i]] <- end_raster[[i]]
-      names(end_data[[i]]) <- paste0("var_", i, "")
+      #names(end_data)[[i]] <- paste0("var_", i, "")
+      names(end_data)[[i]] <- parameter
     }
     
     names(slopedat) <- variable_names
