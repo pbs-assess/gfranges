@@ -19,7 +19,7 @@ dist_based_vocc(start_data, end_data, x = "x", y = "y",
 
 \item{y}{Numeric vector of y coordinates.}
 
-\item{variable_names}{Vector of columns/layers names within each data element.}
+\item{variable_names}{Vector of column/layer names within each data element.}
 
 \item{round_fact}{Speed up searches by rounding (1 = integers; 10 = 10ths; 100 = 100ths).
 If NULL, will use 10x precision of the plus_minus threshold when `match_logic` = NULL.}
