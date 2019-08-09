@@ -176,3 +176,42 @@ make_vector_data <- function(data,
   out$timespan <- delta_t_total
   out
 }
+
+#' Trim VOCC output to only include vectors for cells with specific end conditions 
+#'
+#' @param data Dataframe created by make-vector-data function
+#' @param variable_names Names of climate variable(s) used in make-vector-data function
+#' @param optimal_values Value of climate variable(s) associated with maximum biomass density
+#' @param min_thresholds Magnitude(s) of decrease to be tested
+#' @param max_thresholds Magnitude(s) of increase to be tested
+#' @param cell_size Cell size used in make-vector-data function
+#' @param dist_intercept Distance at which model estimates will be calculated. 
+#'   Defaults to nearest neighbouring cells. 
+#'
+#' @export
+trim_vector_data <- function(data, variable_names, 
+  optimal_values, min_thresholds, max_thresholds, 
+  cell_size = 2, dist_intercept = cell_size, 
+  max_dist = max(data$distance, na.rm = TRUE)
+){
+
+ # browser()  
+for (j in seq_along(variable_names)){
+    
+  if (min_thresholds[j] != Inf) { 
+    data <- filter(data, UQ(rlang::sym(paste0(variable_names[j], "_e"))) < optimal_values[j] - min_thresholds[j]) 
+  }
+  if (max_thresholds[j] != Inf) {
+    data <- filter(data, UQ(rlang::sym(paste0(variable_names[j], "_e"))) > optimal_values[j] + max_thresholds[j])
+  }
+}  
+  # remove cells that require no movement
+  data <- filter(data, distance >= cell_size) 
+  
+  # truncate max distance (defaults to no truncation)
+  data <- mutate(data, distance = ifelse(distance > max_dist, max_dist, distance))
+  
+  # set intercept for distance (defaults to be the nearest neighbouring cells)
+  data <- mutate(data, distance = (distance - dist_intercept))
+  
+}
