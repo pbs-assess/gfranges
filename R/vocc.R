@@ -4,7 +4,7 @@
 #' @param end_data Named list containing target climate data.
 #' @param x Numeric vector of x coordinates.
 #' @param y Numeric vector of y coordinates.
-#' @param variable_names Vector of columns/layers names within each data element.
+#' @param variable_names Vector of column/layer names within each data element.
 #' @param round_fact Speed up searches by rounding (1 = integers; 10 = 10ths; 100 = 100ths).
 #'  If NULL, will use 10x precision of the plus_minus threshold when `match_logic` = NULL.
 #' @param min_thresholds Optional vector of negative thresholds.
@@ -163,6 +163,7 @@ data_lists_to_dfs <- function(start_data,
   if (raster) {
     start_xy <- as.data.frame(raster::rasterToPoints(start_data[[1]]))[, c(x, y)]
     end_xy <- as.data.frame(raster::rasterToPoints(end_data[[1]]))[, c(x, y)]
+
     for (i in seq_along(variable_names)) {
       start_data_vars[[i]] <- as.data.frame(raster::rasterToPoints(start_data[[i]]))[, 3]
       end_data_vars[[i]] <- as.data.frame(raster::rasterToPoints(end_data[[i]]))[, 3]
@@ -180,6 +181,7 @@ data_lists_to_dfs <- function(start_data,
   } else {
     start_xy <- start_data[[1]][, c(x, y)] # data frame of XY coords
     end_xy <- end_data[[1]][, c(x, y)]
+
 
     # if data is in list of dataframes from predict functions
     for (i in seq_along(variable_names)) {

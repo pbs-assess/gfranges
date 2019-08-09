@@ -30,7 +30,7 @@ Choose what variables to base vectors on
 climate <- "temperature"
 temp_threshold <- c(0.75)
 optimal_temp <- 6.5
-temp_trend_threshold <- c(0.25) 
+temp_trend_threshold <- c(0.25)
 
 # # JUST DO
 # climate <- "do"
@@ -42,9 +42,9 @@ temp_trend_threshold <- c(0.25)
 # climate <- "do and temperature"
 # max_thresholds <- c(Inf, 0.75)
 # min_thresholds <- c(0.25, Inf)
-# optimal_value <- c(2, 6.5) 
+# optimal_value <- c(2, 6.5)
 # # should be lower than used for raw changes
-# min_trend_thresholds <- c(0.1, Inf) 
+# min_trend_thresholds <- c(0.1, Inf)
 # max_trend_thresholds <- c(Inf, 0.25)
 ```
 
@@ -195,7 +195,7 @@ vocc$var_2_min <- min_thresholds[2]
 vocc$var_1_max<- max_thresholds[1]
 vocc$var_2_max<- max_thresholds[2]
 
-glimpse(vocc)
+#glimpse(vocc)
 ```
 
 ### Plot climate vectors
@@ -212,6 +212,7 @@ vocc_plot <- plot_vocc(vocc,
   fill_col = "diff",
   fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
   raster_alpha = 1,
+  white_zero = TRUE,
   vec_alpha = 0.25,
   axis_lables = FALSE,
   transform_col = no_trans
@@ -229,6 +230,7 @@ vocc_plot <- plot_vocc(vocc,
   fill_col = "diff",
   fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
   raster_alpha = 1,
+  white_zero = TRUE,
   high_fill = "Steel Blue 4",
   low_fill = "Red 3",
   vec_alpha = 0.25,
@@ -250,6 +252,7 @@ vocc_plot_temp <- plot_vocc(vocc,
   fill_col = "temp_diff",
   fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
   raster_alpha = 1,
+  white_zero = TRUE,
   vec_alpha = 0.25,
   axis_lables = FALSE,
   transform_col = no_trans
@@ -265,6 +268,7 @@ vocc_plot_do <- plot_vocc(vocc,
   fill_col = "do_diff",
   fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
   raster_alpha = 1,
+  white_zero = TRUE,
   high_fill = "Steel Blue 4",
   low_fill = "Red 3",
   vec_alpha = 0.25,
@@ -278,5 +282,6 @@ vocc_plot <- gridExtra::grid.arrange(
   top = grid::textGrob("VOCC: vectors based on two climate variables at once")
 )
 }
+
 vocc_plot
 ```
