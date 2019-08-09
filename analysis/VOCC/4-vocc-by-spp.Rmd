@@ -8,6 +8,19 @@ output: html_document
 This file ...
 
 Species
+```{r global_options, include=FALSE}
+# library(dplyr)
+# library(ggplot2)
+# library(gfplot)
+# library(gfdata)
+# library(sdmTMB)
+# library(gfranges)
+# 
+# knitr::opts_chunk$set(
+#   fig.width = 11, fig.height = 8.5,
+#   echo = FALSE, warning = FALSE, message = FALSE
+# )
+```
 
 ```{r}
 # # Species run so far...
@@ -38,7 +51,7 @@ start_time <- 2008
 end_time <- 2011
 
 
-#climate <- "temperature"
+climate <- "temperature"
 temp_threshold <- c(0.75)
 optimal_temp <- 6.5 # yellow-eye 4
 
@@ -47,9 +60,10 @@ do_threshold <- c(0.25)
 optimal_do <- 2 # yellow-eye 4
 
 
-climate <- "do and temperature"
+#climate <- "do and temperature"
 max_thresholds <- c(Inf, 0.75)
 min_thresholds <- c(0.25, Inf)
+critical_thresholds <- c(-0.25, 0.75)
 optimal_value <- c(2, 6.5)
 ```
 
@@ -70,19 +84,6 @@ Make climate vectors for average changes and lower threshold values
 
 
 Run all subsequent code...
-```{r global_options, include=FALSE}
-library(dplyr)
-library(ggplot2)
-library(gfplot)
-library(gfdata)
-library(sdmTMB)
-library(gfranges)
-
-knitr::opts_chunk$set(
-  fig.width = 11, fig.height = 8.5,
-  echo = FALSE, warning = FALSE, message = FALSE
-)
-```
 
 
 ```{r, message=FALSE, warning=FALSE}
@@ -192,10 +193,10 @@ climate_string <- gsub(" ", "-", gsub("\\/", "-", tolower(climate)))
 
 ```{r}
 rm(vocc)
-try({
-  vocc <- readRDS(paste0("data/vocc-", ssid_string,"-", climate_string, "-", optimal_string, "-",
-    min_string,"to", max_string, "-", start_time, "-", delta_t_total, ".rds"))
-})
+# try({
+#   vocc <- readRDS(paste0("data/vocc-", ssid_string,"-", climate_string, "-", optimal_string, "-",
+#     min_string,"to", max_string, "-", start_time, "-", delta_t_total, ".rds"))
+# })
 
 if (!exists("vocc")) {
 pred_temp_do <- readRDS(here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds"))
@@ -250,6 +251,7 @@ vocc_plot <- plot_vocc(vocc,
   fill_col = "diff",
   fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
   raster_alpha = 1,
+  white_zero = TRUE,
   vec_alpha = 0.25,
   axis_lables = FALSE,
   transform_col = no_trans#,
@@ -269,6 +271,7 @@ vocc_plot <- plot_vocc(vocc,
   fill_col = "diff",
   fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
   raster_alpha = 1,
+  white_zero = TRUE,
   high_fill = "Steel Blue 4",
   low_fill = "Red 3",
   vec_alpha = 0.25,
@@ -292,6 +295,7 @@ vocc_plot_temp <- plot_vocc(vocc,
   fill_col = "temp_diff",
   fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
   raster_alpha = 1,
+  white_zero = TRUE,
   vec_alpha = 0.25,
   axis_lables = FALSE,
   transform_col = no_trans#,
@@ -308,6 +312,7 @@ vocc_plot_do <- plot_vocc(vocc,
   fill_col = "do_diff",
   fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
   raster_alpha = 1,
+  white_zero = TRUE,
   high_fill = "Steel Blue 4",
   low_fill = "Red 3",
   vec_alpha = 0.25,
@@ -390,55 +395,95 @@ biomass_change <- make_trend_data(biomass_list[[i]],
 )
 
 start <- biomass_change %>% 
-  rename(start_density = var_1_s, end_density = var_1_e) %>% 
+  rename(start_density = est_exp_s, end_density = est_exp_e) %>% 
   select(icell, x, y, start_density, end_density)
 
 end <- biomass_change %>% 
-  rename(start_density = var_1_s, 
-         end_density = var_1_e, 
+  rename(start_density = est_exp_s, 
+         end_density = est_exp_e, 
          target_X = x, target_Y = y) %>% 
   select(icell, start_density, end_density, target_X, target_Y)
 
-source_density <- biomass_change %>% rename(source_density = var_1_s) %>% select(source_density, x, y)
+source_density <- biomass_change %>% 
+  rename(source_density = est_exp_s) %>% 
+  select(source_density, x, y)
 
-if (length(variable_names) == 1) {
-  vectors <- vocc %>%
-    mutate(
-      start_cell = icell, 
-      vector_id = paste0(id, "_to_", tid),
-      initial_value = var_1_s, 
-      source_end_value = var_1_e, 
-      target_value = as.numeric(target_values)
-    ) %>%
-    filter(distance > 1)  %>%
-    select(vector_id, start_cell, x, y, target_X, target_Y, distance, 
-      initial_value, source_end_value, target_value, 
-      km_per_decade, timespan) 
-  
-  
-  if (climate == "do") vectors <- vectors %>% filter(source_end_value < (optimal_do - do_threshold))
-  if (climate == "temperature") vectors <- vectors %>% filter(source_end_value > (optimal_temp + temp_threshold))
-
-} else {
-  
-  vectors <- vocc %>%
-    mutate(
-      start_cell = icell, vector_id = paste0(id, "_to_", tid),
-      initial_value = s, source_end_value = e, target_value = target_values
-    ) %>%
-    filter(distance > 1) %>%
-    select(vector_id, start_cell, x, y, target_X, target_Y, distance, 
-      initial_value, source_end_value, target_value, 
-      km_per_decade, timespan) 
-  
-  source_end <- purrr::map_df(strsplit(vectors$source_end_value, " "), function(x) data.frame(t(as.numeric(x))))
-  vectors <- cbind(vectors, source_end) 
+# if (length(variable_names) == 1) {
+#   
+#   vectors <- vocc %>%
+#     mutate(
+#       start_cell = icell, 
+#       vector_id = paste0(id, "_to_", tid),
+#       initial_value = UQ(rlang::sym(paste0(variable_names, "_s"))), #var_1_s, 
+#       source_end_value = UQ(rlang::sym(paste0(variable_names, "_e"))), #var_1_e, 
+#       target_value = as.numeric(target_values)
+#     ) %>%
+#     filter(distance > 1)  %>%
+#     select(vector_id, start_cell, x, y, target_X, target_Y, distance, 
+#       initial_value, source_end_value, target_value, 
+#       km_per_decade, timespan) 
+#   
+#   if (climate == "do") vectors <- vectors %>% 
+#       filter(source_end_value < (optimal_do - do_threshold))
+#   if (climate == "temperature") vectors <- vectors %>% 
+#       filter(source_end_value > (optimal_temp + temp_threshold))
+# 
+# } else { # number of variables > 1
+  # 
+  # vectors <- vocc %>%
+  #   mutate(
+  #     start_cell = icell, vector_id = paste0(id, "_to_", tid),
+  #     initial_value = s, source_end_value = e, target_value = target_values
+  #   ) %>%
+  #   filter(distance > 1) %>%
+  #   select(vector_id, start_cell, x, y, target_X, target_Y, distance, 
+  #     initial_value, source_end_value, target_value, 
+  #     km_per_decade, timespan) 
+  # 
+  # # split source_end_value into multiple vectors
+  # source_end <- purrr::map_df(strsplit(vectors$source_end_value, " "), 
+  #                  function(x) data.frame(t(as.numeric(x))))
+  # 
+  # vectors <- cbind(vectors, source_end) 
+  # 
+  # for (j in seq_along(variable_names)){
+  #   
+  #   source_end_climatej <- paste0("X",j)
+  #   vectors <- vectors %>% filter( 
+  #     (!!sym(source_end_climatej)) < (optimal_value[j] + critical_thresholds[j])
+  #     )
+  # }
+#  
+#   #climate <- "do and temperature"
+# # max_thresholds <- c(Inf, 0.75)
+# # min_thresholds <- c(0.25, Inf)
+# # critical_thresholds <- c(-0.25, 0.75)
+# # optimal_value <- c(2, 6.5)
+# #   
   
   for (j in seq_along(variable_names)){
-  browser()
-    vectors <-  filter( vectors, paste0("X",j) < (optimal_value[j] - min_thresholds[j]) )
-  }
+
+  vectors <- vocc %>%
+    mutate(
+      start_cell = icell,
+      vector_id = paste0(id, "_to_", tid),
+      source_end_value = e, # may need to turn into numeric vector later...
+      target_value = target_values
+    ) %>% filter(distance > 1)  
+  
+      if (min_thresholds[j] != Inf) { 
+        vectors <- filter(vectors, UQ(rlang::sym(paste0(variable_names[j], "_s"))) < optimal_value[j] - min_thresholds[j]) 
+        }
+      if (max_thresholds[j] != Inf) {
+        vectors <- filter(vectors, UQ(rlang::sym(paste0(variable_names[j], "_s"))) > optimal_value[j] + max_thresholds[j])
+        }
+  
+  #FIXME: decide which variables might cause problems in future merges and remove them...   
+  #   vectors <- vectors %>% select(-N) 
+  # 
+  
  
+  
 }
 
 if (length(vectors[ ,2]) == 0) {
@@ -482,18 +527,17 @@ vocc_by_sp[[i]] <- rbind(vector_source, vector_target) %>%
 
 # get mean and sd for densities without cell duplication
 icells <- vocc_by_sp[[i]] %>% distinct(icell, .keep_all = TRUE)
-mean.change <- mean(icells$perc_change, na.rm = TRUE)
-sd.change <- sd(icells$perc_change, na.rm = TRUE)
 
 mean.density <- mean(icells$source_density, na.rm = TRUE)
 sd.density <- sd(icells$source_density, na.rm = TRUE)
+
 
 # calculate standardized density varibles
 vocc_by_sp[[i]] <- vocc_by_sp[[i]] %>% 
   mutate(
     perc_change = (end_density - start_density)/start_density, 
     cell_type = as.factor(cell_type),
-    std_change = (perc_change)/sd.change, 
+    #std_change = (perc_change)/sd.change, 
     std_source_density = (source_density - mean.density)/(sd.density*2), 
     mean_change = mean.change, sd_change = sd.change,
     mean_source_density = mean.density, sd_density = sd.density,
@@ -502,7 +546,13 @@ vocc_by_sp[[i]] <- vocc_by_sp[[i]] %>%
     distance2 = distance*distance) %>% 
   rename(X = x, Y = y)
 
+icells <- vocc_by_sp[[i]] %>% distinct(icell, .keep_all = TRUE)
 
+mean.change <- mean(icells$perc_change, na.rm = TRUE)
+sd.change <- sd(icells$perc_change, na.rm = TRUE)
+
+vocc_by_sp[[i]] <- vocc_by_sp[[i]] %>% 
+  mutate(std_change = (perc_change)/sd.change)
 
 
 if (length(variable_names) == 1) {
@@ -520,10 +570,13 @@ vocc_by_sp[[i]] <- vocc_by_sp[[i]] %>%
 
 if (length(variable_names) == 2) {
 
-vectors <- vectors %>% rename(
+vocc_by_sp[[i]] <- vocc_by_sp[[i]] %>% rename(
   source_end_climateA = X1, source_end_climateB = X2
   )
 
+#browser()
+
+icells <- vocc_by_sp[[i]] %>% distinct(icell, .keep_all = TRUE)
 mean.climateA <- mean(icells$source_end_climateA, na.rm = TRUE)
 sd.climateA <- sd(icells$source_end_climateA, na.rm = TRUE)
 mean.climateB <- mean(icells$source_end_climateB, na.rm = TRUE)
@@ -538,8 +591,17 @@ vocc_by_sp[[i]] <- vocc_by_sp[[i]] %>%
     std_end_climateB = (source_end_climateB - mean.climateB)/(sd.climateB*2),
     std_end_climateB2 = std_end_climateB^2
     )
+
+#browser()
+  end_climate <- purrr::map_df(strsplit(vocc_by_sp[[i]]$end_climate, " "), 
+                   function(x) data.frame(t(as.numeric(x))))
+  
+  vocc_by_sp[[i]] <- cbind(vocc_by_sp[[i]], end_climate) %>%
+    rename(end_climate_chr = end_climate, end_climate = X1, end_climateB = X2 )
+
 } else {
- stop("Doesn't currently support testing vectors bases on more than two climate variables at once.")
+  
+ stop("Doesn't currently support testing vectors based on more than two climate variables at once.")
 }
 }
 
@@ -558,10 +620,9 @@ names(vocc_by_sp) <- names(biomass_list)
 # std_max <- quantile(vocc_by_sp[[i]]$std_change, 0.9995)
 # 
 # vocc_by_sp[[i]] <- vocc_by_sp[[i]] %>% filter ( X >= Xmin & X <= Xmax ) 
-
-
-
 ```
+
+
 
 # Adult
 
@@ -593,7 +654,8 @@ mature_plot
 Check distance threshold of 50 looks reasonable
 ```{r}
 data <- vocc_by_sp[["adult"]]
-#data <- filter(vocc_by_sp[["adult"]], distance > 1 & distance < 100)
+#data <- filter(vocc_by_sp[["adult"]],  distance < 90) # distance > 1 &
+#data <- filter(vocc_by_sp[["adult"]], distance > 1 ) #  &
 
 mature_plot2 <- ggplot(data, aes(x = distance, y = std_change, 
   group = cell_type, size = start_density, colour = end_climate)) +
