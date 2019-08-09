@@ -389,7 +389,7 @@ trawl_footprint <- sf::st_transform(trawl_footprint, crs = proj.to)
 
 
 current_biomass <- plot_vocc(out_mature,
-    fill_col = "var_1_e",
+    fill_col = "est_exp_e",
     fill_label = "Mean mature \nbiomass (kg/ha)\npost-2010",
     raster_alpha = 1,
     viridis_option = "C",
