@@ -195,16 +195,20 @@ trim_vector_data <- function(data, variable_names,
   max_dist = max(data$distance, na.rm = TRUE)
 ){
 
- # browser()  
+#browser()  
+  newdata <- list()
 for (j in seq_along(variable_names)){
     
   if (min_thresholds[j] != Inf) { 
-    data <- filter(data, UQ(rlang::sym(paste0(variable_names[j], "_e"))) < optimal_values[j] - min_thresholds[j]) 
+    newdata[[j]] <- filter(data, UQ(rlang::sym(paste0(variable_names[j], "_e"))) < optimal_values[j] - min_thresholds[j]) 
   }
   if (max_thresholds[j] != Inf) {
-    data <- filter(data, UQ(rlang::sym(paste0(variable_names[j], "_e"))) > optimal_values[j] + max_thresholds[j])
+    newdata[[j]] <- filter(data, UQ(rlang::sym(paste0(variable_names[j], "_e"))) > optimal_values[j] + max_thresholds[j])
   }
 }  
+  
+  data <- do.call("rbind", newdata) %>% distinct()
+  
   # remove cells that require no movement
   data <- filter(data, distance >= cell_size) 
   
