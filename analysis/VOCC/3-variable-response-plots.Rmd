@@ -7,13 +7,13 @@ output: html_document
 
 Species
 ```{r}
-#species <- params$species
+# species <- params$species
 # # Species run so far...
-species <- "Arrowtooth Flounder"
+# species <- "Arrowtooth Flounder"
 # species <- "Pacific Cod"
 # species <- "Sablefish"
 # species <- "Silvergray Rockfish"
-# species <- "Lingcod"
+ species <- "Lingcod"
 # species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
 
 # species <- "Quillback Rockfish"
@@ -57,7 +57,7 @@ library(sdmTMB)
 library(gfranges)
 ```
 
-Dissolved O2 plots
+Load Dissolved O2 models
 ```{r}
 rm(
   adult_survey1, imm_survey1,
@@ -144,7 +144,7 @@ if (!exists("imm_survey16")) imm_survey16 <- NULL
 
 
 model_list <- list(
-  adult_survey_all=adult_survey_all, imm_survey_all=imm_survey_all,
+  adult_survey_all = adult_survey_all, imm_survey_all = imm_survey_all,
   adult_survey1 = adult_survey1, imm_survey1 = imm_survey1,
   adult_survey4 = adult_survey4, imm_survey4 = imm_survey4,
   adult_survey16 = adult_survey16, imm_survey16 = imm_survey16
@@ -153,34 +153,7 @@ model_list <- list(
 model_list <- model_list[!sapply(model_list, is.null)]
 ```
 
-```{r}
-d <- list()
-do_plots <- list()
-for (i in seq_len(length(model_list))) {
-  d[[i]] <- time_varying_density(model_list[[i]], predictor = "do_mlpl")
-  do_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Dissolved O2", xlimits = c(0,8)) + ggtitle(paste(species, names(model_list[i])))
-}
-print(do_plots)
-```
-
-```{r}
-png(
-  file = paste0("figs/", spp, "/do-", spp, covs, "-priors-TRUE.png"), 
-  res = 600,
-  units = "in",
-  width = 8.5, 
-  height = 11
-)
-gridExtra::grid.arrange(
-  grobs = do_plots,
-  ncol = 2,
-  top = grid::textGrob(paste(species))
-)
-dev.off()
-```
-
-
-Temperature plots
+Load temperature models
 ```{r}
 rm(
   adult_survey1, imm_survey1,
@@ -254,24 +227,120 @@ temp_model_list <- list(
 temp_model_list <- temp_model_list[!sapply(temp_model_list, is.null)]
 ```
 
+
+Save optimal values
+
+```{r}
+td <- list()
+
+for (i in seq_len(length(temp_model_list))) {
+  td[[i]] <- time_varying_density(temp_model_list[[i]], predictor = "temp")
+  #browser()
+  if (length(td[[i]])>0) td[[i]]$model <- names(temp_model_list[i])
+}
+
+tdat <- do.call("rbind", td)
+
+tdat <- tdat %>%
+  group_by(model) %>%
+  mutate(maxy = max(y_hat)) %>%
+  ungroup() %>%
+  mutate(meanymax = mean(maxy), sdymax = sd(maxy)) %>%
+  filter(maxy < (meanymax + 2 * sdymax))
+
+hist(tdat$maxy)
+
+optimal_temp <- get_optimal_value(tdat, xlimits = c(3, 8))
+
+do <- list()
+
+for (i in seq_len(length(model_list))) {
+ do[[i]] <- time_varying_density(model_list[[i]], predictor = "do_mlpl")
+ if (length(do[[i]])>0) do[[i]]$model <- names(model_list[i])
+}
+odat <- do.call("rbind", do)
+
+odat <- odat %>%
+  group_by(model) %>%
+  mutate(maxy = max(y_hat)) %>%
+  ungroup() %>%
+  mutate(meanymax = mean(maxy), sdymax = sd(maxy)) %>%
+  filter(maxy < (meanymax + 2 * sdymax))
+
+hist(odat$maxy)
+
+optimal_do <- get_optimal_value(odat, xlimits = c(0.5, 6))
+
+date <- Sys.time()
+
+params <- data.frame(species, optimal_do, optimal_temp, date)
+
+other_params <- readRDS(paste0("data/optimal-values-by-species.rds"))
+params <- rbind(other_params, params)
+saveRDS(params, file = "data/optimal-values-by-species.rds")
+
+params
+```
+
+
+Build DO plots
+
+```{r}
+d <- list()
+do_plots <- list()
+for (i in seq_len(length(model_list))) {
+  d[[i]] <- time_varying_density(model_list[[i]], predictor = "do_mlpl")
+  if (length(d[[i]]) == 0) {
+    do_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
+  } else {
+    do_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Dissolved O2", xlimits = c(0, 8)) + ggtitle(paste(species, names(model_list[i])))
+  }
+}
+print(do_plots)
+```
+
+```{r}
+png(
+  file = paste0("figs/", spp, "/do-", spp, covs, "-priors-TRUE.png"),
+  res = 600,
+  units = "in",
+  width = 8.5,
+  height = 11
+)
+gridExtra::grid.arrange(
+  grobs = do_plots,
+  ncol = 2,
+  top = grid::textGrob(paste(species))
+)
+dev.off()
+```
+
+
+Build Temperature plots
+
+
 ```{r}
 d <- list()
 temp_plots <- list()
 for (i in seq_len(length(temp_model_list))) {
   d[[i]] <- time_varying_density(temp_model_list[[i]], predictor = "temp")
-  #d[[i]] <- fixed_density(temp_model_list[[i]], predictor = "temp")
-  temp_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Temperature", xlimits = c(2,10)) +
-    ggtitle(paste(species,names(temp_model_list[i])))
+
+  if (length(d[[i]]) == 0) {
+    temp_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
+  } else {
+    temp_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Temperature", xlimits = c(2, 10)) +
+      ggtitle(paste(species, names(temp_model_list[i])))
+  }
 }
 print(temp_plots)
 ```
 
 ```{r}
 png(
-  file = paste0("figs/", spp, "/temp-", spp, covs, "-priors-TRUE.png"), 
+  file = paste0("figs/", spp, "/temp-", spp, covs, "-priors-TRUE.png"),
   res = 600,
   units = "in",
-  width = 8.5, 
+  width = 8.5,
   height = 11
 )
 gridExtra::grid.arrange(
@@ -283,7 +352,7 @@ dev.off()
 ```
 
 
-Depth plots
+Load Depth models
 ```{r}
 rm(
   adult_survey1, imm_survey1,
@@ -357,25 +426,34 @@ depth_model_list <- list(
 depth_model_list <- depth_model_list[!sapply(depth_model_list, is.null)]
 ```
 
+
+Build depth plots
 ```{r}
 d <- list()
 depth_plots <- list()
 for (i in seq_len(length(depth_model_list))) {
   d[[i]] <- time_varying_density(depth_model_list[[i]], predictor = "depth")
-  d[[i]]$x <- exp(d[[i]]$x)
-  depth_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Depth", xlimits = c(0,1000)) + 
-    ggtitle(paste(species, names(depth_model_list[i])))
+
+  if (length(d[[i]]) == 0) {
+    depth_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
+  } else {
+    d[[i]]$x <- exp(d[[i]]$x)
+    depth_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Depth", xlimits = c(0, 1000)) +
+      ggtitle(paste(species, names(depth_model_list[i])))
+  }
 }
 print(depth_plots)
 ```
 
 ```{r}
 png(
-  file = paste0("figs/", spp, 
-    "/depth-", spp, covs, "-priors-", priors, ".png"), 
+  file = paste0(
+    "figs/", spp,
+    "/depth-", spp, covs, "-priors-", priors, ".png"
+  ),
   res = 600,
   units = "in",
-  width = 8.5, 
+  width = 8.5,
   height = 11
 )
 gridExtra::grid.arrange(
@@ -388,6 +466,7 @@ dev.off()
 
 
 Plot time-varying effect of trawling at mean depth
+
 ```{r}
 trawl_plots <- list()
 for (i in seq_len(length(depth_model_list))) {
@@ -396,12 +475,12 @@ for (i in seq_len(length(depth_model_list))) {
   yrs <- sort(unique(depth_model_list[[i]]$data$year))
   b_j <- depth_model_list[[i]]$model$par[1:length(yrs)]
 
-  SE <- 0.35 #Place-holder
+  SE <- 0.35 # Place-holder
 
   trawled <- data.frame(year = yrs, intercept = b_j, trawling = b3)
 
-  # trawl_plots[[i]] <- ggplot(trawled, aes(year, y=exp(trawling) ) ) + 
-  #   geom_point(colour ="red") + 
+  # trawl_plots[[i]] <- ggplot(trawled, aes(year, y=exp(trawling) ) ) +
+  #   geom_point(colour ="red") +
   #   #geom_pointrange(aes(ymin=exp(intercept-0.35), ymax=exp(intercept+0.35))) +
   #   ylab("Difference in kg/ha within trawled zone") + ggtitle(names(depth_model_list[i]))
 
@@ -448,8 +527,6 @@ yrs <- sort(unique(m$data$year))
 b_j <- m$tmb_params$b_j[1:8]
 
 trawled <- data.frame(year = yrs, intercept = b_j, trawling = b3)
-
-
 ```
 
 

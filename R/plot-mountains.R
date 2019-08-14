@@ -66,21 +66,45 @@ plot_mountains <- function(dat, time_varying = TRUE, variable_label = "Depth", x
 #' @param predictor Prefix for scaled parameter in model
 #'
 #' @export
-#'
 time_varying_density <- function(m, predictor = "depth") {
+  
   get_y_hat <- function(b0, b1, b2, year, 
     predictor, mean_column, sd_column
   ) {
-    
-   x_pred <- seq(min(m$data[[predictor]], na.rm = TRUE), max(m$data[[predictor]], na.rm = TRUE), length.out = 300)
+ 
+   x_pred <- seq(min(m$data[[predictor]], na.rm = TRUE), 
+     max(m$data[[predictor]], na.rm = TRUE), length.out = 300)
+   
+   # exclude curves that are increasing at extremes and therefore not capturing maxima
+   maxvalue <- exp(b0 + b1 * max(x_pred) + b2 * (max(x_pred)^2))
+   nearmax <- exp(
+     b0 + b1 * (max(x_pred) - m$data[[sd_column]][[1]]/10) + 
+       b2 * ((max(x_pred) - m$data[[sd_column]][[1]]/10)^2 )
+   )
+   
+   minvalue <- exp(b0 + b1 * min(x_pred) + b2 * (min(x_pred)^2))
+   nearmin <- exp(
+     b0 + b1 * (min(x_pred) + m$data[[sd_column]][[1]]/10) + 
+       b2 * ((min(x_pred) + m$data[[sd_column]][[1]]/10)^2 )
+   )
 
+   #browser()
+   
+   if (nearmax > maxvalue & nearmin > minvalue) {
+       
    data.frame(
-      x = (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]]), # if depth, actually is log_depth so must exp(x) for raw depth
-      y_hat = exp(b0 + b1 * x_pred + b2 * x_pred^2), # leave these values as predicted for un-trawled zone
+      # if depth, actually is log_depth so must exp(x) for raw depth
+      x = (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]]), 
+      # leave these values as predicted for un-trawled zone
+      y_hat = exp(b0 + b1 * x_pred + b2 * x_pred^2), 
       year = year
     )
-
+       
+  } else {
+     NULL
   }
+  }
+   
   r <- m$tmb_obj$report()
   r$b_rw_t
   b_j <- m$model$par
@@ -99,6 +123,7 @@ time_varying_density <- function(m, predictor = "depth") {
       predictor = paste0(predictor, "_scaled")
     )
   })
+  
   pred_density
 }
 
@@ -255,3 +280,18 @@ fixed_density3 <- function(m, predictor = "temp") {
   })
   pred_density
 }
+
+
+
+#' Find optimal value from density curve
+#'
+#' @param dat Dataframe resulting from any of the above density functions
+#' @param xlimits Set prior for possible values
+#'
+#' @export
+get_optimal_value <- function(dat, xlimits = c(0, max(dat$x))) {
+  dat <- dat %>% filter(x > xlimits[1] & x < xlimits[2])
+  dat <- dat %>% mutate(max_y = max(y_hat), xintercept = x[y_hat == max_y])
+  dat$xintercept[1]
+}
+
