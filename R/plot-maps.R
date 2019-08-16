@@ -116,7 +116,7 @@ plot_vocc <- function(df,
 
     if (white_zero) {
       gvocc <- gvocc +
-        geom_raster(aes(fill = fill), alpha = raster_alpha) +
+        geom_tile(aes(fill = fill), alpha = raster_alpha) +
         scale_fill_gradient2(
           low = low_fill, mid = mid_fill, high = high_fill,
           trans = transform_col, breaks = breaks, labels = labels,
@@ -126,7 +126,7 @@ plot_vocc <- function(df,
         theme(legend.position = legend_position)
     } else {
       gvocc <- gvocc +
-        geom_raster(aes(fill = fill), alpha = raster_alpha) +
+        geom_tile(aes(fill = fill), alpha = raster_alpha) +
         scale_fill_viridis_c(
           direction = viridis_dir,
           option = viridis_option, na.value = "red",
@@ -325,7 +325,7 @@ plot_facet_map <- function(df, column = "est",
   anno$y <- max(df$Y) - (width_Y * 0.1)
 
   gfacet <- ggplot(df, aes_string(X, Y, fill = column)) +
-    geom_raster() +
+    geom_tile() +
     scale_fill_viridis_c(
       option = viridis_option, na.value = "red",
       trans = transform_col, breaks = breaks, labels = labels, limits = raster_limits
