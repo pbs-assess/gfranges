@@ -54,7 +54,7 @@ optimal_values <- c(optimal_do, optimal_temp)
 trend <- FALSE
 start_time <- 2012
 end_time <- 2015
-temp_threshold <- c(0.1)
+temp_threshold <- c(0.5)
 do_threshold <- c(0.1)
 ```
 
@@ -78,9 +78,10 @@ Run all subsequent code...
 ```{r, include=FALSE}
 library(dplyr)
 library(ggplot2)
-# library(gfplot)
+library(gfplot)
 # library(gfdata)
 library(sdmTMB)
+#library(itsadug)
 library(gfranges)
 ```
 
@@ -123,7 +124,7 @@ skip_time <- NULL
 if (climate == "temperature") {
   variable_names <- c("temp")
   min_thresholds <- c(Inf)
-  delta_threshold <- temp_threshold
+  #delta_threshold <- temp_threshold
   optimal_values <- optimal_temp
 
   if (trend) {
@@ -142,7 +143,7 @@ if (climate == "temperature") {
 if (climate == "do") {
   variable_names <- c("do_est")
   max_thresholds <- c(Inf)
-  delta_threshold <- -1 * (do_threshold)
+  #delta_threshold <- -1 * (do_threshold)
   optimal_values <- optimal_do
 
   if (trend) {
@@ -325,29 +326,29 @@ vectors <- trim_vector_data(vocc, variable_names, optimal_values, min_thresholds
   max_dist = 120
 )
 
-if (length(vectors[, 2]) == 0) {
-  other_coefs <- readRDS(paste0("data/", climate_string, "-vocc-by-spp-sdmTMB-coefs.RDS"))
-  coefs <- other_coefs[1, ]
-  coefs$var <- "NA"
-  coefs$beta <- "NA"
-  coefs$se <- "NA"
-  coefs$model <- "NA"
-  coefs$species <- spp
-  coefs$lifestage <- "NA"
-  coefs$climate <- climate
-  coefs$min_thresholds <- min_string
-  coefs$max_thresholds <- max_string
-  coefs$optimum <- optimal_string
-  coefs$start_time <- start_time
-  coefs$timespan <- delta_t_total
-  coefs$region <- region
-  coefs$ssid_string <- ssid_string
-
-  coefs <- rbind(other_coefs, coefs) %>% distinct()
-  saveRDS(coefs, file = paste0("data/", climate_string, "-vocc-by-spp-sdmTMB-coefs.RDS"))
-
-  stop("No vectors. Conditions saved to 'data/vocc-byspp-sdmTMB-coefs'.")
-}
+# if (length(vectors[, 2]) == 0) {
+#   other_coefs <- readRDS(paste0("data/", climate_string, "-vocc-by-spp-sdmTMB-coefs.RDS"))
+#   coefs <- other_coefs[1, ]
+#   coefs$var <- "NA"
+#   coefs$beta <- "NA"
+#   coefs$se <- "NA"
+#   coefs$model <- "NA"
+#   coefs$species <- spp
+#   coefs$lifestage <- "NA"
+#   coefs$climate <- climate
+#   coefs$min_thresholds <- min_string
+#   coefs$max_thresholds <- max_string
+#   coefs$optimum <- optimal_string
+#   coefs$start_time <- start_time
+#   coefs$timespan <- delta_t_total
+#   coefs$region <- region
+#   coefs$ssid_string <- ssid_string
+# 
+#   coefs <- rbind(other_coefs, coefs) %>% distinct()
+#   saveRDS(coefs, file = paste0("data/", climate_string, "-vocc-by-spp-sdmTMB-coefs.RDS"))
+# 
+#   stop("No vectors. Conditions saved to 'data/vocc-byspp-sdmTMB-coefs'.")
+# }
 # glimpse(vocc)
 # glimpse(vectors)
 ```
@@ -579,74 +580,165 @@ vocc_by_sp <- lapply(biomass_list, function(i) {
 
 ## Adults
 
+Prep data
 ```{r}
 data <- vocc_by_sp[["adult"]]
 #View(data)
 data$log_density <-  log(data$density)
+data$distance2 <- data$distance^2
 
-ggplot(data, aes(y=log_density, x=temp, colour=as.factor(after))) +
+data <- mutate(data, time = ifelse(after==1, "end", "begin"))
+data$matchobs <- as.factor(data$matchobs)
+data$origobs  <- as.factor(data$origobs)   
+```
+
+Plot data
+```{r}
+ggplot(data, aes(y=log_density, x=temp, colour=time)) +
   geom_point(alpha=0.35) +
   scale_colour_viridis_d(option="C") 
 
 ggplot(data, aes(log_density, fill = cell_type)) +
   geom_density(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~after)
+  facet_wrap(~time)
 
 ggplot(data, aes(log_density, fill = cell_type)) +
   geom_histogram(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~after)
+  facet_wrap(~time)
 
 ggplot(data, aes(y=log_density, x=cell_type, fill=cell_type)) +
   geom_boxplot(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~after)
+  facet_wrap(~time)
 ```
 
+Basic BACI
 ```{r}
-m <- lmerTest::lmer(log_density~after + cell_type + after:cell_type + std_temp + std_temp2 + (1|matchobs), data=data)
+
+m <- lmerTest::lmer(log_density~after + cell_type + after:cell_type + std_temp + std_temp2 + distance + distance2 + (1|icell) + (1|matchobs), data=data)
 summary(m)
 ```
 
 
 ```{r}
-sjPlot::plot_model(m, title = paste(species, "adult"))
+sjPlot::plot_model(m, type = "std2", order.terms=c(1,2,7,5,6,3,4), title = paste(species, "adult"))
 ```
+
+GAMM
+```{r}
+gam4 <- gamm4::gamm4(log_density~ time * cell_type + s(std_temp) + s(distance) + s(X,Y), 
+  random = ~(1|matchobs) + (1|origobs), data=data) # + s(X,Y, bs="re")
+
+
+plot(gam4$gam,pages=1)
+
+summary(gam4$gam) ## summary of gam
+summary(gam4$mer) ## underlying mixed model
+anova(gam4$gam) 
+
+# itsadug::plot_parametric(gam4$gam, pred=list(cell_type=c("control", "source"), after=c("0","1")), 
+#   parametricOnly = TRUE, main="") + scale_y_reverse()
+
+plot_parametric(gam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source")), 
+   parametricOnly = TRUE, main="", xlab ="log_density") 
+```
+
+
 
 ## Immatures
 
+Prep data
 ```{r}
 idata <- vocc_by_sp[["imm"]]
 #View(data)
 idata$log_density <-  log(idata$density)
+idata$distance2 <- idata$distance^2
 
-ggplot(idata, aes(y=log_density, x=temp, colour=as.factor(after))) +
+idata <- mutate(idata, time = ifelse(after==1, "end", "begin"))
+idata$matchobs <- as.factor(idata$matchobs)
+idata$origobs  <- as.factor(idata$origobs)   
+```
+
+Plot data
+```{r}
+ggplot(idata, aes(y=log_density, x=temp, colour=time)) +
   geom_point(alpha=0.35) +
   scale_colour_viridis_d(option="C") 
 
 ggplot(idata, aes(log_density, fill = cell_type)) +
   geom_density(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~after)
+  facet_wrap(~time)
 
 ggplot(idata, aes(log_density, fill = cell_type)) +
   geom_histogram(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~after)
+  facet_wrap(~time)
 
 ggplot(idata, aes(y=log_density, x=cell_type, fill=cell_type)) +
   geom_boxplot(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~after)
+  facet_wrap(~time)
 ```
 
+Basic BACI
 ```{r}
-mi <- lmerTest::lmer(log_density~after + cell_type + after:cell_type + std_temp + std_temp2 + (1|matchobs), data=idata)
+mi <- lmerTest::lmer(log_density ~ as.factor(after) + cell_type + after:cell_type + std_temp + std_temp2 + distance + distance2 + (1|icell) + (1|matchobs), data=idata)
 summary(mi)
 ```
 
 ```{r}
-sjPlot::plot_model(mi, title = paste(species, "immature"))
+sjPlot::plot_model(mi, type = "std2", title = paste(species, "immature"))
+```
+
+GAMM
+```{r}
+igam4 <- gamm4::gamm4(log_density~ time * cell_type + s(std_temp) + s(distance) + s(X,Y), 
+  random = ~(1|matchobs) + (1|origobs), data=idata) # + s(X,Y, bs="re")
+
+plot(igam4$gam,pages=1)
+
+summary(igam4$gam) ## summary of gam
+summary(igam4$mer) ## underlying mixed model
+anova(igam4$gam) 
+
+# itsadug::plot_parametric(gam4$gam, pred=list(cell_type=c("control", "source"), after=c("0","1")), 
+#   parametricOnly = TRUE, main="") + scale_y_reverse()
+
+plot_parametric(igam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source")), 
+   parametricOnly = TRUE, main="", xlab ="log_density") 
+```
+
+Misc exploring gamm 
+```{r eval=FALSE}
+# mi <- mgcv::gamm(log_density~ as.factor(after) + cell_type + after:cell_type + std_temp + std_temp2 + distance + distance2 + s(as.factor(idata$icell), bs="re") + s(as.factor(idata$matchobs), bs="re"), data=idata)
+# summary(mi)
+# 
+# mi <- mgcv::gamm(log_density~ as.factor(after) * cell_type + s(std_temp) + s(distance) + s(as.factor(idata$matchobs), bs="re") , data=idata) # + s(X,Y, bs="re")
+# summary(mi)
+# mi
+# 
+# 
+# idata$after <- as.factor(idata$after)
+# idata$matchobs <- as.factor(idata$matchobs)
+# 
+# m4b <- gamm4::gamm4(log_density~ after * cell_type + s(std_temp) + s(distance) + #s(X) + s(Y) + 
+#     s(X,Y), random = ~(1|matchobs), data=idata) # + s(X,Y, bs="re")
+# 
+# 
+# plot(m4b$gam,pages=1)
+# 
+# summary(m4b$gam) ## summary of gam
+# summary(m4b$mer) ## underlying mixed model
+# anova(m4b$gam) 
+# 
+# gamtabs(m1)
+# 
+# #library(itsadug)
+# plot_parametric(m4b$gam, pred=list(cell_type=c("control", "source"), after=c("0","1")))
+# 
+# library(mgcv)
 ```
 
