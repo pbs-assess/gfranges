@@ -44,8 +44,8 @@ optimal_values <- c(optimal_do, optimal_temp)
 
 #### Set vector type
 ```{r echo=TRUE}
- climate <- "temperature"
-# climate <- "do"
+# climate <- "temperature"
+ climate <- "do"
 # climate <- "do and temperature"
 ```
 
@@ -584,6 +584,7 @@ Prep data
 ```{r}
 data <- vocc_by_sp[["adult"]]
 #View(data)
+
 data$log_density <-  log(data$density)
 data$distance2 <- data$distance^2
 
@@ -594,10 +595,12 @@ data$origobs  <- as.factor(data$origobs)
 
 Plot data
 ```{r}
-ggplot(data, aes(y=log_density, x=temp, colour=time)) +
+lapply(variable_names, function(j) {
+ggplot(data, aes(y=log_density, x=UQ(rlang::sym(paste(j))), colour=time)) +
   geom_point(alpha=0.35) +
   scale_colour_viridis_d(option="C") 
-
+})
+  
 ggplot(data, aes(log_density, fill = cell_type)) +
   geom_density(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
@@ -616,8 +619,11 @@ ggplot(data, aes(y=log_density, x=cell_type, fill=cell_type)) +
 
 Basic BACI
 ```{r}
+for (j in (variable_names)) {
+  baci_formula <- paste0("log_density~after + cell_type + after:cell_type + distance + distance2 + std_", j, "+ std_", j, "2 + (1|icell) + (1|matchobs)")
+}
 
-m <- lmerTest::lmer(log_density~after + cell_type + after:cell_type + std_temp + std_temp2 + distance + distance2 + (1|icell) + (1|matchobs), data=data)
+m <- lmerTest::lmer(as.formula(baci_formula), data=data)
 summary(m)
 ```
 
@@ -628,8 +634,12 @@ sjPlot::plot_model(m, type = "std2", order.terms=c(1,2,7,5,6,3,4), title = paste
 
 GAMM
 ```{r}
-gam4 <- gamm4::gamm4(log_density~ time * cell_type + s(std_temp) + s(distance) + s(X,Y), 
-  random = ~(1|matchobs) + (1|origobs), data=data) # + s(X,Y, bs="re")
+
+for (j in (variable_names)) {
+  gamm_formula <- paste0("log_density ~ time * cell_type + s(distance) + s(std_", j, ") + s(X,Y)")
+}
+
+gam4 <- gamm4::gamm4(as.formula(gamm_formula),random = ~(1|matchobs) + (1|origobs), data=data) # + s(X,Y, bs="re")
 
 
 plot(gam4$gam,pages=1)
@@ -663,10 +673,11 @@ idata$origobs  <- as.factor(idata$origobs)
 
 Plot data
 ```{r}
-ggplot(idata, aes(y=log_density, x=temp, colour=time)) +
+lapply(variable_names, function(j) {
+ggplot(idata, aes(y=log_density, x=UQ(rlang::sym(paste(j))), colour=time)) +
   geom_point(alpha=0.35) +
   scale_colour_viridis_d(option="C") 
-
+})
 ggplot(idata, aes(log_density, fill = cell_type)) +
   geom_density(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
@@ -685,7 +696,7 @@ ggplot(idata, aes(y=log_density, x=cell_type, fill=cell_type)) +
 
 Basic BACI
 ```{r}
-mi <- lmerTest::lmer(log_density ~ as.factor(after) + cell_type + after:cell_type + std_temp + std_temp2 + distance + distance2 + (1|icell) + (1|matchobs), data=idata)
+mi <- lmerTest::lmer(as.formula(baci_formula), data=idata)
 summary(mi)
 ```
 
@@ -695,8 +706,11 @@ sjPlot::plot_model(mi, type = "std2", title = paste(species, "immature"))
 
 GAMM
 ```{r}
-igam4 <- gamm4::gamm4(log_density~ time * cell_type + s(std_temp) + s(distance) + s(X,Y), 
-  random = ~(1|matchobs) + (1|origobs), data=idata) # + s(X,Y, bs="re")
+# for (j in (variable_names)) {
+#   gamm_formula <- paste0("log_density ~ time * cell_type + s(distance) + s(std_", j, ") + s(X,Y)")
+# }
+
+igam4 <- gamm4::gamm4(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs), data=idata) # + s(X,Y, bs="re")
 
 plot(igam4$gam,pages=1)
 
