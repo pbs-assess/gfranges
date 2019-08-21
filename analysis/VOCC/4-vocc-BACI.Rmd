@@ -44,8 +44,8 @@ optimal_values <- c(optimal_do, optimal_temp)
 
 #### Set vector type
 ```{r echo=TRUE}
-# climate <- "temperature"
- climate <- "do"
+ climate <- "temperature"
+# climate <- "do"
 # climate <- "do and temperature"
 ```
 
@@ -524,22 +524,68 @@ vocc_by_sp <- lapply(biomass_list, function(i) {
 
   control_biomass <- left_join(control_cells, biomass, by = c("icell", "x", "y")) %>%
     mutate(cell_type = "control") %>% filter(!is.na(start_density))
+
+  
   
 #browser()
   alldata <- rbind(source_biomass, control_biomass) 
-  #alldata <- mutate(alldata, treat = ifelse(cell_type=="source", 1, 0))
-  #fit <- McSpatial::matchprop(cell_type ~ start_density + depth, data= alldata, ytreat = "source")
-  fit_formula <- paste0("cell_type ~ start_density + depth") 
- # fit_formula <- paste0("cell_type ~ start_density + depth + trawled + muddy + any_rock + omega_s") 
+  alldata <- mutate(alldata, treat = ifelse(cell_type=="source", 1, 0)) %>% 
+    select(-var_2_min, -var_2_max) %>% 
+    rename(vect_dist = distance)
+
+  # control_min <- quantile(alldata$start_density[alldata$treat=="0"], 0.05)
+  # alldata <- filter(alldata, start_density >= control_min)
+
+  low_biomass <- quantile(alldata$start_density, 0.1)
+  alldata <- filter(alldata, start_density >= low_biomass )
+
+  # if (order == "decreasing") 
+  #alldata <-   alldata[rev(order(alldata$start_density)), ]
+  # 
+  # if (order == "increasing") 
+  alldata <- alldata[(order(alldata$start_density)), ] 
   
+  #browser()
+  
+  alldata$depth2 <- alldata$depth^2
+  
+  #fit_formula <- paste0("treat ~ start_density") 
+  #fit_formula <- paste0("treat ~ start_density + depth") 
+  fit_formula <- paste0("treat ~ start_density + depth + trawled + muddy + any_rock + omega_s + x + y") 
+ 
+  
+  # need to be standardized? seems not
+  # alldata$start_density.st <- (arm::rescale(alldata$start_density))*10 
+  # alldata$depth.st <- arm::rescale(alldata$depth) 
+  # alldata$muddy.st <- arm::rescale(alldata$muddy) 
+  # alldata$any_rock.st <- arm::rescale(alldata$any_rock) 
+  # alldata$omega_s.st <- arm::rescale(alldata$omega_s) 
+  # alldata$trawled.st <- arm::rescale(alldata$trawled) 
+  # fit_formula <- paste0("treat ~ start_density.st + depth.st + trawled.st + muddy.st + any_rock.st") #+ + omega_s
+  
+  
+  #fit <- McSpatial::matchprop(cell_type ~ start_density + depth, data= alldata, ytreat = "source")
+
   for (j in (variable_names)) {
   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
   }
+
+
+  # matched <- MatchIt::matchit(as.formula(fit_formula), data = alldata, method="nearest", discard="both")
+  # mdata <- MatchIt::match.data(matched)
   
-  matched <- McSpatial::matchprop(as.formula(fit_formula), data = alldata, ytreat = "source")
+  # Uses logit matching for which most matches are higher that treatment values
+  # mdata <- McSpatial::matchprop(as.formula(fit_formula), data = alldata, ytreat = 1, discard = "both", m.order = "decreasing")
   
-  matched_time0 <- matched %>% mutate(after = 0, density = start_density) #%>% dplyr::select(-start_density, -end_density)
-  matched_time1 <- matched %>% mutate(after = 1, density = end_density) #%>% dplyr::select(-start_density, -end_density)
+  # Uses n mahalanobis distances
+  mdata <- McSpatial::matchprop(as.formula(fit_formula), data = alldata, ytreat = 1, distance="probit", discard = "both", reestimate=TRUE) #m.order = "random", 
+  #mdata <- McSpatial::matchmahal(as.formula(fit_formula), data = alldata, ytreat = 1, distance="mahal", discard = "both") #, reestimate=TRUE)
+  #mdata <- McSpatial::matchmahal(as.formula(fit_formula), data = alldata, ytreat = 1, distance="probit", discard = "both") #, reestimate=TRUE) , m.order = "random"
+    
+  mdata <- mdata %>% rename(distance = vect_dist) #%>% select(-start_density.st, -depth.st, -muddy.st, -any_rock.st, -omega_s.st)
+  
+  matched_time0 <- mdata %>% mutate(after = 0, density = start_density) #%>% dplyr::select(-start_density, -end_density)
+  matched_time1 <- mdata %>% mutate(after = 1, density = end_density) #%>% dplyr::select(-start_density, -end_density)
  
     
   for (j in seq_along(variable_names)) {
@@ -583,7 +629,7 @@ vocc_by_sp <- lapply(biomass_list, function(i) {
 Prep data
 ```{r}
 data <- vocc_by_sp[["adult"]]
-#View(data)
+# View(data)
 
 data$log_density <-  log(data$density)
 data$distance2 <- data$distance^2
@@ -595,6 +641,12 @@ data$origobs  <- as.factor(data$origobs)
 
 Plot data
 ```{r}
+
+ggplot(filter(data, as.numeric(matchobs) <= 150), aes(y=Y, x=X, shape=as.factor(treat), colour=matchobs)) +
+  geom_point(alpha=0.4, size =4) +
+  scale_shape_manual(values= c(4, 1)) +
+  scale_colour_viridis_d(option="C", guide = FALSE) 
+
 lapply(variable_names, function(j) {
 ggplot(data, aes(y=log_density, x=UQ(rlang::sym(paste(j))), colour=time)) +
   geom_point(alpha=0.35) +
@@ -607,7 +659,7 @@ ggplot(data, aes(log_density, fill = cell_type)) +
   facet_wrap(~time)
 
 ggplot(data, aes(log_density, fill = cell_type)) +
-  geom_histogram(alpha=0.5) +
+  geom_histogram(alpha=0.45) +
   scale_fill_viridis_d(option="C") +
   facet_wrap(~time)
 
@@ -639,7 +691,12 @@ for (j in (variable_names)) {
   gamm_formula <- paste0("log_density ~ time * cell_type + s(distance) + s(std_", j, ") + s(X,Y)")
 }
 
-gam4 <- gamm4::gamm4(as.formula(gamm_formula),random = ~(1|matchobs) + (1|origobs), data=data) # + s(X,Y, bs="re")
+gam4 <- gamm4::gamm4(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs), data=data) # + s(X,Y, bs="re")
+
+# for (j in (variable_names)) {
+#   gamm_formula <- paste0("log_density ~ time * cell_type + s(distance) + s(std_", j, ") + te(X,Y)")
+# }
+# gam <- mgcv::gamm(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs), data=data) # + s(X,Y, bs="re")
 
 
 plot(gam4$gam,pages=1)
@@ -721,8 +778,11 @@ anova(igam4$gam)
 # itsadug::plot_parametric(gam4$gam, pred=list(cell_type=c("control", "source"), after=c("0","1")), 
 #   parametricOnly = TRUE, main="") + scale_y_reverse()
 
+#my_cols <- c("#E69F00", "#56B4E9")
 plot_parametric(igam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source")), 
-   parametricOnly = TRUE, main="", xlab ="log_density") 
+   parametricOnly = TRUE, main="", xlab ="log_density"
+  #, groups = cell_type, gcolor = my_cols, color = my_cols["time"]
+  ) 
 ```
 
 Misc exploring gamm 
