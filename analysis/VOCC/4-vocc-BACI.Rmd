@@ -487,6 +487,8 @@ biomass_list <- biomass_list[!sapply(biomass_list, is.null)]
 #### Extract biomass values to match spatial and temporal range of climate vectors
 
 ```{r}
+#i <- biomass_list[[1]]
+
 vocc_by_sp <- lapply(biomass_list, function(i) {
   biomass_change <- make_trend_data(i,
     ssid = model_ssid,
@@ -532,57 +534,106 @@ vocc_by_sp <- lapply(biomass_list, function(i) {
   alldata <- mutate(alldata, treat = ifelse(cell_type=="source", 1, 0)) %>% 
     select(-var_2_min, -var_2_max) %>% 
     rename(vect_dist = distance)
+  alldata$treat <- as.factor(alldata$treat)
+  ggplot(alldata, aes(x=cell_type, y=log(start_density))) + geom_boxplot()
+  
+  
+  
+  ## still including this trimming to reduce size of dataset 
+  control_min <- min(alldata$start_density[alldata$treat=="0"])
+  source_min <- min(alldata$start_density[alldata$treat=="1"])
+  # control_min <- quantile(alldata$start_density[alldata$treat=="0"], 0.001)
+  # source_min <- quantile(alldata$start_density[alldata$treat=="1"], 0.001)
+  group_min <- max(control_min, source_min)
 
-  # control_min <- quantile(alldata$start_density[alldata$treat=="0"], 0.05)
+  control_max <- max(alldata$start_density[alldata$treat=="0"])
+  source_max <- max(alldata$start_density[alldata$treat=="1"])
+  # control_max <- quantile(alldata$start_density[alldata$treat=="0"], 0.95)
+  # source_max <- quantile(alldata$start_density[alldata$treat=="1"], 0.95)
+  group_max <- min(control_max, source_max)
+  # 
+   alldata <- filter(alldata, start_density >= group_min) #%>% filter(start_density <= group_max)
+  # 
+  # num_source <- nrow(alldata[alldata$treat=="1", ])
+  # 
+  
+
   # alldata <- filter(alldata, start_density >= control_min)
 
-  low_biomass <- quantile(alldata$start_density, 0.1)
-  alldata <- filter(alldata, start_density >= low_biomass )
+  # low_biomass <- quantile(alldata$start_density, 0.1)
+  # alldata <- filter(alldata, start_density >= low_biomass )
 
   # if (order == "decreasing") 
   #alldata <-   alldata[rev(order(alldata$start_density)), ]
   # 
   # if (order == "increasing") 
-  alldata <- alldata[(order(alldata$start_density)), ] 
-  
-  #browser()
-  
-  alldata$depth2 <- alldata$depth^2
-  
-  #fit_formula <- paste0("treat ~ start_density") 
-  #fit_formula <- paste0("treat ~ start_density + depth") 
-  fit_formula <- paste0("treat ~ start_density + depth + trawled + muddy + any_rock + omega_s + x + y") 
- 
-  
+ # alldata <- alldata[rev(order(alldata$start_density)), ] 
+
+
   # need to be standardized? seems not
-  # alldata$start_density.st <- (arm::rescale(alldata$start_density))*10 
-  # alldata$depth.st <- arm::rescale(alldata$depth) 
-  # alldata$muddy.st <- arm::rescale(alldata$muddy) 
-  # alldata$any_rock.st <- arm::rescale(alldata$any_rock) 
-  # alldata$omega_s.st <- arm::rescale(alldata$omega_s) 
-  # alldata$trawled.st <- arm::rescale(alldata$trawled) 
-  # fit_formula <- paste0("treat ~ start_density.st + depth.st + trawled.st + muddy.st + any_rock.st") #+ + omega_s
+  alldata$depth2 <- alldata$depth^2
+  alldata$start_density.st <- round(arm::rescale(log(alldata$start_density))*5)/5
+  alldata$start_density_st <- round(arm::rescale(log(alldata$start_density)), 1)
+  alldata$depth.st <- arm::rescale(log(alldata$depth)) 
+  alldata$muddy.st <- arm::rescale(alldata$muddy) 
+  alldata$any_rock.st <- arm::rescale(alldata$any_rock) 
+  #alldata$omega_s.st <- arm::rescale(alldata$omega_s) 
   
   
-  #fit <- McSpatial::matchprop(cell_type ~ start_density + depth, data= alldata, ytreat = "source")
+ ## Using mysterious cem optimization ... doesn't work   
+  # fit_formula <- paste0("treat ~ start_density_st") 
+  # fit_formula <- paste0("treat ~ start_density_st + depth.st") 
+  # fit_formula <- paste0("treat ~ start_density_st + depth + trawled + muddy + any_rock + omega_s + x + y") 
+  # fit_formula <- paste0("treat ~ start_density_st + depth.st + muddy.st + any_rock.st") #+ + omega_s
+  # 
+  # # for (j in (variable_names)) {
+  # #   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
+  # #   }
+  # 
+  # # # options("optmatch_max_problem_size" = Inf)
+  # # matched <- MatchIt::matchit(as.formula(fit_formula), data = alldata, method = "optimal", ratio = 1)
+  # #fit_formula <- paste0("treat ~ depth.st")
+  # matched <- MatchIt::matchit(as.formula(fit_formula),
+  #   method = "cem",
+  #   distance = "probit",
+  #   discard="control",
+  #   data = alldata)
 
+  
+  # Using exact match and rounding
+  fit_formula <- paste0("treat ~ depth.st +  muddy.st + any_rock.st") #+ trawled + omega_s
   for (j in (variable_names)) {
-  fit_formula <- paste0("", fit_formula, " + ", j, "_s")
-  }
+    fit_formula <- paste0("", fit_formula, " + ", j, "_s")
+    }
 
+  matched <- MatchIt::matchit(as.formula(fit_formula), exact = c("start_density.st"),
+    method = "nearest", m.order = "random",
+    #method = "full",
+    distance = "probit",
+    discard="control",
+    data = alldata)
+  
+  mdata <- MatchIt::match.data(matched, distance = "pscore")
+  
+  summary(matched)
+  plot(matched)
 
-  # matched <- MatchIt::matchit(as.formula(fit_formula), data = alldata, method="nearest", discard="both")
-  # mdata <- MatchIt::match.data(matched)
+  sources <- mdata[row.names(matched$match.matrix), ]
+  sources$origobs <- row.names(sources)   
+  sources$matchobs <- matched$match.matrix[,1]  
   
-  # Uses logit matching for which most matches are higher that treatment values
-  # mdata <- McSpatial::matchprop(as.formula(fit_formula), data = alldata, ytreat = 1, discard = "both", m.order = "decreasing")
+  controls <- mdata[matched$match.matrix, ]
+  controls$origobs <- row.names(controls)   
+  controls$matchobs <- matched$match.matrix[,1]  
   
-  # Uses n mahalanobis distances
-  mdata <- McSpatial::matchprop(as.formula(fit_formula), data = alldata, ytreat = 1, distance="probit", discard = "both", reestimate=TRUE) #m.order = "random", 
-  #mdata <- McSpatial::matchmahal(as.formula(fit_formula), data = alldata, ytreat = 1, distance="mahal", discard = "both") #, reestimate=TRUE)
-  #mdata <- McSpatial::matchmahal(as.formula(fit_formula), data = alldata, ytreat = 1, distance="probit", discard = "both") #, reestimate=TRUE) , m.order = "random"
-    
-  mdata <- mdata %>% rename(distance = vect_dist) #%>% select(-start_density.st, -depth.st, -muddy.st, -any_rock.st, -omega_s.st)
+  # controls2 <- mdata[matched$match.matrix, ]
+  # controls2$origobs <- row.names(controls)   
+  # controls2$matchobs <- matched$match.matrix[,2]  
+  
+  mdata <- rbind(sources, controls) %>% tidyr::drop_na() %>% filter(matchobs!="-1")
+  
+
+  #mdata <- mdata %>% rename(distance = vect_dist) #%>% select(-start_density.st, -depth.st, -muddy.st, -any_rock.st, -omega_s.st)
   
   matched_time0 <- mdata %>% mutate(after = 0, density = start_density) #%>% dplyr::select(-start_density, -end_density)
   matched_time1 <- mdata %>% mutate(after = 1, density = end_density) #%>% dplyr::select(-start_density, -end_density)
@@ -628,51 +679,66 @@ vocc_by_sp <- lapply(biomass_list, function(i) {
 
 Prep data
 ```{r}
-data <- vocc_by_sp[["adult"]]
+data <- vocc_by_sp [["adult"]]
 # View(data)
 
 data$log_density <-  log(data$density)
-data$distance2 <- data$distance^2
+data$vect_dist2 <- data$vect_dist^2
 
 data <- mutate(data, time = ifelse(after==1, "end", "begin"))
 data$matchobs <- as.factor(data$matchobs)
 data$origobs  <- as.factor(data$origobs)   
 ```
 
+
+
+
 Plot data
 ```{r}
-
-ggplot(filter(data, as.numeric(matchobs) <= 150), aes(y=Y, x=X, shape=as.factor(treat), colour=matchobs)) +
+ggplot(data, 
+#ggplot(filter(data, as.numeric(matchobs) <= 550), 
+  aes(y=Y, x=X, shape=as.factor(treat), colour=matchobs)) +
   geom_point(alpha=0.4, size =4) +
   scale_shape_manual(values= c(4, 1)) +
-  scale_colour_viridis_d(option="C", guide = FALSE) 
+  scale_colour_viridis_d(option="C", guide = FALSE) +
+  theme_bw()
 
 lapply(variable_names, function(j) {
 ggplot(data, aes(y=log_density, x=UQ(rlang::sym(paste(j))), colour=time)) +
   geom_point(alpha=0.35) +
-  scale_colour_viridis_d(option="C") 
+  scale_colour_viridis_d(option="C") +
+  theme_bw()
 })
   
+ggplot(data, aes(y=log_density, x=depth, colour=cell_type)) +
+  geom_point(alpha=0.35) +
+  scale_colour_viridis_d(option="C") +
+  facet_wrap(~time) +
+  theme_bw()
+
 ggplot(data, aes(log_density, fill = cell_type)) +
   geom_density(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~time)
+  facet_wrap(~time)+
+  theme_bw()
 
 ggplot(data, aes(log_density, fill = cell_type)) +
   geom_histogram(alpha=0.45) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~time)
+  facet_wrap(~time)+
+  theme_bw()
 
 ggplot(data, aes(y=log_density, x=cell_type, fill=cell_type)) +
   geom_boxplot(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~time)
+  facet_wrap(~time)+
+  theme_bw()
 ```
 
 Basic BACI
 ```{r}
 for (j in (variable_names)) {
-  baci_formula <- paste0("log_density~after + cell_type + after:cell_type + distance + distance2 + std_", j, "+ std_", j, "2 + (1|icell) + (1|matchobs)")
+  baci_formula <- paste0("log_density~after + cell_type + after:cell_type + n_targets + vect_dist + vect_dist2 + std_", j, "+ std_", j, "2 + (1|icell) + (1|matchobs)")
 }
 
 m <- lmerTest::lmer(as.formula(baci_formula), data=data)
@@ -681,27 +747,27 @@ summary(m)
 
 
 ```{r}
-sjPlot::plot_model(m, type = "std2", order.terms=c(1,2,7,5,6,3,4), title = paste(species, "adult"))
+sjPlot::plot_model(m, type = "std2", order.terms=c(1,2,8,3,4,5,6,7), title = paste(species, "adult"))
 ```
 
 GAMM
 ```{r}
 
 for (j in (variable_names)) {
-  gamm_formula <- paste0("log_density ~ time * cell_type + s(distance) + s(std_", j, ") + s(X,Y)")
+  gamm_formula <- paste0("log_density ~ time * cell_type + s(vect_dist) + s(std_", j, ") + s(X,Y)")
 }
 
 gam4 <- gamm4::gamm4(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs), data=data) # + s(X,Y, bs="re")
 
 # for (j in (variable_names)) {
-#   gamm_formula <- paste0("log_density ~ time * cell_type + s(distance) + s(std_", j, ") + te(X,Y)")
+#   gamm_formula <- paste0("log_density ~ time * cell_type + s(vect_dist) + s(std_", j, ") + te(X,Y)")
 # }
 # gam <- mgcv::gamm(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs), data=data) # + s(X,Y, bs="re")
 
 
 plot(gam4$gam,pages=1)
 
-summary(gam4$gam) ## summary of gam
+
 summary(gam4$mer) ## underlying mixed model
 anova(gam4$gam) 
 
@@ -710,6 +776,8 @@ anova(gam4$gam)
 
 plot_parametric(gam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source")), 
    parametricOnly = TRUE, main="", xlab ="log_density") 
+
+summary(gam4$gam) ## summary of gam
 ```
 
 
@@ -721,7 +789,7 @@ Prep data
 idata <- vocc_by_sp[["imm"]]
 #View(data)
 idata$log_density <-  log(idata$density)
-idata$distance2 <- idata$distance^2
+idata$vect_dist2 <- idata$vect_dist^2
 
 idata <- mutate(idata, time = ifelse(after==1, "end", "begin"))
 idata$matchobs <- as.factor(idata$matchobs)
@@ -730,6 +798,12 @@ idata$origobs  <- as.factor(idata$origobs)
 
 Plot data
 ```{r}
+ggplot(filter(data, as.numeric(matchobs) <= 150), aes(y=Y, x=X, shape=as.factor(treat), colour=matchobs)) +
+  geom_point(alpha=0.4, size =4) +
+  scale_shape_manual(values= c(4, 1)) +
+  scale_colour_viridis_d(option="C", guide = FALSE) +
+  theme_bw()
+
 lapply(variable_names, function(j) {
 ggplot(idata, aes(y=log_density, x=UQ(rlang::sym(paste(j))), colour=time)) +
   geom_point(alpha=0.35) +
@@ -764,7 +838,7 @@ sjPlot::plot_model(mi, type = "std2", title = paste(species, "immature"))
 GAMM
 ```{r}
 # for (j in (variable_names)) {
-#   gamm_formula <- paste0("log_density ~ time * cell_type + s(distance) + s(std_", j, ") + s(X,Y)")
+#   gamm_formula <- paste0("log_density ~ time * cell_type + s(vect_dist) + s(std_", j, ") + s(X,Y)")
 # }
 
 igam4 <- gamm4::gamm4(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs), data=idata) # + s(X,Y, bs="re")
@@ -787,10 +861,10 @@ plot_parametric(igam4$gam, pred=list(time=c("begin","end"), cell_type=c("control
 
 Misc exploring gamm 
 ```{r eval=FALSE}
-# mi <- mgcv::gamm(log_density~ as.factor(after) + cell_type + after:cell_type + std_temp + std_temp2 + distance + distance2 + s(as.factor(idata$icell), bs="re") + s(as.factor(idata$matchobs), bs="re"), data=idata)
+# mi <- mgcv::gamm(log_density~ as.factor(after) + cell_type + after:cell_type + std_temp + std_temp2 + vect_dist + vect_dist2 + s(as.factor(idata$icell), bs="re") + s(as.factor(idata$matchobs), bs="re"), data=idata)
 # summary(mi)
 # 
-# mi <- mgcv::gamm(log_density~ as.factor(after) * cell_type + s(std_temp) + s(distance) + s(as.factor(idata$matchobs), bs="re") , data=idata) # + s(X,Y, bs="re")
+# mi <- mgcv::gamm(log_density~ as.factor(after) * cell_type + s(std_temp) + s(vect_dist) + s(as.factor(idata$matchobs), bs="re") , data=idata) # + s(X,Y, bs="re")
 # summary(mi)
 # mi
 # 
@@ -798,7 +872,7 @@ Misc exploring gamm
 # idata$after <- as.factor(idata$after)
 # idata$matchobs <- as.factor(idata$matchobs)
 # 
-# m4b <- gamm4::gamm4(log_density~ after * cell_type + s(std_temp) + s(distance) + #s(X) + s(Y) + 
+# m4b <- gamm4::gamm4(log_density~ after * cell_type + s(std_temp) + s(vect_dist) + #s(X) + s(Y) + 
 #     s(X,Y), random = ~(1|matchobs), data=idata) # + s(X,Y, bs="re")
 # 
 # 
