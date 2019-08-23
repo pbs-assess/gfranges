@@ -1,7 +1,7 @@
 ---
 title: "BACI of biomass change for VOCC source cells"
 author: "Philina English"
-date: '2019-08-15'
+date: '2019-08-22'
 output: html_document
 ---
 
@@ -17,10 +17,10 @@ options(digits = 4)
 #### Set species
 ```{r echo=TRUE}
 # # Species run so far...
-# species <- "Arrowtooth Flounder"
+ species <- "Arrowtooth Flounder"
 # species <- "Pacific Cod"
 # species <- "Sablefish"
-species <- "Silvergray Rockfish"
+# species <- "Silvergray Rockfish"
 # species <- "Lingcod"
 # species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
 # species <- "Quillback Rockfish"
@@ -54,7 +54,7 @@ optimal_values <- c(optimal_do, optimal_temp)
 trend <- FALSE
 start_time <- 2012
 end_time <- 2015
-temp_threshold <- c(0.5)
+temp_threshold <- c(1)
 do_threshold <- c(0.1)
 ```
 
@@ -239,7 +239,7 @@ if (!exists("vocc")) {
 # glimpse(vocc)
 ```
 
-Plot all possible vectors
+### Plot all possible vectors
 ```{r echo=FALSE}
 if (climate == "temperature") {
   vocc$diff <- vocc$units_per_decade / 10 * delta_t_total
@@ -319,7 +319,7 @@ if (climate == "do and temperature") {
 vocc_plot
 ```
 
-Filter vectors to match optimal range for chosen species
+### Filter vectors to match optimal range for chosen species
 ```{r}
 vectors <- trim_vector_data(vocc, variable_names, optimal_values, min_thresholds, max_thresholds,
   cell_size = input_cell_size, dist_intercept = input_cell_size/2,
@@ -355,7 +355,6 @@ vectors <- trim_vector_data(vocc, variable_names, optimal_values, min_thresholds
 
 ### Plot remaining climate vectors for regions where change exceeds thresholds
 ```{r echo=FALSE, warning=FALSE}
-
 if (climate == "temperature") {
   vectors$diff <- vectors$units_per_decade / 10 * delta_t_total
 
@@ -435,8 +434,8 @@ vocc_plot
 ```
 # Add species biomass data
 
-#### Get all biomass predictions 
-```{r, echo=FALSE, warning=FALSE}
+Get all biomass predictions 
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=F}
 priors <- FALSE
 # priors <- TRUE
 
@@ -484,12 +483,10 @@ biomass_list <- biomass_list[!sapply(biomass_list, is.null)]
 # glimpse(biomass_list)
 ```
 
-#### Extract biomass values to match spatial and temporal range of climate vectors
-
+Extract biomass values to match spatial and temporal range of climate vectors
 ```{r}
-#i <- biomass_list[[1]]
-
-vocc_by_sp <- lapply(biomass_list, function(i) {
+alldata <- lapply(biomass_list, function(i) {
+  
   biomass_change <- make_trend_data(i,
     ssid = model_ssid,
     start_time = start_time,
@@ -520,56 +517,43 @@ vocc_by_sp <- lapply(biomass_list, function(i) {
     mutate(cell_type = "source") %>% filter(!is.na(start_density))
   
   # identify all possible control cells, assume distance = 0 given 
-  control_cells <- anti_join(vocc, vectors, by = c("icell", "x", "y")) %>% distinct(icell, .keep_all = TRUE) %>% 
+  control_cells <- anti_join(vocc, vectors, by = c("icell", "x", "y")) %>% 
+    distinct(icell, .keep_all = TRUE) %>% 
     mutate(distance = 0) %>% 
     select(-target_X, -target_Y, -target_values, -tid)
 
   control_biomass <- left_join(control_cells, biomass, by = c("icell", "x", "y")) %>%
     mutate(cell_type = "control") %>% filter(!is.na(start_density))
 
-  
-  
-#browser()
   alldata <- rbind(source_biomass, control_biomass) 
   alldata <- mutate(alldata, treat = ifelse(cell_type=="source", 1, 0)) %>% 
     select(-var_2_min, -var_2_max) %>% 
     rename(vect_dist = distance)
   alldata$treat <- as.factor(alldata$treat)
-  ggplot(alldata, aes(x=cell_type, y=log(start_density))) + geom_boxplot()
   
-  
-  
-  ## still including this trimming to reduce size of dataset 
-  control_min <- min(alldata$start_density[alldata$treat=="0"])
-  source_min <- min(alldata$start_density[alldata$treat=="1"])
-  # control_min <- quantile(alldata$start_density[alldata$treat=="0"], 0.001)
-  # source_min <- quantile(alldata$start_density[alldata$treat=="1"], 0.001)
+  alldata
+
+})
+```
+
+```{r, include=FALSE, echo=FALSE}
+lapply(alldata, function(i){ggplot(i, aes(x=cell_type, y=log(start_density))) + geom_boxplot()})
+```
+
+
+# Select matched control cells
+```{r}
+matched <- lapply(alldata, function(alldata) {  
+  ## trim non-overlapping values to reduce size of dataset 
+  control_min <- quantile(alldata$start_density[alldata$treat=="0"], 0.001)
+  source_min <- quantile(alldata$start_density[alldata$treat=="1"], 0.001)
+  # control_max <- quantile(alldata$start_density[alldata$treat=="0"], 1)
+  # source_max <- quantile(alldata$start_density[alldata$treat=="1"], 1)
+
   group_min <- max(control_min, source_min)
-
-  control_max <- max(alldata$start_density[alldata$treat=="0"])
-  source_max <- max(alldata$start_density[alldata$treat=="1"])
-  # control_max <- quantile(alldata$start_density[alldata$treat=="0"], 0.95)
-  # source_max <- quantile(alldata$start_density[alldata$treat=="1"], 0.95)
-  group_max <- min(control_max, source_max)
-  # 
-   alldata <- filter(alldata, start_density >= group_min) #%>% filter(start_density <= group_max)
-  # 
-  # num_source <- nrow(alldata[alldata$treat=="1", ])
-  # 
+  # group_max <- min(control_max, source_max)
+  alldata <- filter(alldata, start_density >= group_min) #%>% filter(start_density <= group_max)
   
-
-  # alldata <- filter(alldata, start_density >= control_min)
-
-  # low_biomass <- quantile(alldata$start_density, 0.1)
-  # alldata <- filter(alldata, start_density >= low_biomass )
-
-  # if (order == "decreasing") 
-  #alldata <-   alldata[rev(order(alldata$start_density)), ]
-  # 
-  # if (order == "increasing") 
- # alldata <- alldata[rev(order(alldata$start_density)), ] 
-
-
   # need to be standardized? seems not
   alldata$depth2 <- alldata$depth^2
   alldata$start_density.st <- round(arm::rescale(log(alldata$start_density))*5)/5
@@ -579,45 +563,58 @@ vocc_by_sp <- lapply(biomass_list, function(i) {
   alldata$any_rock.st <- arm::rescale(alldata$any_rock) 
   #alldata$omega_s.st <- arm::rescale(alldata$omega_s) 
   
-  
- ## Using mysterious cem optimization ... doesn't work   
-  # fit_formula <- paste0("treat ~ start_density_st") 
-  # fit_formula <- paste0("treat ~ start_density_st + depth.st") 
-  # fit_formula <- paste0("treat ~ start_density_st + depth + trawled + muddy + any_rock + omega_s + x + y") 
-  # fit_formula <- paste0("treat ~ start_density_st + depth.st + muddy.st + any_rock.st") #+ + omega_s
-  # 
-  # # for (j in (variable_names)) {
-  # #   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
-  # #   }
-  # 
-  # # # options("optmatch_max_problem_size" = Inf)
-  # # matched <- MatchIt::matchit(as.formula(fit_formula), data = alldata, method = "optimal", ratio = 1)
-  # #fit_formula <- paste0("treat ~ depth.st")
-  # matched <- MatchIt::matchit(as.formula(fit_formula),
-  #   method = "cem",
-  #   distance = "probit",
-  #   discard="control",
-  #   data = alldata)
-
-  
+ ## Using optimization ... doesn't work   
+  # if(
+  #   class(
+  #   try(
+  #     fit_formula <- paste0("treat ~ start_density_st + depth.st + muddy.st + any_rock.st") 
+  #   # fit_formula <- paste0("treat ~ start_density_st") 
+  #   # fit_formula <- paste0("treat ~ start_density_st + depth.st") 
+  #   # # for (j in (variable_names)) {
+  #   # #   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
+  #   # #   }
+  #     # options("optmatch_max_problem_size" = Inf)
+  #     matched <- MatchIt::matchit(as.formula(fit_formula), method = "optimal", data = alldata)
+  #     , silent = TRUE)
+  #     ) == "try-error"){
+    
   # Using exact match and rounding
-  fit_formula <- paste0("treat ~ depth.st +  muddy.st + any_rock.st") #+ trawled + omega_s
-  for (j in (variable_names)) {
-    fit_formula <- paste0("", fit_formula, " + ", j, "_s")
-    }
+  fit_formula <- paste0("treat ~ depth.st + muddy.st + any_rock.st + trawled + omega_s + x + y") #
+  # for (j in (variable_names)) {
+  #   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
+  #   }
+
+  # Choose data order
+  # alldata <- alldata[(order(alldata$y)), ]
+  # if (order == "increasing") alldata <- alldata[rev(order(alldata$start_density)), ]
+  # if (order == "decreasing") alldata <- alldata[rev(order(alldata$start_density)), ]
 
   matched <- MatchIt::matchit(as.formula(fit_formula), exact = c("start_density.st"),
     method = "nearest", m.order = "random",
-    #method = "full",
     distance = "probit",
     discard="control",
     data = alldata)
+
+  #} 
   
+  matched
+
+})
+```
+
+Print diagnostics for matching
+```{r echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+lapply(matched, function(i){  
+  summary(i)
+  plot(i)
+  })
+```
+
+Prep matched data for analysis
+```{r}
+vocc_by_sp <- lapply(matched, function(matched) {    
   mdata <- MatchIt::match.data(matched, distance = "pscore")
   
-  summary(matched)
-  plot(matched)
-
   sources <- mdata[row.names(matched$match.matrix), ]
   sources$origobs <- row.names(sources)   
   sources$matchobs <- matched$match.matrix[,1]  
@@ -626,19 +623,18 @@ vocc_by_sp <- lapply(biomass_list, function(i) {
   controls$origobs <- row.names(controls)   
   controls$matchobs <- matched$match.matrix[,1]  
   
+  # if selecting 2 matches
   # controls2 <- mdata[matched$match.matrix, ]
   # controls2$origobs <- row.names(controls)   
   # controls2$matchobs <- matched$match.matrix[,2]  
   
   mdata <- rbind(sources, controls) %>% tidyr::drop_na() %>% filter(matchobs!="-1")
   
-
-  #mdata <- mdata %>% rename(distance = vect_dist) #%>% select(-start_density.st, -depth.st, -muddy.st, -any_rock.st, -omega_s.st)
-  
-  matched_time0 <- mdata %>% mutate(after = 0, density = start_density) #%>% dplyr::select(-start_density, -end_density)
-  matched_time1 <- mdata %>% mutate(after = 1, density = end_density) #%>% dplyr::select(-start_density, -end_density)
+  matched_time0 <- mdata %>% mutate(after = 0, density = start_density) 
+  #%>% dplyr::select(-start_density, -end_density)
+  matched_time1 <- mdata %>% mutate(after = 1, density = end_density) 
+  #%>% dplyr::select(-start_density, -end_density)
  
-    
   for (j in seq_along(variable_names)) {
     climate <- paste0(variable_names[j])
     matched_time0 <- matched_time0 %>% 
@@ -663,43 +659,42 @@ vocc_by_sp <- lapply(biomass_list, function(i) {
       (!!std.var) := ((UQ(rlang::sym(paste0(variable_names[j]))) - 
           mean(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE)) / 
           (sd(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE))*2),
-      (!!std.var2) := (( UQ(rlang::sym(paste0(variable_names[j]))) - mean(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE) ) / (sd(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE)*2))^2
+      (!!std.var2) := (( UQ(rlang::sym(paste0(variable_names[j]))) - 
+          mean(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE) ) / 
+          (sd(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE)*2))^2
     )
   }
 
   # rename spatial coordinates for inclusion in models and plots without naming conflicts
-  vocc_by_sp <- vocc_by_sp %>%
+  data <- vocc_by_sp %>%
     rename(X = x, Y = y)
+      #%>% rename(distance = vect_dist) %>% select(-start_density.st, -depth.st, -muddy.st, -any_rock.st, -omega_s.st)
+  # other variable prep
+  data$log_density <-  log(data$density)
+  data$vect_dist2 <- data$vect_dist^2
+  data <- mutate(data, time = ifelse(after==1, "end", "begin"))
+  data$matchobs <- as.factor(data$matchobs)
+  data$origobs  <- as.factor(data$origobs)   
 
-  vocc_by_sp
+  
+  data
+  
 })
 ```
 
 ## Adults
-
-Prep data
 ```{r}
 data <- vocc_by_sp [["adult"]]
 # View(data)
-
-data$log_density <-  log(data$density)
-data$vect_dist2 <- data$vect_dist^2
-
-data <- mutate(data, time = ifelse(after==1, "end", "begin"))
-data$matchobs <- as.factor(data$matchobs)
-data$origobs  <- as.factor(data$origobs)   
 ```
 
-
-
-
-Plot data
+### Plot matches
 ```{r}
 ggplot(data, 
 #ggplot(filter(data, as.numeric(matchobs) <= 550), 
-  aes(y=Y, x=X, shape=as.factor(treat), colour=matchobs)) +
-  geom_point(alpha=0.4, size =4) +
-  scale_shape_manual(values= c(4, 1)) +
+  aes(y=Y, x=X, shape=as.factor(treat), colour=as.factor(matchobs))) +
+  geom_point(alpha=0.4, size = 2) +
+  scale_shape_manual(values= c(0, 15)) +
   scale_colour_viridis_d(option="C", guide = FALSE) +
   theme_bw()
 
@@ -735,7 +730,7 @@ ggplot(data, aes(y=log_density, x=cell_type, fill=cell_type)) +
   theme_bw()
 ```
 
-Basic BACI
+### Basic BACI
 ```{r}
 for (j in (variable_names)) {
   baci_formula <- paste0("log_density~after + cell_type + after:cell_type + n_targets + vect_dist + vect_dist2 + std_", j, "+ std_", j, "2 + (1|icell) + (1|matchobs)")
@@ -750,57 +745,38 @@ summary(m)
 sjPlot::plot_model(m, type = "std2", order.terms=c(1,2,8,3,4,5,6,7), title = paste(species, "adult"))
 ```
 
-GAMM
+### GAMM
 ```{r}
-
 for (j in (variable_names)) {
   gamm_formula <- paste0("log_density ~ time * cell_type + s(vect_dist) + s(std_", j, ") + s(X,Y)")
 }
 
 gam4 <- gamm4::gamm4(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs), data=data) # + s(X,Y, bs="re")
 
-# for (j in (variable_names)) {
-#   gamm_formula <- paste0("log_density ~ time * cell_type + s(vect_dist) + s(std_", j, ") + te(X,Y)")
-# }
-# gam <- mgcv::gamm(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs), data=data) # + s(X,Y, bs="re")
-
+summary(gam4$gam) ## summary of gam
 
 plot(gam4$gam,pages=1)
-
-
-summary(gam4$mer) ## underlying mixed model
-anova(gam4$gam) 
-
-# itsadug::plot_parametric(gam4$gam, pred=list(cell_type=c("control", "source"), after=c("0","1")), 
-#   parametricOnly = TRUE, main="") + scale_y_reverse()
-
-plot_parametric(gam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source")), 
-   parametricOnly = TRUE, main="", xlab ="log_density") 
-
-summary(gam4$gam) ## summary of gam
 ```
 
-
+```{r,  results="hide", include=FALSE}
+plot_parametric(gam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source")), parametricOnly = TRUE, main="", xlab ="log_density"
+  #, groups = cell_type, gcolor = my_cols, color = my_cols["time"]
+  ) 
+```
 
 ## Immatures
-
-Prep data
 ```{r}
 idata <- vocc_by_sp[["imm"]]
 #View(data)
-idata$log_density <-  log(idata$density)
-idata$vect_dist2 <- idata$vect_dist^2
-
-idata <- mutate(idata, time = ifelse(after==1, "end", "begin"))
-idata$matchobs <- as.factor(idata$matchobs)
-idata$origobs  <- as.factor(idata$origobs)   
 ```
 
-Plot data
+### Plot matches
 ```{r}
-ggplot(filter(data, as.numeric(matchobs) <= 150), aes(y=Y, x=X, shape=as.factor(treat), colour=matchobs)) +
-  geom_point(alpha=0.4, size =4) +
-  scale_shape_manual(values= c(4, 1)) +
+ggplot(data, 
+#ggplot(filter(data, as.numeric(matchobs) <= 550), 
+  aes(y=Y, x=X, shape=as.factor(treat), colour=matchobs)) +
+  geom_point(alpha=0.4, size = 2) +
+  scale_shape_manual(values= c(0, 15)) +
   scale_colour_viridis_d(option="C", guide = FALSE) +
   theme_bw()
 
@@ -825,17 +801,17 @@ ggplot(idata, aes(y=log_density, x=cell_type, fill=cell_type)) +
   facet_wrap(~time)
 ```
 
-Basic BACI
+### Basic BACI
 ```{r}
 mi <- lmerTest::lmer(as.formula(baci_formula), data=idata)
 summary(mi)
 ```
 
 ```{r}
-sjPlot::plot_model(mi, type = "std2", title = paste(species, "immature"))
+sjPlot::plot_model(mi, type = "std2", order.terms=c(1,2,8,3,4,5,6,7), title = paste(species, "immature"))
 ```
 
-GAMM
+### GAMM
 ```{r}
 # for (j in (variable_names)) {
 #   gamm_formula <- paste0("log_density ~ time * cell_type + s(vect_dist) + s(std_", j, ") + s(X,Y)")
@@ -843,24 +819,27 @@ GAMM
 
 igam4 <- gamm4::gamm4(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs), data=idata) # + s(X,Y, bs="re")
 
-plot(igam4$gam,pages=1)
-
 summary(igam4$gam) ## summary of gam
-summary(igam4$mer) ## underlying mixed model
-anova(igam4$gam) 
 
-# itsadug::plot_parametric(gam4$gam, pred=list(cell_type=c("control", "source"), after=c("0","1")), 
-#   parametricOnly = TRUE, main="") + scale_y_reverse()
+plot(igam4$gam,pages=1)
+```
 
-#my_cols <- c("#E69F00", "#56B4E9")
-plot_parametric(igam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source")), 
-   parametricOnly = TRUE, main="", xlab ="log_density"
+```{r, results="hide", include=FALSE}
+plot_parametric(igam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source")), parametricOnly = TRUE, main="", xlab ="log_density"
   #, groups = cell_type, gcolor = my_cols, color = my_cols["time"]
   ) 
 ```
 
+
+
 Misc exploring gamm 
 ```{r eval=FALSE}
+# summary(igam4$mer) ## underlying mixed model
+# anova(igam4$gam) 
+
+# itsadug::plot_parametric(gam4$gam, pred=list(cell_type=c("control", "source"), after=c("0","1")), parametricOnly = TRUE, main="") 
+
+
 # mi <- mgcv::gamm(log_density~ as.factor(after) + cell_type + after:cell_type + std_temp + std_temp2 + vect_dist + vect_dist2 + s(as.factor(idata$icell), bs="re") + s(as.factor(idata$matchobs), bs="re"), data=idata)
 # summary(mi)
 # 
