@@ -1,7 +1,7 @@
 ---
-title: "BACI of biomass change for VOCC source cells"
+title: "BACI of biomass change for VOCC source cells for all years"
 author: "Philina English"
-date: '2019-08-22'
+date: '2019-08-24'
 output: html_document
 ---
 
@@ -45,24 +45,12 @@ optimal_values <- c(optimal_do, optimal_temp)
 #### Set vector type
 ```{r echo=TRUE}
  climate <- "temperature"
+ temp_threshold <- c(0.5)
+ 
 # climate <- "do"
+# do_threshold <- c(0.1)
+ 
 # climate <- "do and temperature"
-```
-
-#### Make climate vectors for biannual changes between surveys
-```{r echo=TRUE}
-#trend <- FALSE
-temp_threshold <- c(1)
-do_threshold <- c(0.1)
-```
-
-# OR
-
-#### Make climate vectors for average changes and lower threshold values
-```{r echo=TRUE}
-# trend <- TRUE
-# temp_trend_threshold <- c(0.25)
-# do_trend_threshold <- c(0.2)
 ```
 
 #### Set Region 
@@ -224,6 +212,7 @@ if (climate == "temperature") {
     fill_col = "diff",
     fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
     raster_alpha = 1,
+    raster_limits = c(-4, 3),
     white_zero = TRUE,
     vec_alpha = 0.25,
     axis_lables = FALSE,
@@ -499,22 +488,19 @@ biomass_list <- list(
 )
 
 biomass_list <- biomass_list[!sapply(biomass_list, is.null)]
-
 # glimpse(biomass_list)
 ```
 
 Extract biomass values to match spatial and temporal range of climate vectors
 ```{r}
-
-alldata <- lapply(biomass_list, function(i) {
+alldata <- lapply(biomass_list, function(split_bio_data) {
  
   biomass_by_year <- list()
-  
   for (j in seq_along(start_years)) {
    start_time <- start_years[[j]]
    end_time <- start_time + 2 
-   
-   biomass_by_year[[j]] <- make_trend_data(i,
+ 
+   biomass_by_year[[j]] <- make_trend_data(split_bio_data,
     ssid = model_ssid,
     start_time = start_time,
     skip_time = skip_time,
@@ -527,10 +513,12 @@ alldata <- lapply(biomass_list, function(i) {
     variable_names = "est_exp"
   )
   }
-   
+ 
   biomass_change <- do.call("rbind", biomass_by_year)
    
-  biomass_covs <- i %>% select(X, Y, depth, trawled, muddy, any_rock, omega_s) %>% distinct()
+  biomass_covs <- split_bio_data %>% 
+    select(X, Y, depth, trawled, muddy, any_rock, omega_s) %>% 
+    distinct()
   
   biomass_change <- biomass_change %>% 
     rename(start_density = est_exp_s, end_density = est_exp_e) %>%
@@ -547,7 +535,7 @@ alldata <- lapply(biomass_list, function(i) {
   source_biomass <- left_join(source_cells, biomass, by = c("icell", "x", "y", "start_time")) %>%
     mutate(cell_type = "source") %>% filter(!is.na(start_density))
   
-  # identify all possible control cells, assume distance = 0 given 
+  # identify all possible control cells have been given a distance == - dist_intercept
   
   control_cells <- all_vectors %>% filter (distance == (- dist_intercept)) %>% 
     distinct(icell, start_time, .keep_all = TRUE) %>% 
@@ -564,12 +552,11 @@ alldata <- lapply(biomass_list, function(i) {
   alldata$treat <- as.factor(alldata$treat)
   
   alldata
-
 })
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-lapply(alldata, function(i){ggplot(i, aes(x=cell_type, y=log(start_density))) + geom_boxplot()})
+lapply(alldata, function(i){ggplot(i, aes(x=cell_type, y=log(start_density))) + geom_boxplot()+facet_wrap(~start_time)})
 ```
 
 
@@ -611,7 +598,8 @@ matched <- lapply(alldata, function(alldata) {
   #     ) == "try-error"){
     
   # Using exact match and rounding
-  fit_formula <- paste0("treat ~ depth.st + muddy.st + any_rock.st + trawled + omega_s + x + y") #
+  fit_formula <- paste0("treat ~ depth.st + muddy.st + any_rock.st + 
+    trawled + omega_s + x + y") #
   # for (j in (variable_names)) {
   #   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
   #   }
@@ -621,7 +609,8 @@ matched <- lapply(alldata, function(alldata) {
   # if (order == "increasing") alldata <- alldata[rev(order(alldata$start_density)), ]
   # if (order == "decreasing") alldata <- alldata[rev(order(alldata$start_density)), ]
 
-  matched <- MatchIt::matchit(as.formula(fit_formula), exact = c("start_density.st", "start_time"),
+  matched <- MatchIt::matchit(as.formula(fit_formula), 
+    exact = c("start_density.st", "start_time"),
     method = "nearest", m.order = "random",
     distance = "probit",
     discard="control",
@@ -765,7 +754,7 @@ ggplot(data, aes(y=log_density, x=cell_type, fill=cell_type)) +
   scale_fill_viridis_d(option="C") +
   geom_text(data = dat_summary,
             aes(cell_type, max(data$log_density), label = n), hjust = -0.3) +
-  facet_grid(time~start_time)+
+  facet_grid(start_time~time)+
   theme_bw()
 ```
 
@@ -792,7 +781,6 @@ for (j in (variable_names)) {
   gamm_formula <- paste0("log_density ~ time * cell_type + s(vect_dist) + s(std_", j, ") + s(X,Y)")
 }
 
-#FIXME: need to nest random effects
 gam4 <- gamm4::gamm4(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs) + (1|start_time), data=data) # + s(X,Y, bs="re")
 
 summary(gam4$gam) ## summary of gam
@@ -847,7 +835,7 @@ ggplot(idata, aes(y=log_density, x=cell_type, fill=cell_type)) +
   scale_fill_viridis_d(option="C") +
   geom_text(data = idat_summary,
             aes(cell_type, max(data$log_density), label = n), hjust = -0.3) +
-  facet_grid(time~start_time)+
+  facet_grid(start_time~time)+
   theme_bw()
 ```
 
