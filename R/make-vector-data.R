@@ -193,29 +193,38 @@ trim_vector_data <- function(data, variable_names,
   optimal_values, min_thresholds, max_thresholds, 
   cell_size = 2, dist_intercept = cell_size, 
   max_dist = max(data$distance, na.rm = TRUE)
-){
+  ){
 
 #browser()  
   newdata <- list()
-for (j in seq_along(variable_names)){
-    
-  if (min_thresholds[j] != Inf) { 
-    newdata[[j]] <- filter(data, UQ(rlang::sym(paste0(variable_names[j], "_e"))) < optimal_values[j] - min_thresholds[j]) 
-  }
-  if (max_thresholds[j] != Inf) {
-    newdata[[j]] <- filter(data, UQ(rlang::sym(paste0(variable_names[j], "_e"))) > optimal_values[j] + max_thresholds[j])
-  }
-}  
+  for (j in seq_along(variable_names)){
+      
+    if (min_thresholds[j] != Inf) { 
+      newdata[[j]] <- filter(data, 
+        UQ(rlang::sym(paste0(variable_names[j], "_e"))) < optimal_values[j] - min_thresholds[j]) 
+    }
+    if (max_thresholds[j] != Inf) {
+      newdata[[j]] <- filter(data, 
+        UQ(rlang::sym(paste0(variable_names[j], "_e"))) > optimal_values[j] + max_thresholds[j])
+    }
+  }  
   
-  data <- do.call("rbind", newdata) %>% distinct()
+  vect_data <- do.call("rbind", newdata) %>% distinct()
   
   # remove cells that require no movement
-  data <- filter(data, distance >= cell_size) 
+  vect_data <- filter(vect_data, distance >= cell_size) 
   
   # truncate max distance (defaults to no truncation)
-  data <- mutate(data, distance = ifelse(distance > max_dist, max_dist, distance))
+  vect_data <- mutate(vect_data, distance = ifelse(distance > max_dist, max_dist, distance))
   
   # set intercept for distance (defaults to be the nearest neighbouring cells)
-  data <- mutate(data, distance = (distance - dist_intercept))
+  vect_data <- mutate(vect_data, distance = (distance - dist_intercept))
   
+  change_raster <- anti_join(data, vect_data, by = "icell") %>% 
+    mutate(distance = (- dist_intercept), tid = NA, 
+      target_X = NA, target_Y = NA, 
+      target_values = NA, n_targets = 0, 
+      mean_target_X = NA, mean_target_Y = NA)
+  trimmed_data <- rbind(vect_data, change_raster)
+  trimmed_data
 }
