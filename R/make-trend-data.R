@@ -151,5 +151,6 @@ make_trend_data <- function(data,
   #data <- data %>% dplyr::mutate(id = 1:nrow(data)) # add cell id
   
   out <- left_join(out, slopedat, by = c("x", "y"))
+  out$start_time <- min(data[[time_var]])
   out
 }
