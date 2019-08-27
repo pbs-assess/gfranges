@@ -5,6 +5,13 @@ date: '2019-08-24'
 output: html_document
 ---
 
+Should optimal temperature vary for age classes? Seems likely. 
+Therefore need separate VOCC trimming and matching for age classes -> change function structure to choose age upfront 
+
+Should matches be selected based on exact depth categories in addition to density (all within time periods)?
+What does it mean for the analysis that the depth range at which VOCC occur within a species temperature range varies dramatically between time periods?
+
+
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(
   fig.width = 11, fig.height = 8.5,
@@ -17,8 +24,8 @@ options(digits = 4)
 #### Set species
 ```{r echo=TRUE}
 # # Species run so far...
-# species <- "Arrowtooth Flounder"
- species <- "Pacific Cod"
+ species <- "Arrowtooth Flounder"
+# species <- "Pacific Cod"
 # species <- "Sablefish"
 # species <- "Silvergray Rockfish"
 # species <- "Lingcod"
@@ -28,18 +35,10 @@ options(digits = 4)
 # species <- "Yelloweye Rockfish"
 ```
 
-#### Get species-specific optimal values from mountain plots for most abundant year
-```{r, echo=FALSE}
-spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
-
-params <- readRDS(paste0("data/optimal-values-by-species.rds"))
-params <- params[rev(order(as.Date(params$date))), ]
-params <- params[!duplicated(params$species), ]
-
-optimal_do <- round(params[params$species == species, ]$optimal_do, digits = 2)
-optimal_temp <- round(params[params$species == species, ]$optimal_temp, digits = 2)
-
-optimal_values <- c(optimal_do, optimal_temp)
+#### Set age class
+```{r echo=TRUE}
+age <- "mature" # or mostly so
+# age <- "imm"
 ```
 
 #### Set vector type
@@ -67,9 +66,30 @@ library(ggplot2)
 library(gfplot)
 # library(gfdata)
 library(sdmTMB)
-#library(itsadug)
+# library(itsadug)
 library(gfranges)
 ```
+
+#### Get species-specific optimal values from mountain plots for most abundant year
+```{r, echo=FALSE}
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+
+params <- readRDS(paste0("data/optimal-values-by-species-by-age.rds"))
+
+if (age == "imm") {
+  params <- filter(params, age == "imm")
+} else {
+  params <- filter(params, age != "imm")
+}
+params <- params[rev(order(params$maxy)), ]
+params <- params[!duplicated(params$species), ]
+
+#optimal_do <- round(params[params$species == species, ]$optimal_do, digits = 2)
+optimal_temp <- round(params[params$species == species, ]$optimal_temp, digits = 2)
+
+#optimal_values <- c(optimal_do, optimal_temp)
+```
+
 
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 if (region == "both odd year surveys") {
@@ -109,7 +129,6 @@ skip_time <- NULL
 if (climate == "temperature") {
   variable_names <- c("temp")
   min_thresholds <- c(Inf)
-  #delta_threshold <- temp_threshold
   optimal_values <- optimal_temp
   max_thresholds <- temp_threshold
   indices <- c(1, 2)
@@ -119,7 +138,6 @@ if (climate == "temperature") {
 if (climate == "do") {
   variable_names <- c("do_est")
   max_thresholds <- c(Inf)
-  #delta_threshold <- -1 * (do_threshold)
   optimal_values <- optimal_do
   min_thresholds <- do_threshold
   indices <- c(1, 2)
@@ -146,7 +164,7 @@ climate_string <- gsub(" ", "-", gsub("\\/", "-", tolower(climate)))
 
 ```{r}
 rm(vocc)
-#start_time <- NULL
+
 vocc_by_year <- lapply(start_years, function(start_time) {    
 
 try({
@@ -296,32 +314,6 @@ vectors <- trim_vector_data(vocc, variable_names, optimal_values, min_thresholds
 })
 
 all_vectors <- do.call("rbind", trimmed_vectors)
-
-# if (length(vectors[, 2]) == 0) {
-#   other_coefs <- readRDS(paste0("data/", climate_string, "-vocc-by-spp-sdmTMB-coefs.RDS"))
-#   coefs <- other_coefs[1, ]
-#   coefs$var <- "NA"
-#   coefs$beta <- "NA"
-#   coefs$se <- "NA"
-#   coefs$model <- "NA"
-#   coefs$species <- spp
-#   coefs$lifestage <- "NA"
-#   coefs$climate <- climate
-#   coefs$min_thresholds <- min_string
-#   coefs$max_thresholds <- max_string
-#   coefs$optimum <- optimal_string
-#   coefs$start_time <- start_time
-#   coefs$timespan <- delta_t_total
-#   coefs$region <- region
-#   coefs$ssid_string <- ssid_string
-# 
-#   coefs <- rbind(other_coefs, coefs) %>% distinct()
-#   saveRDS(coefs, file = paste0("data/", climate_string, "-vocc-by-spp-sdmTMB-coefs.RDS"))
-# 
-#   stop("No vectors. Conditions saved to 'data/vocc-byspp-sdmTMB-coefs'.")
-# }
-# glimpse(vocc)
-# glimpse(vectors)
 ```
 
 ### Plot remaining climate vectors for regions where change exceeds thresholds
@@ -361,7 +353,8 @@ try({
     min_vec_plotted = input_cell_size,
     NA_label = ".",
     fill_col = "diff",
-    fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
+    fill_label = paste("Change from\n", 
+      start_time, "to", start_time + delta_t_total, ""),
     raster_alpha = 1,
     raster_limits = c(raster_min, raster_max),
     white_zero = TRUE,
@@ -379,7 +372,8 @@ if (climate == "do") {
     min_vec_plotted = input_cell_size,
     NA_label = ".",
     fill_col = "diff",
-    fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
+    fill_label = paste("Change from\n", 
+      start_time, "to", start_time + delta_t_total, ""),
     raster_alpha = 1,
     raster_limits = c(raster_min, raster_max),
     white_zero = TRUE,
@@ -399,7 +393,8 @@ if (climate == "do and temperature") {
     min_vec_plotted = input_cell_size,
     NA_label = ".",
     fill_col = "temp_diff",
-    fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
+    fill_label = paste("Change from\n", 
+      start_time, "to", start_time + delta_t_total, ""),
     raster_alpha = 1,
     raster_limits = c(raster_min_temp, raster_max_temp),
     white_zero = TRUE,
@@ -415,7 +410,8 @@ if (climate == "do and temperature") {
     min_vec_plotted = input_cell_size,
     NA_label = ".",
     fill_col = "do_diff",
-    fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
+    fill_label = paste("Change from\n", 
+      start_time, "to", start_time + delta_t_total, ""),
     raster_alpha = 1,
     raster_limits = c(raster_min_do, raster_max_do),
     white_zero = TRUE,
@@ -429,15 +425,15 @@ if (climate == "do and temperature") {
   vocc_plot <- gridExtra::grid.arrange(
     vocc_plot_temp, vocc_plot_do,
     ncol = 2,
-    top = grid::textGrob(paste("DO of ", optimal_values[1], "less", min_thresholds[1], "or temperature of ", optimal_values[2], "plus", max_thresholds[2], " over ", start_time, "-", start_time + delta_t_total, ""))
+    top = grid::textGrob(paste(
+      "DO of ", optimal_values[1], "less", min_thresholds[1], 
+      "or temperature of ", optimal_values[2], "plus", max_thresholds[2], 
+      " over ", start_time, "-", start_time + delta_t_total, ""))
   )
 }
-  
 vocc_plot
 })
-
 })
-
 
 print(trimmed_vector_plots)
 ```
@@ -446,61 +442,46 @@ print(trimmed_vector_plots)
 Get all biomass predictions 
 ```{r, echo=FALSE, warning=FALSE, error=FALSE, message=F}
 priors <- FALSE
-# priors <- TRUE
-
 covariates <- "+muddy+any_rock"
-
 covs <- gsub("\\+", "-", covariates)
 
-rm(adult_predictions)
-rm(imm_predictions)
-rm(predictions)
+rm(biomass_predictions)
 
-try({
-  adult_predictions <- readRDS(paste0(
-    "data/", spp,
-    "/all-predictions-", spp, covs, "-mat-biomass-prior-", priors, ".rds"
-  ))
-})
-
-try({
-  imm_predictions <- readRDS(paste0(
+if (age == "imm") {
+  try({
+  biomass_predictions <- readRDS(paste0(
     "data/", spp,
     "/all-predictions-", spp, covs, "-imm-biomass-prior-", priors, ".rds"
   ))
 })
-
+} else {
 try({
-  predictions <- readRDS(paste0(
+  biomass_predictions <- readRDS(paste0(
+    "data/", spp,
+    "/all-predictions-", spp, covs, "-mat-biomass-prior-", priors, ".rds"
+  ))
+})
+if (!exists("biomass_predictions")) {
+try({
+  biomass_predictions <- readRDS(paste0(
     "data/", spp,
     "/all-predictions-", spp, covs, "-total-biomass-prior-", priors, ".rds"
   ))
 })
-
-if (!exists("adult_predictions")) adult_predictions <- NULL
-if (!exists("imm_predictions")) imm_predictions <- NULL
-if (!exists("predictions")) predictions <- NULL
-
-biomass_list <- list(
-  adult = adult_predictions,
-  imm = imm_predictions,
-  total = predictions
-)
-
-biomass_list <- biomass_list[!sapply(biomass_list, is.null)]
-# glimpse(biomass_list)
+}
+}
 ```
 
 Extract biomass values to match spatial and temporal range of climate vectors
 ```{r}
-alldata <- lapply(biomass_list, function(split_bio_data) {
+#alldata <- lapply(biomass_list, function(biomass_predictions) {
  
   biomass_by_year <- list()
   for (j in seq_along(start_years)) {
    start_time <- start_years[[j]]
    end_time <- start_time + 2 
  
-   biomass_by_year[[j]] <- make_trend_data(split_bio_data,
+   biomass_by_year[[j]] <- make_trend_data(biomass_predictions,
     ssid = model_ssid,
     start_time = start_time,
     skip_time = skip_time,
@@ -516,7 +497,7 @@ alldata <- lapply(biomass_list, function(split_bio_data) {
  
   biomass_change <- do.call("rbind", biomass_by_year)
    
-  biomass_covs <- split_bio_data %>% 
+  biomass_covs <- biomass_predictions %>% 
     select(X, Y, depth, trawled, muddy, any_rock, omega_s) %>% 
     distinct()
   
@@ -525,24 +506,25 @@ alldata <- lapply(biomass_list, function(split_bio_data) {
     dplyr::select(icell, x, y, start_time, start_density, end_density)
     # dplyr::select(-N, -time_step, - units_per_decade, -slope)
   
-  biomass  <- left_join(biomass_change,  biomass_covs, by = c("x" = "X", "y"="Y")) 
+  biomass <- left_join(biomass_change, biomass_covs, by = c("x" = "X", "y"="Y")) 
 
   # keep just one row for each cell that exceeded the end climate threshold 
-  source_cells <- all_vectors %>% filter (distance > (- dist_intercept)) %>% 
+  source_cells <- all_vectors %>% filter(distance > (-dist_intercept)) %>% 
     distinct(icell, start_time, .keep_all = TRUE) %>% 
     select(-target_X, -target_Y, -target_values, -tid)
 
-  source_biomass <- left_join(source_cells, biomass, by = c("icell", "x", "y", "start_time")) %>%
+  source_biomass <- left_join(source_cells, biomass, 
+    by = c("icell", "x", "y", "start_time")) %>%
     mutate(cell_type = "source") %>% filter(!is.na(start_density))
   
   # identify all possible control cells have been given a distance == - dist_intercept
-  
-  control_cells <- all_vectors %>% filter (distance == (- dist_intercept)) %>% 
+  control_cells <- all_vectors %>% filter(distance == (-dist_intercept)) %>% 
     distinct(icell, start_time, .keep_all = TRUE) %>% 
     mutate(distance = (- dist_intercept)) %>% 
     select(-target_X, -target_Y, -target_values, -tid)
 
-  control_biomass <- left_join(control_cells, biomass, by = c("icell", "x", "y", "start_time")) %>%
+  control_biomass <- left_join(control_cells, biomass, 
+    by = c("icell", "x", "y", "start_time")) %>%
     mutate(cell_type = "control") %>% filter(!is.na(start_density))
 
   alldata <- rbind(source_biomass, control_biomass) 
@@ -552,17 +534,33 @@ alldata <- lapply(biomass_list, function(split_bio_data) {
   alldata$treat <- as.factor(alldata$treat)
   
   alldata
-})
+#})
 ```
 
-```{r, include=FALSE, echo=FALSE}
-lapply(alldata, function(i){ggplot(i, aes(x=cell_type, y=log(start_density))) + geom_boxplot()+facet_wrap(~start_time)})
+```{r eval=FALSE, include=FALSE, echo=FALSE}
+# lapply(alldata, function(i){ggplot(i, aes(x=cell_type, y=log(start_density))) + geom_boxplot()+facet_wrap(~start_time)})
 ```
 
 
 # Select matched control cells
 ```{r}
-matched <- lapply(alldata, function(alldata) {  
+rm(vocc_by_sp)
+try({
+  vocc_by_sp <- readRDS(paste0(
+    "data/ BACI-", species, "-", age, "-", ssid_string, "-", climate_string, "-",
+    min_string, "to", max_string, "-multiyear-all.rds"
+  ))
+})
+
+match_formula <- paste0("treat ~ 
+  muddy.st + any_rock.st + x + y") #depth.st + trawled + omega_s + 
+  # for (j in (variable_names)) {
+  #   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
+  #   }
+
+if (!exists("vocc_by_sp")){
+# matched <- lapply(alldata, function(alldata) {  
+
   ## trim non-overlapping values to reduce size of dataset 
   control_min <- quantile(alldata$start_density[alldata$treat=="0"], 0.01)
   source_min <- quantile(alldata$start_density[alldata$treat=="1"], 0.01)
@@ -571,69 +569,60 @@ matched <- lapply(alldata, function(alldata) {
 
   group_min <- max(control_min, source_min)
   # group_max <- min(control_max, source_max)
-  alldata <- filter(alldata, start_density >= group_min) #%>% filter(start_density <= group_max)
+  alldata <- filter(alldata, start_density >= group_min) 
+  #%>% filter(start_density <= group_max)
   
   # need to be standardized? seems not
   alldata$depth2 <- alldata$depth^2
   alldata$start_density.st <- round(arm::rescale(log(alldata$start_density))*5)/5
-  alldata$start_density_st <- round(arm::rescale(log(alldata$start_density)), 1)
-  alldata$depth.st <- arm::rescale(log(alldata$depth)) 
+  alldata$depth.st <- round(arm::rescale(log(alldata$depth))*5)/5
   alldata$muddy.st <- arm::rescale(alldata$muddy) 
   alldata$any_rock.st <- arm::rescale(alldata$any_rock) 
   #alldata$omega_s.st <- arm::rescale(alldata$omega_s) 
   
  ## Using optimization ... doesn't work   
-  # if(
-  #   class(
-  #   try(
-  #     fit_formula <- paste0("treat ~ start_density_st + depth.st + muddy.st + any_rock.st") 
-  #   # fit_formula <- paste0("treat ~ start_density_st") 
-  #   # fit_formula <- paste0("treat ~ start_density_st + depth.st") 
-  #   # # for (j in (variable_names)) {
-  #   # #   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
-  #   # #   }
-  #     # options("optmatch_max_problem_size" = Inf)
-  #     matched <- MatchIt::matchit(as.formula(fit_formula), method = "optimal", data = alldata)
-  #     , silent = TRUE)
-  #     ) == "try-error"){
-    
-  # Using exact match and rounding
-  fit_formula <- paste0("treat ~ depth.st + muddy.st + any_rock.st + 
-    trawled + omega_s + x + y") #
-  # for (j in (variable_names)) {
-  #   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
-  #   }
-
-  # Choose data order
+  # alldata$start_density_st <- round(arm::rescale(log(alldata$start_density)), 1)
+  # fit_formula <- 
+  #   paste0("treat ~ start_density_st + depth.st + muddy.st + any_rock.st") 
+  # # for (j in (variable_names)) {
+  # #   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
+  # #   }
+  # # options("optmatch_max_problem_size" = Inf)
+  # matched <- MatchIt::matchit(as.formula(fit_formula), 
+  #     method = "optimal", data = alldata)
+  
+  # # Using exact match and rounding
+  # # Choose data order if not using random
   # alldata <- alldata[(order(alldata$y)), ]
   # if (order == "increasing") alldata <- alldata[rev(order(alldata$start_density)), ]
   # if (order == "decreasing") alldata <- alldata[rev(order(alldata$start_density)), ]
 
-  matched <- MatchIt::matchit(as.formula(fit_formula), 
-    exact = c("start_density.st", "start_time"),
+  matched <- MatchIt::matchit(as.formula(match_formula), 
+    exact = c("start_density.st", "start_time", "depth.st"),
     method = "nearest", m.order = "random",
     distance = "probit",
-    discard="control",
+    discard="both",
     data = alldata)
-
-  #} 
-  
-  #matched
-
-})
+  # matched
+# })
+}
 ```
 
 Print diagnostics for matching
 ```{r echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
-lapply(matched, function(i){  
+if (!exists("vocc_by_sp")){
+match_plots <- lapply(matched, function(i){  
   summary(i)
   plot(i)
   })
+match_plots
+}
 ```
 
 Prep matched data for analysis
 ```{r}
-vocc_by_sp <- lapply(matched, function(matched) {    
+if (!exists("vocc_by_sp")){
+#vocc_by_sp <- lapply(matched, function(matched) {    
   mdata <- MatchIt::match.data(matched, distance = "pscore")
   
   sources <- mdata[row.names(matched$match.matrix), ]
@@ -643,12 +632,7 @@ vocc_by_sp <- lapply(matched, function(matched) {
   controls <- mdata[matched$match.matrix, ]
   controls$origobs <- row.names(controls)   
   controls$matchobs <- matched$match.matrix[,1]  
-  
-  # if selecting 2 matches
-  # controls2 <- mdata[matched$match.matrix, ]
-  # controls2$origobs <- row.names(controls)   
-  # controls2$matchobs <- matched$match.matrix[,2]  
-  
+ 
   mdata <- rbind(sources, controls) %>% tidyr::drop_na() %>% filter(matchobs!="-1")
   
   matched_time0 <- mdata %>% mutate(after = 0, density = start_density) 
@@ -686,35 +670,62 @@ vocc_by_sp <- lapply(matched, function(matched) {
     )
   }
 
-  # rename spatial coordinates for inclusion in models and plots without naming conflicts
+  # rename spatial coordinates to avoid naming conflict with y~x notation
   data <- vocc_by_sp %>%
     rename(X = x, Y = y)
-      #%>% rename(distance = vect_dist) %>% select(-start_density.st, -depth.st, -muddy.st, -any_rock.st, -omega_s.st)
+    # %>% rename(distance = vect_dist) %>% 
+    # select(-start_density.st, -depth.st, -muddy.st, -any_rock.st, -omega_s.st)
+  
   # other variable prep
   data$log_density <-  log(data$density)
+  data$log_depth <-  log(data$depth)
+  data$std_log_depth <- arm::rescale(log(data$depth))
   data$vect_dist2 <- data$vect_dist^2
   data <- mutate(data, time = ifelse(after==1, "end", "begin"))
   data$matchobs <- as.factor(data$matchobs)
   data$origobs  <- as.factor(data$origobs)   
   data$start_time <- as.factor(data$start_time)
   
-  data
-  
-})
+#  data
+#})
+vocc_by_sp <- list()
+vocc_by_sp[[1]] <- data
+vocc_by_sp[[3]] <- match_formula  
+vocc_by_sp[[4]] <- match_plots
+saveRDS(vocc_by_sp, file = paste0(
+    "data/ BACI-", species, "-", age, "-", ssid_string, "-", climate_string, "-",
+    min_string, "to", max_string, "-multiyear-all.rds"
+  ))
+}
 ```
+
 
 ## Adults
 ```{r}
+try({
+  vocc_by_sp <- readRDS(paste0(
+    "data/ BACI-", species, "-", ssid_string, "-", climate_string, "-",
+    min_string, "to", max_string, "-multiyear-all.rds"
+  ))
+})
 data <- vocc_by_sp [["adult"]]
 # View(data)
 ```
 
 ### Plot matches
 ```{r}
+dat_summary <- data %>% 
+  group_by(start_time, cell_type) %>%
+  tally() %>% filter(cell_type=="source")
+data_depth <- data %>% 
+  group_by(start_time) %>% 
+  mutate(mean_depth = mean(depth)) 
+
+
 ggplot(data, 
 #ggplot(filter(data, as.numeric(matchobs) <= 550), 
   aes(y=Y, x=X, shape=as.factor(treat), colour=as.factor(matchobs))) +
-  geom_point(alpha=0.8, size = 1.5) +
+  geom_point(alpha=0.8, size = 1) +
   scale_shape_manual(values= c(0, 15)) +
   scale_colour_viridis_d(option="C", guide = FALSE) +
   facet_wrap(~start_time) +
@@ -724,25 +735,32 @@ lapply(variable_names, function(j) {
 ggplot(data, aes(y=log_density, x=UQ(rlang::sym(paste(j))), colour=time)) +
   geom_point(alpha=0.35) +
   scale_colour_viridis_d(option="C") +
+  facet_grid(start_time~cell_type) +
   theme_bw()
 })
-  
-ggplot(data, aes(y=log_density, x=depth, colour=cell_type)) +
-  geom_point(alpha=0.35) +
-  scale_colour_viridis_d(option="C") +
-  facet_wrap(~time) +
+ 
+ggplot(data, aes(std_log_depth, fill = cell_type)) +
+  geom_density(alpha=0.5) +
+  scale_fill_viridis_d(option="C") +
+  facet_wrap(~start_time) +
   theme_bw()
+#  
+# ggplot(data, aes(y=log_density, x=depth, colour=cell_type)) +
+#   geom_point(alpha=0.35) +
+#   scale_colour_viridis_d(option="C") +
+#     facet_grid(start_time~time) +
+#   theme_bw()
 
 ggplot(data, aes(log_density, fill = cell_type)) +
   geom_density(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~time)+
+  facet_grid(start_time~time, scales = 'fixed') +
   theme_bw()
 
 ggplot(data, aes(log_density, fill = cell_type)) +
   geom_histogram(alpha=0.45) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~time)+
+  facet_grid(time~start_time) +
   theme_bw()
 
 dat_summary <- data %>% 
@@ -753,15 +771,13 @@ ggplot(data, aes(y=log_density, x=cell_type, fill=cell_type)) +
   geom_boxplot(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
   geom_text(data = dat_summary,
-            aes(cell_type, max(data$log_density), label = n), hjust = -0.3) +
-  facet_grid(start_time~time)+
+            aes(cell_type, max(data$log_density)-1, label = n), hjust = -0.3) +
+  facet_grid(time~start_time) +
   theme_bw()
 ```
 
 ### Basic BACI
 ```{r}
-#FIXME: need to nest random effects
-
 for (j in (variable_names)) {
   baci_formula <- paste0("log_density~after + cell_type + after:cell_type + n_targets + vect_dist + vect_dist2 + std_", j, "+ std_", j, "2 + (1|icell) + (1|matchobs) + (1|start_time)")
 }
@@ -777,19 +793,29 @@ sjPlot::plot_model(m, type = "std2", order.terms=c(1,2,8,3,4,5,6,7), title = pas
 
 ### GAMM
 ```{r}
+ gamm_formula <- paste0("log_density ~ ", 
+  # "time * start_time + ",
+  #"start_time * cell_type + ",
+  "time * cell_type + s(vect_dist) + s(std_log_depth) + s(X,Y)")
+
 for (j in (variable_names)) {
-  gamm_formula <- paste0("log_density ~ time * cell_type + s(vect_dist) + s(std_", j, ") + s(X,Y)")
-}
+ gamm_formula <- paste0(gamm_formula, "+ s(std_", j, ")")
+ }
 
-gam4 <- gamm4::gamm4(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs) + (1|start_time), data=data) # + s(X,Y, bs="re")
+gam4 <- gamm4::gamm4(as.formula(gamm_formula), 
+  random = ~(1|matchobs) + (1|icell) 
+   + (1|start_time)
+  # + (time|start_time) 
+  # + (cell_type|start_time)
+  , data=data) 
 
-summary(gam4$gam) ## summary of gam
+summary(gam4$gam) 
 
 plot(gam4$gam,pages=1)
 ```
 
 ```{r,  results="hide", include=FALSE}
-plot_parametric(gam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source")), parametricOnly = TRUE, main="", xlab ="log_density"
+plot_parametric(gam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source"), start_time=c("2009","2011","2013","2015")), parametricOnly = TRUE, main="", xlab ="log_density"
   #, groups = cell_type, gcolor = my_cols, color = my_cols["time"]
   ) 
 ```
@@ -802,10 +828,17 @@ idata <- vocc_by_sp[["imm"]]
 
 ### Plot matches
 ```{r}
+idat_summary <- idata %>% 
+  group_by(start_time, cell_type) %>%
+  tally() %>% filter(cell_type=="source")
+idata_depth <- idata %>% 
+  group_by(start_time) %>% 
+  mutate(mean_depth = mean(depth)) 
+
 ggplot(idata, 
 #ggplot(filter(data, as.numeric(matchobs) <= 550), 
   aes(y=Y, x=X, shape=as.factor(treat), colour=matchobs)) +
-  geom_point(alpha=0.4, size = 2) +
+  geom_point(alpha=0.4, size = 1) +
   scale_shape_manual(values= c(0, 15)) +
   scale_colour_viridis_d(option="C", guide = FALSE) +
   facet_wrap(~start_time) +
@@ -814,34 +847,49 @@ ggplot(idata,
 lapply(variable_names, function(j) {
 ggplot(idata, aes(y=log_density, x=UQ(rlang::sym(paste(j))), colour=time)) +
   geom_point(alpha=0.35) +
-  scale_colour_viridis_d(option="C") 
+  scale_colour_viridis_d(option="C")+
+  facet_grid(start_time~cell_type) +
+  theme_bw() 
 })
+
+# ggplot(data, aes(y=log_density, x=depth, colour=cell_type)) +
+#   geom_point(alpha=0.35) +
+#   scale_colour_viridis_d(option="C") +
+#     facet_grid(start_time~time) +
+#   geom_text(data = idata_depth,
+#     aes(150, 0.5, label = round(mean_depth)), hjust = -0.3, inherit.aes = FALSE) +
+#   theme_bw()
+ggplot(idata, aes(depth, fill = cell_type)) +
+  geom_density(alpha=0.5) +
+  scale_fill_viridis_d(option="C") +
+  facet_wrap(~start_time) +
+  theme_bw()
+
 ggplot(idata, aes(log_density, fill = cell_type)) +
   geom_density(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~time)
-
+  facet_grid(start_time~time) +
+  geom_text(data = idat_summary,
+            aes(1, 0.75, label = n), hjust = -0.3) +
+  theme_bw()
+ 
 ggplot(idata, aes(log_density, fill = cell_type)) +
   geom_histogram(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
-  facet_wrap(~time)
-
-idat_summary <- idata %>% 
-  group_by(start_time, cell_type) %>% 
-  tally() %>% filter(cell_type=="source")
-
+  facet_grid(time~start_time) +
+  theme_bw()
+ 
 ggplot(idata, aes(y=log_density, x=cell_type, fill=cell_type)) +
   geom_boxplot(alpha=0.5) +
   scale_fill_viridis_d(option="C") +
   geom_text(data = idat_summary,
             aes(cell_type, max(data$log_density), label = n), hjust = -0.3) +
-  facet_grid(start_time~time)+
+  facet_grid(time~start_time) +
   theme_bw()
 ```
 
 ### Basic BACI
 ```{r}
-
 mi <- lmerTest::lmer(as.formula(baci_formula), data=idata)
 summary(mi)
 ```
@@ -853,14 +901,19 @@ sjPlot::plot_model(mi, type = "std2", order.terms=c(1,2,8,3,4,5,6,7), title = pa
 ### GAMM
 ```{r}
 # for (j in (variable_names)) {
-#   gamm_formula <- paste0("log_density ~ time * cell_type + s(vect_dist) + s(std_", j, ") + s(X,Y)")
-# }
+#  gamm_formula <- paste0("log_density ~ ", 
+#   # "time * start_time + ",
+#   "start_time * cell_type + ",
+#   "time * cell_type + s(vect_dist) + s(std_", j, ") + s(X,Y)")
+#  }
+igam4 <- gamm4::gamm4(as.formula(gamm_formula), 
+  random = ~(1|matchobs) + (1|icell) 
+   + (1|start_time)
+  # + (time|start_time) 
+  # + (cell_type|start_time)
+  , data=idata) 
 
-#FIXME: need to nest random effects
-
-igam4 <- gamm4::gamm4(as.formula(gamm_formula), random = ~(1|matchobs) + (1|origobs) + (1|start_time), data=idata) # + s(X,Y, bs="re")
-
-summary(igam4$gam) ## summary of gam
+summary(igam4$gam) 
 
 plot(igam4$gam,pages=1)
 ```
@@ -870,7 +923,6 @@ plot_parametric(igam4$gam, pred=list(time=c("begin","end"), cell_type=c("control
   #, groups = cell_type, gcolor = my_cols, color = my_cols["time"]
   ) 
 ```
-
 
 
 Misc exploring gamm 
