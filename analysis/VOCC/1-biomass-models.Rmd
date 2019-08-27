@@ -28,9 +28,10 @@ species <- params$species
 
 Region 
 ```{r}
- region <- "Both odd year surveys"
-region <- "West Coast Vancouver Island"
-#  region <- "West Coast Haida Gwaii"
+ region <- "All synoptic surveys"
+# region <- "Both odd year surveys"
+# region <- "West Coast Vancouver Island"
+# region <- "West Coast Haida Gwaii"
 ```
 
 Choose model details
@@ -95,7 +96,12 @@ if (region == "West Coast Haida Gwaii") {
   years <- NULL
 }
 
-#update_spatial_model <- TRUE
+if (region == "All synoptic surveys") {
+  survey <- c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG")
+  model_ssid <- c(1, 3, 4, 16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
 ```
 
 
