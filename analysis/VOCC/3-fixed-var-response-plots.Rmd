@@ -1,0 +1,551 @@
+---
+title: "Plot responses to model covariates to inform threshold choices for VOCC"
+author: "Philina English"
+date: '2019-07-18'
+output: html_document
+---
+
+Species
+```{r}
+# species <- params$species
+# # Species run so far...
+ species <- "Arrowtooth Flounder"
+# species <- "Pacific Cod"
+# species <- "Sablefish"
+# species <- "Silvergray Rockfish"
+# species <- "Lingcod"
+# species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
+
+# species <- "Quillback Rockfish"
+# species <- "Pacific Ocean Perch"
+# species <- "Yelloweye Rockfish"
+```
+
+
+Choose model details
+```{r}
+covariates <- ""
+# covariates <- "+muddy+mixed+rocky"
+# covariates <- "+mixed+rocky"
+#covariates <- "+muddy+any_rock"
+# covariates <- "+trawled+muddy+rocky+mixed"
+# covariates <- "+trawled+mixed+rocky"
+# covariates <- "+trawled+mixed"
+```
+
+Run all subsequent code...
+```{r global_options, include=FALSE}
+covs <- gsub("\\+", "-", covariates)
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+
+# folder to hold figs for this species
+dir.create(file.path("figs", spp))
+dir.create(file.path("data", spp))
+
+knitr::opts_chunk$set(
+  fig.width = 11, fig.height = 8.5,
+  fig.path = paste0("figs/", spp, "/"),
+  echo = FALSE, warning = FALSE, message = FALSE
+)
+```
+
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(gfplot)
+library(gfdata)
+library(sdmTMB)
+library(gfranges)
+```
+
+Load Dissolved O2 models
+```{r}
+rm(
+  adult, imm,
+  adult_survey1, imm_survey1,
+  adult_survey4, imm_survey4,
+  adult_survey16, imm_survey16
+)
+priors <- FALSE
+# covariates <- ""
+
+try({
+  survey <- c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG")
+  model_ssid <- c(1, 3, 4, 16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+
+  adult <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  imm <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+})
+if (!exists("adult")) adult <- NULL
+if (!exists("imm")) imm <- NULL
+
+
+try({
+  survey <- c("SYN QCS", "SYN HS")
+  model_ssid <- c(1, 3)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+
+  adult_survey1 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  imm_survey1 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+})
+if (!exists("adult_survey1")) adult_survey1 <- NULL
+if (!exists("imm_survey1")) imm_survey1 <- NULL
+
+try({
+  survey <- c("SYN WCVI")
+  model_ssid <- c(4)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+
+  adult_survey4 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  imm_survey4 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+})
+if (!exists("adult_survey4")) adult_survey4 <- NULL
+if (!exists("imm_survey4")) imm_survey4 <- NULL
+
+
+try({
+  survey <- c("SYN WCHG")
+  model_ssid <- c(16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+
+  adult_survey16 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  imm_survey16 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+})
+
+if (!exists("adult_survey16")) adult_survey16 <- NULL
+if (!exists("imm_survey16")) imm_survey16 <- NULL
+
+
+model_list <- list(
+  adult = adult, imm = imm,
+  adult_survey1 = adult_survey1, imm_survey1 = imm_survey1,
+  adult_survey4 = adult_survey4, imm_survey4 = imm_survey4,
+  adult_survey16 = adult_survey16, imm_survey16 = imm_survey16
+)
+
+model_list <- model_list[!sapply(model_list, is.null)]
+```
+
+Load temperature models
+```{r}
+rm(adult, imm,
+  adult_survey1, imm_survey1,
+  adult_survey4, imm_survey4,
+  adult_survey16, imm_survey16
+)
+priors <- FALSE
+covariates <- "+muddy+any_rock"
+covs <- gsub("\\+", "-", covariates)
+
+try({
+  survey <- c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG")
+  model_ssid <- c(1, 3, 4, 16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+
+  adult <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  imm <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+})
+if (!exists("adult")) adult <- NULL
+if (!exists("imm")) imm <- NULL
+
+try({
+  survey <- c("SYN QCS", "SYN HS")
+  model_ssid <- c(1, 3)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+
+  adult_survey1 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  imm_survey1 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+})
+if (!exists("adult_survey1")) adult_survey1 <- NULL
+if (!exists("imm_survey1")) imm_survey1 <- NULL
+
+try({
+  survey <- c("SYN WCVI")
+  model_ssid <- c(4)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+
+  adult_survey4 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  imm_survey4 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+})
+if (!exists("adult_survey4")) adult_survey4 <- NULL
+if (!exists("imm_survey4")) imm_survey4 <- NULL
+
+
+try({
+  survey <- c("SYN WCHG")
+  model_ssid <- c(16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+
+  adult_survey16 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  imm_survey16 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+})
+
+if (!exists("adult_survey16")) adult_survey16 <- NULL
+if (!exists("imm_survey16")) imm_survey16 <- NULL
+
+
+temp_model_list <- list(
+  adult = adult, imm = imm, 
+  adult_survey1 = adult_survey1, imm_survey1 = imm_survey1,
+  adult_survey4 = adult_survey4, imm_survey4 = imm_survey4,
+  adult_survey16 = adult_survey16, imm_survey16 = imm_survey16
+)
+
+temp_model_list <- temp_model_list[!sapply(temp_model_list, is.null)]
+```
+
+
+Save optimal values
+
+```{r}
+td <- list()
+
+for (i in seq_len(length(temp_model_list))) {
+  td[[i]] <- fixed_density(temp_model_list[[i]], predictor = "temp")
+  #browser()
+  if (length(td[[i]])>0) td[[i]]$model <- names(temp_model_list[i])
+  if (length(td[[i]])>0) td[[i]]$optimal_temp <- get_optimal_value(td[[i]], xlimits = c(0, 12))
+}
+
+tdat <- do.call("rbind", td) %>%
+  group_by(model) %>%
+  mutate(age = ifelse(grepl("imm", model), "imm", "adult"),
+    t_maxy = max(y_hat)) %>% 
+  select(model, age, optimal_temp, t_maxy) %>%
+  distinct() 
+
+
+
+do <- list()
+
+for (i in seq_len(length(model_list))) {
+ do[[i]] <- fixed_density(model_list[[i]], predictor = "do_mlpl")
+ if (length(do[[i]])>0) do[[i]]$model <- names(model_list[i])
+ if (length(do[[i]])>0) do[[i]]$optimal_do <- get_optimal_value(do[[i]], xlimits = c(0.5, 6))
+}
+
+odat <- do.call("rbind", do) %>%
+  group_by(model) %>%
+  mutate(age = ifelse(grepl("imm", model), "imm", "adult"),
+    do_maxy = max(y_hat)) %>% 
+  select(model, age, optimal_do, do_maxy) %>%
+  distinct()
+
+params <- full_join(tdat, odat, by=c("model", "age"))
+#params <- tdat
+params$species <- species
+#params$date <- Sys.Date()
+
+
+other_params <- readRDS(paste0("data/optimal-values-by-species-by-age.rds"))
+params <- rbind(other_params, params)
+saveRDS(params, file = "data/optimal-values-by-species-by-age.rds")
+
+params
+```
+
+
+Build DO plots
+
+```{r}
+d <- list()
+do_plots <- list()
+for (i in seq_len(length(model_list))) {
+  d[[i]] <- fixed_density(model_list[[i]], predictor = "do_mlpl")
+  if (length(d[[i]]) == 0) {
+    do_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
+  } else {
+    do_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Dissolved O2", xlimits = c(0, 8)) + ggtitle(paste(species, names(model_list[i])))
+  }
+}
+print(do_plots)
+```
+
+```{r}
+png(
+  file = paste0("figs/", spp, "/do-", spp, covs, "-priors-TRUE.png"),
+  res = 600,
+  units = "in",
+  width = 8.5,
+  height = 11
+)
+gridExtra::grid.arrange(
+  grobs = do_plots,
+  ncol = 2,
+  top = grid::textGrob(paste(species))
+)
+dev.off()
+```
+
+
+Build Temperature plots
+
+
+```{r}
+d <- list()
+temp_plots <- list()
+for (i in seq_len(length(temp_model_list))) {
+  d[[i]] <- fixed_density(temp_model_list[[i]], predictor = "temp")
+
+  if (length(d[[i]]) == 0) {
+    temp_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
+  } else {
+    temp_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Temperature", xlimits = c(2, 10)) +
+      ggtitle(paste(species, names(temp_model_list[i])))
+  }
+}
+print(temp_plots)
+```
+
+```{r}
+png(
+  file = paste0("figs/", spp, "/temp-", spp, covs, "-priors-TRUE.png"),
+  res = 600,
+  units = "in",
+  width = 8.5,
+  height = 11
+)
+gridExtra::grid.arrange(
+  grobs = temp_plots,
+  ncol = 2,
+  top = grid::textGrob(paste(species))
+)
+dev.off()
+```
+
+
+Load Depth models
+```{r}
+rm(
+  adult_survey1, imm_survey1,
+  adult_survey4, imm_survey4,
+  adult_survey16, imm_survey16
+)
+priors <- FALSE
+try({
+  survey <- c("SYN QCS", "SYN HS")
+  model_ssid <- c(1, 3)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+
+  adult_survey1 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  imm_survey1 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+})
+if (!exists("adult_survey1")) adult_survey1 <- NULL
+if (!exists("imm_survey1")) imm_survey1 <- NULL
+
+try({
+  survey <- c("SYN WCVI")
+  model_ssid <- c(4)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+
+  adult_survey4 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  imm_survey4 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+})
+if (!exists("adult_survey4")) adult_survey4 <- NULL
+if (!exists("imm_survey4")) imm_survey4 <- NULL
+
+
+try({
+  survey <- c("SYN WCHG")
+  model_ssid <- c(16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+
+  adult_survey16 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  imm_survey16 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
+  ))
+})
+
+if (!exists("adult_survey16")) adult_survey16 <- NULL
+if (!exists("imm_survey16")) imm_survey16 <- NULL
+
+
+depth_model_list <- list(
+  adult_survey1 = adult_survey1, imm_survey1 = imm_survey1,
+  adult_survey4 = adult_survey4, imm_survey4 = imm_survey4,
+  adult_survey16 = adult_survey16, imm_survey16 = imm_survey16
+)
+
+depth_model_list <- depth_model_list[!sapply(depth_model_list, is.null)]
+```
+
+
+Build depth plots
+```{r}
+d <- list()
+depth_plots <- list()
+for (i in seq_len(length(depth_model_list))) {
+  d[[i]] <- time_varying_density(depth_model_list[[i]], predictor = "depth")
+
+  if (length(d[[i]]) == 0) {
+    depth_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
+  } else {
+    d[[i]]$x <- exp(d[[i]]$x)
+    depth_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Depth", xlimits = c(0, 800)) +
+      ggtitle(paste(species, names(depth_model_list[i])))
+  }
+}
+print(depth_plots)
+```
+
+```{r}
+png(
+  file = paste0(
+    "figs/", spp,
+    "/depth-", spp, covs, "-priors-", priors, ".png"
+  ),
+  res = 600,
+  units = "in",
+  width = 8.5,
+  height = 11
+)
+gridExtra::grid.arrange(
+  grobs = depth_plots,
+  ncol = 2,
+  top = grid::textGrob(paste(species))
+)
+dev.off()
+```
+
+
+Plot time-varying effect of trawling at mean depth
+
+```{r}
+trawl_plots <- list()
+for (i in seq_len(length(depth_model_list))) {
+  r <- depth_model_list[[i]]$tmb_obj$report()
+  b3 <- r$b_rw_t[, 3]
+  yrs <- sort(unique(depth_model_list[[i]]$data$year))
+  b_j <- depth_model_list[[i]]$model$par[1:length(yrs)]
+
+  SE <- 0.35 # Place-holder
+
+  trawled <- data.frame(year = yrs, intercept = b_j, trawling = b3)
+
+  # trawl_plots[[i]] <- ggplot(trawled, aes(year, y=exp(trawling) ) ) +
+  #   geom_point(colour ="red") +
+  #   #geom_pointrange(aes(ymin=exp(intercept-0.35), ymax=exp(intercept+0.35))) +
+  #   ylab("Difference in kg/ha within trawled zone") + ggtitle(names(depth_model_list[i]))
+
+  trawl_plots[[i]] <- ggplot(trawled, aes(year, exp(intercept))) + geom_point() +
+    geom_point(aes(year, y = exp(intercept + trawling)), colour = "red") +
+    geom_pointrange(aes(ymin = exp(intercept - (1.96 * SE)), ymax = exp(intercept + (1.96 * SE)))) + # using mean se on year effects
+    ylim(min(exp(trawled$intercept - trawled$trawling - (1.96 * SE))), max(exp(trawled$intercept + trawled$trawling + (1.96 * SE)))) +
+    ylab("Predicted kg/ha at mean depth") + ggtitle(names(depth_model_list[i]))
+}
+print(trawl_plots)
+```
+
+
+
+### Code for calculation SE on time-varying effects... 
+
+```{r eval=FALSE}
+# FIXME: need to add to sdmTMB!
+r <- m$tmb_obj$report()
+summary(m)
+yrs <- sort(unique(m$data$year))
+.sd <- summary(m$sd_report)
+.sd <- as.data.frame(.sd)
+.sd$par <- row.names(.sd)
+.sd <- .sd[grepl("^b_rw_t", .sd$par), ]
+varnames <- colnames(model.matrix(m$time_varying, m$data))
+
+rep(varnames, each = length(yrs))
+.sd$parameter <- rep(varnames, each = length(yrs))
+.sd$year <- rep(seq_along(yrs), each = length(varnames))
+row.names(.sd) <- NULL
+.sd$par <- NULL
+
+names(.sd$Estimate) <- "estimate"
+names(.sd[2]) <- "se"
+.sd$ci <- .sd$se * 1.96
+m$time_varying
+
+
+nrow(.sd)
+
+b3 <- r$b_rw_t[, 3]
+yrs <- sort(unique(m$data$year))
+b_j <- m$tmb_params$b_j[1:8]
+
+trawled <- data.frame(year = yrs, intercept = b_j, trawling = b3)
+```
+
+
