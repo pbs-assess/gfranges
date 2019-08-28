@@ -13,14 +13,12 @@ Species
 # species <- "Pacific Cod"
 # species <- "Sablefish"
 # species <- "Silvergray Rockfish"
-# species <- "Lingcod"
+ species <- "Lingcod"
 # species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
-
 # species <- "Quillback Rockfish"
-# species <- "Pacific Ocean Perch"
+ species <- "Pacific Ocean Perch"
 # species <- "Yelloweye Rockfish"
 ```
-
 
 Choose model details
 ```{r}
@@ -31,11 +29,16 @@ covariates <- ""
 # covariates <- "+trawled+muddy+rocky+mixed"
 # covariates <- "+trawled+mixed+rocky"
 # covariates <- "+trawled+mixed"
+
+# priors <- FALSE
+# covariates <- "+muddy+any_rock"
+# covs <- gsub("\\+", "-", covariates)
+priors <- TRUE
+covs <- "-tv-depth"
 ```
 
 Run all subsequent code...
 ```{r global_options, include=FALSE}
-covs <- gsub("\\+", "-", covariates)
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 # folder to hold figs for this species
@@ -60,46 +63,33 @@ library(gfranges)
 
 Load Dissolved O2 models
 ```{r}
-rm(
-  adult, imm,
+rm(adult, imm,
   adult_survey1, imm_survey1,
   adult_survey4, imm_survey4,
-  adult_survey16, imm_survey16
-)
-priors <- FALSE
-# covariates <- ""
+  adult_survey16, imm_survey16)
 
 try({
   survey <- c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG")
   model_ssid <- c(1, 3, 4, 16)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
-  adult <- readRDS(paste0(
-    "data/", spp,
+  adult <- readRDS(paste0("data/", spp,
     "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
-
-  imm <- readRDS(paste0(
-    "data/", spp,
+  imm <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
 })
 if (!exists("adult")) adult <- NULL
 if (!exists("imm")) imm <- NULL
 
-
 try({
   survey <- c("SYN QCS", "SYN HS")
   model_ssid <- c(1, 3)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
-  adult_survey1 <- readRDS(paste0(
-    "data/", spp,
+  adult_survey1 <- readRDS(paste0("data/", spp,
     "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
-
-  imm_survey1 <- readRDS(paste0(
-    "data/", spp,
+  imm_survey1 <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
 })
@@ -110,49 +100,43 @@ try({
   survey <- c("SYN WCVI")
   model_ssid <- c(4)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
-  adult_survey4 <- readRDS(paste0(
-    "data/", spp,
+  adult_survey4 <- readRDS(paste0("data/", spp,
     "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
-
-  imm_survey4 <- readRDS(paste0(
-    "data/", spp,
+  imm_survey4 <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
 })
 if (!exists("adult_survey4")) adult_survey4 <- NULL
 if (!exists("imm_survey4")) imm_survey4 <- NULL
 
-
 try({
   survey <- c("SYN WCHG")
   model_ssid <- c(16)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
-  adult_survey16 <- readRDS(paste0(
-    "data/", spp,
+  adult_survey16 <- readRDS(paste0("data/", spp,
     "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
-
-  imm_survey16 <- readRDS(paste0(
-    "data/", spp,
+  imm_survey16 <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
 })
-
 if (!exists("adult_survey16")) adult_survey16 <- NULL
 if (!exists("imm_survey16")) imm_survey16 <- NULL
-
 
 model_list <- list(
   adult = adult, imm = imm,
   adult_survey1 = adult_survey1, imm_survey1 = imm_survey1,
   adult_survey4 = adult_survey4, imm_survey4 = imm_survey4,
-  adult_survey16 = adult_survey16, imm_survey16 = imm_survey16
+  adult_survey16 = adult_survey16#, imm_survey16 = imm_survey16
 )
-
 model_list <- model_list[!sapply(model_list, is.null)]
+```
+
+```{r}
+# test load small sdm model to avoid crashing R
+try({imm})
+# or maybe it's crashing when NaNs produced error goes into density function?
 ```
 
 Load temperature models
@@ -160,24 +144,16 @@ Load temperature models
 rm(adult, imm,
   adult_survey1, imm_survey1,
   adult_survey4, imm_survey4,
-  adult_survey16, imm_survey16
-)
-priors <- FALSE
-covariates <- "+muddy+any_rock"
-covs <- gsub("\\+", "-", covariates)
+  adult_survey16, imm_survey16)
 
 try({
   survey <- c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG")
   model_ssid <- c(1, 3, 4, 16)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
-  adult <- readRDS(paste0(
-    "data/", spp,
+  adult <- readRDS(paste0("data/", spp,
     "/mod-mat-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
-
-  imm <- readRDS(paste0(
-    "data/", spp,
+  imm <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
 })
@@ -188,14 +164,10 @@ try({
   survey <- c("SYN QCS", "SYN HS")
   model_ssid <- c(1, 3)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
-  adult_survey1 <- readRDS(paste0(
-    "data/", spp,
+  adult_survey1 <- readRDS(paste0("data/", spp,
     "/mod-mat-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
-
-  imm_survey1 <- readRDS(paste0(
-    "data/", spp,
+  imm_survey1 <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
 })
@@ -206,40 +178,31 @@ try({
   survey <- c("SYN WCVI")
   model_ssid <- c(4)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
-  adult_survey4 <- readRDS(paste0(
-    "data/", spp,
+  adult_survey4 <- readRDS(paste0("data/", spp,
     "/mod-mat-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
-
-  imm_survey4 <- readRDS(paste0(
-    "data/", spp,
+  imm_survey4 <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
 })
 if (!exists("adult_survey4")) adult_survey4 <- NULL
 if (!exists("imm_survey4")) imm_survey4 <- NULL
 
-
 try({
   survey <- c("SYN WCHG")
   model_ssid <- c(16)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
   adult_survey16 <- readRDS(paste0(
     "data/", spp,
     "/mod-mat-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
-
   imm_survey16 <- readRDS(paste0(
     "data/", spp,
     "/mod-imm-biomass-", spp, "-fixed-temp", covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
 })
-
 if (!exists("adult_survey16")) adult_survey16 <- NULL
 if (!exists("imm_survey16")) imm_survey16 <- NULL
-
 
 temp_model_list <- list(
   adult = adult, imm = imm, 
@@ -247,80 +210,87 @@ temp_model_list <- list(
   adult_survey4 = adult_survey4, imm_survey4 = imm_survey4,
   adult_survey16 = adult_survey16, imm_survey16 = imm_survey16
 )
-
 temp_model_list <- temp_model_list[!sapply(temp_model_list, is.null)]
 ```
 
-
-Save optimal values
-
 ```{r}
-td <- list()
-
-for (i in seq_len(length(temp_model_list))) {
-  td[[i]] <- fixed_density(temp_model_list[[i]], predictor = "temp")
-  #browser()
-  if (length(td[[i]])>0) td[[i]]$model <- names(temp_model_list[i])
-  if (length(td[[i]])>0) td[[i]]$optimal_temp <- get_optimal_value(td[[i]], xlimits = c(0, 12))
-}
-
-tdat <- do.call("rbind", td) %>%
-  group_by(model) %>%
-  mutate(age = ifelse(grepl("imm", model), "imm", "adult"),
-    t_maxy = max(y_hat)) %>% 
-  select(model, age, optimal_temp, t_maxy) %>%
-  distinct() 
-
-
-
 do <- list()
+do_plots <- list()
 
 for (i in seq_len(length(model_list))) {
  do[[i]] <- fixed_density(model_list[[i]], predictor = "do_mlpl")
- if (length(do[[i]])>0) do[[i]]$model <- names(model_list[i])
- if (length(do[[i]])>0) do[[i]]$optimal_do <- get_optimal_value(do[[i]], xlimits = c(0.5, 6))
+ if (length(do[[i]])>0) {
+   do[[i]]$species <- species
+   do[[i]]$model <- names(model_list[i])
+   do[[i]]$covs <- covs 
+   do[[i]]$optimal_do <- get_optimal_value(do[[i]], xlimits = c(0.5, 6))
+   do_plots[[i]] <- 
+     plot_mountains(do[[i]], variable_label = "Dissolved O2", xlimits = c(0, 8)) +
+        ggtitle(paste(species, names(model_list[i])))
+   } else {
+    do_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
+  }
 }
 
-odat <- do.call("rbind", do) %>%
-  group_by(model) %>%
+odat <- do.call("rbind", do) 
+if (length(odat)>0) {
+  odat <- odat %>% group_by(model) %>%
   mutate(age = ifelse(grepl("imm", model), "imm", "adult"),
     do_maxy = max(y_hat)) %>% 
-  select(model, age, optimal_do, do_maxy) %>%
-  distinct()
-
-params <- full_join(tdat, odat, by=c("model", "age"))
-#params <- tdat
-params$species <- species
-#params$date <- Sys.Date()
-
-
-other_params <- readRDS(paste0("data/optimal-values-by-species-by-age.rds"))
-params <- rbind(other_params, params)
-saveRDS(params, file = "data/optimal-values-by-species-by-age.rds")
-
-params
-```
-
-
-Build DO plots
-
-```{r}
-d <- list()
-do_plots <- list()
-for (i in seq_len(length(model_list))) {
-  d[[i]] <- fixed_density(model_list[[i]], predictor = "do_mlpl")
-  if (length(d[[i]]) == 0) {
-    do_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
-  } else {
-    do_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Dissolved O2", xlimits = c(0, 8)) + ggtitle(paste(species, names(model_list[i])))
-  }
+  select(species, age, model, optimal_do, do_maxy, covs) %>% 
+  distinct() 
+} else {
+  odat <- NULL
 }
 print(do_plots)
 ```
 
 ```{r}
+td <- list()
+temp_plots <- list()
+for (i in seq_len(length(temp_model_list))) {
+  td[[i]] <- fixed_density(temp_model_list[[i]], predictor = "temp")
+  if (length(td[[i]])>0) {
+    td[[i]]$species <- species
+    td[[i]]$model <- names(temp_model_list[i])
+    td[[i]]$covs <- covs
+    td[[i]]$optimal_temp <- get_optimal_value(td[[i]], xlimits = c(0, 12))
+    temp_plots[[i]] <- plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(2, 10)) +
+      ggtitle(paste(species, names(temp_model_list[i])))
+  } else {
+    temp_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
+  }
+}
+
+tdat <- do.call("rbind", td) 
+if (length(tdat)>0) {
+  tdat <- tdat %>% group_by(model) %>%
+  mutate(age = ifelse(grepl("imm", model), "imm", "adult"),
+    t_maxy = max(y_hat)) %>% 
+  select(species, age, model, optimal_temp, t_maxy, covs) %>%
+  distinct() 
+} else {
+  tdat <- NULL
+}
+print(temp_plots)
+```
+
+Save optimal values
+```{r}
+params <- full_join(tdat, odat, by=c("species", "age", "model", "covs"))
+
+other_params <- readRDS(paste0("data/optimal-values-by-species-by-age-tv-depth.rds"))
+params <- rbind(other_params, params) 
+#%>% select(species, age, model, optimal_temp, t_maxy, optimal_do, do_maxy, covs)
+saveRDS(params, file = "data/optimal-values-by-species-by-age-tv-depth.rds")
+
+params
+```
+
+Save DO plots
+```{r}
 png(
-  file = paste0("figs/", spp, "/do-", spp, covs, "-priors-TRUE.png"),
+  file = paste0("figs/", spp, "/do-fixed-", spp, covs, "-priors-", priors, ".png"),
   res = 600,
   units = "in",
   width = 8.5,
@@ -334,29 +304,10 @@ gridExtra::grid.arrange(
 dev.off()
 ```
 
-
-Build Temperature plots
-
-
-```{r}
-d <- list()
-temp_plots <- list()
-for (i in seq_len(length(temp_model_list))) {
-  d[[i]] <- fixed_density(temp_model_list[[i]], predictor = "temp")
-
-  if (length(d[[i]]) == 0) {
-    temp_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
-  } else {
-    temp_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Temperature", xlimits = c(2, 10)) +
-      ggtitle(paste(species, names(temp_model_list[i])))
-  }
-}
-print(temp_plots)
-```
-
+Save Temperature plots
 ```{r}
 png(
-  file = paste0("figs/", spp, "/temp-", spp, covs, "-priors-TRUE.png"),
+  file = paste0("figs/", spp, "/temp-fixed-", spp, covs, "-priors-", priors, ".png"),
   res = 600,
   units = "in",
   width = 8.5,
@@ -370,7 +321,6 @@ gridExtra::grid.arrange(
 dev.off()
 ```
 
-
 Load Depth models
 ```{r}
 rm(
@@ -379,18 +329,16 @@ rm(
   adult_survey16, imm_survey16
 )
 priors <- FALSE
+covariates <- "+muddy+any_rock"
+covs <- gsub("\\+", "-", covariates)
 try({
   survey <- c("SYN QCS", "SYN HS")
   model_ssid <- c(1, 3)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
-  adult_survey1 <- readRDS(paste0(
-    "data/", spp,
+  adult_survey1 <- readRDS(paste0("data/", spp,
     "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
-
-  imm_survey1 <- readRDS(paste0(
-    "data/", spp,
+  imm_survey1 <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
 })
@@ -401,33 +349,24 @@ try({
   survey <- c("SYN WCVI")
   model_ssid <- c(4)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
-  adult_survey4 <- readRDS(paste0(
-    "data/", spp,
+  adult_survey4 <- readRDS(paste0("data/", spp,
     "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
-
-  imm_survey4 <- readRDS(paste0(
-    "data/", spp,
+  imm_survey4 <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
 })
 if (!exists("adult_survey4")) adult_survey4 <- NULL
 if (!exists("imm_survey4")) imm_survey4 <- NULL
 
-
 try({
   survey <- c("SYN WCHG")
   model_ssid <- c(16)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
-  adult_survey16 <- readRDS(paste0(
-    "data/", spp,
+  adult_survey16 <- readRDS(paste0("data/", spp,
     "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
-
-  imm_survey16 <- readRDS(paste0(
-    "data/", spp,
+  imm_survey16 <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
 })
@@ -435,16 +374,13 @@ try({
 if (!exists("adult_survey16")) adult_survey16 <- NULL
 if (!exists("imm_survey16")) imm_survey16 <- NULL
 
-
 depth_model_list <- list(
   adult_survey1 = adult_survey1, imm_survey1 = imm_survey1,
   adult_survey4 = adult_survey4, imm_survey4 = imm_survey4,
   adult_survey16 = adult_survey16, imm_survey16 = imm_survey16
 )
-
 depth_model_list <- depth_model_list[!sapply(depth_model_list, is.null)]
 ```
-
 
 Build depth plots
 ```{r}
@@ -485,7 +421,6 @@ dev.off()
 
 
 Plot time-varying effect of trawling at mean depth
-
 ```{r}
 trawl_plots <- list()
 for (i in seq_len(length(depth_model_list))) {
@@ -512,10 +447,7 @@ for (i in seq_len(length(depth_model_list))) {
 print(trawl_plots)
 ```
 
-
-
 ### Code for calculation SE on time-varying effects... 
-
 ```{r eval=FALSE}
 # FIXME: need to add to sdmTMB!
 r <- m$tmb_obj$report()
