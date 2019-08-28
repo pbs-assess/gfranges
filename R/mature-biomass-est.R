@@ -72,7 +72,7 @@ years_w_maturity <- fish %>% group_by(year) %>%
 levels_per_year <- unique(years_w_maturity$maturity_levels)
 
 if (max(levels_per_year)<3) {
-  return(list(data = tidy_sets, maturity = NA, mass_model = NA))
+  return(list(data = tidy_sets, maturity = NULL, mass_model = NULL))
 } 
 
 if (min(levels_per_year)<3) {

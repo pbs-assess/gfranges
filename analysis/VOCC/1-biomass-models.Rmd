@@ -16,14 +16,14 @@ species <- params$species
 
 # # Species run so far...
 # species <- "Arrowtooth Flounder"
-# species <- "Pacific Cod"
+#species <- "Pacific Cod"
 # species <- "Sablefish"
 # species <- "Silvergray Rockfish"
- species <- "Lingcod"
+# species <- "Lingcod"
 # species <- "North Pacific Spiny Dogfish" # using all data for maturity thresholds
 # species <- "Quillback Rockfish" # no maturity classes and WCHG not work
 # species <- "Pacific Ocean Perch" 
-# species <- "Yelloweye Rockfish"
+ species <- "Yelloweye Rockfish"
 ```
 
 Region 
@@ -38,11 +38,10 @@ Choose model details
 ```{r}
 priors <- FALSE
 # priors <- TRUE
-
+# covariates <- "+muddy+any_rock"
 covariates <- ""
 covs <- gsub("\\+", "-", "+muddy+any_rock")
-covariates <- "+muddy+any_rock"
-
+#covs <- gsub("\\+", "-", covariates)
 # covariates <- "+muddy+mixed+rocky"
 # covariates <- "+mixed+rocky"
 # covariates <- "+trawled+muddy+rocky+mixed"
@@ -152,11 +151,13 @@ if (!exists("nd_all")) {
 }
 ```
 
+# Split biomass by maturity
 
-Calculate maturity weighted biomass if not done before
+#### Calculate maturity weighted biomass if not done before
 ```{r}
-rm(biomass)
-try(biomass <- readRDS(paste0("data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds")))
+ rm(biomass)
+ rm(maturity)
+# try(biomass <- readRDS(paste0("data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds")))
 
 if (!exists("biomass")) {
   survey_sets <- readRDS(paste0("raw/event-data-", spp, ""))
@@ -165,23 +166,24 @@ if (!exists("biomass")) {
   # for POP: exclude sample with unusually large fish 
   # sizes are impossible given recorded catch weight
   # fish <- fish[fish$fishing_event_id!=1506954,]
- rm(maturity)
- try( maturity <- split_catch_maturity(survey_sets, fish, bath,
-    # survey = c("SYN QCS","SYN HS","SYN WCVI","SYN WCHG"),
-    # survey = c("SYN HS", "SYN WCHG"),
+
+ try({ 
+   maturity <- split_catch_maturity(survey_sets, fish, bath,
     survey = survey,
     years = years,
     cutoff_quantile = c(.9995),
-    plot = TRUE
-  ))
+    plot = TRUE)
+   })
   
-  if(!exists("maturity")) {
+  if(is.null(maturity$maturity)) {
   maturity <- split_catch_maturity(survey_sets, fish, bath,
     survey = c("SYN QCS","SYN HS","SYN WCVI","SYN WCHG"),
     years = years,
     cutoff_quantile = c(.9995),
     plot = TRUE
-  )}
+  )
+  maturity$data <- filter(maturity$data, ssid == model_ssid) 
+  }
   
   saveRDS(maturity$data, file = paste0("data/", spp, 
     "/data-by-maturity-", spp, "-", ssid_string, ".rds"
@@ -189,6 +191,7 @@ if (!exists("biomass")) {
 }
 ```
 
+#### Save length~weight plots
 ```{r}
 if (exists("maturity")) {
   print(maturity$mass_model)
@@ -201,7 +204,7 @@ if (exists("maturity")) {
 }
 ```
 
-
+#### Save length at maturity plot 
 ```{r}
 if (exists("maturity")) {
   png(
@@ -218,6 +221,7 @@ if (exists("maturity")) {
 try(print(maturity$maturity))
 ```
 
+# Build spatiotemporal density model
 Load and filter data 
 ```{r}
 biomass <- readRDS(paste0(
