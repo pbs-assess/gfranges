@@ -14,11 +14,11 @@ Species
 ```{r}
 species <- params$species
 # # Species run so far...
-species <- "Arrowtooth Flounder"
+# species <- "Arrowtooth Flounder"
 # species <- "Pacific Cod"
 # species <- "Sablefish"
 # species <- "Silvergray Rockfish"
-# species <- "Lingcod"
+ species <- "Lingcod"
 # species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
 
 # species <- "Quillback Rockfish"
@@ -36,8 +36,9 @@ Region
 
 Choose model details
 ```{r}
-priors <- FALSE
-# priors <- TRUE
+# priors <- FALSE
+priors <- TRUE
+
 # covariates <- "+muddy+any_rock"
 covariates <- ""
 # covariates <- "+muddy+mixed+rocky"
@@ -45,12 +46,13 @@ covariates <- ""
 # covariates <- "+trawled+muddy+rocky+mixed"
 # covariates <- "+trawled+mixed+rocky"
 # covariates <- "+trawled+mixed"
+covs <- gsub("\\+", "-", covariates)
+covs <- "-tv-depth"
 ```
 
 
 Run all subsequent code...
 ```{r global_options, include=FALSE}
-covs <- gsub("\\+", "-", covariates)
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 # folder to hold figs for this species
@@ -69,8 +71,6 @@ library(gfplot)
 library(gfdata)
 library(sdmTMB)
 library(gfranges)
-
-fish <- readRDS(paste0("raw/bio-data-", spp, ""))
 
 if (region == "Both odd year surveys") {
   survey <- c("SYN QCS", "SYN HS")
@@ -99,7 +99,6 @@ if (region == "All synoptic surveys") {
   ssid_string <- paste0(model_ssid, collapse = "n")
   years <- NULL
 }
-#update_spatial_model <- TRUE
 ```
 
 Combine biomass and sensor data
@@ -114,11 +113,13 @@ Combine biomass and sensor data
   data <- dplyr::left_join(data, CTD) 
   
   # scale predictors before filtering to ensure mean and SD are global
-  data <- data %>% mutate(raw_depth = depth, depth = log(raw_depth), temp = temperature_c) 
-  do_data <- gfranges::scale_predictors(data, predictors = c(quo(depth), quo(temp), quo(do_mlpl)))
-       # c(quo(log_depth), quo(mixed), quo(muddy), quo(sandy), quo(rocky), quo(any_rock)))
-  data <- do_data %>% mutate(depth = raw_depth) %>% 
-    filter(ssid %in% model_ssid) %>% filter(!is.na(temp))# %>% filter(year != 2016)
+  data <- data %>% mutate(raw_depth = depth_bath, depth = log(raw_depth), temp = temperature_c) 
+  do_data <- scale_predictors(data, predictors = c(quo(depth), quo(temp), quo(do_mlpl)))
+       
+  data <- do_data %>% mutate(depth = raw_depth) %>% # filter(year != 2016) %>% 
+    filter(ssid %in% model_ssid) %>% 
+    filter(!is.na(raw_depth)) %>% filter(!is.na(temp)) %>%
+    select(X, Y, X10, Y10, adult_density, imm_density, depth_scaled, depth_scaled2, temp_scaled, temp_scaled2, depth_mean, depth_sd, temp_mean, temp_sd, trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, depth, temp)  
 ```
 
 ```{r}
@@ -147,13 +148,14 @@ Run temperature sdmTMB model
   if (any(names(data) == "adult_density")) {
     
     adult_formula <- as.formula(paste(
-      "adult_density ~ 0 + as.factor(year) + temp_scaled + temp_scaled2 + depth_scaled + depth_scaled2", covariates, ""
+      "adult_density ~ 0 + as.factor(year) + temp_scaled + temp_scaled2", 
+      covariates, ""
       ))
     
     starttime1 <- Sys.time()
     adult_biomass_t <- sdmTMB::sdmTMB(data,
       adult_formula,
-      #time_varying = ~ 0 + temp_scaled + temp_scaled2,
+      time_varying = ~ 0 + depth_scaled + depth_scaled2,
       time = "year", spde = spde,
       family = tweedie(link = "log"),
       ar1_fields = TRUE,
@@ -172,13 +174,15 @@ Run temperature sdmTMB model
 
 
     imm_formula <- as.formula(paste(
-      "imm_density ~ 0 + as.factor(year) + temp_scaled + temp_scaled2 + depth_scaled + depth_scaled2", covariates, ""
+      "imm_density ~ 0 + as.factor(year) + temp_scaled + temp_scaled2", 
+      #+ depth_scaled + depth_scaled2", 
+      covariates, ""
       ))
     
     starttime2 <- Sys.time()
     imm_biomass_t <- sdmTMB::sdmTMB(data, 
       imm_formula,
-      #time_varying = ~ 0 + temp_scaled + temp_scaled2,
+      time_varying = ~ 0 + depth_scaled + depth_scaled2,
       time = "year", spde = spde,
       family = tweedie(link = "log"),
       ar1_fields = FALSE,
@@ -198,11 +202,13 @@ Run temperature sdmTMB model
   } else {
 
     starttime3 <- Sys.time()
-    dens_formula <- as.formula(paste("density ~ 0 + as.factor(year) + temp_scaled + temp_scaled2 + depth_scaled + depth_scaled2", covariates, ""))
+    dens_formula <- as.formula(paste("density ~ 0 + as.factor(year) + temp_scaled + temp_scaled2", 
+      #+ depth_scaled + depth_scaled2", 
+      covariates, ""))
     
     total_biomass_t <- sdmTMB::sdmTMB(data,
       dens_formula,
-     # time_varying = ~ 0 + temp_scaled + temp_scaled2,
+      time_varying = ~ 0  + depth_scaled + depth_scaled2,
       time = "year", spde = spde,
       family = tweedie(link = "log"),
       ar1_fields = TRUE,
