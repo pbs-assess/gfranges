@@ -9,14 +9,14 @@ Species
 ```{r}
 # species <- params$species
 # # Species run so far...
- species <- "Arrowtooth Flounder"
+# species <- "Arrowtooth Flounder" # still throws error for some models
 # species <- "Pacific Cod"
 # species <- "Sablefish"
-# species <- "Silvergray Rockfish"
- species <- "Lingcod"
+# species <- "Silvergray Rockfish" # this one looks good!
+# species <- "Lingcod"
 # species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
-# species <- "Quillback Rockfish"
- species <- "Pacific Ocean Perch"
+ species <- "Quillback Rockfish"
+# species <- "Pacific Ocean Perch"
 # species <- "Yelloweye Rockfish"
 ```
 
@@ -35,6 +35,7 @@ covariates <- ""
 # covs <- gsub("\\+", "-", covariates)
 priors <- TRUE
 covs <- "-tv-depth"
+#covs <- "-both-tv-depth"
 ```
 
 Run all subsequent code...
@@ -135,7 +136,7 @@ model_list <- model_list[!sapply(model_list, is.null)]
 
 ```{r}
 # test load small sdm model to avoid crashing R
-try({imm})
+# try({imm})
 # or maybe it's crashing when NaNs produced error goes into density function?
 ```
 
@@ -213,6 +214,9 @@ temp_model_list <- list(
 temp_model_list <- temp_model_list[!sapply(temp_model_list, is.null)]
 ```
 
+## Density curves from model coefficients
+
+#### Calculate DO curves
 ```{r}
 do <- list()
 do_plots <- list()
@@ -245,6 +249,7 @@ if (length(odat)>0) {
 print(do_plots)
 ```
 
+#### Calculate temperature curves
 ```{r}
 td <- list()
 temp_plots <- list()
@@ -255,7 +260,7 @@ for (i in seq_len(length(temp_model_list))) {
     td[[i]]$model <- names(temp_model_list[i])
     td[[i]]$covs <- covs
     td[[i]]$optimal_temp <- get_optimal_value(td[[i]], xlimits = c(0, 12))
-    temp_plots[[i]] <- plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(2, 10)) +
+    temp_plots[[i]] <- plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(2, 10)) + 
       ggtitle(paste(species, names(temp_model_list[i])))
   } else {
     temp_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
@@ -275,17 +280,160 @@ if (length(tdat)>0) {
 print(temp_plots)
 ```
 
-Save optimal values
+
+
+## Check optimals against raw capture denstiies
+
+#### Combine biomass and sensor data
 ```{r}
-params <- full_join(tdat, odat, by=c("species", "age", "model", "covs"))
-
-other_params <- readRDS(paste0("data/optimal-values-by-species-by-age-tv-depth.rds"))
-params <- rbind(other_params, params) 
-#%>% select(species, age, model, optimal_temp, t_maxy, optimal_do, do_maxy, covs)
-saveRDS(params, file = "data/optimal-values-by-species-by-age-tv-depth.rds")
-
-params
+  model_ssid <- c(1, 3, 4, 16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  biomass <- readRDS(paste0(
+    "data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds"
+    ))
+  covars <- readRDS("data/event-covariates.rds")
+  data <- dplyr::left_join(biomass, covars) %>% mutate(depth_akima = depth) %>% select(-depth)
+  
+  CTD <- readRDS("../tmb-sensor-explore/data/all-sensor-data-processed.rds")
+  data <- dplyr::left_join(data, CTD) %>% 
+    mutate(exclude = if_else(do_mlpl>8, 1, 0)) %>% 
+    #mutate(exclude = if_else(do_mlpl>6, 1, 0)) %>% #try excluding high values?
+    filter(exclude != 1) %>% # added on july 24 after first round of models run...
+    filter(year > 2007) # 2007 DO data is flawed
+  
+  # scale predictors before filtering to ensure mean and SD are global
+  data <- data %>% mutate(raw_depth = depth_bath, depth = log(raw_depth), temp = temperature_c) 
 ```
+
+#### Plot raw DO
+```{r}
+odata <- data %>% filter(!is.na(do_mlpl)) %>% 
+  mutate(ad_density_class = ifelse(adult_density==0, 0, (round(log10((adult_density*10000)+1)*2)+1)),
+    im_density_class = ifelse(imm_density==0, 0, (round(log10((imm_density*10000)+1)*2)+1))) %>% 
+  group_by(ad_density_class) %>% mutate(ad_mean_density = mean(adult_density, na.rm = TRUE)) %>% ungroup() %>%
+  group_by(im_density_class) %>% mutate(im_mean_density = mean(imm_density, na.rm = TRUE)) %>% ungroup()
+  
+ad_density_class_labs <- unique(signif(odata$ad_mean_density*10000),2) # convert to kg/ha
+ad_density_class_labs <- ad_density_class_labs[order(ad_density_class_labs)]
+ad_density_class_labs <- formatC(ad_density_class_labs, digits = 1, format = "fg")
+ad_density_class_labs
+
+im_density_class_labs <- unique(signif(odata$im_mean_density*10000),2) # convert to kg/ha
+im_density_class_labs <- im_density_class_labs[order(im_density_class_labs)]
+im_density_class_labs <- formatC(im_density_class_labs, digits = 1, format = "fg")
+im_density_class_labs
+
+do_count_ad <- ggplot(odata, aes(x = do_mlpl, stat(count), fill = as.factor(ad_density_class))) +
+  geom_density(position = "stack") +
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs) + 
+  geom_vline(xintercept=odat[odat$model =="adult", ]$optimal_do, color="black",  size=1, na.rm = TRUE) +
+  geom_vline(xintercept=odat[odat$age =="adult", ]$optimal_do, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
+  theme_pbs() +
+  xlab("Dissolved O2 from CTD (ml/L)") +
+  ylab("Count") +
+  ggtitle(paste("Adult"))
+
+do_prop_ad <- ggplot(odata, aes(x = do_mlpl, stat(count), fill = as.factor(ad_density_class))) +
+  geom_density(position = "fill") +
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs) + 
+  geom_vline(xintercept=odat[odat$model =="adult", ]$optimal_do, color="black",  size=1, na.rm = TRUE) +
+  geom_vline(xintercept=odat[odat$age =="adult", ]$optimal_do, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
+  theme_pbs() +
+  xlab("Dissolved O2 from CTD (ml/L)") +
+  ylab("Proportion") +
+  ggtitle(paste("Adult"))
+
+do_count_im <- ggplot(odata, aes(x = do_mlpl, stat(count), fill = as.factor(im_density_class))) +
+  geom_density(position = "stack") +
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=im_density_class_labs) + 
+  geom_vline( xintercept = odat[odat$model =="imm", ]$optimal_do, color="black",  size=1, na.rm = TRUE) +
+  geom_vline( xintercept = odat[odat$age =="imm", ]$optimal_do, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
+  theme_pbs() +
+  xlab("Dissolved O2 from CTD (ml/L)") +
+  ylab("Count") +
+  ggtitle(paste("Immature"))
+
+do_prop_im <- ggplot(odata, aes(x = do_mlpl, stat(count), fill = as.factor(im_density_class))) +
+  geom_density(position = "fill") +
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=im_density_class_labs) + 
+  geom_vline( xintercept = odat[odat$model =="imm", ]$optimal_do, color="black",  size=1, na.rm = TRUE) +
+  geom_vline( xintercept = odat[odat$age =="imm", ]$optimal_do, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
+  theme_pbs() +
+  xlab("Dissolved O2 from CTD (ml/L)") +
+  ylab("Proportion") +
+  ggtitle(paste("Immature"))
+
+do_count_ad
+do_prop_ad
+do_count_im
+do_prop_im
+```
+
+#### Plot raw temperature
+```{r}
+tdata <- data %>% filter(!is.na(temp)) %>% 
+  mutate(ad_density_class = ifelse(adult_density==0, 0, (round(log10((adult_density*10000)+1)*2)+1)),
+    im_density_class = ifelse(imm_density==0, 0, (round(log10((imm_density*10000)+1))+1)*2)) %>% 
+  group_by(ad_density_class) %>% mutate(ad_mean_density = mean(adult_density, na.rm = TRUE)) %>% ungroup() %>%
+  group_by(im_density_class) %>% mutate(im_mean_density = mean(imm_density, na.rm = TRUE)) %>% ungroup()
+  
+ad_density_class_labs <- unique(signif(tdata$ad_mean_density*10000),2) # convert to kg/ha
+ad_density_class_labs <- ad_density_class_labs[order(ad_density_class_labs)]
+ad_density_class_labs <- formatC(ad_density_class_labs, digits = 1, format = "fg")
+ad_density_class_labs
+
+im_density_class_labs <- unique(signif(tdata$im_mean_density*10000),2) # convert to kg/ha
+im_density_class_labs <- im_density_class_labs[order(im_density_class_labs)]
+im_density_class_labs <- formatC(im_density_class_labs, digits = 1, format = "fg")
+im_density_class_labs
+
+#FIXME: breaks when no optimals are available
+t_count_ad <- ggplot(tdata, aes(x = temp, stat(count),fill = as.factor(ad_density_class))) + 
+  geom_density(position = "stack") +
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs) + 
+  geom_vline(xintercept=tdat[tdat$model =="adult", ]$optimal_temp, color="black",  size=1, na.rm = TRUE) +
+  geom_vline(xintercept=tdat[tdat$age =="adult", ]$optimal_temp, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
+  theme_pbs() +
+  xlab("Temperature from CTD") +
+  ylab("Count") +
+  ggtitle(paste("Adult"))
+
+t_prop_ad <- ggplot(tdata, aes(x = temp, stat(count), fill = as.factor(ad_density_class))) +
+  geom_density(position = "fill") +
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs) + 
+  geom_vline(xintercept=tdat[tdat$model =="adult", ]$optimal_temp, color="black", size=1, na.rm = TRUE) +
+  geom_vline(xintercept=tdat[tdat$age =="adult", ]$optimal_temp, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
+  theme_pbs() +
+  xlab("Temperature from CTD") +
+  ylab("Proportion") +
+  ggtitle(paste("Adult"))
+
+t_count_im <- ggplot(tdata, aes(x = temp, stat(count), fill = as.factor(im_density_class))) + 
+  geom_density(position = "stack") +
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=im_density_class_labs) + 
+  geom_vline( xintercept = tdat[tdat$model =="imm", ]$optimal_temp, color="black", size=1, na.rm = TRUE) +
+  geom_vline( xintercept = tdat[tdat$age =="imm", ]$optimal_temp, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
+  theme_pbs() +
+  xlab("Temperature from CTD") +
+  ylab("Count") +
+  ggtitle(paste("Immature"))
+
+t_prop_im <- ggplot(tdata, aes(x = temp, stat(count), fill = as.factor(im_density_class))) +
+  geom_density(position = "fill") +
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=im_density_class_labs) + 
+  geom_vline( xintercept = tdat[tdat$model =="imm", ]$optimal_temp, color="black", size=1, na.rm = TRUE) +
+  geom_vline( xintercept = tdat[tdat$age =="imm", ]$optimal_temp, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
+  theme_pbs() +
+  xlab("Temperature from CTD") +
+  ylab("Proportion") +
+  ggtitle(paste("Immature"))
+
+t_count_ad
+t_prop_ad 
+t_count_im 
+t_prop_im 
+```
+
 
 Save DO plots
 ```{r}
@@ -320,6 +468,110 @@ gridExtra::grid.arrange(
 )
 dev.off()
 ```
+
+#### Save plots of raw densities vs model optimals 
+```{r}
+png(
+  file = paste0("figs/", spp, "/check-optimals-", spp, covs, "-priors-", priors, ".png"),
+  res = 600,
+  units = "in",
+  width = 8.5,
+  height = 11
+)
+gridExtra::grid.arrange( do_count_ad, do_count_im, do_prop_ad, do_prop_im, t_count_ad, t_count_im, t_prop_ad, t_prop_im, 
+  ncol = 2,
+  top = grid::textGrob(paste("Raw densities of", species, "with modeled optimals in vertical lines (if solid includes all surveys)"))
+)
+dev.off()
+```
+
+## Save optimal values
+```{r eval=FALSE}
+other_params <- readRDS(paste0("data/optimal-values-by-species-by-age-tv-depth.rds"))
+
+if(!is.null(odat)) {
+  if(!is.null(tdat)) {
+    params <- full_join(tdat, odat, by=c("species", "age", "model", "covs"))
+    all_params <- full_join(other_params, params)
+  } else {
+  try({all_params <- full_join(other_params, odat)})
+  }
+} else {
+  try({all_params <- full_join(other_params, tdat)})
+}
+
+all_params <- all_params %>% distinct()
+saveRDS(all_params, file = "data/optimal-values-by-species-by-age-tv-depth.rds")
+all_params
+```
+
+
+
+
+
+
+
+
+
+
+Alternative presense-absense code
+```{r eval=FALSE}
+odata <- data %>% filter(!is.na(do_mlpl)) #%>% filter(do_mlpl < 1.5)
+
+odata1 <- filter(odata, adult_density > 0)
+# ymax <- which.max(density(odata1$do_mlpl)$y)
+# do_optimal_raw <- density(odata1$do_mlpl)$x[ymax]
+
+oplot <- ggplot(odata1) + 
+  geom_density(aes(x = do_mlpl), colour = "blue") +
+  # geom_vline(aes(xintercept=do_optimal_raw),
+  #           color="blue", linetype="dashed", size=1) +
+  geom_density(data=filter(odata, adult_density == 0), aes(x = do_mlpl), colour = "red", inherit.aes = FALSE) + theme_bw() +
+  xlab("Dissolved O2 from CTD (ml/L)") +
+  ylab("Frequency") +
+  ggtitle(paste("Adult"))
+oplot
+
+oploti <- ggplot(filter(odata, imm_density > 0)) + geom_density(aes(x = do_mlpl), colour = "blue") + 
+  geom_density(data=filter(odata, imm_density == 0), aes(x = do_mlpl), colour = "red", inherit.aes = FALSE) + theme_bw() +
+  xlab("Dissolved O2 from CTD (ml/L)") +
+  ylab("Frequency") +
+  ggtitle(paste("Immature"))
+oploti
+
+
+tdata <- data %>% filter(!is.na(temp)) #%>% filter(do_mlpl < 1.5)
+tplot <-ggplot(filter(tdata, adult_density > 0)) + geom_density(aes(x = temp), colour = "blue") + 
+  geom_density(data=filter(tdata, adult_density == 0), aes(x = temp), colour = "red", inherit.aes = FALSE) + theme_bw() +
+  xlab("Temperature from CTD") +
+  ylab("Frequency") +
+  ggtitle(paste("Adult"))
+tplot
+tploti <-ggplot(filter(tdata, imm_density > 0)) + geom_density(aes(x = temp), colour = "blue") + 
+  geom_density(data=filter(tdata, imm_density == 0), aes(x = temp), colour = "red", inherit.aes = FALSE) + theme_bw() +
+  xlab("Temperature from CTD") +
+  ylab("Frequency") +
+  ggtitle(paste("Immature"))
+tploti
+```
+
+Save raw presense-absence density plots
+```{r eval=FALSE}
+png(
+  file = paste0("figs/", spp, "/raw-presense-by-climate-", spp, "-density-plots.png"),
+  res = 600,
+  units = "in",
+  width = 8.5,
+  height = 11
+)
+gridExtra::grid.arrange(
+  oplot,  tplot, oploti, tploti,
+  ncol = 2,
+  top = grid::textGrob(paste("Proportion of tows with", species, "(blue) vs without (red)"), gp=grid::gpar(fontsize=16))
+)
+dev.off()
+```
+
 
 Load Depth models
 ```{r}
@@ -447,6 +699,9 @@ for (i in seq_len(length(depth_model_list))) {
 print(trawl_plots)
 ```
 
+
+
+
 ### Code for calculation SE on time-varying effects... 
 ```{r eval=FALSE}
 # FIXME: need to add to sdmTMB!
@@ -478,6 +733,55 @@ yrs <- sort(unique(m$data$year))
 b_j <- m$tmb_params$b_j[1:8]
 
 trawled <- data.frame(year = yrs, intercept = b_j, trawling = b3)
+```
+
+
+Get all biomass predictions 
+#### Get all biomass predictions 
+```{r, eval= FALSE, echo=FALSE, warning=FALSE}
+priors <- FALSE
+covariates <- "+muddy+any_rock"
+covs <- gsub("\\+", "-", covariates)
+
+rm(adult_predictions)
+rm(imm_predictions)
+rm(predictions)
+pred_temp_do <- readRDS(here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds"))
+
+try({adult_predictions <- readRDS(paste0("data/", spp,
+    "/all-predictions-", spp, covs, "-mat-biomass-prior-", priors, ".rds"
+  ))%>% filter(year > 2007)
+adult_predictions <- left_join(adult_predictions, pred_temp_do, c("X", "Y", "year", "ssid"))
+})
+
+try({imm_predictions <- readRDS(paste0("data/", spp,
+    "/all-predictions-", spp, covs, "-imm-biomass-prior-", priors, ".rds"
+  )) %>% filter(year > 2007)
+imm_predictions <- left_join(imm_predictions, pred_temp_do, c("X", "Y", "year", "ssid"))
+})
+
+try({predictions <- readRDS(paste0("data/", spp,
+    "/all-predictions-", spp, covs, "-total-biomass-prior-", priors, ".rds"
+  ))%>% filter(year > 2007)
+predictions <- left_join(predictions, pred_temp_do, c("X", "Y", "year", "ssid"))
+})
+
+if (!exists("adult_predictions")) adult_predictions <- NULL
+if (!exists("imm_predictions")) imm_predictions <- NULL
+if (!exists("predictions")) predictions <- NULL
+
+biomass_list <- list(
+  adult = adult_predictions,
+  imm = imm_predictions,
+  total = predictions
+)
+
+biomass_list <- biomass_list[!sapply(biomass_list, is.null)]
+
+# 
+# ggplot(biomass_list[[1]], aes(x = do_est, y = log(est_exp))) + 
+#   geom_point(alpha = 0.3) #+ #geom_smooth()
+#   geom_smooth(method = "lm", formula = y ~ x + I(x^2) , size = 1) #+ I(x^3)
 ```
 
 
