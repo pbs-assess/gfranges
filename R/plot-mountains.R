@@ -23,7 +23,7 @@ plot_mountains <- function(dat, time_varying = TRUE, variable_label = "Depth", x
     #ymaximum <- max(dat$y_hat[dat$x > (min(dat$x)+edge_buffer) & dat$x < (max(dat$x)-edge_buffer )])
     
     ggplot(dat, aes_string(x = "x", 
-      y="y_hat*100",
+      y="y_hat*10000",
       # ymax = "10*y_hat + year*mountain_scaler", ymin = "0 + year*mountain_scaler",
       # # ymax = "y_hat*mountain_scaler", ymin = "0",
       group = "year", colour = "year", fill = "year"
@@ -31,13 +31,13 @@ plot_mountains <- function(dat, time_varying = TRUE, variable_label = "Depth", x
       # # geom_ribbon(lwd = 0.75, alpha = 0.01) +
       geom_line(lwd = 0.75, alpha = 0.8) +
       geom_vline(aes_string(xintercept = "xintercept", group = "year", colour = "year"), linetype =2) +
-      scale_y_continuous(limits = c(0, ymaximum*100 )) +
+      scale_y_continuous(limits = c(0, ymaximum*10000 )) +
       #scale_y_continuous(limits = c(0, median(dat$y_hat*100)*20)) +
       scale_x_continuous(expand = c(0,0), limits = xlimits) +
       xlab(variable_label) +
       scale_color_viridis_d(option = "C") +
       scale_fill_viridis_d(option = "C") +
-      ylab("Predicted density g/ha ")+
+      ylab("Predicted density kg/ha ")+
       gfplot::theme_pbs() 
     
   } else {
@@ -45,7 +45,7 @@ plot_mountains <- function(dat, time_varying = TRUE, variable_label = "Depth", x
     dat$year <- as.factor(dat$year)
     
     ggplot(dat, aes_string(x = "x",       
-      y="y_hat",
+      y="y_hat*10000",
       group = "year", colour = "year", fill = "year"
       )) +
       geom_line(lwd = 0.75, alpha = 0.8) +
@@ -54,7 +54,7 @@ plot_mountains <- function(dat, time_varying = TRUE, variable_label = "Depth", x
       xlab(variable_label) +
       scale_color_viridis_d(option = "C") +
       scale_fill_viridis_d(option = "C") +
-      ylab("Predicted density g/ha") +
+      ylab("Predicted density kg/ha") +
       gfplot::theme_pbs()
   }
 }
@@ -203,7 +203,7 @@ fixed_density <- function(m, predictor = "temp") {
 #' @export
 get_optimal_value <- function(dat, xlimits = c(0, max(dat$x))) {
   dat <- dat %>% filter(x > xlimits[1] & x < xlimits[2])
-  dat <- dat %>% mutate(max_y = max(y_hat), xintercept = x[y_hat == max_y])
+  dat <- dat %>% mutate(max_y = max(y_hat)*10000, xintercept = x[y_hat*10000 == max_y])
   dat$xintercept[1]
 }
 
