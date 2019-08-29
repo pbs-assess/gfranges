@@ -5,10 +5,11 @@ date: '2019-08-24'
 output: html_document
 ---
 
-Should optimal temperature vary for age classes? Seems likely. 
-Therefore need separate VOCC trimming and matching for age classes -> change function structure to choose age upfront 
+Modified to allow optimal temperature to vary by maturity class. 
+Therefore need to run this file separately for each species-class combination.
 
 Should matches be selected based on exact depth categories in addition to density (all within time periods)?
+
 What does it mean for the analysis that the depth range at which VOCC occur within a species temperature range varies dramatically between time periods?
 
 
@@ -45,9 +46,9 @@ age <- "mature" # or mostly so
 ```{r echo=TRUE}
  climate <- "temperature"
  temp_threshold <- c(0.5)
- 
+
 # climate <- "do"
-# do_threshold <- c(0.1)
+# do_threshold <- c(0.5)
  
 # climate <- "do and temperature"
 ```
@@ -57,6 +58,16 @@ age <- "mature" # or mostly so
 # region <- "West Coast Vancouver Island"
 region <- "both odd year surveys"
 # region <- "West Coast Haida Gwaii"
+```
+
+
+#### Set default cell sizes and scale
+```{r, echo=FALSE}
+input_cell_size <- 2
+dist_intercept <- input_cell_size/2
+scale_fac <- 1
+delta_t_step <- 2
+skip_time <- NULL
 ```
 
 Run all subsequent code...
@@ -71,7 +82,7 @@ library(gfranges)
 ```
 
 #### Get species-specific optimal values from mountain plots for most abundant year
-```{r, echo=FALSE}
+```{r, include=FALSE}
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 params <- readRDS(paste0("data/optimal-values-by-species-by-age.rds"))
@@ -81,15 +92,54 @@ if (age == "imm") {
 } else {
   params <- filter(params, age != "imm")
 }
-params <- params[rev(order(params$maxy)), ]
-params <- params[!duplicated(params$species), ]
 
-#optimal_do <- round(params[params$species == species, ]$optimal_do, digits = 2)
-optimal_temp <- round(params[params$species == species, ]$optimal_temp, digits = 2)
+params <- params[params$species == species, ] 
 
-#optimal_values <- c(optimal_do, optimal_temp)
+if (climate == "temperature") {
+  optimal_temps <- params[rev(order(params$t_maxy)), ]$optimal_temp
+  optimal_temps <- na.omit(optimal_temps)
+  optimal_temp <- round(optimal_temps[1], digits = 2)
+  variable_names <- c("temp")
+  min_thresholds <- c(Inf)
+  optimal_values <- optimal_temp
+  max_thresholds <- temp_threshold
+  indices <- c(1, 2)
+  delta_t_total <- 2
+  }
+
+if (climate == "do") {
+  optimal_dos <- params[rev(order(params$do_maxy)), ]$optimal_do
+  optimal_dos <- na.omit(optimal_dos)
+  optimal_do <- round(optimal_dos[1], digits = 2)
+  variable_names <- c("do_est")
+  max_thresholds <- c(Inf)
+  optimal_values <- optimal_do
+  min_thresholds <- do_threshold
+  indices <- c(1, 2)
+  delta_t_total <- 2
+  }
+
+if (climate == "do and temperature") {
+  optimal_temps <- params[rev(order(params$t_maxy)), ]$optimal_temp
+  optimal_temps <- na.omit(optimal_temps)
+  optimal_temp <- round(optimal_temps[1], digits = 2)
+  optimal_dos <- params[rev(order(params$do_maxy)), ]$optimal_do
+  optimal_dos <- na.omit(optimal_dos)
+  optimal_do <- round(optimal_dos[1], digits = 2)
+  optimal_values <- c(optimal_do, optimal_temp)
+  variable_names <- c("do_est", "temp")
+  min_thresholds <- c(do_threshold, Inf)
+  max_thresholds <- c(Inf, temp_threshold)
+  indices <- c(1, 2)
+  delta_t_total <- 2
+  }
+
+min_string <- paste0(min_thresholds, collapse = "-")
+max_string <- paste0(max_thresholds, collapse = "-")
+
+optimal_string <- paste0(optimal_values, collapse = "-")
+climate_string <- gsub(" ", "-", gsub("\\/", "-", tolower(climate)))
 ```
-
 
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 if (region == "both odd year surveys") {
@@ -118,50 +168,7 @@ if (region == "West Coast Haida Gwaii") {
 }
 ```
 
-```{r, include=FALSE}
-# Set default cell sizes and scale
-input_cell_size <- 2
-dist_intercept <- input_cell_size/2
-scale_fac <- 1
-delta_t_step <- 2
-skip_time <- NULL
-
-if (climate == "temperature") {
-  variable_names <- c("temp")
-  min_thresholds <- c(Inf)
-  optimal_values <- optimal_temp
-  max_thresholds <- temp_threshold
-  indices <- c(1, 2)
-  delta_t_total <- 2
-  }
-
-if (climate == "do") {
-  variable_names <- c("do_est")
-  max_thresholds <- c(Inf)
-  optimal_values <- optimal_do
-  min_thresholds <- do_threshold
-  indices <- c(1, 2)
-  delta_t_total <- 2
-  }
-
-if (climate == "do and temperature") {
-  variable_names <- c("do_est", "temp")
-  min_thresholds <- c(do_threshold, Inf)
-  max_thresholds <- c(Inf, temp_threshold)
-  indices <- c(1, 2)
-  delta_t_total <- 2
-  }
-
-min_string <- paste0(min_thresholds, collapse = "-")
-max_string <- paste0(max_thresholds, collapse = "-")
-
-optimal_string <- paste0(optimal_values, collapse = "-")
-climate_string <- gsub(" ", "-", gsub("\\/", "-", tolower(climate)))
-```
-
-
 # Calculate climate vectors
-
 ```{r}
 rm(vocc)
 
@@ -611,10 +618,10 @@ if (!exists("vocc_by_sp")){
 Print diagnostics for matching
 ```{r echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
 if (!exists("vocc_by_sp")){
-match_plots <- lapply(matched, function(i){  
-  summary(i)
-  plot(i)
-  })
+match_plots <- apply(matched, function(matched){  
+  summary(matched)
+  plot(matched)
+ })
 match_plots
 }
 ```
@@ -700,15 +707,14 @@ saveRDS(vocc_by_sp, file = paste0(
 ```
 
 
-## Adults
 ```{r}
 try({
   vocc_by_sp <- readRDS(paste0(
-    "data/ BACI-", species, "-", ssid_string, "-", climate_string, "-",
+    "data/ BACI-", species, "-", age, "-", ssid_string, "-", climate_string, "-",
     min_string, "to", max_string, "-multiyear-all.rds"
   ))
 })
-data <- vocc_by_sp [["adult"]]
+data <- vocc_by_sp [[1]]
 # View(data)
 ```
 
@@ -814,151 +820,9 @@ summary(gam4$gam)
 plot(gam4$gam,pages=1)
 ```
 
-```{r,  results="hide", include=FALSE}
+```{r, eval=FALSE, results="hide", include=FALSE}
 plot_parametric(gam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source"), start_time=c("2009","2011","2013","2015")), parametricOnly = TRUE, main="", xlab ="log_density"
   #, groups = cell_type, gcolor = my_cols, color = my_cols["time"]
   ) 
-```
-
-## Immatures
-```{r}
-idata <- vocc_by_sp[["imm"]]
-#View(data)
-```
-
-### Plot matches
-```{r}
-idat_summary <- idata %>% 
-  group_by(start_time, cell_type) %>%
-  tally() %>% filter(cell_type=="source")
-idata_depth <- idata %>% 
-  group_by(start_time) %>% 
-  mutate(mean_depth = mean(depth)) 
-
-ggplot(idata, 
-#ggplot(filter(data, as.numeric(matchobs) <= 550), 
-  aes(y=Y, x=X, shape=as.factor(treat), colour=matchobs)) +
-  geom_point(alpha=0.4, size = 1) +
-  scale_shape_manual(values= c(0, 15)) +
-  scale_colour_viridis_d(option="C", guide = FALSE) +
-  facet_wrap(~start_time) +
-  theme_bw()
-
-lapply(variable_names, function(j) {
-ggplot(idata, aes(y=log_density, x=UQ(rlang::sym(paste(j))), colour=time)) +
-  geom_point(alpha=0.35) +
-  scale_colour_viridis_d(option="C")+
-  facet_grid(start_time~cell_type) +
-  theme_bw() 
-})
-
-# ggplot(data, aes(y=log_density, x=depth, colour=cell_type)) +
-#   geom_point(alpha=0.35) +
-#   scale_colour_viridis_d(option="C") +
-#     facet_grid(start_time~time) +
-#   geom_text(data = idata_depth,
-#     aes(150, 0.5, label = round(mean_depth)), hjust = -0.3, inherit.aes = FALSE) +
-#   theme_bw()
-ggplot(idata, aes(depth, fill = cell_type)) +
-  geom_density(alpha=0.5) +
-  scale_fill_viridis_d(option="C") +
-  facet_wrap(~start_time) +
-  theme_bw()
-
-ggplot(idata, aes(log_density, fill = cell_type)) +
-  geom_density(alpha=0.5) +
-  scale_fill_viridis_d(option="C") +
-  facet_grid(start_time~time) +
-  geom_text(data = idat_summary,
-            aes(1, 0.75, label = n), hjust = -0.3) +
-  theme_bw()
- 
-ggplot(idata, aes(log_density, fill = cell_type)) +
-  geom_histogram(alpha=0.5) +
-  scale_fill_viridis_d(option="C") +
-  facet_grid(time~start_time) +
-  theme_bw()
- 
-ggplot(idata, aes(y=log_density, x=cell_type, fill=cell_type)) +
-  geom_boxplot(alpha=0.5) +
-  scale_fill_viridis_d(option="C") +
-  geom_text(data = idat_summary,
-            aes(cell_type, max(data$log_density), label = n), hjust = -0.3) +
-  facet_grid(time~start_time) +
-  theme_bw()
-```
-
-### Basic BACI
-```{r}
-mi <- lmerTest::lmer(as.formula(baci_formula), data=idata)
-summary(mi)
-```
-
-```{r}
-sjPlot::plot_model(mi, type = "std2", order.terms=c(1,2,8,3,4,5,6,7), title = paste(species, "immature"))
-```
-
-### GAMM
-```{r}
-# for (j in (variable_names)) {
-#  gamm_formula <- paste0("log_density ~ ", 
-#   # "time * start_time + ",
-#   "start_time * cell_type + ",
-#   "time * cell_type + s(vect_dist) + s(std_", j, ") + s(X,Y)")
-#  }
-igam4 <- gamm4::gamm4(as.formula(gamm_formula), 
-  random = ~(1|matchobs) + (1|icell) 
-   + (1|start_time)
-  # + (time|start_time) 
-  # + (cell_type|start_time)
-  , data=idata) 
-
-summary(igam4$gam) 
-
-plot(igam4$gam,pages=1)
-```
-
-```{r, results="hide", include=FALSE}
-plot_parametric(igam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source")), parametricOnly = TRUE, main="", xlab ="log_density"
-  #, groups = cell_type, gcolor = my_cols, color = my_cols["time"]
-  ) 
-```
-
-
-Misc exploring gamm 
-```{r eval=FALSE}
-# summary(igam4$mer) ## underlying mixed model
-# anova(igam4$gam) 
-
-# itsadug::plot_parametric(gam4$gam, pred=list(cell_type=c("control", "source"), after=c("0","1")), parametricOnly = TRUE, main="") 
-
-
-# mi <- mgcv::gamm(log_density~ as.factor(after) + cell_type + after:cell_type + std_temp + std_temp2 + vect_dist + vect_dist2 + s(as.factor(idata$icell), bs="re") + s(as.factor(idata$matchobs), bs="re"), data=idata)
-# summary(mi)
-# 
-# mi <- mgcv::gamm(log_density~ as.factor(after) * cell_type + s(std_temp) + s(vect_dist) + s(as.factor(idata$matchobs), bs="re") , data=idata) # + s(X,Y, bs="re")
-# summary(mi)
-# mi
-# 
-# 
-# idata$after <- as.factor(idata$after)
-# idata$matchobs <- as.factor(idata$matchobs)
-# 
-# m4b <- gamm4::gamm4(log_density~ after * cell_type + s(std_temp) + s(vect_dist) + #s(X) + s(Y) + 
-#     s(X,Y), random = ~(1|matchobs), data=idata) # + s(X,Y, bs="re")
-# 
-# 
-# plot(m4b$gam,pages=1)
-# 
-# summary(m4b$gam) ## summary of gam
-# summary(m4b$mer) ## underlying mixed model
-# anova(m4b$gam) 
-# 
-# gamtabs(m1)
-# 
-# #library(itsadug)
-# plot_parametric(m4b$gam, pred=list(cell_type=c("control", "source"), after=c("0","1")))
-# 
-# library(mgcv)
 ```
 
