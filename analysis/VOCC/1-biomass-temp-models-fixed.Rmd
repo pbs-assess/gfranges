@@ -18,7 +18,7 @@ species <- params$species
 # species <- "Pacific Cod"
 # species <- "Sablefish"
 # species <- "Silvergray Rockfish"
- species <- "Lingcod"
+# species <- "Lingcod"
 # species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
 
 # species <- "Quillback Rockfish"
@@ -28,10 +28,10 @@ species <- params$species
 
 Region 
 ```{r}
- region <- "All synoptic surveys"
-# region <- "Both odd year surveys"
-# region <- "West Coast Vancouver Island"
-# region <- "West Coast Haida Gwaii"
+# region <- "All synoptic surveys"
+ region <- "Both odd year surveys"
+ region <- "West Coast Vancouver Island"
+ region <- "West Coast Haida Gwaii"
 ```
 
 Choose model details
@@ -118,8 +118,7 @@ Combine biomass and sensor data
        
   data <- do_data %>% mutate(depth = raw_depth) %>% # filter(year != 2016) %>% 
     filter(ssid %in% model_ssid) %>% 
-    filter(!is.na(raw_depth)) %>% filter(!is.na(temp)) %>%
-    select(X, Y, X10, Y10, adult_density, imm_density, depth_scaled, depth_scaled2, temp_scaled, temp_scaled2, depth_mean, depth_sd, temp_mean, temp_sd, trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, depth, temp)  
+    filter(!is.na(raw_depth)) %>% filter(!is.na(temp)) #%>% select(X, Y, X10, Y10, adult_density, imm_density, depth_scaled, depth_scaled2, temp_scaled, temp_scaled2, depth_mean, depth_sd, temp_mean, temp_sd, trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, depth, temp)  
 ```
 
 ```{r}

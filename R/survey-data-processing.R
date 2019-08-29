@@ -108,17 +108,15 @@ add_missing_depths <- function(dat, survey, years, bath) {
 #' Scale survey predictors
 #'
 #' @param dat
-#' @param predictors List of variable names must by wrapped in 'quo()'.
+#' @param predictors List of variable names must be wrapped in 'quo()'.
 #'
 #' @export
 #'
-scale_predictors <- function(dat,
-                             predictors = c(quo(log_depth))) {
+scale_predictors <- function(dat, predictors = c(quo(log_depth))) {
   # to put spatial decay parameter on right scale
 
   for (i in seq_len(length(predictors))) {
     var <- predictors[[i]]
-
     var_mean <- paste0(quo_name(var), "_mean")
     var_sd <- paste0(quo_name(var), "_sd")
     var_scaled <- paste0(quo_name(var), "_scaled")

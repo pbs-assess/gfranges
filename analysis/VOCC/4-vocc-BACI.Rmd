@@ -17,8 +17,8 @@ options(digits = 4)
 #### Set species
 ```{r echo=TRUE}
 # # Species run so far...
- species <- "Arrowtooth Flounder"
-# species <- "Pacific Cod"
+# species <- "Arrowtooth Flounder"
+ species <- "Pacific Cod"
 # species <- "Sablefish"
 # species <- "Silvergray Rockfish"
 # species <- "Lingcod"
@@ -545,8 +545,8 @@ lapply(alldata, function(i){ggplot(i, aes(x=cell_type, y=log(start_density))) + 
 ```{r}
 matched <- lapply(alldata, function(alldata) {  
   ## trim non-overlapping values to reduce size of dataset 
-  control_min <- quantile(alldata$start_density[alldata$treat=="0"], 0.001)
-  source_min <- quantile(alldata$start_density[alldata$treat=="1"], 0.001)
+  control_min <- quantile(alldata$start_density[alldata$treat=="0"], 0.01)
+  source_min <- quantile(alldata$start_density[alldata$treat=="1"], 0.01)
   # control_max <- quantile(alldata$start_density[alldata$treat=="0"], 1)
   # source_max <- quantile(alldata$start_density[alldata$treat=="1"], 1)
 
@@ -693,7 +693,7 @@ data <- vocc_by_sp [["adult"]]
 ggplot(data, 
 #ggplot(filter(data, as.numeric(matchobs) <= 550), 
   aes(y=Y, x=X, shape=as.factor(treat), colour=as.factor(matchobs))) +
-  geom_point(alpha=0.4, size = 2) +
+  geom_point(alpha=0.8, size = 1.5) +
   scale_shape_manual(values= c(0, 15)) +
   scale_colour_viridis_d(option="C", guide = FALSE) +
   theme_bw()

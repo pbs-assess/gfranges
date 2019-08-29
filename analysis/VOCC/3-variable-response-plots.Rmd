@@ -13,7 +13,7 @@ Species
 # species <- "Pacific Cod"
 # species <- "Sablefish"
 # species <- "Silvergray Rockfish"
- species <- "Lingcod"
+# species <- "Lingcod"
 # species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
 
 # species <- "Quillback Rockfish"
@@ -271,7 +271,7 @@ hist(odat$maxy)
 
 optimal_do <- get_optimal_value(odat, xlimits = c(0.5, 6))
 
-date <- Sys.time()
+date <- Sys.Date()
 
 params <- data.frame(species, optimal_do, optimal_temp, date)
 
@@ -438,7 +438,7 @@ for (i in seq_len(length(depth_model_list))) {
     depth_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
   } else {
     d[[i]]$x <- exp(d[[i]]$x)
-    depth_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Depth", xlimits = c(0, 1000)) +
+    depth_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Depth", xlimits = c(0, 800)) +
       ggtitle(paste(species, names(depth_model_list[i])))
   }
 }

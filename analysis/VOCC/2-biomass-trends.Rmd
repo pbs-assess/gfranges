@@ -187,6 +187,7 @@ Caluclate variables of interest from predictions
 ```{r}
 if (exists("adult_predictions")) {
   
+  # to convert from kg/m2 to kg/hectare multiply by 10000
   adult_predictions$est_exp <- exp(adult_predictions$est) * 10000
   imm_predictions$est_exp <- exp(imm_predictions$est) * 10000
 

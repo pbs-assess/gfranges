@@ -7,7 +7,7 @@
 scale_predictors(dat, predictors = c(quo(log_depth)))
 }
 \arguments{
-\item{predictors}{List of variable names must by wrapped in 'quo()'.}
+\item{predictors}{List of variable names must be wrapped in 'quo()'.}
 }
 \description{
 Scale survey predictors
