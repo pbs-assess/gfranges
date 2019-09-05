@@ -132,10 +132,10 @@ time_varying_density <- function(m, predictor = "depth") {
 #'
 #' @param m Output of sdmTMB model
 #' @param predictor Prefix for scaled parameter in model
+#' @param fixed_param Number in sequence if model contains multiple quadratic fixed effects
 #'
 #' @export
-#'
-fixed_density <- function(m, predictor = "temp") {
+fixed_density <- function(m, predictor = "temp", fixed_params = 1) {
   
   get_y_hat <- function(b0, b1, b2, year, 
     predictor, mean_column, sd_column
@@ -157,8 +157,6 @@ fixed_density <- function(m, predictor = "temp") {
         b2 * ((min(x_pred) + m$data[[sd_column]][[1]]/10)^2 )
     )
     
-    #browser()
-    
     if (nearmax > maxvalue & nearmin > minvalue) {
       
       data.frame(
@@ -178,12 +176,16 @@ fixed_density <- function(m, predictor = "temp") {
   b_j <- m$model$par
   yrs <- sort(unique(m$data$year))
   n_t <- length(yrs)
+  n <- 0
+  if (fixed_params>1) {
+    n <- (fixed_params-1)*2
+  }
   
   pred_density <- purrr::map_df(seq_len(n_t), function(.t) {
     get_y_hat(
       b0 = b_j[.t],
-      b1 = b_j[n_t + 1],
-      b2 = b_j[n_t + 2],
+      b1 = b_j[n_t + 1 + n],
+      b2 = b_j[n_t + 2 + n],
       year = yrs[.t],
       sd_column = paste0(predictor, "_sd"),
       mean_column = paste0(predictor, "_mean"),
@@ -192,7 +194,6 @@ fixed_density <- function(m, predictor = "temp") {
   })
   pred_density
 }
-
 
 
 #' Find optimal value from density curve
@@ -206,6 +207,58 @@ get_optimal_value <- function(dat, xlimits = c(0, max(dat$x))) {
   dat <- dat %>% mutate(max_y = max(y_hat)*10000, xintercept = x[y_hat*10000 == max_y])
   dat$xintercept[1]
 }
+
+#' Find roots of quadratic fixed effect curves
+#'
+#' @param m Output of sdmTMB model
+#' @param predictor Prefix for scaled parameter in model
+#' @param fixed_param Number in sequence if model contains multiple quadratic fixed effects
+#' @param threshold What proportion of total y to calculate roots for
+#'
+#' @export
+get_quadratic_roots <- function(m, predictor = "do_mlpl", fixed_param = 1, threshold) {
+  
+  sd_column <- paste0(predictor, "_sd")
+  mean_column <- paste0(predictor, "_mean")
+  predictor <- paste0(predictor, "_scaled")
+  b_j <- m$model$par
+  n <- 0
+  if (fixed_param>1) {
+    n <- (fixed_param-1)*2
+  }
+  n_t <- length(unique(m$data$year))
+  b <- b_j[[n_t + 1 + n]]
+  a <- b_j[[n_t + 2 + n]]
+  c <- 1 # intercept doesn't matter; setting to an arbitrary value
+  
+  x_pred <- seq(min(m$data[[predictor]], na.rm = TRUE), 
+    max(m$data[[predictor]], na.rm = TRUE), length.out = 300)
+  x <- (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]])
+  y <- exp(c + x_pred * b + x_pred^2 * a) 
+  crit_y <- y[which(y == max(y))] * threshold
+  max_y <- y[which(y == max(y))]
+  #   solve for 0 = ax2 + bx + (c - crit_y)
+
+
+  res <- numeric(length = 2)
+  .max <- c - log(max_y)
+  res[1] <- -1 * (b + sqrt(b^2 - 4 * .max * a))/(2*a)
+  .c <- c - log(crit_y)
+  res[2] <- -1 * (b - sqrt(b^2 - 4 * .c * a))/(2*a)
+  res[3] <- -1 * (b + sqrt(b^2 - 4 * .c * a))/(2*a)
+  
+  res[1] <- (res[1] * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]])
+  res[2] <- (res[2] * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]])
+  res[3] <- (res[3] * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]])
+  
+  plot(x, y, type = "l")
+  abline(h = crit_y)
+  abline(v = res[1], col = "red")
+  abline(v = res[2])
+  abline(v = res[3])
+  list(optimal = res[1], lower_threshold = res[2], upper_threshold = res[3], range = res[1]-res[2], prop_max = threshold)
+}
+
 
 
 
