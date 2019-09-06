@@ -4,12 +4,14 @@
 \alias{fixed_density}
 \title{Calculate density curve for non-time-varying, scaled, quadratic parameters}
 \usage{
-fixed_density(m, predictor = "temp")
+fixed_density(m, predictor = "temp", fixed_params = 1)
 }
 \arguments{
 \item{m}{Output of sdmTMB model}
 
 \item{predictor}{Prefix for scaled parameter in model}
+
+\item{fixed_param}{Number in sequence if model contains multiple quadratic fixed effects}
 }
 \description{
 Calculate density curve for non-time-varying, scaled, quadratic parameters

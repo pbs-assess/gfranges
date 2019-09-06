@@ -16,22 +16,45 @@ species <- params$species
 
 # # Species run so far...
 # species <- "Arrowtooth Flounder"
-#species <- "Pacific Cod"
-# species <- "Sablefish"
+# species <- "Petrale Sole"
+# species <- "English Sole"
+# species <- "Dover Sole" # maturity data error for WCHG
+# species <- "Southern Rock Sole"
+# species <- "Flathead Sole"
+ 
+
+# species <- "Walleye Pollock"
+# species <- "Pacific Cod"
+# species <- "Pacific Ocean Perch"
+
 # species <- "Silvergray Rockfish"
+# species <- "Quillback Rockfish"
+# species <- "Yelloweye Rockfish"
+# species <- "Bocaccio"
+# species <- "Sharpchin Rockfish"
+# species <- "Splitnose Rockfish"
+# species <- "Canary Rockfish"
+# species <- "Rougheye/Blackspotted Rockfish Complex"
+ species <- "Redbanded Rockfish"
+# species <- "Greenstriped Rockfish"
+   
+# species <- "Longspine Thornyhead"
+# species <- "Shortspine Thornyhead",
+# species <- "Sablefish"
 # species <- "Lingcod"
-# species <- "North Pacific Spiny Dogfish" # using all data for maturity thresholds
-# species <- "Quillback Rockfish" # no maturity classes and WCHG not work
-# species <- "Pacific Ocean Perch" 
- species <- "Yelloweye Rockfish"
+ 
+# species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
+# species <- "Longnose Skate"
+ species <- "Spotted Ratfish"
+
 ```
 
 Region 
 ```{r}
- region <- "All synoptic surveys"
-# region <- "Both odd year surveys"
-# region <- "West Coast Vancouver Island"
-# region <- "West Coast Haida Gwaii"
+  region <- "All synoptic surveys"
+ # region <- "Both odd year surveys"
+ # region <- "West Coast Vancouver Island"
+ # region <- "West Coast Haida Gwaii"
 ```
 
 Choose model details
@@ -103,53 +126,6 @@ if (region == "All synoptic surveys") {
 }
 ```
 
-
-Make prediction grids for all surveys and years, if not done before.
-```{r, message=FALSE, warning=FALSE}
-try(nd_all <- readRDS("data/nd_all_synoptic.rds"))
-
-if (!exists("nd_all")) {
-  
-  # choose base year(s) to create grid from
-  dummy_year <- c(2005, 2006)
-  
-  bath <- readRDS("data/bathymetry-data")
-  #dat <- bath$data %>% scale_survey_predictors()
-  dat <- bath$data %>% mutate(raw_depth = depth, depth = log(raw_depth)) 
-  dat <- gfranges::scale_predictors(dat, predictors = c(quo(depth)))
-
-  # create grids for each ssid separately
-  ssid <- 1
-  survey_abbrev <- "SYN QCS"
-  nd_1 <- spatiotemporal_grid(dat, ssid, survey_abbrev, dummy_year)
-  unique(nd_1$year)
-
-  ssid <- 3
-  survey_abbrev <- "SYN HS"
-  nd_3 <- spatiotemporal_grid(dat, ssid, survey_abbrev, dummy_year)
-  unique(nd_3$year)
-
-  ssid <- 4
-  survey_abbrev <- "SYN WCVI"
-  nd_4 <- spatiotemporal_grid(dat, ssid, survey_abbrev, dummy_year)
-  unique(nd_4$year)
-
-  ssid <- 16
-  survey_abbrev <- "SYN WCHG"
-  nd_16 <- spatiotemporal_grid(dat, ssid, survey_abbrev, dummy_year)
-  unique(nd_16$year)
-
-  nd_all <- rbind(nd_1, nd_3, nd_4, nd_16) %>% 
-    mutate(year = as.numeric(year)) 
-  
-  newcov <- readRDS("data/new_covariates.rds") %>% dplyr::select(X, Y, trawled, muddy, rocky, mixed, any_rock)
-  nd_all <- left_join(nd_all, newcov, by=c("X", "Y"))
-  
-  # nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
-
-  saveRDS(nd_all, file = paste0("data/nd_all_synoptic.rds"))
-}
-```
 
 # Split biomass by maturity
 
@@ -252,6 +228,10 @@ Run climate independent sdmTMB model
     spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 200)
   }
 
+  if (region == "All synoptic surveys") {
+    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 500)
+  }
+
   sdmTMB::plot_spde(spde)
 
   if (any(names(data) == "adult_density")) {
@@ -330,6 +310,53 @@ Run climate independent sdmTMB model
   }
 ```
 
+
+Make prediction grids for all surveys and years, if not done before.
+```{r, message=FALSE, warning=FALSE}
+try(nd_all <- readRDS("data/nd_all_synoptic.rds"))
+
+if (!exists("nd_all")) {
+  
+  # choose base year(s) to create grid from
+  dummy_year <- c(2005, 2006)
+  
+  bath <- readRDS("data/bathymetry-data")
+  #dat <- bath$data %>% scale_survey_predictors()
+  dat <- bath$data %>% mutate(raw_depth = depth, depth = log(raw_depth)) 
+  dat <- gfranges::scale_predictors(dat, predictors = c(quo(depth)))
+
+  # create grids for each ssid separately
+  ssid <- 1
+  survey_abbrev <- "SYN QCS"
+  nd_1 <- spatiotemporal_grid(dat, ssid, survey_abbrev, dummy_year)
+  unique(nd_1$year)
+
+  ssid <- 3
+  survey_abbrev <- "SYN HS"
+  nd_3 <- spatiotemporal_grid(dat, ssid, survey_abbrev, dummy_year)
+  unique(nd_3$year)
+
+  ssid <- 4
+  survey_abbrev <- "SYN WCVI"
+  nd_4 <- spatiotemporal_grid(dat, ssid, survey_abbrev, dummy_year)
+  unique(nd_4$year)
+
+  ssid <- 16
+  survey_abbrev <- "SYN WCHG"
+  nd_16 <- spatiotemporal_grid(dat, ssid, survey_abbrev, dummy_year)
+  unique(nd_16$year)
+
+  nd_all <- rbind(nd_1, nd_3, nd_4, nd_16) %>% 
+    mutate(year = as.numeric(year)) 
+  
+  newcov <- readRDS("data/new_covariates.rds") %>% dplyr::select(X, Y, trawled, muddy, rocky, mixed, any_rock)
+  nd_all <- left_join(nd_all, newcov, by=c("X", "Y"))
+  
+  # nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
+
+  saveRDS(nd_all, file = paste0("data/nd_all_synoptic.rds"))
+}
+```
 
 Save predictions for full spatial grid
 

@@ -18,7 +18,7 @@ split_catch_maturity(survey_sets, fish, bath, survey = c("SYN HS",
 
 \item{cutoff_quantile}{Set max cutoff for mass modeled from lengths.}
 
-\item{plot}{Logical for whether to produce plots 
+\item{plot}{Logical for whether to produce plots
 (length-weight and length-at-maturity relationships).}
 }
 \description{
@@ -28,11 +28,10 @@ Split catch densities by mass ratio of maturity classes
 events <- readRDS("analysis/VOCC/data/event-data-pop-1n3.rds")
 fish <- readRDS("analysis/VOCC/data/bio-data-pop-1n3.rds")
 
-biomass <- split_catch_maturity (events, fish, bath
-  survey = c("SYN HS","SYN QCS"), 
+biomass <- split_catch_maturity(events, fish, bath,
+  survey = c("SYN HS", "SYN QCS"),
   years = NULL,
   cutoff_quantile = 0.9995,
   plot = TRUE
 )
-
 }
