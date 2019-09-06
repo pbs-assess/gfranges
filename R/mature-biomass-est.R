@@ -31,6 +31,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
 
   species <- fish$species_common_name[1]
 
+  # is there enough data to split by survey?
   fish_test <- fish %>%
     filter(year %in% years) %>%
     group_by(survey_abbrev)
@@ -57,7 +58,13 @@ split_catch_maturity <- function(survey_sets, fish, bath,
 
   model_ssid <- unique(tidy_sets$ssid)
   ssid_string <- paste0(model_ssid, collapse = "n")
-
+  
+  # does maturity data exist at all for this species?
+  maturity_codes <- unique(fish$maturity_code)
+  
+  if(length(maturity_codes)<3) {
+    return(list(data = tidy_sets, maturity = NULL, mass_model = NULL))
+  }
 
   if (nrow(fish) > 0) {
     # TMB model to estimate mass of length only fish
