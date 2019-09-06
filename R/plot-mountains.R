@@ -214,13 +214,14 @@ get_optimal_value <- function(dat, xlimits = c(0, max(dat$x))) {
 #' @param predictor Prefix for scaled parameter in model
 #' @param fixed_param Number in sequence if model contains multiple quadratic fixed effects
 #' @param threshold What proportion of total y to calculate roots for
+#' @param plot Logical for plotting quadratic
 #'
 #' @export
-get_quadratic_roots <- function(m, predictor = "do_mlpl", fixed_param = 1, threshold) {
+get_quadratic_roots <- function(m, predictor = "do_mlpl", fixed_param = 1, threshold, plot = FALSE) {
   
   sd_column <- paste0(predictor, "_sd")
   mean_column <- paste0(predictor, "_mean")
-  predictor <- paste0(predictor, "_scaled")
+  scaled <- paste0(predictor, "_scaled")
   b_j <- m$model$par
   n <- 0
   if (fixed_param>1) {
@@ -231,8 +232,8 @@ get_quadratic_roots <- function(m, predictor = "do_mlpl", fixed_param = 1, thres
   a <- b_j[[n_t + 2 + n]]
   c <- 1 # intercept doesn't matter; setting to an arbitrary value
   
-  x_pred <- seq(min(m$data[[predictor]], na.rm = TRUE), 
-    max(m$data[[predictor]], na.rm = TRUE), length.out = 300)
+  x_pred <- seq(min(m$data[[scaled]], na.rm = TRUE), 
+    max(m$data[[scaled]], na.rm = TRUE), length.out = 300)
   x <- (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]])
   y <- exp(c + x_pred * b + x_pred^2 * a) 
   crit_y <- y[which(y == max(y))] * threshold
@@ -251,15 +252,16 @@ get_quadratic_roots <- function(m, predictor = "do_mlpl", fixed_param = 1, thres
   res[2] <- (res[2] * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]])
   res[3] <- (res[3] * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]])
   
-  plot(x, y, type = "l")
-  abline(h = crit_y)
-  abline(v = res[1], col = "red")
-  abline(v = res[2])
-  abline(v = res[3])
+if (plot){  
+  plot(x, y, type = "l", yaxt='n', xlab=predictor)
+    abline(h = crit_y)
+    abline(v = res[1], col = "red")
+    abline(v = res[2])
+    abline(v = res[3])
+}  
+  
   list(optimal = res[1], lower_threshold = res[2], upper_threshold = res[3], range = res[1]-res[2], prop_max = threshold)
 }
-
-
 
 
 # time_varying_density3 <- function(m, predictor = "depth") {
