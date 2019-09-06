@@ -16,22 +16,45 @@ species <- params$species
 
 # # Species run so far...
 # species <- "Arrowtooth Flounder"
+# species <- "Petrale Sole"
+# species <- "English Sole"
+# species <- "Dover Sole" # maturity data error for WCHG
+# species <- "Southern Rock Sole"
+# species <- "Flathead Sole"
+ 
+
+# species <- "Walleye Pollock"
 # species <- "Pacific Cod"
-# species <- "Sablefish"
-# species <- "Silvergray Rockfish"
-# species <- "Lingcod"
-# species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
- species <- "Quillback Rockfish"
 # species <- "Pacific Ocean Perch"
+
+# species <- "Silvergray Rockfish"
+# species <- "Quillback Rockfish"
 # species <- "Yelloweye Rockfish"
+# species <- "Bocaccio"
+# species <- "Sharpchin Rockfish"
+# species <- "Splitnose Rockfish"
+# species <- "Canary Rockfish"
+# species <- "Rougheye/Blackspotted Rockfish Complex"
+# species <- "Redbanded Rockfish"
+# species <- "Greenstriped Rockfish"
+   
+# species <- "Longspine Thornyhead"
+# species <- "Shortspine Thornyhead",
+# species <- "Sablefish"
+# species <- "Lingcod"
+ 
+# species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
+# species <- "Longnose Skate"
+species <- "Spotted Ratfish"
+
 ```
 
 Region 
 ```{r}
  region <- "All synoptic surveys"
-# region <- "Both odd year surveys"
-# region <- "West Coast Vancouver Island"
-# region <- "West Coast Haida Gwaii"
+ # region <- "Both odd year surveys"
+ # region <- "West Coast Vancouver Island"
+ #  region <- "West Coast Haida Gwaii"
 ```
 
 Choose model details
@@ -118,12 +141,29 @@ Combine biomass and sensor data
   
   # scale predictors before filtering to ensure mean and SD are global
   data <- data %>% mutate(raw_depth = depth_bath, depth = log(raw_depth), temp = temperature_c) 
-  do_data <- scale_predictors(data, predictors = c(quo(depth), quo(temp), quo(do_mlpl)))
+  do_data <- scale_predictors(data, predictors = c(quo(depth), quo(temp), quo(do_mlpl))) 
        # c(quo(log_depth), quo(mixed), quo(muddy), quo(sandy), quo(rocky), quo(any_rock)))
   data <- do_data %>% mutate(depth = raw_depth) %>% #filter(year != 2016) %>%
     filter(ssid %in% model_ssid) %>% 
-    filter(!is.na(do_mlpl)) %>% filter(!is.na(depth_scaled)) %>% filter(!is.na(temp))%>% 
-    select(X, Y, X10, Y10, adult_density, imm_density, depth_scaled, depth_scaled2, depth_mean, depth_sd, do_mlpl_scaled, do_mlpl_scaled2,  do_mlpl_mean, do_mlpl_sd, temp_scaled, temp_scaled2, temp_mean, temp_sd, trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, depth, do_mlpl) %>% filter(!is.na(depth_scaled)) 
+    filter(!is.na(depth_scaled)) %>% filter(!is.na(do_mlpl)) %>% filter(!is.na(temp)) 
+  
+if (any(names(data) == "adult_density")) { 
+  data <- data %>% select(X, Y, X10, Y10,
+      adult_density, imm_density,
+      depth_scaled, depth_scaled2, depth_mean, depth_sd, 
+      do_mlpl_scaled, do_mlpl_scaled2,  do_mlpl_mean, do_mlpl_sd, 
+      temp_scaled, temp_scaled2, temp_mean, temp_sd, 
+      trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, 
+      depth, do_mlpl) 
+ } else {
+    data <- data %>% select(X, Y, X10, Y10,
+      density,
+      depth_scaled, depth_scaled2, depth_mean, depth_sd, 
+      do_mlpl_scaled, do_mlpl_scaled2,  do_mlpl_mean, do_mlpl_sd, 
+      temp_scaled, temp_scaled2, temp_mean, temp_sd, 
+      trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, 
+      depth, do_mlpl) 
+}
 ```
 
 
