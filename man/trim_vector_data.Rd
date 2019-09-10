@@ -4,25 +4,30 @@
 \alias{trim_vector_data}
 \title{Trim VOCC output to only include vectors for cells with specific end conditions}
 \usage{
-trim_vector_data(data, variable_names, lower_thresholds, upper_thresholds,
-  min_change, max_change, cell_size = 2, dist_intercept = cell_size,
-  max_dist = max(data$distance, na.rm = TRUE))
+trim_vector_data(data, variable_names, lower_change, upper_change,
+  lower_thresholds = NULL, upper_thresholds = NULL, cell_size = 2,
+  dist_intercept = cell_size, max_dist = max(data$distance, na.rm =
+  TRUE))
 }
 \arguments{
 \item{data}{Dataframe created by make-vector-data function}
 
 \item{variable_names}{Names of climate variable(s) used in make-vector-data function}
 
+\item{lower_change}{When not c(Inf), cells will be trimmed based on lower_thresholds}
+
+\item{upper_change}{When not c(Inf), cells will be trimmed based on upper_thresholds}
+
+\item{lower_thresholds}{Default of NULL only allowed when change is Inf}
+
+\item{upper_thresholds}{Default of NULL only allowed when change is Inf}
+
 \item{cell_size}{Cell size used in make-vector-data function}
 
-\item{dist_intercept}{Distance at which model estimates will be calculated. 
-Defaults to nearest neighbouring cells.}
+\item{dist_intercept}{Distance at which model estimates will be calculated.
+Defaults to nearest neighbouring cells}
 
-\item{optimal_values}{Value of climate variable(s) associated with maximum biomass density}
-
-\item{min_thresholds}{Magnitude(s) of decrease to be tested}
-
-\item{max_thresholds}{Magnitude(s) of increase to be tested}
+\item{max_dist}{Value at which to truncate distances (defaults to no truncation)}
 }
 \description{
 Trim VOCC output to only include vectors for cells with specific end conditions
