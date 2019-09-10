@@ -1,5 +1,5 @@
 ---
-title: "Spatiotemporal models of species biomass split by maturity class"
+title: "Spatiotemporal models of species biomass with time-varying depth and trawl footprint, and optional substrate variables"
 author: "Philina English"
 date: '2019-07-18'
 output: html_document
@@ -15,61 +15,81 @@ Species
 species <- params$species
 
 # # Species run so far...
-# species <- "Arrowtooth Flounder"
+# species <- "Arrowtooth Flounder" # temp good, not DO, imm moving deeper?
+
 # species <- "Petrale Sole"
 # species <- "English Sole"
-# species <- "Dover Sole" # maturity data error for WCHG
+# species <- "Dover Sole"
 # species <- "Southern Rock Sole"
-# species <- "Flathead Sole"
  
 
-# species <- "Walleye Pollock"
+# species <- "Walleye Pollock" # survey 4 or 16 might work
 # species <- "Pacific Cod"
-# species <- "Pacific Ocean Perch"
 
-# species <- "Silvergray Rockfish"
-# species <- "Quillback Rockfish"
-# species <- "Yelloweye Rockfish"
-# species <- "Bocaccio"
-# species <- "Sharpchin Rockfish"
-# species <- "Splitnose Rockfish"
-# species <- "Canary Rockfish"
-# species <- "Rougheye/Blackspotted Rockfish Complex"
- species <- "Redbanded Rockfish"
-# species <- "Greenstriped Rockfish"
-   
-# species <- "Longspine Thornyhead"
-# species <- "Shortspine Thornyhead",
-# species <- "Sablefish"
-# species <- "Lingcod"
+## Sebastes
+
+## TRY BOTH - not schooling
+ # species <- "Yelloweye Rockfish" # beautiful curves, with depth change ***
+ #  species <- "Bocaccio" # good curves, no depth change ... most survey-specific models fail to find minimum ***
+#  species <- "Sharpchin Rockfish" # beautiful curves, imm depth change ***
+#  species <- "Greenstriped Rockfish" # beautiful curves for adults, no depth change ***
+
+# ## TRY BOTH - schooling
+#  species <- "Pacific Ocean Perch" # beautiful curves, no depth change, schooling ***
+#  species <- "Silvergray Rockfish" # beautiful curves, no depth change, schooling ***
+
+
+## TRY JUST TEMPERATURE 
+# species <- "Rougheye/Blackspotted Rockfish Complex" # good temp, not DO
+# species <- "Redbanded Rockfish" # good temp, not DO, maybe moving shallower
+ species <- "Splitnose Rockfish" # good temp, survey 4 DO ok
+
  
-# species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
-# species <- "Longnose Skate"
- species <- "Spotted Ratfish"
+  
+# species <- "Yellowtail Rockfish" #  good temp for survey 4 only, no DO, schooling
+# species <- "Quillback Rockfish" # like warm = overall a bit flat... territorial! 
+# species <- "Canary Rockfish" # schooling, winter-birthing, and depth change!, but curves at edges... adult1 looks ok?
+#  species <- "Widow Rockfish" # schooling, and depth change, but curves at edges
 
+# species <- "Longspine Thornyhead" # too deep to produce curves
+# species <- "Shortspine Thornyhead"
+# species <- "Sablefish" # temp might work, no DO, no consistant depth change
+# species <- "Lingcod" # curves ok, overall a bit flat
+# # species <- "Pacific Hake" # not useful
+  
+# species <- "North Pacific Spiny Dogfish" # too flat, but with depth change! note: pooled maturity 
+# species <- "Longnose Skate" # do too flat, temp from 4 might be useful, seems to go deeper?
+# species <- "Big Skate"
+# species <- "Sandpaper Skate"
+# species <- "Brown Cat Shark"
+# species <- "Spotted Ratfish" # curves not useful because to abundant in shallow
 ```
 
 Region 
 ```{r}
-  region <- "All synoptic surveys"
- # region <- "Both odd year surveys"
- # region <- "West Coast Vancouver Island"
- # region <- "West Coast Haida Gwaii"
+ region <- "All synoptic surveys"
+# region <- "Both odd year surveys"
+# region <- "West Coast Vancouver Island"
+# region <- "West Coast Haida Gwaii"
 ```
 
 Choose model details
 ```{r}
 priors <- FALSE
 # priors <- TRUE
+covariates <- "+trawled+as.factor(ssid)"
+ covs <- "-trawled-ssid"
+ 
 # covariates <- "+muddy+any_rock"
-covariates <- ""
-covs <- gsub("\\+", "-", "+muddy+any_rock")
-#covs <- gsub("\\+", "-", covariates)
 # covariates <- "+muddy+mixed+rocky"
 # covariates <- "+mixed+rocky"
-# covariates <- "+trawled+muddy+rocky+mixed"
-# covariates <- "+trawled+mixed+rocky"
-# covariates <- "+trawled+mixed"
+# covariates <- "+rocky"
+# covariates <- "+mixed_scaled+rocky_scaled+muddy_scaled"
+
+# covs <- gsub("\\+", "-", covariates)
+# covs <- gsub("\\+", "-", "+muddy+any_rock")
+# covs <- gsub("\\+", "-", "-variable-substrate")
+# covs <- gsub("\\+", "-", "-all-substrates")
 ```
 
 
@@ -127,76 +147,6 @@ if (region == "All synoptic surveys") {
 ```
 
 
-# Split biomass by maturity
-
-#### Calculate maturity weighted biomass if not done before
-```{r}
- rm(biomass)
- rm(maturity)
-# try(biomass <- readRDS(paste0("data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds")))
-
-if (!exists("biomass")) {
-  survey_sets <- readRDS(paste0("raw/event-data-", spp, ""))
-  fish <- readRDS(paste0("raw/bio-data-", spp, ""))
-  bath <- readRDS("data/bathymetry-data")
-  # for POP: exclude sample with unusually large fish 
-  # sizes are impossible given recorded catch weight
-  # fish <- fish[fish$fishing_event_id!=1506954,]
-
- try({ 
-   maturity <- split_catch_maturity(survey_sets, fish, bath,
-    survey = survey,
-    years = years,
-    cutoff_quantile = c(.9995),
-    plot = TRUE)
-   })
-  
-  if(is.null(maturity$maturity)) {
-  maturity <- split_catch_maturity(survey_sets, fish, bath,
-    survey = c("SYN QCS","SYN HS","SYN WCVI","SYN WCHG"),
-    years = years,
-    cutoff_quantile = c(.9995),
-    plot = TRUE
-  )
-  maturity$data <- filter(maturity$data, ssid == model_ssid) 
-  }
-  
-  saveRDS(maturity$data, file = paste0("data/", spp, 
-    "/data-by-maturity-", spp, "-", ssid_string, ".rds"
-    ))
-}
-```
-
-#### Save length~weight plots
-```{r}
-if (exists("maturity")) {
-  print(maturity$mass_model)
-  ggsave(
-    file = paste0("figs/", spp, "/", spp, "-mass-model-", ssid_string, ".png"),
-    dpi = 600,
-    width = 8, 
-    height = 10
-  )
-}
-```
-
-#### Save length at maturity plot 
-```{r}
-if (exists("maturity")) {
-  png(
-    file = paste0("figs/", spp, "/", spp, "-maturity-", ssid_string, ".png"), 
-    res = 600,
-    units = "in",
-    width = 8, 
-    height = 10
-  )
-  print(maturity$maturity)
-  dev.off()
-}
-
-try(print(maturity$maturity))
-```
-
 # Build spatiotemporal density model
 Load and filter data 
 ```{r}
@@ -208,14 +158,13 @@ biomass <- readRDS(paste0(
   
   # scale predictors before filtering to ensure mean and SD are global
   data <- data %>% mutate(raw_depth = depth, depth = log(raw_depth)) 
-  data <- gfranges::scale_predictors(data, predictors = c(quo(depth)))
-       # c(quo(log_depth), quo(mixed), quo(muddy), quo(sandy), quo(rocky), quo(any_rock)))
+  data <- gfranges::scale_predictors(data, #predictors = c(quo(depth)))
+        predictors = c(quo(depth), quo(mixed), quo(muddy), quo(sandy), quo(rocky), quo(any_rock)))
   data <- data %>% mutate(depth = raw_depth) %>% filter(ssid %in% model_ssid)
 ```
 
-Run climate independent sdmTMB model
+Make mesh
 ```{r}
-  
   if (region == "Both odd year surveys") {
     spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 400)
   }
@@ -233,6 +182,11 @@ Run climate independent sdmTMB model
   }
 
   sdmTMB::plot_spde(spde)
+```
+
+
+Run climate independent sdmTMB model
+```{r}
 
   if (any(names(data) == "adult_density")) {
     
@@ -243,7 +197,7 @@ Run climate independent sdmTMB model
     starttime1 <- Sys.time()
     adult_biomass <- sdmTMB::sdmTMB(data,
       adult_formula,
-      time_varying = ~ 0 + depth_scaled + depth_scaled2 + trawled,
+      time_varying = ~ 0 + depth_scaled + depth_scaled2 , #+ trawled
       time = "year", spde = spde,
       family = tweedie(link = "log"),
       ar1_fields = TRUE,
@@ -268,7 +222,7 @@ Run climate independent sdmTMB model
     starttime2 <- Sys.time()
     imm_biomass <- sdmTMB::sdmTMB(data, 
       imm_formula,
-      time_varying = ~ 0 + depth_scaled + depth_scaled2 + trawled,
+      time_varying = ~ 0 + depth_scaled + depth_scaled2, #+ trawled
       time = "year", spde = spde,
       family = tweedie(link = "log"),
       ar1_fields = FALSE,
@@ -292,7 +246,7 @@ Run climate independent sdmTMB model
     
     total_biomass <- sdmTMB::sdmTMB(data,
       dens_formula,
-      time_varying = ~ 0 + depth_scaled + depth_scaled2 + trawled,
+      time_varying = ~ 0 + depth_scaled + depth_scaled2,# + trawled
       time = "year", spde = spde,
       family = tweedie(link = "log"),
       ar1_fields = TRUE,

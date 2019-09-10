@@ -11,16 +11,55 @@ This file calls models built by "1-biomass-models.Rmd" and stiches the predictio
 
 Species
 ```{r}
+
 # # Species run so far...
- species <- "Arrowtooth Flounder"
-#  species <- "Pacific Cod"
-# species <- "Sablefish"
-#  species <- "Silvergray Rockfish"
-# species <- "Lingcod"
-#  species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
-# species <- "Quillback Rockfish"
-# species <- "Pacific Ocean Perch"
-# species <- "Yelloweye Rockfish"
+# species <- "Arrowtooth Flounder" # temp good, not DO, imm moving deeper?
+
+# species <- "Petrale Sole"
+# species <- "English Sole"
+# species <- "Dover Sole"
+# species <- "Southern Rock Sole"
+ 
+
+# species <- "Walleye Pollock" # survey 4 or 16 might work
+# species <- "Pacific Cod"
+
+## Sebastes
+
+## TRY BOTH - not schooling
+ # species <- "Yelloweye Rockfish" # beautiful curves, with depth change ***
+ # species <- "Bocaccio" # good curves, no depth change ... most survey-specific models fail to find minimum ***
+#  species <- "Sharpchin Rockfish" # beautiful curves, imm depth change ***
+#  species <- "Greenstriped Rockfish" # beautiful curves for adults, no depth change ***
+# 
+# ## TRY BOTH - schooling
+#  species <- "Pacific Ocean Perch" # beautiful curves, no depth change, schooling ***
+#  species <- "Silvergray Rockfish" # beautiful curves, no depth change, schooling ***
+
+
+## TRY JUST TEMPERATURE 
+# species <- "Rougheye/Blackspotted Rockfish Complex" # good temp, not DO
+# species <- "Redbanded Rockfish" # good temp, not DO, maybe moving shallower
+# species <- "Splitnose Rockfish" # good temp, not DO 
+
+ 
+# species <- "Yellowtail Rockfish" #  good temp for survey 4 only, no DO, schooling
+# species <- "Quillback Rockfish" # like warm = overall a bit flat... territorial! 
+# species <- "Canary Rockfish" # schooling, winter-birthing, and depth change!, but curves at edges... adult1 looks ok?
+#  species <- "Widow Rockfish" # schooling, and depth change, but curves at edges
+
+# species <- "Longspine Thornyhead" # too deep to produce curves
+# species <- "Shortspine Thornyhead"
+# species <- "Sablefish" # temp might work, no DO, no consistant depth change
+# species <- "Lingcod" # curves ok, overall a bit flat
+# # species <- "Pacific Hake" # not useful
+  
+# species <- "North Pacific Spiny Dogfish" # too flat, but with depth change! note: pooled maturity 
+# species <- "Longnose Skate" # do too flat, temp from 4 might be useful, seems to go deeper?
+# species <- "Big Skate"
+# species <- "Sandpaper Skate"
+# species <- "Brown Cat Shark"
+# species <- "Spotted Ratfish" # curves not useful because to abundant in shallow
 ```
 
 Region 
@@ -37,10 +76,14 @@ Choose model details
 update_spatial_model <- FALSE
 priors <- FALSE
 # priors <- TRUE
-
+covariates <- ""
+covariates <- "+trawled"
+covs <- gsub("\\+", "-", covariates)
+covariates <- "+trawled+as.factor(ssid)"
+ covs <- gsub("\\+", "-", "+trawled+ssid")
 # covariates <- "+muddy+mixed+rocky"
 # covariates <- "+mixed+rocky"
-covariates <- "+muddy+any_rock"
+# covariates <- "+muddy+any_rock"
 # covariates <- "+trawled+muddy+rocky+mixed"
 # covariates <- "+trawled+mixed+rocky"
 # covariates <- "+trawled+mixed"
@@ -49,7 +92,7 @@ covariates <- "+muddy+any_rock"
 
 Run all subsequent code...
 ```{r global_options, include=FALSE}
-covs <- gsub("\\+", "-", covariates)
+
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 # folder to hold figs for this species
@@ -138,28 +181,40 @@ if (region != "All synoptic surveys") {
     }
   
 } else {
-    # Bind together predictions from different models
-    try({
-      pred1n3 <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-1n3-mature-biomass-prior-", priors, ".rds"))
-      pred4 <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-4-mature-biomass-prior-", priors, ".rds"))
-      pred16 <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-16-mature-biomass-prior-", priors, ".rds"))
-    })
+  
+   try({adult_predictions <- readRDS(paste0("data/", spp, 
+      "/predictions-", spp, covs, "-", ssid_string, "-mature-biomass-prior-", priors, ".rds"
+    ))})
+   try({imm_predictions <- readRDS(paste0("data/", spp, 
+      "/predictions-", spp, covs, "-", ssid_string, "-imm-biomass-prior-", priors, ".rds"
+    ))})
+  
+  if (!exists("adult_predictions")) {
+    # OR bind together predictions from different models
+   try({pred1n3 <- readRDS(paste0("data/", spp, 
+        "/predictions-", spp, covs, "-1n3-mature-biomass-prior-", priors, ".rds"))})
+   try({pred4 <- readRDS(paste0("data/", spp, 
+        "/predictions-", spp, covs, "-4-mature-biomass-prior-", priors, ".rds"))}) 
+   try({pred16 <- readRDS(paste0("data/", spp, 
+        "/predictions-", spp, covs, "-16-mature-biomass-prior-", priors, ".rds"))})
+  
+    if (!exists("pred1n3")) pred1n3 <- NULL
     if (!exists("pred16")) pred16 <- NULL
     if (!exists("pred4")) pred4 <- NULL
     adult_predictions <- rbind(pred1n3, pred4, pred16)
 
     try({
       pred1n3_imm <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-1n3-imm-biomass-prior-", priors, ".rds"))
+        "/predictions-", spp, covs, "-1n3-imm-biomass-prior-", priors, ".rds"))})
+   try({
       pred4_imm <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-4-imm-biomass-prior-", priors, ".rds"))
+        "/predictions-", spp, covs, "-4-imm-biomass-prior-", priors, ".rds"))})
+   try({
       pred16_imm <- readRDS(paste0("data/", spp, 
         "/predictions-", spp, covs, "-16-imm-biomass-prior-", priors, ".rds"))
     })
 
+    if (!exists("pred1n3_imm")) pred1n3_imm <- NULL
     if (!exists("pred16_imm")) pred16_imm <- NULL
     if (!exists("pred4_imm")) pred4_imm <- NULL
     imm_predictions <- rbind(pred1n3_imm, pred4_imm, pred16_imm)
@@ -167,18 +222,27 @@ if (region != "All synoptic surveys") {
     if (!exists("adult_predictions")) {
       paste("Maturity split biomass predictions are not available.")
       
+      try({predictions <- readRDS(paste0("data/", spp, 
+        "/predictions-", spp, covs, "-", ssid_string, "-total-biomass-prior-", priors, ".rds"
+      ))})
+  
+      if (!exists("predictions")) {
+      
+      
+      try({pred1n3_all <- readRDS(paste0("data/", spp, 
+        "/predictions-", spp, covs, "-1n3-total-biomass-prior-", priors, ".rds"))})
+      try({pred4_all <- readRDS(paste0("data/", spp, 
+        "/predictions-", spp, covs, "-4-total-biomass-prior-", priors, ".rds"))})
+      try({pred16_all <- readRDS(paste0("data/", spp, 
+        "/predictions-", spp, covs, "-16-total-biomass-prior-", priors, ".rds"))})
       try({
-      pred1n3_all <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-1n3-total-biomass-prior-", priors, ".rds"))
-      pred4_all <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-4-total-biomass-prior-", priors, ".rds"))
-      pred16_all <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-16-total-biomass-prior-", priors, ".rds"))
       predictions <- rbind(pred1n3_all, pred4_all, pred16_all)
       })
       
       if (!exists("predictions")) paste("Total biomass predictions are not available.")
+      }
     }
+  }
 }
 ```
 
@@ -202,6 +266,8 @@ if (exists("adult_predictions")) {
   saveRDS(imm_predictions, file = paste0("data/", spp, 
       "/all-predictions-", spp, covs, "-imm-biomass-prior-", priors, ".rds"))
   
+  model_ssid <- unique(adult_predictions$ssid)
+  
 } else {
   
   predictions$total_bio <- exp(predictions$est) * 10000
@@ -210,6 +276,8 @@ if (exists("adult_predictions")) {
   
   saveRDS(predictions, file = paste0("data/", spp, 
       "/all-predictions-", spp, covs, "-total-biomass-prior-", priors, ".rds"))
+  
+  model_ssid <- unique(predictions$ssid)
 }
 ```
 
@@ -260,7 +328,11 @@ if (exists("adult_predictions")) {
   }
 
   if (16 %in% model_ssid) {
+    if (any(adult_predictions$ssid == 16)) {
     adult_predictions16 <- adult_predictions %>% filter(ssid == 16)
+    } else {
+    adult_predictions16 <- NULL
+    }
   } else {
     adult_predictions16 <- NULL
   }
@@ -381,8 +453,7 @@ if (!exists("out_mature")) {
 
 
 ```{r }
-#FIXME: Attempting to plot of current mature biomass with trawl footprint...
-# if (exists("out_mature")) {
+if (exists("out_mature")) {
 
 trawl_footprint <- sf::st_read(dsn="data/trawl-footprint",layer="Trawl_footprint")
 proj.to <- "+proj=utm +zone=9 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
@@ -405,7 +476,7 @@ current_biomass <- current_biomass +
    theme(panel.grid.major = element_line(colour = "transparent")) +
    ggtitle(paste("Predicted", species, "density with trawl footprint overlain"))
 current_biomass
-# }
+}
 ```
 
 
