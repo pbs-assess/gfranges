@@ -181,31 +181,33 @@ make_vector_data <- function(data,
 #'
 #' @param data Dataframe created by make-vector-data function
 #' @param variable_names Names of climate variable(s) used in make-vector-data function
-#' @param optimal_values Value of climate variable(s) associated with maximum biomass density
-#' @param min_thresholds Magnitude(s) of decrease to be tested
-#' @param max_thresholds Magnitude(s) of increase to be tested
 #' @param cell_size Cell size used in make-vector-data function
-#' @param dist_intercept Distance at which model estimates will be calculated. 
-#'   Defaults to nearest neighbouring cells. 
+#' @param dist_intercept Distance at which model estimates will be calculated.
+#'   Defaults to nearest neighbouring cells 
+#' @param lower_change When not c(Inf), cells will be trimmed based on lower_thresholds
+#' @param upper_change When not c(Inf), cells will be trimmed based on upper_thresholds
+#' @param lower_thresholds Default of NULL only allowed when change is Inf
+#' @param upper_thresholds Default of NULL only allowed when change is Inf
+#' @param max_dist Value at which to truncate distances (defaults to no truncation)
 #'
 #' @export
 trim_vector_data <- function(data, variable_names, 
-  optimal_values, min_thresholds, max_thresholds, 
+  lower_change, upper_change, 
+  lower_thresholds = NULL, upper_thresholds = NULL,
   cell_size = 2, dist_intercept = cell_size, 
   max_dist = max(data$distance, na.rm = TRUE)
   ){
 
-#browser()  
   newdata <- list()
   for (j in seq_along(variable_names)){
       
-    if (min_thresholds[j] != Inf) { 
+    if (lower_change[j] != Inf) { 
       newdata[[j]] <- filter(data, 
-        UQ(rlang::sym(paste0(variable_names[j], "_e"))) < optimal_values[j] - min_thresholds[j]) 
+        UQ(rlang::sym(paste0(variable_names[j], "_e"))) < lower_thresholds[j] ) 
     }
-    if (max_thresholds[j] != Inf) {
+    if (upper_change[j] != Inf) {
       newdata[[j]] <- filter(data, 
-        UQ(rlang::sym(paste0(variable_names[j], "_e"))) > optimal_values[j] + max_thresholds[j])
+        UQ(rlang::sym(paste0(variable_names[j], "_e"))) > upper_thresholds[j] ) 
     }
   }  
   
