@@ -34,7 +34,7 @@ species <- list(
   # decreases in abundance indices in some areas for 
   #"Arrowtooth Flounder", # (Atheresthes stomias), 
   "Pacific Cod", # (Gadus macrocephalus), 
-  #"Silvergray Rockfish", and 
+  #"Silvergray Rockfish",  
   "Lingcod", # (Ophiodon elongatus) 
 
   # return to the west coast of Vancouver Island after an absence of about four years of 
@@ -51,10 +51,21 @@ species <- list(
   "Quillback Rockfish",
   
 # Other species of interest  
-  "Pacific Ocean Perch"
+  "Pacific Ocean Perch" # schooling
 )
 
+species <- "Big Skate"
+
+# Added rockfish species
 species <- "Yelloweye Rockfish"
+species <- "Widow Rockfish" # schooling
+species <- "Yellowtail Rockfish" # schooling
+species <- "Copper Rockfish"
+species <- "Darkblotched Rockfish"
+species <- "Shortbelly Rockfish"
+species <- "Pacific Hake"
+species <- "Sandpaper Skate"
+species <- "Brown Cat Shark"
 
 for (i in species) {
 species <- tolower(i)

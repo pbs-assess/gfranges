@@ -9,7 +9,7 @@ Species
 ```{r}
 
 # # Species run so far...
- species <- "Arrowtooth Flounder" # running more models
+# species <- "Arrowtooth Flounder" # temp good, not DO, imm moving deeper?
 
 # species <- "Petrale Sole"
 # species <- "English Sole"
@@ -17,29 +17,44 @@ Species
 # species <- "Southern Rock Sole"
  
 
- species <- "Walleye Pollock" # running more models
+# species <- "Walleye Pollock" # survey 4 or 16 might work
 # species <- "Pacific Cod"
-# species <- "Pacific Ocean Perch" # beautiful curves, no depth change
 
-# species <- "Silvergray Rockfish" # beautiful curves, no depth change
- species <- "Quillback Rockfish" # overall a bit flat... running survey specific models
-# species <- "Yelloweye Rockfish" # beautiful curves, with depth change
- species <- "Bocaccio" # good curves, no depth change ... should run survey specific models
- species <- "Sharpchin Rockfish"
-# species <- "Splitnose Rockfish"
-# species <- "Canary Rockfish"
-# species <- "Rougheye/Blackspotted Rockfish Complex"
-# species <- "Redbanded Rockfish"
-# species <- "Greenstriped Rockfish"
- 
-# species <- "Longspine Thornyhead"
-# species <- "Shortspine Thornyhead",
-# species <- "Sablefish"
-# species <- "Lingcod"
- 
-# species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
-# species <- "Longnose Skate"
-#  species <- "Spotted Ratfish"
+## Sebastes
+# 
+# ## TRY BOTH - not schooling
+#  species <- "Yelloweye Rockfish" # beautiful curves, with depth change ***
+#  species <- "Bocaccio" # good curves, no depth change ... most survey-specific models fail to find minimum ***
+#  species <- "Sharpchin Rockfish" # beautiful curves, imm depth change ***
+#  species <- "Greenstriped Rockfish" # beautiful curves for adults, no depth change ***
+
+# ## TRY BOTH - schooling
+#  species <- "Pacific Ocean Perch" # beautiful curves, no depth change, schooling ***
+#  species <- "Silvergray Rockfish" # beautiful curves, no depth change, schooling ***
+
+# ## TRY JUST TEMPERATURE 
+# # species <- "Rougheye/Blackspotted Rockfish Complex" # good temp, not DO
+# # species <- "Redbanded Rockfish" # good temp, not DO, maybe moving shallower
+#  species <- "Splitnose Rockfish" # good temp, survey 4 DO ok
+
+  
+# # species <- "Yellowtail Rockfish" #  good temp for survey 4 only, no DO, schooling
+# # species <- "Quillback Rockfish" # like warm = overall a bit flat... territorial! 
+# # species <- "Canary Rockfish" # schooling, winter-birthing, and depth change!, but curves at edges... adult1 looks ok?
+#  species <- "Widow Rockfish" # schooling, and depth change, but curves at edges
+
+# species <- "Longspine Thornyhead" # too deep to produce curves
+# species <- "Shortspine Thornyhead"
+# species <- "Sablefish" # temp might work, no DO, no consistant depth change
+# species <- "Lingcod" # curves ok, overall a bit flat
+# # species <- "Pacific Hake" # not useful
+  
+# species <- "North Pacific Spiny Dogfish" # too flat, but with depth change! note: pooled maturity 
+# species <- "Longnose Skate" # do too flat, temp from 4 might be useful, seems to go deeper?
+# species <- "Big Skate"
+# species <- "Sandpaper Skate"
+# species <- "Brown Cat Shark"
+# species <- "Spotted Ratfish" # curves not useful because to abundant in shallow
 ```
 
 Choose model details
@@ -51,6 +66,9 @@ covariates <- ""
 # covariates <- "+trawled+muddy+rocky+mixed"
 # covariates <- "+trawled+mixed+rocky"
 # covariates <- "+trawled+mixed"
+# 
+# covariates <- "+as.factor(ssid)"
+# covs <- "-both-tv-depth-ssid"
 
 # priors <- FALSE
 # covariates <- "+muddy+any_rock"
@@ -58,6 +76,7 @@ covariates <- ""
 priors <- TRUE
 #covs <- "-tv-depth"
 covs <- "-both-tv-depth"
+
 num_params <- 2
 ```
 
@@ -202,6 +221,7 @@ for (i in seq_len(length(model_list))) {
   if (length(do[[i]])>0) {
    do[[i]]$species <- species
    do[[i]]$age <- ifelse(grepl("imm", names(model_list[i])), "imm", "adult")
+   do[[i]]$ssid <- unique(model_list[[i]]$data$ssid)
    do[[i]]$model <- names(model_list[i])
    do[[i]]$covs <- covs 
    roots <- get_quadratic_roots(model_list[[i]], predictor = "do_mlpl", fixed_param = 1, threshold = 0.5)
@@ -254,6 +274,7 @@ for (i in seq_len(length(model_list))) {
   if (length(td[[i]])>0) {
     td[[i]]$species <- species
     td[[i]]$age <- ifelse(grepl("imm", names(model_list[i])), "imm", "adult")
+    td[[i]]$ssid <- unique(model_list[[i]]$data$ssid)
     td[[i]]$model <- names(model_list[i])
     td[[i]]$covs <- covs
    roots <- get_quadratic_roots(model_list[[i]], predictor = "temp", fixed_param = num_params, threshold = 0.5)
@@ -557,7 +578,7 @@ png(
 )
 gridExtra::grid.arrange(
   grobs = do_plots,
-  ncol = 2,
+  nrow = 4,
   top = grid::textGrob(paste(species))
 )
 dev.off()
@@ -574,7 +595,7 @@ png(
 )
 gridExtra::grid.arrange(
   grobs = temp_plots,
-  ncol = 2,
+  nrow = 4,
   top = grid::textGrob(paste(species))
 )
 dev.off()
@@ -590,7 +611,7 @@ png(
   height = 11
 )
 gridExtra::grid.arrange(grobs = c(raw_do_plots, raw_t_plots),
-  ncol = 2,
+  nrow = 4,
   top = grid::textGrob(paste("Raw densities of", species, "with modeled optimals in vertical lines (if solid includes all surveys)"))
 )
 dev.off()
@@ -611,7 +632,7 @@ png(
 )
 gridExtra::grid.arrange(
   grobs = depth_plots,
-  ncol = 2,
+  nrow = 4,
   top = grid::textGrob(paste(species))
 )
 dev.off()
