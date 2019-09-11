@@ -12,7 +12,7 @@ Choose one value for each parameter:
 
 Species
 ```{r}
-species <- params$species
+# species <- params$species
 
 # # Species run so far...
 # species <- "Arrowtooth Flounder"
@@ -23,37 +23,51 @@ species <- params$species
 # species <- "Flathead Sole"
  
 
-# species <- "Walleye Pollock"
-# species <- "Pacific Cod"
-# species <- "Pacific Ocean Perch"
 
 # species <- "Silvergray Rockfish"
-# species <- "Quillback Rockfish"
-# species <- "Yelloweye Rockfish"
-# species <- "Bocaccio"
+# species <- "Quillback Rockfish" # summer-birthing
+# species <- "Yelloweye Rockfish" # summer-birthing, overfished, 
+# species <- "Bocaccio" # winter-birthing, overfished
 # species <- "Sharpchin Rockfish"
 # species <- "Splitnose Rockfish"
-# species <- "Canary Rockfish"
+
 # species <- "Rougheye/Blackspotted Rockfish Complex"
 # species <- "Redbanded Rockfish"
 # species <- "Greenstriped Rockfish"
+# # species <- "Copper Rockfish" # small sample
+# species <- "Darkblotched Rockfish"
+# # species <- "Shortbelly Rockfish" # small sample
+
+
+
+# species <- "Pacific Ocean Perch" # schooling
+# species <- "Widow Rockfish" # schooling
+# species <- "Yellowtail Rockfish" # schooling
+# species <- "Canary Rockfish" # schooling, winter-birthing
    
 # species <- "Longspine Thornyhead"
-# species <- "Shortspine Thornyhead",
+# species <- "Shortspine Thornyhead"
+
+
+# species <- "Walleye Pollock"
+# species <- "Pacific Cod"
 # species <- "Sablefish"
 # species <- "Lingcod"
+# species <- "Pacific Hake"
  
 # species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
 # species <- "Longnose Skate"
-species <- "Spotted Ratfish"
-
+# species <- "Big Skate"
+# species <- "Spotted Ratfish"
+# species <- "Sandpaper Skate"
+# species <- "Brown Cat Shark"
 ```
 
 Region 
 ```{r}
  region <- "All synoptic surveys"
- # region <- "Both odd year surveys"
- # region <- "West Coast Vancouver Island"
+  # region <- "Both odd year surveys"
+# region <- "West Coast Vancouver Island"
  #  region <- "West Coast Haida Gwaii"
 ```
 
@@ -63,13 +77,16 @@ Choose model details
  priors <- TRUE
 # covariates <- "+muddy+any_rock"
  covariates <- ""
+# covariates <- "+trawled+as.factor(ssid)"
 # covariates <- "+muddy+mixed+rocky"
 # covariates <- "+mixed+rocky"
 # covariates <- "+trawled+muddy+rocky+mixed"
 # covariates <- "+trawled+mixed+rocky"
 # covariates <- "+trawled+mixed"
-covs <- gsub("\\+", "-", covariates)
-covs <- "-both-tv-depth"
+# covs <- gsub("\\+", "-", covariates)
+# covs <- "-both-tv-depth-ssid"
+# covs <- "-both-tv-depth"
+covs <- "-log-do"
 ```
 
 
@@ -140,7 +157,7 @@ Combine biomass and sensor data
     filter(year > 2007) # 2007 DO data is flawed
   
   # scale predictors before filtering to ensure mean and SD are global
-  data <- data %>% mutate(raw_depth = depth_bath, depth = log(raw_depth), temp = temperature_c) 
+  data <- data %>% mutate(raw_depth = depth_bath, depth = log(raw_depth), temp = temperature_c, raw_do = do_mlpl, do_mlpl = log(do_mlpl)) 
   do_data <- scale_predictors(data, predictors = c(quo(depth), quo(temp), quo(do_mlpl))) 
        # c(quo(log_depth), quo(mixed), quo(muddy), quo(sandy), quo(rocky), quo(any_rock)))
   data <- do_data %>% mutate(depth = raw_depth) %>% #filter(year != 2016) %>%
@@ -154,7 +171,7 @@ if (any(names(data) == "adult_density")) {
       do_mlpl_scaled, do_mlpl_scaled2,  do_mlpl_mean, do_mlpl_sd, 
       temp_scaled, temp_scaled2, temp_mean, temp_sd, 
       trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, 
-      depth, do_mlpl) 
+      depth, do_mlpl, raw_do) 
  } else {
     data <- data %>% select(X, Y, X10, Y10,
       density,
@@ -162,8 +179,12 @@ if (any(names(data) == "adult_density")) {
       do_mlpl_scaled, do_mlpl_scaled2,  do_mlpl_mean, do_mlpl_sd, 
       temp_scaled, temp_scaled2, temp_mean, temp_sd, 
       trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, 
-      depth, do_mlpl) 
-}
+      depth, do_mlpl, raw_do) 
+ }
+  
+ data <- filter(data, !(year == 2016 & ssid == 4) ) # 2016 do an outlier for survey 4
+# unique(data$year)
+# table(data$year,data$ssid)
 ```
 
 
@@ -212,7 +233,7 @@ Run DO sdmTMB model
 
     saveRDS(adult_biomass_d, 
       file = paste0("data/", spp, 
-        "/mod-mat-biomass-", spp,"-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+        "/mod-mat-biomass-", spp,"-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"
         ))
 
 
@@ -237,7 +258,7 @@ Run DO sdmTMB model
 
     saveRDS(imm_biomass_d, 
       file = paste0("data/", spp, 
-        "/mod-imm-biomass-", spp,"-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+        "/mod-imm-biomass-", spp,"-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"
         ))
     
   } else {
@@ -260,7 +281,8 @@ Run DO sdmTMB model
     time3 <- round(starttime3 - endtime3)
 
     saveRDS(total_biomass_d, file = paste0("data/", spp, 
-      "/model-total-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+      "/model-total-biomass-", spp, "-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"
       ))
   }
 ```
+
