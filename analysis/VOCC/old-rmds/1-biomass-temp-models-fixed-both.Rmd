@@ -20,7 +20,7 @@ species <- params$species
 # species <- "Silvergray Rockfish"
 # species <- "Lingcod"
 # species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
-species <- "Quillback Rockfish"
+# species <- "Quillback Rockfish"
 # species <- "Pacific Ocean Perch"
 # species <- "Yelloweye Rockfish"
 ```
