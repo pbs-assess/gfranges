@@ -20,12 +20,12 @@ ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.1, alpha = 0.3) +
   facet_wrap(~species) + coord_fixed()
 
 # ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
-  # facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
+# facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
 
 # 'scratch' code was here.
 
 data <- d
-formula <- log_density ~ after * source + scale(log_depth) # + as.factor(start_time)
+formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
 # formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
 
 # d$species <- paste(d$species, d$start_time)
@@ -37,7 +37,7 @@ head(X_ij)
 mf <- model.frame(formula, data)
 y_i <- model.response(mf, "numeric")
 
-spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 150)
+spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 300)
 sdmTMB::plot_spde(spde)
 # data$sdm_spatial_id <- 1:nrow(data)
 n_s <- nrow(spde$mesh$loc)
@@ -49,11 +49,14 @@ data$sdm_x <- spde$x
 data$sdm_y <- spde$y
 fake_data <- unique(data.frame(sdm_x = spde$x, sdm_y = spde$y))
 fake_data[["sdm_spatial_id"]] <- seq(1, nrow(fake_data))
-data <- base::merge(data, fake_data, by = c("sdm_x", "sdm_y"),
-  all.x = TRUE, all.y = FALSE)
-data <- data[order(data$sdm_orig_id),, drop=FALSE]
+data <- base::merge(data, fake_data,
+  by = c("sdm_x", "sdm_y"),
+  all.x = TRUE, all.y = FALSE
+)
+data <- data[order(data$sdm_orig_id), , drop = FALSE]
 A_sk <- INLA::inla.spde.make.A(spde$mesh,
-  loc = as.matrix(fake_data[, c("sdm_x", "sdm_y"), drop = FALSE]))
+  loc = as.matrix(fake_data[, c("sdm_x", "sdm_y"), drop = FALSE])
+)
 
 tmb_data <- list(
   y_i = y_i,
@@ -135,7 +138,7 @@ s
 
 co <- as.data.frame(s[row.names(s) == "b_baci_interaction", ])
 co$species <- as.character(unique(as.factor(d$species)))
-ggplot(co, aes(species, Estimate,
+ggplot(co, aes(forcats::fct_reorder(species, -Estimate), Estimate,
   ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
 )) +
-  geom_pointrange() + coord_flip()
+  geom_pointrange() + coord_flip() + xlab("")
