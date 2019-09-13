@@ -21,9 +21,9 @@ Type objective_function<Type>::operator()()
   
   // DATA_INTEGER(n_t);  // number of years
   
-  DATA_SPARSE_MATRIX(A); // INLA 'A' projection matrix for original data
-  // DATA_SPARSE_MATRIX(A_st); // INLA 'A' projection matrix for unique stations
-  DATA_IVECTOR(A_spatial_index); // Vector of stations to match up A_st output
+  // DATA_SPARSE_MATRIX(A); // INLA 'A' projection matrix for original data
+  DATA_SPARSE_MATRIX(A_sk); // INLA 'A' projection matrix for unique stations
+  DATA_IVECTOR(A_spatial_index); // Vector of stations to match up A_sk output
   
   // Indices for factors
   // DATA_FACTOR(year_i);
@@ -48,15 +48,15 @@ Type objective_function<Type>::operator()()
   PARAMETER_VECTOR(b_cell);  // re parameters
   PARAMETER_VECTOR(log_gamma);  // re parameter sigmas
   PARAMETER(log_varphi);  // re cell sigma
-  PARAMETER(ln_tau_O);    // spatial process
-  // PARAMETER(ln_tau_E);    // spatio-temporal process
+  // PARAMETER(ln_tau_O);    // spatial process
+  PARAMETER(ln_tau_E);    // spatio-temporal process
   PARAMETER(ln_kappa);    // Matern parameter
   
   PARAMETER(ln_phi);           // sigma / dispersion / etc.
   
   // Random effects
-  PARAMETER_VECTOR(omega_s);    // spatial effects; n_s length
-  // PARAMETER_ARRAY(epsilon_st);  // spatio-temporal effects; n_s by n_t matrix
+  // PARAMETER_VECTOR(omega_s);    // spatial effects; n_s length
+  PARAMETER_ARRAY(epsilon_sk);  // spatio-temporal effects; n_s by n_t matrix
   
   // ------------------ End of parameters --------------------------------------
   
@@ -64,20 +64,22 @@ Type objective_function<Type>::operator()()
   int n_j = X_ij.cols();  // number of fixed effect parameters
   
   Type nll_data = 0;     // likelihood of data
-  Type nll_omega = 0;    // spatial effects
+  Type nll_epsilon = 0;    // spatial effects
   Type nll_re = 0;  // re
 
   // ------------------ Geospatial ---------------------------------------------
   
   // Matern:
   Type range = sqrt(Type(8.0)) / exp(ln_kappa);
-  Type sigma_O = 1 / sqrt(Type(4.0) * M_PI * exp(Type(2.0) * ln_tau_O) *
-    exp(Type(2.0) * ln_kappa));
-  REPORT(sigma_O);
-  ADREPORT(sigma_O);
-  
-  // Type sigma_E = 1 / sqrt(Type(4.0) * M_PI * exp(Type(2.0) * ln_tau_E) *
+  // Type sigma_O = 1 / sqrt(Type(4.0) * M_PI * exp(Type(2.0) * ln_tau_O) *
   //   exp(Type(2.0) * ln_kappa));
+  // REPORT(sigma_O);
+  // ADREPORT(sigma_O);
+  
+  Type sigma_E = 1 / sqrt(Type(4.0) * M_PI * exp(Type(2.0) * ln_tau_E) *
+    exp(Type(2.0) * ln_kappa));
+  REPORT(sigma_E);
+  ADREPORT(sigma_E);
   
   Eigen::SparseMatrix<Type> Q; // Precision matrix
   
@@ -85,13 +87,13 @@ Type objective_function<Type>::operator()()
   
   // ------------------ INLA projections ---------------------------------------
   
-  // Here we are projecting the spatiotemporal and spatial random effects to the
+  // Here we are projecting the spatial random effects to the
   // locations of the data using the INLA 'A' matrices.
-  // array<Type> epsilon_st_A(A_st.rows(), n_t);
-  // for (int i = 0; i < n_t; i++)
-  //   epsilon_st_A.col(i) = A_st * vector<Type>(epsilon_st.col(i));
-  vector<Type> omega_s_A = A * omega_s;
-  // vector<Type> epsilon_st_A_vec(n_i);
+  array<Type> epsilon_sk_A(A_sk.rows(), A_sk.cols());
+  for (int k = 0; k < n_k; k++)
+    epsilon_sk_A.col(k) = A_sk * vector<Type>(epsilon_sk.col(k));
+  // vector<Type> omega_s_A = A * omega_s;
+  vector<Type> epsilon_sk_A_vec(n_i);
   
   // ------------------ Linear predictor ---------------------------------------
   
@@ -107,8 +109,10 @@ Type objective_function<Type>::operator()()
       b_re(k_i(i),2) * source_i(i) +
       b_re(k_i(i),3) * after_i(i) * source_i(i) +
       b_cell(m_i(i)) * Type(1.0);
+    
+    epsilon_sk_A_vec(i) = epsilon_sk_A(A_spatial_index(i), k_i(i)); // record it
       
-    eta_i(i) += omega_s_A(i);  // spatial
+    eta_i(i) += epsilon_sk_A_vec(i);  // spatial
     mu_i(i) = eta_i(i);
   }
   
@@ -125,12 +129,12 @@ Type objective_function<Type>::operator()()
   }
   
   // Spatial (intercept) random effects:
-  nll_omega += SCALE(GMRF(Q, true), 1.0 / exp(ln_tau_O))(omega_s);
+  // nll_omega += SCALE(GMRF(Q, true), 1.0 / exp(ln_tau_O))(omega_s);
   
   // Spatiotemporal random effects:
-  // for (int t = 0; t < n_t; t++) {
-  //   nll_epsilon += SCALE(GMRF(Q, true), 1. / exp(ln_tau_E))(epsilon_st.col(t));
-  // }
+  for (int k = 0; k < n_k; k++) {
+    nll_epsilon += SCALE(GMRF(Q, true), 1. / exp(ln_tau_E))(epsilon_sk.col(k));
+  }
   
   // ------------------ Probability of data given random effects ---------------
   
@@ -154,7 +158,7 @@ Type objective_function<Type>::operator()()
   
   // REPORT(sigma_E);      // spatio-temporal process parameter
   // ADREPORT(sigma_E);      // spatio-temporal process parameter
-  // REPORT(epsilon_st_A_vec);   // spatio-temporal effects; vector
+  REPORT(epsilon_sk_A_vec);   // spatio-temporal effects; vector
   // REPORT(b_rw_t);   // time-varying effects
   // REPORT(omega_s_A);      // spatial effects; n_s length vector
   // REPORT(omega_s_trend_A); // spatial trend effects; n_s length vector
@@ -162,11 +166,11 @@ Type objective_function<Type>::operator()()
   // REPORT(eta_i);        // fixed and random effect predictions in link space
   // REPORT(eta_rw_i);     // time-varying predictions in link space
   // REPORT(rho);          // AR1 correlation in -1 to 1 space
-  // REPORT(range);        // Matern approximate distance at 10% correlation
-  // ADREPORT(range);      // Matern approximate distance at 10% correlation
+  REPORT(range);        // Matern approximate distance at 10% correlation
+  ADREPORT(range);      // Matern approximate distance at 10% correlation
   
   // ------------------ Joint negative log likelihood --------------------------
   
-  Type jnll = nll_data + nll_omega + nll_re;
+  Type jnll = nll_data + nll_epsilon + nll_re;
   return jnll;
 }

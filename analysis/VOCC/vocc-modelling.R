@@ -3,7 +3,7 @@ library(ggplot2)
 setwd(here::here())
 
 library(TMB)
-files <- list.files("../rockfish-vocc-temp/perc_50/0.5/", full.names = TRUE)
+files <- list.files("../rockfish-vocc-temp/perc_50/1/", full.names = TRUE)
 .d <- purrr::map_dfr(files, readRDS)
 
 setwd("analysis/VOCC/")
@@ -37,15 +37,26 @@ y_i <- model.response(mf, "numeric")
 
 spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 120)
 sdmTMB::plot_spde(spde)
-data$sdm_spatial_id <- 1:nrow(data)
+# data$sdm_spatial_id <- 1:nrow(data)
 n_s <- nrow(spde$mesh$loc)
 n_k <- length(unique(species_k))
 n_re <- 4
 
+data$sdm_orig_id <- seq(1, nrow(data))
+data$sdm_x <- spde$x
+data$sdm_y <- spde$y
+fake_data <- unique(data.frame(sdm_x = spde$x, sdm_y = spde$y))
+fake_data[["sdm_spatial_id"]] <- seq(1, nrow(fake_data))
+data <- base::merge(data, fake_data, by = c("sdm_x", "sdm_y"),
+  all.x = TRUE, all.y = FALSE)
+data <- data[order(data$sdm_orig_id),, drop=FALSE]
+A_sk <- INLA::inla.spde.make.A(spde$mesh,
+  loc = as.matrix(fake_data[, c("sdm_x", "sdm_y"), drop = FALSE]))
+
 tmb_data <- list(
   y_i = y_i,
   X_ij = X_ij,
-  A = spde$A,
+  A_sk = A_sk,
   A_spatial_index = data$sdm_spatial_id - 1L,
   spde = spde$spde$param.inla[c("M0", "M1", "M2")],
   k_i = species_k - 1L,
@@ -59,23 +70,23 @@ tmb_data <- list(
 
 tmb_params <- list(
   b_j = rep(0, ncol(tmb_data$X_ij)),
-  ln_tau_O = 0,
-  ln_kappa = 0,
-  ln_phi = 0,
-  omega_s = rep(0, n_s),
+  ln_tau_E = -1,
+  ln_kappa = -3,
+  ln_phi = 2.7,
+  epsilon_sk = matrix(0, nrow = n_s, ncol = n_k),
   b_re = matrix(0, nrow = n_k, ncol = n_re),
-  log_gamma = rep(0, n_re),
+  log_gamma = c(2.5, 2, 2, -2),
   b_cell = rep(0, length(unique(tmb_data$m_i))),
-  log_varphi = 0
+  log_varphi = -5
 )
 
 TMB::compile("basic_spatial_re.cpp")
 dyn.load(dynlib("basic_spatial_re"))
 
 tmb_map <- list(
-  ln_tau_O = as.factor(NA),
+  ln_tau_E = as.factor(NA),
   ln_kappa = as.factor(NA),
-  omega_s = factor(rep(NA, length(tmb_params$omega_s))),
+  epsilon_sk = factor(rep(NA, length(tmb_params$epsilon_sk))),
   b_re = factor(matrix(NA, nrow = n_k, ncol = n_re)),
   log_gamma = factor(rep(NA, length(tmb_params$log_gamma))),
   log_varphi = as.factor(NA),
@@ -86,14 +97,11 @@ tmb_obj <- TMB::MakeADFun(
   data = tmb_data, parameters = tmb_params, map = tmb_map,
   random = NULL, DLL = "basic_spatial_re"
 )
-tmb_obj$fn()
 
 tmb_opt <- stats::nlminb(
   start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,
   control = list(eval.max = 1e4, iter.max = 1e4)
 )
-
-tmb_random <- c("omega_s", "b_re", "b_cell")
 
 set_par_value <- function(opt, par) {
   as.numeric(opt$par[par == names(opt$par)])
@@ -101,11 +109,12 @@ set_par_value <- function(opt, par) {
 tmb_params$b_j <- set_par_value(tmb_opt, "b_j")
 tmb_params$ln_phi <- set_par_value(tmb_opt, "ln_phi")
 
+tmb_random <- c("epsilon_sk", "b_re", "b_cell")
+
 tmb_obj <- TMB::MakeADFun(
   data = tmb_data, parameters = tmb_params,
   random = tmb_random, DLL = "basic_spatial_re"
 )
-tmb_obj$fn()
 
 tmb_opt <- stats::nlminb(
   start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,
