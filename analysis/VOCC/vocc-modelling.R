@@ -3,7 +3,7 @@ library(ggplot2)
 setwd(here::here())
 
 library(TMB)
-files <- list.files("../rockfish-vocc-temp/perc_50/1/", full.names = TRUE)
+files <- list.files("../rockfish-vocc-temp/perc_50/0.75/", full.names = TRUE)
 .d <- purrr::map_dfr(files, readRDS)
 
 setwd("analysis/VOCC/")
@@ -13,7 +13,7 @@ d <- mutate(d, source = ifelse(cell_type == "source", 1, 0))
 
 unique(d$start_time)
 
-d <- filter(d, start_time == "2015")
+d <- filter(d, start_time == "2013")
 nrow(d)
 
 ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.1, alpha = 0.3) +
@@ -129,12 +129,18 @@ tmb_opt <- stats::nlminb(
 )
 sdr <- TMB::sdreport(tmb_obj)
 tictoc::toc()
-
 sdr
-colnames(X_ij)
 
 s <- summary(sdr)
-s
+
+mutate(as.data.frame(s[row.names(s) == "b_j", ]), coefficient = colnames(X_ij)) %>%
+  select(coefficient, Estimate, `Std. Error`)
+
+s[grep("ln|log", row.names(s)), ]
+s[grep("sigma", row.names(s)), , drop = FALSE]
+
+r <- tmb_obj$report()
+r$range
 
 co <- as.data.frame(s[row.names(s) == "b_baci_interaction", ])
 co$species <- as.character(unique(as.factor(d$species)))
