@@ -13,20 +13,22 @@ d <- mutate(d, source = ifelse(cell_type == "source", 1, 0))
 
 unique(d$start_time)
 
-d <- filter(d, start_time == "2013")
+d <- filter(d, start_time == "2015")
 nrow(d)
 
 ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.1, alpha = 0.3) +
   facet_wrap(~species) + coord_fixed()
 
-ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
-  facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
+# ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
+  # facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
 
 # 'scratch' code was here.
 
 data <- d
-# formula <- log_density ~ after * source + scale(log_depth) + as.factor(start_time)
-formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
+formula <- log_density ~ after * source + scale(log_depth) # + as.factor(start_time)
+# formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
+
+# d$species <- paste(d$species, d$start_time)
 species_k <- as.integer(as.factor(d$species))
 cell_m <- as.integer(as.factor(d$icell))
 
@@ -35,7 +37,7 @@ head(X_ij)
 mf <- model.frame(formula, data)
 y_i <- model.response(mf, "numeric")
 
-spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 120)
+spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 150)
 sdmTMB::plot_spde(spde)
 # data$sdm_spatial_id <- 1:nrow(data)
 n_s <- nrow(spde$mesh$loc)
@@ -70,14 +72,14 @@ tmb_data <- list(
 
 tmb_params <- list(
   b_j = rep(0, ncol(tmb_data$X_ij)),
-  ln_tau_E = -1,
-  ln_kappa = -3,
-  ln_phi = 2.7,
+  ln_tau_E = 0,
+  ln_kappa = 0,
+  ln_phi = 0,
   epsilon_sk = matrix(0, nrow = n_s, ncol = n_k),
   b_re = matrix(0, nrow = n_k, ncol = n_re),
-  log_gamma = c(2.5, 2, 2, -2),
+  log_gamma = rep(0, n_re),
   b_cell = rep(0, length(unique(tmb_data$m_i))),
-  log_varphi = -5
+  log_varphi = 0
 )
 
 TMB::compile("basic_spatial_re.cpp")
@@ -103,25 +105,28 @@ tmb_opt <- stats::nlminb(
   control = list(eval.max = 1e4, iter.max = 1e4)
 )
 
+# tmb_random <- c("epsilon_sk", "b_re", "b_cell")
+# REML:
+tmb_random <- c("epsilon_sk", "b_re", "b_cell", "b_j")
+
 set_par_value <- function(opt, par) {
   as.numeric(opt$par[par == names(opt$par)])
 }
 tmb_params$b_j <- set_par_value(tmb_opt, "b_j")
 tmb_params$ln_phi <- set_par_value(tmb_opt, "ln_phi")
 
-tmb_random <- c("epsilon_sk", "b_re", "b_cell")
-
 tmb_obj <- TMB::MakeADFun(
   data = tmb_data, parameters = tmb_params,
   random = tmb_random, DLL = "basic_spatial_re"
 )
-
+tictoc::tic()
 tmb_opt <- stats::nlminb(
   start = tmb_obj$par, objective = tmb_obj$fn, gradient = tmb_obj$gr,
   control = list(eval.max = 1e4, iter.max = 1e4)
 )
-
 sdr <- TMB::sdreport(tmb_obj)
+tictoc::toc()
+
 sdr
 colnames(X_ij)
 

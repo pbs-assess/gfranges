@@ -167,7 +167,7 @@ Type objective_function<Type>::operator()()
   // REPORT(eta_rw_i);     // time-varying predictions in link space
   // REPORT(rho);          // AR1 correlation in -1 to 1 space
   REPORT(range);        // Matern approximate distance at 10% correlation
-  ADREPORT(range);      // Matern approximate distance at 10% correlation
+  // ADREPORT(range);      // Matern approximate distance at 10% correlation
   
   // ------------------ Joint negative log likelihood --------------------------
   
