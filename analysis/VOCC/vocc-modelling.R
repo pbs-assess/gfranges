@@ -27,7 +27,7 @@ facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
 d$species <- paste(d$species, d$start_time)
 
 data <- d
-formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
+# formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
 # formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
 formula <- log_density ~ after * source + scale(log_depth) + as.factor(species)
 
@@ -39,7 +39,7 @@ head(X_ij)
 mf <- model.frame(formula, data)
 y_i <- model.response(mf, "numeric")
 
-spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 300)
+spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 200)
 sdmTMB::plot_spde(spde)
 # data$sdm_spatial_id <- 1:nrow(data)
 n_s <- nrow(spde$mesh$loc)
@@ -135,11 +135,11 @@ sdr
 
 s <- summary(sdr)
 
-mutate(as.data.frame(s[row.names(s) == "b_j", ]), coefficient = colnames(X_ij)) %>%
+mutate(as.data.frame(s[row.names(s) == "b_j", ]), 
+  coefficient = colnames(X_ij)) %>%
   select(coefficient, Estimate, `Std. Error`)
 
-s[grep("ln|log", row.names(s)), ]
-s[grep("sigma", row.names(s)), , drop = FALSE]
+s[grep("ln|log|sigma", row.names(s)), ]
 
 r <- tmb_obj$report()
 r$range
