@@ -113,6 +113,9 @@ Type objective_function<Type>::operator()()
       b_re(k_i(i),3) * after_i(i) * source_i(i) +
       b_cell(m_i(i)) * Type(1.0);
     
+    // y ~ fixed_effects + baci + (baci | species) + (1 | match_id) + 
+    // spatial_stuff | species)
+    
     epsilon_sk_A_vec(i) = epsilon_sk_A(A_spatial_index(i), k_i(i)); // record it
       
     eta_i(i) += epsilon_sk_A_vec(i);  // spatial
@@ -131,10 +134,7 @@ Type objective_function<Type>::operator()()
     nll_re -= dnorm(b_cell(m), Type(0.0), exp(log_varphi), true);
   }
   
-  // Spatial (intercept) random effects:
-  // nll_omega += SCALE(GMRF(Q, true), 1.0 / exp(ln_tau_O))(omega_s);
-  
-  // Spatiotemporal random effects:
+  // Spatial random effects by species:
   for (int k = 0; k < n_k; k++) {
     nll_epsilon += SCALE(GMRF(Q, true), 1. / exp(ln_tau_E(k)))(epsilon_sk.col(k));
   }
