@@ -8,7 +8,7 @@ files <- list.files("../rockfish-vocc-temp/perc_50/0.75/", full.names = TRUE)
 
 setwd("analysis/VOCC/")
 
-d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, X, Y, vect_dist)
+d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, X, Y, vect_dist, matchobs)
 d <- mutate(d, source = ifelse(cell_type == "source", 1, 0))
 
 unique(d$start_time)
@@ -19,18 +19,20 @@ nrow(d)
 ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.1, alpha = 0.3) +
   facet_wrap(~species) + coord_fixed()
 
-# ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
-# facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
+ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
+facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
 
 # 'scratch' code was here.
+
+d$species <- paste(d$species, d$start_time)
 
 data <- d
 formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
 # formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
+formula <- log_density ~ after * source + scale(log_depth) + as.factor(species)
 
-# d$species <- paste(d$species, d$start_time)
 species_k <- as.integer(as.factor(d$species))
-cell_m <- as.integer(as.factor(d$icell))
+cell_m <- as.integer(as.factor(d$matchobs))
 
 X_ij <- model.matrix(formula, data)
 head(X_ij)
