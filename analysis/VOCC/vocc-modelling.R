@@ -77,7 +77,7 @@ tmb_data <- list(
 
 tmb_params <- list(
   b_j = rep(0, ncol(tmb_data$X_ij)),
-  ln_tau_E = 0,
+  ln_tau_E = rep(0, n_k),
   ln_kappa = 0,
   ln_phi = 0,
   epsilon_sk = matrix(0, nrow = n_s, ncol = n_k),
@@ -91,7 +91,7 @@ TMB::compile("basic_spatial_re.cpp")
 dyn.load(dynlib("basic_spatial_re"))
 
 tmb_map <- list(
-  ln_tau_E = as.factor(NA),
+  ln_tau_E = factor(rep(NA, length(tmb_params$ln_tau_E))),
   ln_kappa = as.factor(NA),
   epsilon_sk = factor(rep(NA, length(tmb_params$epsilon_sk))),
   b_re = factor(matrix(NA, nrow = n_k, ncol = n_re)),
