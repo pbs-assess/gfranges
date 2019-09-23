@@ -8,7 +8,7 @@ files <- list.files("../rockfish-vocc-temp/perc_50/0.75/", full.names = TRUE)
 
 setwd("analysis/VOCC/")
 
-d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, X, Y, vect_dist)
+d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, X, Y, vect_dist, matchobs)
 d <- mutate(d, source = ifelse(cell_type == "source", 1, 0))
 
 unique(d$start_time)
@@ -19,25 +19,27 @@ nrow(d)
 ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.1, alpha = 0.3) +
   facet_wrap(~species) + coord_fixed()
 
-# ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
-# facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
+ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
+facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
 
 # 'scratch' code was here.
 
-data <- d
-formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
-# formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
+d$species <- paste(d$species, d$start_time)
 
-# d$species <- paste(d$species, d$start_time)
+data <- d
+# formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
+# formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
+formula <- log_density ~ after * source + scale(log_depth) + as.factor(species)
+
 species_k <- as.integer(as.factor(d$species))
-cell_m <- as.integer(as.factor(d$icell))
+cell_m <- as.integer(as.factor(d$matchobs))
 
 X_ij <- model.matrix(formula, data)
 head(X_ij)
 mf <- model.frame(formula, data)
 y_i <- model.response(mf, "numeric")
 
-spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 300)
+spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 200)
 sdmTMB::plot_spde(spde)
 # data$sdm_spatial_id <- 1:nrow(data)
 n_s <- nrow(spde$mesh$loc)
@@ -75,7 +77,7 @@ tmb_data <- list(
 
 tmb_params <- list(
   b_j = rep(0, ncol(tmb_data$X_ij)),
-  ln_tau_E = 0,
+  ln_tau_E = rep(0, n_k),
   ln_kappa = 0,
   ln_phi = 0,
   epsilon_sk = matrix(0, nrow = n_s, ncol = n_k),
@@ -89,7 +91,7 @@ TMB::compile("basic_spatial_re.cpp")
 dyn.load(dynlib("basic_spatial_re"))
 
 tmb_map <- list(
-  ln_tau_E = as.factor(NA),
+  ln_tau_E = factor(rep(NA, length(tmb_params$ln_tau_E))),
   ln_kappa = as.factor(NA),
   epsilon_sk = factor(rep(NA, length(tmb_params$epsilon_sk))),
   b_re = factor(matrix(NA, nrow = n_k, ncol = n_re)),
@@ -133,11 +135,11 @@ sdr
 
 s <- summary(sdr)
 
-mutate(as.data.frame(s[row.names(s) == "b_j", ]), coefficient = colnames(X_ij)) %>%
+mutate(as.data.frame(s[row.names(s) == "b_j", ]), 
+  coefficient = colnames(X_ij)) %>%
   select(coefficient, Estimate, `Std. Error`)
 
-s[grep("ln|log", row.names(s)), ]
-s[grep("sigma", row.names(s)), , drop = FALSE]
+s[grep("ln|log|sigma", row.names(s)), ]
 
 r <- tmb_obj$report()
 r$range
