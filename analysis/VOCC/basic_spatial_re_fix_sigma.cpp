@@ -52,7 +52,7 @@ Type objective_function<Type>::operator()()
   PARAMETER_VECTOR(b_re_sp);  // re parameters
   PARAMETER_VECTOR(b_cell);  // re parameters
   PARAMETER_VECTOR(log_gamma);  // re parameter sigmas
-  PARAMETER_VECTOR(log_omega);  // re sp-level mean BACI interactions
+  PARAMETER(log_omega);  // re sp-level mean BACI interactions
   PARAMETER(log_varphi);  // re cell sigma
   // PARAMETER(ln_tau_O);    // spatial process
   PARAMETER(ln_tau_E);    // spatio-temporal process
@@ -137,7 +137,7 @@ Type objective_function<Type>::operator()()
     }
   }
   for(int k = 0; k < b_re.rows(); k++) {
-    nll_re -= dnorm(b_re(k,3), b_re_sp(species_id_k(k)), exp(log_omega(species_id_k(k))), true);
+    nll_re -= dnorm(b_re(k,3), b_re_sp(species_id_k(k)), exp(log_omega), true);
   }
   for(int u = 0; u < n_just_species; u++) {
     nll_re -= dnorm(b_re_sp(u), Type(0.0), exp(log_gamma(2)), true);
