@@ -44,7 +44,7 @@ data <- d
 formula <- log_density ~ after * source + scale(log_depth) * as.factor(species_year) + I((scale(log_depth))^2) * as.factor(species_year)
 
 species_k <- as.integer(as.factor(d$species_year))
-cell_m <- as.integer(as.factor(d$matchobs))
+cell_m <- as.integer(as.factor(paste(d$matchobs, d$species_year)))
 
 X_ij <- model.matrix(formula, data)
 head(X_ij)
