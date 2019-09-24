@@ -33,6 +33,10 @@ Type objective_function<Type>::operator()()
   
   DATA_IVECTOR(k_i); // species index
   DATA_INTEGER(n_k);   // number of species
+  DATA_IVECTOR(species_id_k);   // species identifier to calculate the mean for each species across years
+  DATA_INTEGER(n_just_species);  // the true number of species
+  DATA_VECTOR(n_years_per_species);
+  
   DATA_VECTOR(intercept_i);
   DATA_VECTOR(after_i);
   DATA_VECTOR(source_i);
@@ -158,8 +162,20 @@ Type objective_function<Type>::operator()()
   for(int k = 0; k < b_re.rows(); k++) {
     b_baci_interaction(k) = b_re(k,3) + b_j(interaction_position);
   }
+  
+  vector<Type> b_baci_interaction_spp(n_just_species);
+  for(int k = 0; k < b_re.rows(); k++) {
+    b_baci_interaction_spp(species_id_k(k)) += b_baci_interaction(k);
+  }
+  for(int i = 0; i < n_years_per_species.size(); i++) {
+    b_baci_interaction_spp(i) = b_baci_interaction_spp(i) / n_years_per_species(i);
+  }
+  
   REPORT(b_baci_interaction);    
   ADREPORT(b_baci_interaction);
+  
+  REPORT(b_baci_interaction_spp);    
+  ADREPORT(b_baci_interaction_spp);
   
   // ------------------ Reporting ----------------------------------------------
   

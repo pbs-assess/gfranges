@@ -36,20 +36,24 @@ facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
 
 # 'scratch' code was here.
 
-d$species <- paste(d$species, d$start_time)
+d$species_year <- paste(d$species, d$start_time)
 
 data <- d
 #formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
 # formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
-formula <- log_density ~ after * source + scale(log_depth) * as.factor(species) + I((scale(log_depth))^2) * as.factor(species)
+formula <- log_density ~ after * source + scale(log_depth) * as.factor(species_year) + I((scale(log_depth))^2) * as.factor(species_year)
 
-species_k <- as.integer(as.factor(d$species))
+species_k <- as.integer(as.factor(d$species_year))
 cell_m <- as.integer(as.factor(d$matchobs))
 
 X_ij <- model.matrix(formula, data)
 head(X_ij)
 mf <- model.frame(formula, data)
 y_i <- model.response(mf, "numeric")
+
+# Calculate the species indexes for the species year random effects:
+x <- dplyr::distinct(select(d, species, species_year))
+species_id_k <- as.integer(as.factor(x$species))
 
 spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 100)
 sdmTMB::plot_spde(spde)
@@ -84,6 +88,9 @@ tmb_data <- list(
   source_i = d$source,
   n_k = n_k,
   m_i = cell_m - 1L,
+  species_id_k = species_id_k - 1L,
+  n_just_species = max(species_id_k),
+  n_years_per_species = as.numeric(table(species_id_k)),
   interaction_position = grep("after:source", colnames(X_ij)) - 1
 )
 
@@ -157,14 +164,14 @@ r <- tmb_obj$report()
 r$range
 
 co <- as.data.frame(s[row.names(s) == "b_baci_interaction", ])
-co$species <- as.character(unique(as.factor(d$species)))
+co$species_year <- as.character(unique(as.factor(d$species_year)))
 
 
-co <- co %>% mutate (just_species = gsub(" [0-9]+$", "", species)) %>% 
+co <- co %>% mutate (just_species = gsub(" [0-9]+$", "", species_year)) %>% 
     group_by(just_species) %>% mutate(mean_baci_int = mean(Estimate)) %>% ungroup() %>%
   arrange(-mean_baci_int, -Estimate) %>% mutate(myorder = seq_len(n()))
 
-ggplot(co, aes(forcats::fct_reorder(species, myorder), Estimate, colour=just_species,
+ggplot(co, aes(forcats::fct_reorder(species_year, myorder), Estimate, colour=just_species,
   ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
 )) +
   geom_pointrange() + coord_flip() + xlab("")
