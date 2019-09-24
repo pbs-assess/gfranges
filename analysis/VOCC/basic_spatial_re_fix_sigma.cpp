@@ -113,7 +113,8 @@ Type objective_function<Type>::operator()()
       b_re(k_i(i),0) * intercept_i(i) + 
       b_re(k_i(i),1) * after_i(i) + 
       b_re(k_i(i),2) * source_i(i) +
-      b_re(k_i(i),3) * after_i(i) * source_i(i) +
+      b_re(k_i(i),3) * after_i(i) * source_i(i) + 
+      b_re_sp(species_id_k(k_i(i))) * after_i(i) * source_i(i) +
       b_cell(m_i(i)) * Type(1.0);
     
     epsilon_sk_A_vec(i) = epsilon_sk_A(A_spatial_index(i), k_i(i)); // record it
@@ -137,7 +138,7 @@ Type objective_function<Type>::operator()()
     }
   }
   for(int k = 0; k < b_re.rows(); k++) {
-    nll_re -= dnorm(b_re(k,3), b_re_sp(species_id_k(k)), exp(log_omega), true);
+    nll_re -= dnorm(b_re(k,3), Type(0.0), exp(log_omega), true);
   }
   for(int u = 0; u < n_just_species; u++) {
     nll_re -= dnorm(b_re_sp(u), Type(0.0), exp(log_gamma(2)), true);
