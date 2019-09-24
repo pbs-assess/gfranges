@@ -121,7 +121,8 @@ Type objective_function<Type>::operator()()
   for(int k = 0; k < b_re.rows(); k++) {
     for(int r = 0; r < b_re.cols(); r++) {
       int z;
-      if (r == 0) {
+      // 1st and 2nd random effects share a variance bc cells are matched
+      if (r == 0) { 
         z = 0;
       } else {
         z = r - 1;

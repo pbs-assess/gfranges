@@ -12,8 +12,8 @@ files <- list.files("data/_all/temperature/perc_50/0.5/adult/", full.names = TRU
 # files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) # did not converge
 # files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE) # did not converge
 files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) # did not converge
-#files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) # did not converge
-
+files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) # did not converge
+files <- list.files("data/_all/do/perc_25/0.25/adult/", full.names = TRUE)
 
 
 .d <- purrr::map_dfr(files, readRDS)
@@ -25,7 +25,7 @@ d <- mutate(d, source = ifelse(cell_type == "source", 1, 0), age = "mature")
 unique(d$start_time)
 
 #d <- filter(d, start_time == "2013")
-d <- filter(d, start_time == "2015")
+#d <- filter(d, start_time == "2015")
 nrow(d)
 
 ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.1, alpha = 0.3) +
@@ -39,9 +39,9 @@ facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
 d$species <- paste(d$species, d$start_time)
 
 data <- d
-formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
+#formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
 # formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
-formula <- log_density ~ after * source + scale(log_depth) + as.factor(species)
+formula <- log_density ~ after * source + scale(log_depth) * as.factor(species) + I((scale(log_depth))^2) * as.factor(species)
 
 species_k <- as.integer(as.factor(d$species))
 cell_m <- as.integer(as.factor(d$matchobs))
@@ -51,7 +51,7 @@ head(X_ij)
 mf <- model.frame(formula, data)
 y_i <- model.response(mf, "numeric")
 
-spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 300)
+spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 100)
 sdmTMB::plot_spde(spde)
 # data$sdm_spatial_id <- 1:nrow(data)
 n_s <- nrow(spde$mesh$loc)
@@ -158,7 +158,13 @@ r$range
 
 co <- as.data.frame(s[row.names(s) == "b_baci_interaction", ])
 co$species <- as.character(unique(as.factor(d$species)))
-ggplot(co, aes(forcats::fct_reorder(species, -Estimate), Estimate,
+
+
+co <- co %>% mutate (just_species = gsub(" [0-9]+$", "", species)) %>% 
+    group_by(just_species) %>% mutate(mean_baci_int = mean(Estimate)) %>% ungroup() %>%
+  arrange(-mean_baci_int, -Estimate) %>% mutate(myorder = seq_len(n()))
+
+ggplot(co, aes(forcats::fct_reorder(species, myorder), Estimate, colour=just_species,
   ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
 )) +
   geom_pointrange() + coord_flip() + xlab("")
