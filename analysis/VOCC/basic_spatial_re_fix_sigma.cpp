@@ -141,7 +141,7 @@ Type objective_function<Type>::operator()()
     nll_re -= dnorm(b_re(k,3), Type(0.0), exp(log_omega), true);
   }
   for(int u = 0; u < n_just_species; u++) {
-    nll_re -= dnorm(b_re_sp(u), Type(0.0), exp(log_gamma(2)), true);
+    nll_re -= dnorm(b_re_sp(u), Type(0.0), exp(log_omega), true);
   }
 
   for(int m = 0; m < b_cell.size(); m++) {
