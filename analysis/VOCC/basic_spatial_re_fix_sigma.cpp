@@ -49,7 +49,7 @@ Type objective_function<Type>::operator()()
   PARAMETER_VECTOR(log_gamma);  // re parameter sigmas
   PARAMETER(log_varphi);  // re cell sigma
   // PARAMETER(ln_tau_O);    // spatial process
-  PARAMETER_VECTOR(ln_tau_E);    // spatial process
+  PARAMETER(ln_tau_E);    // spatio-temporal process
   PARAMETER(ln_kappa);    // Matern parameter
   
   PARAMETER(ln_phi);           // sigma / dispersion / etc.
@@ -76,11 +76,8 @@ Type objective_function<Type>::operator()()
   // REPORT(sigma_O);
   // ADREPORT(sigma_O);
   
-  vector<Type> sigma_E(n_k);
-  for (int k = 0; k < n_k; k++) {
-    sigma_E(k) = 1 / sqrt(Type(4.0) * M_PI * exp(Type(2.0) * ln_tau_E(k)) *
-      exp(Type(2.0) * ln_kappa));
-  }
+  Type sigma_E = 1 / sqrt(Type(4.0) * M_PI * exp(Type(2.0) * ln_tau_E) *
+    exp(Type(2.0) * ln_kappa));
   REPORT(sigma_E);
   ADREPORT(sigma_E);
   
@@ -113,9 +110,6 @@ Type objective_function<Type>::operator()()
       b_re(k_i(i),3) * after_i(i) * source_i(i) +
       b_cell(m_i(i)) * Type(1.0);
     
-    // y ~ fixed_effects + baci + (baci | species) + (1 | match_id) + 
-    // spatial_stuff | species)
-    
     epsilon_sk_A_vec(i) = epsilon_sk_A(A_spatial_index(i), k_i(i)); // record it
       
     eta_i(i) += epsilon_sk_A_vec(i);  // spatial
@@ -134,9 +128,12 @@ Type objective_function<Type>::operator()()
     nll_re -= dnorm(b_cell(m), Type(0.0), exp(log_varphi), true);
   }
   
-  // Spatial random effects by species:
+  // Spatial (intercept) random effects:
+  // nll_omega += SCALE(GMRF(Q, true), 1.0 / exp(ln_tau_O))(omega_s);
+  
+  // Spatiotemporal random effects:
   for (int k = 0; k < n_k; k++) {
-    nll_epsilon += SCALE(GMRF(Q, true), 1. / exp(ln_tau_E(k)))(epsilon_sk.col(k));
+    nll_epsilon += SCALE(GMRF(Q, true), 1. / exp(ln_tau_E))(epsilon_sk.col(k));
   }
   
   // ------------------ Probability of data given random effects ---------------

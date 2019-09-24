@@ -1,28 +1,32 @@
 library(dplyr)
 library(ggplot2)
-#setwd(here::here())
-setwd("analysis/VOCC/")
 
 library(TMB)
+#setwd(here::here())
 #files <- list.files("../rockfish-vocc-temp/perc_50/0.75/", full.names = TRUE)
-files <- list.files("data/_all/temperature/perc_50/0.25/adult/", full.names = TRUE) 
-files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) 
-# 
-# files <- list.files("data/_all/temperature/perc_50/0.5/adult/", full.names = TRUE) 
-# files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) 
-# files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) 
+
+setwd("analysis/VOCC/")
+
+files <- list.files("data/_all/temperature/perc_50/0.25/adult/", full.names = TRUE) # did not converge
+files <- list.files("data/_all/temperature/perc_50/0.5/adult/", full.names = TRUE) # did not converge
+# files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) # did not converge
+# files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE) # did not converge
+files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) # did not converge
+#files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) # did not converge
+
 
 
 .d <- purrr::map_dfr(files, readRDS)
 
 
+
 d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, X, Y, vect_dist, matchobs)
-d <- mutate(d, source = ifelse(cell_type == "source", 1, 0))
+d <- mutate(d, source = ifelse(cell_type == "source", 1, 0), age = "mature")
 
 unique(d$start_time)
 
-d <- filter(d, start_time == "2013")
-#d <- filter(d, start_time == "2015")
+#d <- filter(d, start_time == "2013")
+d <- filter(d, start_time == "2015")
 nrow(d)
 
 ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.1, alpha = 0.3) +
@@ -36,7 +40,7 @@ facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
 d$species <- paste(d$species, d$start_time)
 
 data <- d
-# formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
+formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
 # formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
 formula <- log_density ~ after * source + scale(log_depth) + as.factor(species)
 
@@ -48,7 +52,7 @@ head(X_ij)
 mf <- model.frame(formula, data)
 y_i <- model.response(mf, "numeric")
 
-spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 200)
+spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 300)
 sdmTMB::plot_spde(spde)
 # data$sdm_spatial_id <- 1:nrow(data)
 n_s <- nrow(spde$mesh$loc)
@@ -86,7 +90,7 @@ tmb_data <- list(
 
 tmb_params <- list(
   b_j = rep(0, ncol(tmb_data$X_ij)),
-  ln_tau_E = rep(0, n_k),
+  ln_tau_E = 0,
   ln_kappa = 0,
   ln_phi = 0,
   epsilon_sk = matrix(0, nrow = n_s, ncol = n_k),
@@ -96,11 +100,11 @@ tmb_params <- list(
   log_varphi = 0
 )
 
-TMB::compile("basic_spatial_re.cpp")
-dyn.load(dynlib("basic_spatial_re"))
+TMB::compile("basic_spatial_re_fix_sigma.cpp")
+dyn.load(dynlib("basic_spatial_re_fix_sigma"))
 
 tmb_map <- list(
-  ln_tau_E = factor(rep(NA, length(tmb_params$ln_tau_E))),
+  ln_tau_E = as.factor(NA),
   ln_kappa = as.factor(NA),
   epsilon_sk = factor(rep(NA, length(tmb_params$epsilon_sk))),
   b_re = factor(matrix(NA, nrow = n_k, ncol = n_re)),
@@ -111,7 +115,7 @@ tmb_map <- list(
 
 tmb_obj <- TMB::MakeADFun(
   data = tmb_data, parameters = tmb_params, map = tmb_map,
-  random = NULL, DLL = "basic_spatial_re"
+  random = NULL, DLL = "basic_spatial_re_fix_sigma"
 )
 
 tmb_opt <- stats::nlminb(
@@ -131,7 +135,7 @@ tmb_params$ln_phi <- set_par_value(tmb_opt, "ln_phi")
 
 tmb_obj <- TMB::MakeADFun(
   data = tmb_data, parameters = tmb_params,
-  random = tmb_random, DLL = "basic_spatial_re"
+  random = tmb_random, DLL = "basic_spatial_re_fix_sigma"
 )
 tictoc::tic()
 tmb_opt <- stats::nlminb(
@@ -144,11 +148,11 @@ sdr
 
 s <- summary(sdr)
 
-mutate(as.data.frame(s[row.names(s) == "b_j", ]), 
-  coefficient = colnames(X_ij)) %>%
+mutate(as.data.frame(s[row.names(s) == "b_j", ]), coefficient = colnames(X_ij)) %>%
   select(coefficient, Estimate, `Std. Error`)
 
-s[grep("ln|log|sigma", row.names(s)), ]
+s[grep("ln|log", row.names(s)), ]
+s[grep("sigma", row.names(s)), , drop = FALSE]
 
 r <- tmb_obj$report()
 r$range
@@ -159,4 +163,3 @@ ggplot(co, aes(forcats::fct_reorder(species, -Estimate), Estimate,
   ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
 )) +
   geom_pointrange() + coord_flip() + xlab("")
-
