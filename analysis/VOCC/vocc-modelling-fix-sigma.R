@@ -175,3 +175,13 @@ ggplot(co, aes(forcats::fct_reorder(species_year, myorder), Estimate, colour=jus
   ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
 )) +
   geom_pointrange() + coord_flip() + xlab("")
+
+meta <- s[(nrow(s) - (tmb_data$n_just_species - 1)):nrow(s),]
+meta <- as.data.frame(meta)
+row.names(meta) <- NULL
+meta$just_species <- unique(x$species)
+
+ggplot(meta, aes(forcats::fct_reorder(just_species, -Estimate), Estimate, colour=just_species,
+  ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
+)) +
+  geom_pointrange() + coord_flip() + xlab("")
