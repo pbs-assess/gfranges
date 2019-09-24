@@ -101,7 +101,9 @@ tmb_params <- list(
   ln_phi = 0,
   epsilon_sk = matrix(0, nrow = n_s, ncol = n_k),
   b_re = matrix(0, nrow = n_k, ncol = n_re),
+  b_re_sp = rep(0, tmb_data$n_just_species),
   log_gamma = rep(0, n_re - 1),
+  log_omega = rep(0, tmb_data$n_just_species),
   b_cell = rep(0, length(unique(tmb_data$m_i))),
   log_varphi = 0
 )
@@ -114,7 +116,9 @@ tmb_map <- list(
   ln_kappa = as.factor(NA),
   epsilon_sk = factor(rep(NA, length(tmb_params$epsilon_sk))),
   b_re = factor(matrix(NA, nrow = n_k, ncol = n_re)),
+  b_re_sp = factor(rep(NA, length(tmb_params$b_re_sp))),
   log_gamma = factor(rep(NA, length(tmb_params$log_gamma))),
+  log_omega = factor(rep(NA, length(tmb_params$log_omega))),
   log_varphi = as.factor(NA),
   b_cell = factor(rep(NA, length(tmb_params$b_cell)))
 )
@@ -129,9 +133,9 @@ tmb_opt <- stats::nlminb(
   control = list(eval.max = 1e4, iter.max = 1e4)
 )
 
-# tmb_random <- c("epsilon_sk", "b_re", "b_cell")
+# tmb_random <- c("epsilon_sk", "b_re", "b_cell", "b_re_sp")
 # REML:
-tmb_random <- c("epsilon_sk", "b_re", "b_cell", "b_j")
+tmb_random <- c("epsilon_sk", "b_re", "b_cell", "b_re_sp", "b_j")
 
 set_par_value <- function(opt, par) {
   as.numeric(opt$par[par == names(opt$par)])
@@ -165,8 +169,6 @@ r$range
 
 co <- as.data.frame(s[row.names(s) == "b_baci_interaction", ])
 co$species_year <- as.character(unique(as.factor(d$species_year)))
-
-
 co <- co %>% mutate (just_species = gsub(" [0-9]+$", "", species_year)) %>% 
     group_by(just_species) %>% mutate(mean_baci_int = mean(Estimate)) %>% ungroup() %>%
   arrange(-mean_baci_int, -Estimate) %>% mutate(myorder = seq_len(n()))
@@ -176,7 +178,7 @@ ggplot(co, aes(forcats::fct_reorder(species_year, myorder), Estimate, colour=jus
 )) +
   geom_pointrange() + coord_flip() + xlab("")
 
-meta <- s[(nrow(s) - (tmb_data$n_just_species - 1)):nrow(s),]
+meta <- s[grep("b_re_sp", row.names(s)), ]
 meta <- as.data.frame(meta)
 row.names(meta) <- NULL
 meta$just_species <- unique(x$species)
