@@ -120,7 +120,13 @@ Type objective_function<Type>::operator()()
   
   for(int k = 0; k < b_re.rows(); k++) {
     for(int r = 0; r < b_re.cols(); r++) {
-      nll_re -= dnorm(b_re(k,r), Type(0.0), exp(log_gamma(r)), true);
+      int z;
+      if (r == 0) {
+        z = 0;
+      } else {
+        z = r - 1;
+      }
+      nll_re -= dnorm(b_re(k,r), Type(0.0), exp(log_gamma(z)), true);
     }
   }
   

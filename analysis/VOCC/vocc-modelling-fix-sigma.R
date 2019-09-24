@@ -19,7 +19,6 @@ files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) # did
 .d <- purrr::map_dfr(files, readRDS)
 
 
-
 d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, X, Y, vect_dist, matchobs)
 d <- mutate(d, source = ifelse(cell_type == "source", 1, 0), age = "mature")
 
@@ -95,7 +94,7 @@ tmb_params <- list(
   ln_phi = 0,
   epsilon_sk = matrix(0, nrow = n_s, ncol = n_k),
   b_re = matrix(0, nrow = n_k, ncol = n_re),
-  log_gamma = rep(0, n_re),
+  log_gamma = rep(0, n_re - 1),
   b_cell = rep(0, length(unique(tmb_data$m_i))),
   log_varphi = 0
 )
