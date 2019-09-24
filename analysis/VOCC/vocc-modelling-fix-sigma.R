@@ -108,7 +108,9 @@ tmb_params <- list(
   log_varphi = 0
 )
 
-TMB::compile("basic_spatial_re_fix_sigma.cpp")
+suppressWarnings(file.remove("basic_spatial_re_fix_sigma.o", 
+  "basic_spatial_re_fix_sigma.so")) # to avoid crashing R
+TMB::compile("basic_spatial_re_fix_sigma.cpp", )
 dyn.load(dynlib("basic_spatial_re_fix_sigma"))
 
 tmb_map <- list(
