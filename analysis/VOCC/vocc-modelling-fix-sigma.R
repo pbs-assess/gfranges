@@ -24,24 +24,25 @@ d <- mutate(d, source = ifelse(cell_type == "source", 1, 0), age = "mature")
 
 unique(d$start_time)
 
-#d <- filter(d, start_time == "2013")
-#d <- filter(d, start_time == "2015")
+# d <- filter(d, start_time == "2013")
+# d <- filter(d, start_time == "2015")
 nrow(d)
 
 ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.1, alpha = 0.3) +
   facet_wrap(~species) + coord_fixed()
 
 ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
-facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
+  facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
 
 # 'scratch' code was here.
 
 d$species_year <- paste(d$species, d$start_time)
 
 data <- d
-#formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
+# formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
 # formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
-formula <- log_density ~ after * source + scale(log_depth) * as.factor(species_year) + I((scale(log_depth))^2) * as.factor(species_year)
+formula <- log_density ~ after * source + scale(log_depth) * as.factor(species_year) + 
+  I((scale(log_depth))^2) * as.factor(species_year)
 
 species_k <- as.integer(as.factor(d$species_year))
 cell_m <- as.integer(as.factor(paste(d$matchobs, d$species_year)))
@@ -108,8 +109,10 @@ tmb_params <- list(
   log_varphi = 0
 )
 
-suppressWarnings(file.remove("basic_spatial_re_fix_sigma.o", 
-  "basic_spatial_re_fix_sigma.so")) # to avoid crashing R
+suppressWarnings(file.remove(
+  "basic_spatial_re_fix_sigma.o",
+  "basic_spatial_re_fix_sigma.so"
+)) # to avoid crashing R
 TMB::compile("basic_spatial_re_fix_sigma.cpp", )
 dyn.load(dynlib("basic_spatial_re_fix_sigma"))
 
@@ -171,11 +174,16 @@ r$range
 
 co <- as.data.frame(s[row.names(s) == "b_baci_interaction", ])
 co$species_year <- as.character(unique(as.factor(d$species_year)))
-co <- co %>% mutate (just_species = gsub(" [0-9]+$", "", species_year)) %>% 
-    group_by(just_species) %>% mutate(mean_baci_int = mean(Estimate)) %>% ungroup() %>%
-  arrange(-mean_baci_int, -Estimate) %>% mutate(myorder = seq_len(n()))
+co <- co %>%
+  mutate(just_species = gsub(" [0-9]+$", "", species_year)) %>%
+  group_by(just_species) %>%
+  mutate(mean_baci_int = mean(Estimate)) %>%
+  ungroup() %>%
+  arrange(-mean_baci_int, -Estimate) %>%
+  mutate(myorder = seq_len(n()))
 
-ggplot(co, aes(forcats::fct_reorder(species_year, myorder), Estimate, colour=just_species,
+ggplot(co, aes(forcats::fct_reorder(species_year, myorder), Estimate,
+  colour = just_species,
   ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
 )) +
   geom_pointrange() + coord_flip() + xlab("")
@@ -185,7 +193,8 @@ meta <- as.data.frame(meta)
 row.names(meta) <- NULL
 meta$just_species <- unique(x$species)
 
-ggplot(meta, aes(forcats::fct_reorder(just_species, -Estimate), Estimate, colour=just_species,
+ggplot(meta, aes(forcats::fct_reorder(just_species, -Estimate), Estimate,
+  colour = just_species,
   ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
 )) +
   geom_pointrange() + coord_flip() + xlab("")
