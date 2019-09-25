@@ -48,7 +48,7 @@ species_k <- as.integer(as.factor(d$species_year))
 cell_m <- as.integer(as.factor(paste(d$matchobs, d$species_year)))
 
 X_ij <- model.matrix(formula, data)
-head(X_ij)
+colnames(X_ij)
 mf <- model.frame(formula, data)
 y_i <- model.response(mf, "numeric")
 
@@ -97,14 +97,14 @@ tmb_data <- list(
 
 tmb_params <- list(
   b_j = rep(0, ncol(tmb_data$X_ij)),
-  ln_tau_E = 0,
+  ln_tau_E = rep(0, max(species_id_k)),
   ln_kappa = 0,
   ln_phi = 0,
   epsilon_sk = matrix(0, nrow = n_s, ncol = n_k),
   b_re = matrix(0, nrow = n_k, ncol = n_re),
   b_re_sp = rep(0, tmb_data$n_just_species),
   log_gamma = rep(0, n_re - 1 - 1),
-  # log_omega = 0,
+  log_omega = 0,
   # log_omega = rep(0, max(species_id_k)),
   b_cell = rep(0, length(unique(tmb_data$m_i))),
   log_varphi = 0
@@ -119,7 +119,7 @@ dyn.load(dynlib("basic_spatial_re_fix_sigma"))
 
 # First just fit the fixed effects:
 tmb_map <- list(
-  ln_tau_E = as.factor(NA),
+  ln_tau_E = as.factor(rep(NA, length(tmb_params$ln_tau_E))),
   ln_kappa = as.factor(NA),
   epsilon_sk = factor(rep(NA, length(tmb_params$epsilon_sk))),
   b_re = factor(matrix(NA, nrow = n_k, ncol = n_re)),

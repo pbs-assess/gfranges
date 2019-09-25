@@ -56,7 +56,7 @@ Type objective_function<Type>::operator()()
   // PARAMETER_VECTOR(log_omega);  // re sp-level mean BACI interactions
   PARAMETER(log_varphi);  // re cell sigma
   // PARAMETER(ln_tau_O);    // spatial process
-  PARAMETER(ln_tau_E);    // spatio-temporal process
+  PARAMETER_VECTOR(ln_tau_E);    // spatio-temporal process
   PARAMETER(ln_kappa);    // Matern parameter
   
   PARAMETER(ln_phi);           // sigma / dispersion / etc.
@@ -83,8 +83,11 @@ Type objective_function<Type>::operator()()
   // REPORT(sigma_O);
   // ADREPORT(sigma_O);
   
-  Type sigma_E = 1 / sqrt(Type(4.0) * M_PI * exp(Type(2.0) * ln_tau_E) *
-    exp(Type(2.0) * ln_kappa));
+  vector<Type> sigma_E(n_just_species);
+  for(int k = 0; k < n_just_species; k++) {
+    sigma_E(k) = 1 / sqrt(Type(4.0) * M_PI * exp(Type(2.0) * ln_tau_E(k)) *
+      exp(Type(2.0) * ln_kappa));
+  }
   REPORT(sigma_E);
   ADREPORT(sigma_E);
   
@@ -152,7 +155,7 @@ Type objective_function<Type>::operator()()
   
   // Spatial random effects:
   for (int k = 0; k < n_k; k++) {
-    nll_epsilon += SCALE(GMRF(Q, true), 1. / exp(ln_tau_E))(epsilon_sk.col(k));
+    nll_epsilon += SCALE(GMRF(Q, true), 1. / exp(ln_tau_E(species_id_k(k))))(epsilon_sk.col(k));
   }
   
   // ------------------ Probability of data given random effects ---------------
