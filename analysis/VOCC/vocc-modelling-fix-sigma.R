@@ -41,7 +41,7 @@ d$species_year <- paste(d$species, d$start_time)
 data <- d
 # formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
 # formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
-formula <- log_density ~ after * source + scale(log_depth) * as.factor(species_year) + 
+formula <- log_density ~ after + source + scale(log_depth) * as.factor(species_year) + 
   I((scale(log_depth))^2) * as.factor(species_year)
 
 species_k <- as.integer(as.factor(d$species_year))
@@ -91,8 +91,8 @@ tmb_data <- list(
   m_i = cell_m - 1L,
   species_id_k = species_id_k - 1L,
   n_just_species = max(species_id_k),
-  n_years_per_species = as.numeric(table(species_id_k)),
-  interaction_position = grep("after:source", colnames(X_ij)) - 1
+  n_years_per_species = as.numeric(table(species_id_k))
+  # interaction_position = grep("after:source", colnames(X_ij)) - 1
 )
 
 tmb_params <- list(
@@ -104,7 +104,8 @@ tmb_params <- list(
   b_re = matrix(0, nrow = n_k, ncol = n_re),
   b_re_sp = rep(0, tmb_data$n_just_species),
   log_gamma = rep(0, n_re - 1 - 1),
-  log_omega = 0,
+  # log_omega = 0,
+  # log_omega = rep(0, max(species_id_k)),
   b_cell = rep(0, length(unique(tmb_data$m_i))),
   log_varphi = 0
 )
@@ -116,12 +117,13 @@ suppressWarnings(file.remove(
 TMB::compile("basic_spatial_re_fix_sigma.cpp", )
 dyn.load(dynlib("basic_spatial_re_fix_sigma"))
 
+# First just fit the fixed effects:
 tmb_map <- list(
   ln_tau_E = as.factor(NA),
   ln_kappa = as.factor(NA),
   epsilon_sk = factor(rep(NA, length(tmb_params$epsilon_sk))),
   b_re = factor(matrix(NA, nrow = n_k, ncol = n_re)),
-  b_re_sp = factor(rep(NA, length(tmb_params$b_re_sp))),
+  # b_re_sp = factor(rep(NA, length(tmb_params$b_re_sp))),
   log_gamma = factor(rep(NA, length(tmb_params$log_gamma))),
   log_omega = factor(rep(NA, length(tmb_params$log_omega))),
   log_varphi = as.factor(NA),
@@ -138,15 +140,18 @@ tmb_opt <- stats::nlminb(
   control = list(eval.max = 1e4, iter.max = 1e4)
 )
 
-# tmb_random <- c("epsilon_sk", "b_re", "b_cell", "b_re_sp")
+# ML:
+# tmb_random <- c("epsilon_sk", "b_re", "b_cell")
 # REML:
 tmb_random <- c("epsilon_sk", "b_re", "b_cell", "b_re_sp", "b_j")
 
+# Initialize the fixed effects from the first stage:
 set_par_value <- function(opt, par) {
   as.numeric(opt$par[par == names(opt$par)])
 }
 tmb_params$b_j <- set_par_value(tmb_opt, "b_j")
 tmb_params$ln_phi <- set_par_value(tmb_opt, "ln_phi")
+tmb_params$b_re_sp <- set_par_value(tmb_opt, "b_re_sp")
 
 tmb_obj <- TMB::MakeADFun(
   data = tmb_data, parameters = tmb_params,

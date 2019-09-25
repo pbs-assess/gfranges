@@ -41,7 +41,7 @@ Type objective_function<Type>::operator()()
   DATA_VECTOR(after_i);
   DATA_VECTOR(source_i);
   DATA_IVECTOR(m_i); // cell ID
-  DATA_INTEGER(interaction_position);
+  // DATA_INTEGER(interaction_position);
   
   // ------------------ Parameters ---------------------------------------------
   
@@ -53,6 +53,7 @@ Type objective_function<Type>::operator()()
   PARAMETER_VECTOR(b_cell);  // re parameters
   PARAMETER_VECTOR(log_gamma);  // re parameter sigmas
   PARAMETER(log_omega);  // re sp-level mean BACI interactions
+  // PARAMETER_VECTOR(log_omega);  // re sp-level mean BACI interactions
   PARAMETER(log_varphi);  // re cell sigma
   // PARAMETER(ln_tau_O);    // spatial process
   PARAMETER(ln_tau_E);    // spatio-temporal process
@@ -113,9 +114,9 @@ Type objective_function<Type>::operator()()
       b_re(k_i(i),0) * intercept_i(i) + 
       b_re(k_i(i),1) * after_i(i) + 
       b_re(k_i(i),2) * source_i(i) +
-      b_re(k_i(i),3) * after_i(i) * source_i(i) + 
-      b_re_sp(species_id_k(k_i(i))) * after_i(i) * source_i(i) +
-      b_cell(m_i(i)) * Type(1.0);
+      b_re(k_i(i),3) * after_i(i) * source_i(i) + // spp./year BACI interaction random effect 
+      b_re_sp(species_id_k(k_i(i))) * after_i(i) * source_i(i) + // spp. level BACI interaction
+      b_cell(m_i(i)) * Type(1.0); // cell match
     
     epsilon_sk_A_vec(i) = epsilon_sk_A(A_spatial_index(i), k_i(i)); // record it
       
@@ -138,11 +139,12 @@ Type objective_function<Type>::operator()()
     }
   }
   for(int k = 0; k < b_re.rows(); k++) {
+    // nll_re -= dnorm(b_re(k,3), Type(0.0), exp(log_omega(species_id_k(k))), true);
     nll_re -= dnorm(b_re(k,3), Type(0.0), exp(log_omega), true);
   }
-  for(int u = 0; u < n_just_species; u++) {
-    nll_re -= dnorm(b_re_sp(u), Type(0.0), exp(log_omega), true);
-  }
+  // for(int u = 0; u < n_just_species; u++) {
+  //   nll_re -= dnorm(b_re_sp(u), Type(0.0), exp(log_omega), true);
+  // }
 
   for(int m = 0; m < b_cell.size(); m++) {
     nll_re -= dnorm(b_cell(m), Type(0.0), exp(log_varphi), true);
@@ -166,7 +168,7 @@ Type objective_function<Type>::operator()()
   vector<Type> b_baci_interaction(n_k);
   
   for(int k = 0; k < b_re.rows(); k++) {
-    b_baci_interaction(k) = b_re(k,3) + b_re_sp(species_id_k(k)) + b_j(interaction_position);
+    b_baci_interaction(k) = b_re(k,3) + b_re_sp(species_id_k(k)); // + b_j(interaction_position);
   }
   
   // vector<Type> b_baci_interaction_spp(n_just_species);
