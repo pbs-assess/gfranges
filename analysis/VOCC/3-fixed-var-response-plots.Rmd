@@ -75,18 +75,15 @@ covariates <- ""
 # covs <- gsub("\\+", "-", covariates)
 priors <- TRUE
 #covs <- "-tv-depth"
-covs <- "-both-tv-depth"
-
+# covs <- "-both-tv-depth"
+# covs <- "-log-do"
+covs <- "-log-do-trawled"
 num_params <- 2
 ```
 
 Run all subsequent code...
 ```{r global_options, include=FALSE}
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
-
-# folder to hold figs for this species
-dir.create(file.path("figs", spp))
-dir.create(file.path("data", spp))
 
 knitr::opts_chunk$set(
   fig.width = 11, fig.height = 8.5,
@@ -114,18 +111,24 @@ rm(adult, imm,
   )
 
 try({
+  # loads global models with 2016 excluded due to strangely high DO 
+  add2016 <- ""
+  x2016 <- "x2016"
+  # for models using 2016 
+  # add2016 <- "-do"
+  #  x2016 <- ""
   survey <- c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG")
   model_ssid <- c(1, 3, 4, 16)
   ssid_string <- paste0(model_ssid, collapse = "n")
   try({adult <- readRDS(paste0("data/", spp,
-    "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+    "/mod-mat-biomass-", spp, "-fixed", add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
   imm <- readRDS(paste0("data/", spp,
-    "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+    "/mod-imm-biomass-", spp, "-fixed", add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
   })
   try({total <- readRDS(paste0("data/", spp,
-    "/model-total-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"))
+    "/model-total-biomass-", spp, "-fixed", add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"))
   })
 })
 if (!exists("adult")) adult <- NULL
@@ -216,34 +219,35 @@ for (i in seq_len(length(model_list))) {
   
  # check if models converged
  if(model_list[[i]]$model$convergence==0){
-  do[[i]] <- fixed_density(model_list[[i]], predictor = "do_mlpl")
+  do[[i]] <- fixed_density(model_list[[i]], predictor = "do_mlpl", quadratics_only = FALSE)
 
   if (length(do[[i]])>0) {
    do[[i]]$species <- species
    do[[i]]$age <- ifelse(grepl("imm", names(model_list[i])), "imm", "adult")
-   do[[i]]$ssid <- unique(model_list[[i]]$data$ssid)
+   do[[i]]$ssid <- paste0(sort(unique(as.numeric(model_list[[i]]$data$ssid))), collapse = "n")
    do[[i]]$model <- names(model_list[i])
-   do[[i]]$covs <- covs 
+   do[[i]]$covs <- paste0(x2016,covs) 
    roots <- get_quadratic_roots(model_list[[i]], predictor = "do_mlpl", fixed_param = 1, threshold = 0.5)
-   do[[i]]$optimal_do <- roots[["optimal"]]
-   do[[i]]$lower_do_50 <- roots[["lower_threshold"]]
-   do[[i]]$upper_do_50 <- roots[["upper_threshold"]]
+   do[[i]]$optimal_do <- exp(roots[["optimal"]])
+   do[[i]]$lower_do_50 <- exp(roots[["lower_threshold"]])
+   do[[i]]$upper_do_50 <- exp(roots[["upper_threshold"]])
    roots75 <- get_quadratic_roots(model_list[[i]], predictor = "do_mlpl", fixed_param = 1, threshold = 0.75)
-   do[[i]]$lower_do_75 <- roots75[["lower_threshold"]]
-   do[[i]]$upper_do_75 <- roots75[["upper_threshold"]]
+   do[[i]]$lower_do_75 <- exp(roots75[["lower_threshold"]])
+   do[[i]]$upper_do_75 <- exp(roots75[["upper_threshold"]])
    roots25 <- get_quadratic_roots(model_list[[i]], predictor = "do_mlpl", fixed_param = 1, threshold = 0.25)
-   do[[i]]$lower_do_25 <- roots25[["lower_threshold"]]
-   do[[i]]$upper_do_25 <- roots25[["upper_threshold"]]
+   do[[i]]$lower_do_25 <- exp(roots25[["lower_threshold"]])
+   do[[i]]$upper_do_25 <- exp(roots25[["upper_threshold"]])
+   do[[i]]$x <- exp(do[[i]]$x)
    do_plots[[i]] <- 
-     plot_mountains(do[[i]], variable_label = "Dissolved O2", xlimits = c(0, 8)) +
+     plot_mountains(do[[i]], variable_label = "Dissolved O2", xlimits = c(0.2, 8)) +
         ggtitle(paste(species, names(model_list[i]))) +
-        geom_vline(xintercept=do[[i]]$optimal_do, size= 1.2, colour = "darkgrey") + 
-        geom_vline(xintercept=do[[i]]$lower_do_50, linetype="longdash", alpha = 0.75) + 
-        geom_vline(xintercept=do[[i]]$upper_do_50, linetype="longdash", alpha = 0.75) +
-        geom_vline(xintercept=do[[i]]$lower_do_75, linetype="dotted", alpha = 0.5) + 
-        geom_vline(xintercept=do[[i]]$upper_do_75, linetype="dotted", alpha = 0.5) +
-        geom_vline(xintercept=do[[i]]$lower_do_25, linetype="dotted", alpha = 0.5) + 
-        geom_vline(xintercept=do[[i]]$upper_do_25, linetype="dotted", alpha = 0.5) 
+        geom_vline(xintercept=(do[[i]]$optimal_do), size= 1.2, colour = "darkgrey") + 
+        geom_vline(xintercept=(do[[i]]$lower_do_50), linetype="longdash", alpha = 0.75) + 
+        geom_vline(xintercept=(do[[i]]$upper_do_50), linetype="longdash", alpha = 0.75) +
+        geom_vline(xintercept=(do[[i]]$lower_do_75), linetype="dotted", alpha = 0.5) + 
+        geom_vline(xintercept=(do[[i]]$upper_do_75), linetype="dotted", alpha = 0.5) +
+        geom_vline(xintercept=(do[[i]]$lower_do_25), linetype="dotted", alpha = 0.5) + 
+        geom_vline(xintercept=(do[[i]]$upper_do_25), linetype="dotted", alpha = 0.5) 
    } else {
     do_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
    }
@@ -270,13 +274,13 @@ td <- list()
 temp_plots <- list()
 for (i in seq_len(length(model_list))) {
  if(model_list[[i]]$model$convergence==0){
-  td[[i]] <- fixed_density(model_list[[i]], predictor = "temp", fixed_params = num_params)
+  td[[i]] <- fixed_density(model_list[[i]], predictor = "temp", quadratics_only = FALSE, fixed_params = num_params)
   if (length(td[[i]])>0) {
     td[[i]]$species <- species
     td[[i]]$age <- ifelse(grepl("imm", names(model_list[i])), "imm", "adult")
-    td[[i]]$ssid <- unique(model_list[[i]]$data$ssid)
+    td[[i]]$ssid <- paste0(sort(unique(as.numeric(model_list[[i]]$data$ssid))), collapse = "n")
     td[[i]]$model <- names(model_list[i])
-    td[[i]]$covs <- covs
+    td[[i]]$covs <- paste0(x2016,covs) 
    roots <- get_quadratic_roots(model_list[[i]], predictor = "temp", fixed_param = num_params, threshold = 0.5)
    td[[i]]$optimal_temp <- roots[["optimal"]]
    td[[i]]$lower_t_50 <- roots[["lower_threshold"]]
@@ -288,7 +292,7 @@ for (i in seq_len(length(model_list))) {
    td[[i]]$lower_t_25 <- roots25[["lower_threshold"]]
    td[[i]]$upper_t_25 <- roots25[["upper_threshold"]]
    temp_plots[[i]] <- 
-     plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(2, 10)) +
+     plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(2, 12)) +
         ggtitle(paste(species, names(model_list[i]))) +
         geom_vline(xintercept=td[[i]]$optimal_t, size= 1.2, colour = "darkgrey") + 
         geom_vline(xintercept=td[[i]]$lower_t_50, linetype="longdash", alpha = 0.75) + 
@@ -570,7 +574,7 @@ print(raw_t_plots)
 Save DO plots
 ```{r}
 png(
-  file = paste0("figs/", spp, "/do-fixed-", spp, covs, "-priors-", priors, ".png"),
+  file = paste0("figs/", spp, "/do-fixed-", spp, x2016, covs, "-priors-", priors, ".png"),
   res = 600,
   units = "in",
   width = 8.5,
@@ -587,7 +591,7 @@ dev.off()
 Save Temperature plots
 ```{r}
 png(
-  file = paste0("figs/", spp, "/temp-fixed-", spp, covs, "-priors-", priors, ".png"),
+  file = paste0("figs/", spp, "/temp-fixed-", spp, x2016, covs, "-priors-", priors, ".png"),
   res = 600,
   units = "in",
   width = 8.5,
@@ -604,7 +608,7 @@ dev.off()
 #### Save plots of raw densities vs model optimals 
 ```{r}
 png(
-  file = paste0("figs/", spp, "/check-optimals-", spp, covs, "-priors-", priors, ".png"),
+  file = paste0("figs/", spp, "/check-optimals-", spp, x2016, covs, "-priors-", priors, ".png"),
   res = 600,
   units = "in",
   width = 8.5,
@@ -623,7 +627,7 @@ dev.off()
 png(
   file = paste0(
     "figs/", spp,
-    "/depth-", spp, covs, "-priors-", priors, ".png"
+    "/depth-", spp, x2016, covs, "-priors-", priors, ".png"
   ),
   res = 600,
   units = "in",
@@ -645,7 +649,7 @@ other_params <- readRDS(paste0("data/root-values-by-species-by-age.rds"))
 
 if(!is.null(odat)) {
   if(!is.null(tdat)) {
-    params <- full_join(tdat, odat, by=c("species", "age", "model", "covs"))
+    params <- full_join(tdat, odat, by=c("species", "age", "model", "covs", "ssid"))
     all_params <- full_join(other_params, params)
   } else {
   try({all_params <- full_join(other_params, odat)})
@@ -657,6 +661,8 @@ if(!is.null(odat)) {
 all_params <- all_params %>% distinct()
 # # If data far a particular species needs redoing
 # all_params <- subset(other_params, species!="Longnose Skate")
+# # or certain rows need removal
+# all_params <- all_params[-c(#row number#), ] 
 saveRDS(all_params, file = "data/root-values-by-species-by-age.rds")
 all_params
 ```
