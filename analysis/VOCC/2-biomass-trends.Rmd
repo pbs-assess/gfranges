@@ -12,54 +12,6 @@ This file calls models built by "1-biomass-models.Rmd" and stiches the predictio
 Species
 ```{r}
 
-# # Species run so far...
-# species <- "Arrowtooth Flounder" # temp good, not DO, imm moving deeper?
-
-# species <- "Petrale Sole"
-# species <- "English Sole"
-# species <- "Dover Sole"
-# species <- "Southern Rock Sole"
- 
-
-# species <- "Walleye Pollock" # survey 4 or 16 might work
-# species <- "Pacific Cod"
-
-## Sebastes
-
-## TRY BOTH - not schooling
- # species <- "Yelloweye Rockfish" # beautiful curves, with depth change ***
- # species <- "Bocaccio" # good curves, no depth change ... most survey-specific models fail to find minimum ***
-#  species <- "Sharpchin Rockfish" # beautiful curves, imm depth change ***
-#  species <- "Greenstriped Rockfish" # beautiful curves for adults, no depth change ***
-# 
-# ## TRY BOTH - schooling
-#  species <- "Pacific Ocean Perch" # beautiful curves, no depth change, schooling ***
-#  species <- "Silvergray Rockfish" # beautiful curves, no depth change, schooling ***
-
-
-## TRY JUST TEMPERATURE 
-# species <- "Rougheye/Blackspotted Rockfish Complex" # good temp, not DO
-# species <- "Redbanded Rockfish" # good temp, not DO, maybe moving shallower
-# species <- "Splitnose Rockfish" # good temp, not DO 
-
- 
-# species <- "Yellowtail Rockfish" #  good temp for survey 4 only, no DO, schooling
-# species <- "Quillback Rockfish" # like warm = overall a bit flat... territorial! 
-# species <- "Canary Rockfish" # schooling, winter-birthing, and depth change!, but curves at edges... adult1 looks ok?
-#  species <- "Widow Rockfish" # schooling, and depth change, but curves at edges
-
-# species <- "Longspine Thornyhead" # too deep to produce curves
-# species <- "Shortspine Thornyhead"
-# species <- "Sablefish" # temp might work, no DO, no consistant depth change
-# species <- "Lingcod" # curves ok, overall a bit flat
-# # species <- "Pacific Hake" # not useful
-  
-# species <- "North Pacific Spiny Dogfish" # too flat, but with depth change! note: pooled maturity 
-# species <- "Longnose Skate" # do too flat, temp from 4 might be useful, seems to go deeper?
-# species <- "Big Skate"
-# species <- "Sandpaper Skate"
-# species <- "Brown Cat Shark"
-# species <- "Spotted Ratfish" # curves not useful because to abundant in shallow
 ```
 
 Region 
@@ -76,11 +28,11 @@ Choose model details
 update_spatial_model <- FALSE
 priors <- FALSE
 # priors <- TRUE
-covariates <- ""
-covariates <- "+trawled"
-covs <- gsub("\\+", "-", covariates)
+# covariates <- ""
+# covariates <- "+trawled"
+# covs <- gsub("\\+", "-", covariates)
 covariates <- "+trawled+as.factor(ssid)"
- covs <- gsub("\\+", "-", "+trawled+ssid")
+covs <- gsub("\\+", "-", "+trawled+ssid")
 # covariates <- "+muddy+mixed+rocky"
 # covariates <- "+mixed+rocky"
 # covariates <- "+muddy+any_rock"
@@ -99,9 +51,11 @@ spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 dir.create(file.path("figs", spp))
 dir.create(file.path("data", spp))
 
-knitr::opts_chunk$set(fig.width=11, fig.height=8.5, 
-                      #fig.path=paste0("figs/", spp, "/"),
-                      echo=FALSE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(
+  fig.width = 11, fig.height = 8.5,
+  # fig.path=paste0("figs/", spp, "/"),
+  echo = FALSE, warning = FALSE, message = FALSE
+)
 ```
 
 ```{r, message=FALSE, warning=FALSE}
@@ -150,96 +104,138 @@ rm(adult_predictions)
 rm(imm_predictions)
 rm(predictions)
 
-      rm(pred1n3)
-  rm(pred4)
+rm(pred1n3)
+rm(pred4)
 rm(pred16)
 
-      rm(pred1n3_imm)
-  rm(pred4_imm)
+rm(pred1n3_imm)
+rm(pred4_imm)
 rm(pred16_imm)
 
-    rm(pred1n3_all)
-  rm(pred4_all)
+rm(pred1n3_all)
+rm(pred4_all)
 rm(pred16_all)
-#if (isFALSE(update_spatial_model)) {
+# if (isFALSE(update_spatial_model)) {
 if (region != "All synoptic surveys") {
-    
-    try(adult_predictions <- readRDS(paste0("data/", spp, 
-      "/predictions-", spp, covs, "-", ssid_string, "-mature-biomass-prior-", priors, ".rds")))
-    try(imm_predictions <- readRDS(paste0("data/", spp, 
-      "/predictions-", spp, covs, "-", ssid_string, "-imm-biomass-prior-", priors, ".rds")))
-    
-    if (!exists("adult_predictions")) {
-      paste("Maturity split biomass predictions are not available for this survey.")
-      
-      try(predictions <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-", ssid_string, "-total-biomass-prior-", priors, ".rds")))
-      
-      if (!exists("predictions")) {
-        paste("Total biomass predictions for this survey are also not available.")
-      }
+  try(adult_predictions <- readRDS(paste0(
+    "data/", spp,
+    "/predictions-", spp, covs, "-", ssid_string, "-mature-biomass-prior-", priors, ".rds"
+  )))
+  try(imm_predictions <- readRDS(paste0(
+    "data/", spp,
+    "/predictions-", spp, covs, "-", ssid_string, "-imm-biomass-prior-", priors, ".rds"
+  )))
+
+  if (!exists("adult_predictions")) {
+    paste("Maturity split biomass predictions are not available for this survey.")
+
+    try(predictions <- readRDS(paste0(
+      "data/", spp,
+      "/predictions-", spp, covs, "-", ssid_string, "-total-biomass-prior-", priors, ".rds"
+    )))
+
+    if (!exists("predictions")) {
+      paste("Total biomass predictions for this survey are also not available.")
     }
-  
+  }
 } else {
-  
-   try({adult_predictions <- readRDS(paste0("data/", spp, 
+  try({
+    adult_predictions <- readRDS(paste0(
+      "data/", spp,
       "/predictions-", spp, covs, "-", ssid_string, "-mature-biomass-prior-", priors, ".rds"
-    ))})
-   try({imm_predictions <- readRDS(paste0("data/", spp, 
+    ))
+  })
+  try({
+    imm_predictions <- readRDS(paste0(
+      "data/", spp,
       "/predictions-", spp, covs, "-", ssid_string, "-imm-biomass-prior-", priors, ".rds"
-    ))})
-  
+    ))
+  })
+
   if (!exists("adult_predictions")) {
     # OR bind together predictions from different models
-   try({pred1n3 <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-1n3-mature-biomass-prior-", priors, ".rds"))})
-   try({pred4 <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-4-mature-biomass-prior-", priors, ".rds"))}) 
-   try({pred16 <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-16-mature-biomass-prior-", priors, ".rds"))})
-  
+    try({
+      pred1n3 <- readRDS(paste0(
+        "data/", spp,
+        "/predictions-", spp, covs, "-1n3-mature-biomass-prior-", priors, ".rds"
+      ))
+    })
+    try({
+      pred4 <- readRDS(paste0(
+        "data/", spp,
+        "/predictions-", spp, covs, "-4-mature-biomass-prior-", priors, ".rds"
+      ))
+    })
+    try({
+      pred16 <- readRDS(paste0(
+        "data/", spp,
+        "/predictions-", spp, covs, "-16-mature-biomass-prior-", priors, ".rds"
+      ))
+    })
+
     if (!exists("pred1n3")) pred1n3 <- NULL
     if (!exists("pred16")) pred16 <- NULL
     if (!exists("pred4")) pred4 <- NULL
     adult_predictions <- rbind(pred1n3, pred4, pred16)
 
     try({
-      pred1n3_imm <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-1n3-imm-biomass-prior-", priors, ".rds"))})
-   try({
-      pred4_imm <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-4-imm-biomass-prior-", priors, ".rds"))})
-   try({
-      pred16_imm <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-16-imm-biomass-prior-", priors, ".rds"))
+      pred1n3_imm <- readRDS(paste0(
+        "data/", spp,
+        "/predictions-", spp, covs, "-1n3-imm-biomass-prior-", priors, ".rds"
+      ))
+    })
+    try({
+      pred4_imm <- readRDS(paste0(
+        "data/", spp,
+        "/predictions-", spp, covs, "-4-imm-biomass-prior-", priors, ".rds"
+      ))
+    })
+    try({
+      pred16_imm <- readRDS(paste0(
+        "data/", spp,
+        "/predictions-", spp, covs, "-16-imm-biomass-prior-", priors, ".rds"
+      ))
     })
 
     if (!exists("pred1n3_imm")) pred1n3_imm <- NULL
     if (!exists("pred16_imm")) pred16_imm <- NULL
     if (!exists("pred4_imm")) pred4_imm <- NULL
     imm_predictions <- rbind(pred1n3_imm, pred4_imm, pred16_imm)
-  
+
     if (!exists("adult_predictions")) {
       paste("Maturity split biomass predictions are not available.")
-      
-      try({predictions <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-", ssid_string, "-total-biomass-prior-", priors, ".rds"
-      ))})
-  
-      if (!exists("predictions")) {
-      
-      
-      try({pred1n3_all <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-1n3-total-biomass-prior-", priors, ".rds"))})
-      try({pred4_all <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-4-total-biomass-prior-", priors, ".rds"))})
-      try({pred16_all <- readRDS(paste0("data/", spp, 
-        "/predictions-", spp, covs, "-16-total-biomass-prior-", priors, ".rds"))})
+
       try({
-      predictions <- rbind(pred1n3_all, pred4_all, pred16_all)
+        predictions <- readRDS(paste0(
+          "data/", spp,
+          "/predictions-", spp, covs, "-", ssid_string, "-total-biomass-prior-", priors, ".rds"
+        ))
       })
-      
-      if (!exists("predictions")) paste("Total biomass predictions are not available.")
+
+      if (!exists("predictions")) {
+        try({
+          pred1n3_all <- readRDS(paste0(
+            "data/", spp,
+            "/predictions-", spp, covs, "-1n3-total-biomass-prior-", priors, ".rds"
+          ))
+        })
+        try({
+          pred4_all <- readRDS(paste0(
+            "data/", spp,
+            "/predictions-", spp, covs, "-4-total-biomass-prior-", priors, ".rds"
+          ))
+        })
+        try({
+          pred16_all <- readRDS(paste0(
+            "data/", spp,
+            "/predictions-", spp, covs, "-16-total-biomass-prior-", priors, ".rds"
+          ))
+        })
+        try({
+          predictions <- rbind(pred1n3_all, pred4_all, pred16_all)
+        })
+
+        if (!exists("predictions")) paste("Total biomass predictions are not available.")
       }
     }
   }
@@ -250,7 +246,7 @@ if (region != "All synoptic surveys") {
 Caluclate variables of interest from predictions
 ```{r}
 if (exists("adult_predictions")) {
-  
+
   # to convert from kg/m2 to kg/hectare multiply by 10000
   adult_predictions$est_exp <- exp(adult_predictions$est) * 10000
   imm_predictions$est_exp <- exp(imm_predictions$est) * 10000
@@ -260,23 +256,27 @@ if (exists("adult_predictions")) {
 
   max_raster <- quantile(adult_predictions$est_exp, 0.999)
   max_adult <- signif(max(adult_predictions$est_exp), digits = 2)
-  
-  saveRDS(adult_predictions, file = paste0("data/", spp, 
-      "/all-predictions-", spp, covs, "-mat-biomass-prior-", priors, ".rds"))
-  saveRDS(imm_predictions, file = paste0("data/", spp, 
-      "/all-predictions-", spp, covs, "-imm-biomass-prior-", priors, ".rds"))
-  
+
+  saveRDS(adult_predictions, file = paste0(
+    "data/", spp,
+    "/all-predictions-", spp, covs, "-mat-biomass-prior-", priors, ".rds"
+  ))
+  saveRDS(imm_predictions, file = paste0(
+    "data/", spp,
+    "/all-predictions-", spp, covs, "-imm-biomass-prior-", priors, ".rds"
+  ))
+
   model_ssid <- unique(adult_predictions$ssid)
-  
 } else {
-  
   predictions$total_bio <- exp(predictions$est) * 10000
   max_raster <- quantile(predictions$total_bio, .999)
   max_bio <- round(max(predictions$total_bio))
-  
-  saveRDS(predictions, file = paste0("data/", spp, 
-      "/all-predictions-", spp, covs, "-total-biomass-prior-", priors, ".rds"))
-  
+
+  saveRDS(predictions, file = paste0(
+    "data/", spp,
+    "/all-predictions-", spp, covs, "-total-biomass-prior-", priors, ".rds"
+  ))
+
   model_ssid <- unique(predictions$ssid)
 }
 ```
@@ -285,7 +285,6 @@ if (exists("adult_predictions")) {
 
 ```{r, error=TRUE}
 if (exists("adult_predictions")) {
-
   p_adult_all <- plot_facet_map(adult_predictions, "est_exp",
     raster_limits = c(0, max_raster),
     legend_position = "none",
@@ -294,9 +293,7 @@ if (exists("adult_predictions")) {
     labs(fill = "kg/ha") +
     ggtitle(paste0("", species, " mature biomass \n(max = ", max_adult, " kg/ha)"))
   print(p_adult_all)
-
 } else {
-
   p_adult_all <- plot_facet_map(predictions, "total_bio",
     transform_col = fourth_root_power
   ) +
@@ -316,7 +313,9 @@ if (exists("adult_predictions")) {
   }
 
   if (3 %in% model_ssid) {
-    adult_predictions3 <- adult_predictions %>% filter(ssid != 16) %>% filter(ssid != 4) 
+    adult_predictions3 <- adult_predictions %>%
+      filter(ssid != 16) %>%
+      filter(ssid != 4)
   } else {
     adult_predictions3 <- NULL
   }
@@ -329,9 +328,9 @@ if (exists("adult_predictions")) {
 
   if (16 %in% model_ssid) {
     if (any(adult_predictions$ssid == 16)) {
-    adult_predictions16 <- adult_predictions %>% filter(ssid == 16)
+      adult_predictions16 <- adult_predictions %>% filter(ssid == 16)
     } else {
-    adult_predictions16 <- NULL
+      adult_predictions16 <- NULL
     }
   } else {
     adult_predictions16 <- NULL
@@ -357,7 +356,7 @@ if (exists("adult_predictions")) {
 
 
 ```{r, message=FALSE, warning=FALSE}
-#try(out_mature <- readRDS(paste0("data/", spp, "/trends-", spp, covs, "-", ssid_string, "-mature-biomass-priors-", priors, ".rds")))
+# try(out_mature <- readRDS(paste0("data/", spp, "/trends-", spp, covs, "-", ssid_string, "-mature-biomass-priors-", priors, ".rds")))
 rm(out_mature)
 if (!exists("out_mature")) {
   if (exists("adult_predictions")) {
@@ -395,7 +394,6 @@ if (!exists("out_mature")) {
         delta_t_step = 2,
         indices = c(1, 1, 1, 2, 2, 2, 2),
         variable_names = "est_exp"
-        
       )
     } else {
       out_mature3 <- NULL
@@ -429,7 +427,6 @@ if (!exists("out_mature")) {
         delta_t_step = 2,
         indices = c(1, 1, 1, 2, 2, 2, 2),
         variable_names = "est_exp"
-        
       )
     } else {
       out_mature16 <- NULL
@@ -454,13 +451,12 @@ if (!exists("out_mature")) {
 
 ```{r }
 if (exists("out_mature")) {
+  trawl_footprint <- sf::st_read(dsn = "data/trawl-footprint", layer = "Trawl_footprint")
+  proj.to <- "+proj=utm +zone=9 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+  trawl_footprint <- sf::st_transform(trawl_footprint, crs = proj.to)
 
-trawl_footprint <- sf::st_read(dsn="data/trawl-footprint",layer="Trawl_footprint")
-proj.to <- "+proj=utm +zone=9 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
-trawl_footprint <- sf::st_transform(trawl_footprint, crs = proj.to)
 
-
-current_biomass <- plot_vocc(out_mature,
+  current_biomass <- plot_vocc(out_mature,
     fill_col = "est_exp_e",
     fill_label = "Mean mature \nbiomass (kg/ha)\npost-2010",
     raster_alpha = 1,
@@ -468,14 +464,14 @@ current_biomass <- plot_vocc(out_mature,
     vec_aes = NULL,
     transform_col = fourth_root_power
   )
-current_biomass <- current_biomass +
-   geom_sf(data= trawl_footprint, aes(geometry=geometry/1000), colour = "gray", fill = "gray", alpha= 0.2, lwd=0.25, inherit.aes = FALSE) +
-   coord_sf(xlim = c(180,820), ylim = c(5350,6050), datum = NULL) +
-   xlab("") + 
-   ylab("") +
-   theme(panel.grid.major = element_line(colour = "transparent")) +
-   ggtitle(paste("Predicted", species, "density with trawl footprint overlain"))
-current_biomass
+  current_biomass <- current_biomass +
+    geom_sf(data = trawl_footprint, aes(geometry = geometry / 1000), colour = "gray", fill = "gray", alpha = 0.2, lwd = 0.25, inherit.aes = FALSE) +
+    coord_sf(xlim = c(180, 820), ylim = c(5350, 6050), datum = NULL) +
+    xlab("") +
+    ylab("") +
+    theme(panel.grid.major = element_line(colour = "transparent")) +
+    ggtitle(paste("Predicted", species, "density with trawl footprint overlain"))
+  current_biomass
 }
 ```
 
@@ -488,8 +484,8 @@ if (exists("out_mature")) {
     fill_label = "Mature \nbiomass \ntrend \n(kg/ha/decade)",
     raster_alpha = 1,
     vec_aes = NULL,
-    white_zero = TRUE,    
-    high_fill = "deepskyblue3",#"lightseagreen", # limegreen",
+    white_zero = TRUE,
+    high_fill = "deepskyblue3", # "lightseagreen", # limegreen",
     low_fill = "red", # "deeppink3",# "steel blue 4",
     transform_col = fourth_root_power,
     legend_position = c(0.2, 0.25)
@@ -503,9 +499,9 @@ if (exists("out_mature")) {
     fill_label = "Biomass \ntrend \n(kg/ha/decade)",
     raster_alpha = 1,
     vec_aes = NULL,
-    white_zero = TRUE,    
-    high_fill = "deepskyblue3", # "greenyellow", # limegreen", 
-    low_fill = "red", #"steel blue 4",
+    white_zero = TRUE,
+    high_fill = "deepskyblue3", # "greenyellow", # limegreen",
+    low_fill = "red", # "steel blue 4",
     transform_col = fourth_root_power,
     legend_position = c(0.2, 0.25)
   ) + ggtitle(paste0(
@@ -539,7 +535,9 @@ if (exists("adult_predictions")) {
   }
 
   if (3 %in% model_ssid) {
-    imm_predictions3 <- imm_predictions %>% filter(ssid != 16) %>% filter(ssid != 4) 
+    imm_predictions3 <- imm_predictions %>%
+      filter(ssid != 16) %>%
+      filter(ssid != 4)
   } else {
     imm_predictions3 <- NULL
   }
@@ -577,7 +575,7 @@ if (exists("adult_predictions")) {
 
 
 ```{r, message=FALSE, warning=FALSE}
-#try(out_imm <- readRDS(paste0("data/", spp, "/trends-", spp, covs, "-", ssid_string, "-immature-biomass-priors-", priors, ".rds")))
+# try(out_imm <- readRDS(paste0("data/", spp, "/trends-", spp, covs, "-", ssid_string, "-immature-biomass-priors-", priors, ".rds")))
 rm(out_imm)
 if (!exists("out_imm")) {
   if (exists("imm_predictions")) {
@@ -594,7 +592,6 @@ if (!exists("out_imm")) {
         delta_t_step = 2,
         indices = c(1, 1, 1, 1, 2, 2, 2, 2),
         variable_names = "est_exp"
-        
       )
     } else {
       out_im1 <- NULL
@@ -610,7 +607,6 @@ if (!exists("out_imm")) {
         delta_t_step = 2,
         indices = c(1, 1, 1, 2, 2, 2, 2),
         variable_names = "est_exp"
-        
       )
     } else {
       out_im3 <- NULL
@@ -626,7 +622,6 @@ if (!exists("out_imm")) {
         delta_t_step = 2,
         indices = c(1, 1, 1, 1, 2, 2, 2, 2),
         variable_names = "est_exp"
-        
       )
     } else {
       out_im4 <- NULL
@@ -642,7 +637,6 @@ if (!exists("out_imm")) {
         delta_t_step = 2,
         indices = c(1, 1, 1, 1, 2, 2, 2, 2),
         variable_names = "est_exp"
-        
       )
     } else {
       out_im16 <- NULL
@@ -666,9 +660,9 @@ if (exists("out_imm")) {
     fill_label = "Immature \nbiomass \ntrend \n(kg/ha/decade)",
     raster_alpha = 1,
     vec_aes = NULL,
-    white_zero = TRUE, 
-    high_fill = "deepskyblue3",# "greenyellow", # limegreen",
-    low_fill = "red", #"steel blue 4",
+    white_zero = TRUE,
+    high_fill = "deepskyblue3", # "greenyellow", # limegreen",
+    low_fill = "red", # "steel blue 4",
     transform_col = fourth_root_power,
     legend_position = c(0.2, 0.25)
   ) + ggtitle(paste0(
