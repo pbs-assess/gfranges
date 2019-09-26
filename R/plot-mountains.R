@@ -135,7 +135,7 @@ time_varying_density <- function(m, predictor = "depth") {
 #' @param fixed_param Number in sequence if model contains multiple quadratic fixed effects
 #'
 #' @export
-fixed_density <- function(m, predictor = "temp", fixed_params = 1) {
+fixed_density <- function(m, predictor = "temp", fixed_params = 1, quadratics_only = TRUE) {
   
   get_y_hat <- function(b0, b1, b2, year, 
     predictor, mean_column, sd_column
@@ -144,6 +144,8 @@ fixed_density <- function(m, predictor = "temp", fixed_params = 1) {
     x_pred <- seq(min(m$data[[predictor]], na.rm = TRUE), 
       max(m$data[[predictor]], na.rm = TRUE), length.out = 300)
     
+    if (quadratics_only) {
+      
     # exclude curves that are increasing at extremes and therefore not capturing maxima
     maxvalue <- exp(b0 + b1 * max(x_pred) + b2 * (max(x_pred)^2))
     nearmax <- exp(
@@ -170,6 +172,15 @@ fixed_density <- function(m, predictor = "temp", fixed_params = 1) {
     } else {
       NULL
     }
+    } else {
+    data.frame(
+      # if depth, actually is log_depth so must exp(x) for raw depth
+      x = (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]]), 
+      # leave these values as predicted for un-trawled zone
+      y_hat = exp(b0 + b1 * x_pred + b2 * x_pred^2), 
+      year = year
+    )
+  }
   }
   
   r <- m$tmb_obj$report()
@@ -195,7 +206,6 @@ fixed_density <- function(m, predictor = "temp", fixed_params = 1) {
   pred_density
 }
 
-
 #' Find optimal value from density curve
 #'
 #' @param dat Dataframe resulting from any of the above density functions
@@ -217,11 +227,14 @@ get_optimal_value <- function(dat, xlimits = c(0, max(dat$x))) {
 #' @param plot Logical for plotting quadratic
 #'
 #' @export
-get_quadratic_roots <- function(m, predictor = "do_mlpl", fixed_param = 1, threshold, plot = FALSE) {
+get_quadratic_roots <- function(m, predictor = "do_mlpl", fixed_param = 1, threshold, plot = FALSE, quadratic_only = TRUE) {
   
   sd_column <- paste0(predictor, "_sd")
   mean_column <- paste0(predictor, "_mean")
   scaled <- paste0(predictor, "_scaled")
+  x_pred <- seq(min(m$data[[scaled]], na.rm = TRUE), 
+    max(m$data[[scaled]], na.rm = TRUE), length.out = 300)
+  
   b_j <- m$model$par
   n <- 0
   if (fixed_param>1) {
@@ -232,8 +245,20 @@ get_quadratic_roots <- function(m, predictor = "do_mlpl", fixed_param = 1, thres
   a <- b_j[[n_t + 2 + n]]
   c <- 1 # intercept doesn't matter; setting to an arbitrary value
   
-  x_pred <- seq(min(m$data[[scaled]], na.rm = TRUE), 
-    max(m$data[[scaled]], na.rm = TRUE), length.out = 300)
+  
+  if (quadratic_only) {
+    maxvalue <- exp(c + max(x_pred) * b + max(x_pred)^2 * a) 
+    nearmax <- exp(c + (max(x_pred) - m$data[[sd_column]][[1]]/10) * b + (max(x_pred) - m$data[[sd_column]][[1]]/10)^2 * a) 
+    minvalue <- exp(c + min(x_pred) * b + min(x_pred)^2 * a) 
+    nearmin <- exp(c + (min(x_pred) - m$data[[sd_column]][[1]]/10) * b + (min(x_pred) - m$data[[sd_column]][[1]]/10)^2 * a) 
+    
+    # exclude curves that are increasing at extremes and therefore not capturing maxima
+    if (nearmax < maxvalue | nearmin < minvalue) {
+      return(  list(optimal = NA, lower_threshold = NA, upper_threshold = NA, range = NA, prop_max = NA))
+    } 
+  } 
+      
+
   x <- (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]])
   y <- exp(c + x_pred * b + x_pred^2 * a) 
   crit_y <- y[which(y == max(y))] * threshold
