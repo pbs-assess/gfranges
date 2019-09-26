@@ -12,55 +12,7 @@ Choose one value for each parameter:
 
 Species
 ```{r}
-# species <- params$species
-
-# # Species run so far...
-# species <- "Arrowtooth Flounder"
-# species <- "Petrale Sole"
-# species <- "English Sole"
-# species <- "Dover Sole" # maturity data error for WCHG
-# species <- "Southern Rock Sole"
-# species <- "Flathead Sole"
- 
-
-
-# species <- "Silvergray Rockfish"
-# species <- "Quillback Rockfish" # summer-birthing
-# species <- "Yelloweye Rockfish" # summer-birthing, overfished, 
-# species <- "Bocaccio" # winter-birthing, overfished
-# species <- "Sharpchin Rockfish"
-# species <- "Splitnose Rockfish"
-
-# species <- "Rougheye/Blackspotted Rockfish Complex"
-# species <- "Redbanded Rockfish"
-# species <- "Greenstriped Rockfish"
-# # species <- "Copper Rockfish" # small sample
-# species <- "Darkblotched Rockfish"
-# # species <- "Shortbelly Rockfish" # small sample
-
-
-
-# species <- "Pacific Ocean Perch" # schooling
-# species <- "Widow Rockfish" # schooling
-# species <- "Yellowtail Rockfish" # schooling
-# species <- "Canary Rockfish" # schooling, winter-birthing
-   
-# species <- "Longspine Thornyhead"
-# species <- "Shortspine Thornyhead"
-
-
-# species <- "Walleye Pollock"
-# species <- "Pacific Cod"
-# species <- "Sablefish"
-# species <- "Lingcod"
-# species <- "Pacific Hake"
- 
-# species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
-# species <- "Longnose Skate"
-# species <- "Big Skate"
-# species <- "Spotted Ratfish"
-# species <- "Sandpaper Skate"
-# species <- "Brown Cat Shark"
+# species <- "Canary Rockfish" 
 ```
 
 Region 
@@ -74,10 +26,11 @@ Region
 Choose model details
 ```{r}
 # priors <- FALSE
- priors <- TRUE
+priors <- TRUE
 # covariates <- "+muddy+any_rock"
- covariates <- ""
-# covariates <- "+trawled+as.factor(ssid)"
+# covariates <- ""
+# covariates <- "+as.factor(ssid)"
+covariates <- "+trawled"
 # covariates <- "+muddy+mixed+rocky"
 # covariates <- "+mixed+rocky"
 # covariates <- "+trawled+muddy+rocky+mixed"
@@ -86,7 +39,10 @@ Choose model details
 # covs <- gsub("\\+", "-", covariates)
 # covs <- "-both-tv-depth-ssid"
 # covs <- "-both-tv-depth"
-covs <- "-log-do"
+# covs <- "-log-do"
+# covs <- "-log-do-ssid"
+covs <- "-log-do-trawled"
+
 ```
 
 
@@ -210,6 +166,7 @@ if (any(names(data) == "adult_density")) {
 
 Run DO sdmTMB model
 ```{r}
+tictoc::tic()
   if (any(names(data) == "adult_density")) {
     
     adult_formula <- as.formula(paste(
@@ -284,5 +241,6 @@ Run DO sdmTMB model
       "/model-total-biomass-", spp, "-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"
       ))
   }
+tictoc::toc()
 ```
 
