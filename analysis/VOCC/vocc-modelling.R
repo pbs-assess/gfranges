@@ -1,12 +1,17 @@
 library(dplyr)
 library(ggplot2)
+
+
+library(TMB)
 #setwd(here::here())
+#files <- list.files("../rockfish-vocc-temp/perc_50/0.75/", full.names = TRUE)
+
 setwd("analysis/VOCC/")
 
  files <- list.files("data/_all/temperature/perc_50/0.25/adult/", full.names = TRUE) 
  files <- list.files("data/_all/temperature/perc_50/0.5/adult/", full.names = TRUE) 
-files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) 
-files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE) 
+# files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) 
+# files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE) 
 
 
 # files <- list.files("data/_all/temperature/perc_25/0.25/adult/", full.names = TRUE)
@@ -14,49 +19,65 @@ files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE)
  # files <- list.files("data/_all/temperature/perc_25/0.25/imm/", full.names = TRUE) 
  # files <- list.files("data/_all/temperature/perc_25/0.5/imm/", full.names = TRUE) 
 
-files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) 
-files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) 
-files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) 
-files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) 
+# # files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) 
+#  files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) 
+# # files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) 
+# files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) 
 
+# files <- list.files("data/_all/do/perc_25/0.25/adult/", full.names = TRUE)
+# # files <- list.files("data/_all/do/perc_25/0.5/adult/", full.names = TRUE) 
+# files <- list.files("data/_all/do/perc_25/0.25/imm/", full.names = TRUE) # only 3 sp
+# # files <- list.files("data/_all/do/perc_25/0.5/imm/", full.names = TRUE) 
+model_type <- gsub("/", " ", gsub("//vocc..*", " ", gsub("data/_all/", " ", files[1])))
 
 .d <- purrr::map_dfr(files, readRDS)
 
+.d <- .d %>% group_by(species) %>% mutate(count = n()) %>% filter(count > 100)
+unique(.d$count)
 
+rm(d)
 d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, X, Y, vect_dist, matchobs)
-d <- mutate(d, source = ifelse(cell_type == "source", 1, 0))
+d <- mutate(d, source = ifelse(cell_type == "source", 1, 0)) #, age = "mature"
+
+
 
 unique(d$start_time)
 
-d <- filter(d, start_time == "2013")
-#d <- filter(d, start_time == "2015")
+# d <- filter(d, start_time == "2013")
+# d <- filter(d, start_time == "2015")
 nrow(d)
 
 p1 <- ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.01, alpha = 0.3) +
-  facet_wrap(~species) + coord_fixed() #+ theme(legend.position = c(0.3,0.7)) 
+ facet_wrap(~species) + coord_fixed() #+ theme(legend.position = c(0.3,0.7)) 
 #+ ggtitle(paste(model_type))
 
-ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
-facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
+p2 <- ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
+  facet_grid(species~start_time) + coord_fixed() + scale_color_viridis_c() 
+#+ ggtitle(paste(model_type))
 
 # 'scratch' code was here.
 
-d$species <- paste(d$species, d$start_time)
+d$species_year <- paste(d$species, d$start_time)
 
 data <- d
 # formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
 # formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
-formula <- log_density ~ after * source + scale(log_depth) + as.factor(species)
+formula <- log_density ~ after + source + scale(log_depth) * as.factor(species_year) + 
+  I((scale(log_depth))^2) * as.factor(species_year)
 
-species_k <- as.integer(as.factor(d$species))
-cell_m <- as.integer(as.factor(d$matchobs))
+species_k <- as.integer(as.factor(d$species_year))
+cell_m <- as.integer(as.factor(paste(d$matchobs, d$species_year)))
 
 X_ij <- model.matrix(formula, data)
-head(X_ij)
+# colnames(X_ij)
 mf <- model.frame(formula, data)
 y_i <- model.response(mf, "numeric")
 
-spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 200)
+# Calculate the species indexes for the species year random effects:
+x <- dplyr::distinct(select(d, species, species_year))
+species_id_k <- as.integer(as.factor(x$species))
+
+spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 100)
 sdmTMB::plot_spde(spde)
 # data$sdm_spatial_id <- 1:nrow(data)
 n_s <- nrow(spde$mesh$loc)
@@ -89,30 +110,43 @@ tmb_data <- list(
   source_i = d$source,
   n_k = n_k,
   m_i = cell_m - 1L,
-  interaction_position = grep("after:source", colnames(X_ij)) - 1
+  species_id_k = species_id_k - 1L,
+  n_just_species = max(species_id_k),
+  n_years_per_species = as.numeric(table(species_id_k))
+  # interaction_position = grep("after:source", colnames(X_ij)) - 1
 )
 
 tmb_params <- list(
   b_j = rep(0, ncol(tmb_data$X_ij)),
-  ln_tau_E = rep(0, n_k),
+  ln_tau_E = rep(0, max(species_id_k)),
   ln_kappa = 0,
   ln_phi = 0,
   epsilon_sk = matrix(0, nrow = n_s, ncol = n_k),
   b_re = matrix(0, nrow = n_k, ncol = n_re),
-  log_gamma = rep(0, n_re),
+  b_re_sp = rep(0, tmb_data$n_just_species),
+  log_gamma = rep(0, n_re - 1 - 1),
+  log_omega = 0,
+  # log_omega = rep(0, max(species_id_k)),
   b_cell = rep(0, length(unique(tmb_data$m_i))),
   log_varphi = 0
 )
 
-TMB::compile("basic_spatial_re.cpp")
+suppressWarnings(file.remove(
+  "basic_spatial_re.o",
+  "basic_spatial_re.so"
+)) # to avoid crashing R
+TMB::compile("basic_spatial_re.cpp", )
 dyn.load(dynlib("basic_spatial_re"))
 
+# First just fit the fixed effects:
 tmb_map <- list(
-  ln_tau_E = factor(rep(NA, length(tmb_params$ln_tau_E))),
+  ln_tau_E = as.factor(rep(NA, length(tmb_params$ln_tau_E))),
   ln_kappa = as.factor(NA),
   epsilon_sk = factor(rep(NA, length(tmb_params$epsilon_sk))),
   b_re = factor(matrix(NA, nrow = n_k, ncol = n_re)),
+  # b_re_sp = factor(rep(NA, length(tmb_params$b_re_sp))),
   log_gamma = factor(rep(NA, length(tmb_params$log_gamma))),
+  log_omega = factor(rep(NA, length(tmb_params$log_omega))),
   log_varphi = as.factor(NA),
   b_cell = factor(rep(NA, length(tmb_params$b_cell)))
 )
@@ -127,15 +161,18 @@ tmb_opt <- stats::nlminb(
   control = list(eval.max = 1e4, iter.max = 1e4)
 )
 
+# ML:
 # tmb_random <- c("epsilon_sk", "b_re", "b_cell")
 # REML:
-tmb_random <- c("epsilon_sk", "b_re", "b_cell", "b_j")
+tmb_random <- c("epsilon_sk", "b_re", "b_cell", "b_re_sp", "b_j")
 
+# Initialize the fixed effects from the first stage:
 set_par_value <- function(opt, par) {
   as.numeric(opt$par[par == names(opt$par)])
 }
 tmb_params$b_j <- set_par_value(tmb_opt, "b_j")
 tmb_params$ln_phi <- set_par_value(tmb_opt, "ln_phi")
+tmb_params$b_re_sp <- set_par_value(tmb_opt, "b_re_sp")
 
 tmb_obj <- TMB::MakeADFun(
   data = tmb_data, parameters = tmb_params,
@@ -152,19 +189,57 @@ sdr
 
 s <- summary(sdr)
 
-mutate(as.data.frame(s[row.names(s) == "b_j", ]), 
-  coefficient = colnames(X_ij)) %>%
+mutate(as.data.frame(s[row.names(s) == "b_j", ]), coefficient = colnames(X_ij)) %>%
   select(coefficient, Estimate, `Std. Error`)
 
-s[grep("ln|log|sigma", row.names(s)), ]
+s[grep("ln|log", row.names(s)), ]
+s[grep("sigma", row.names(s)), , drop = FALSE]
 
 r <- tmb_obj$report()
 r$range
 
 co <- as.data.frame(s[row.names(s) == "b_baci_interaction", ])
-co$species <- as.character(unique(as.factor(d$species)))
-ggplot(co, aes(forcats::fct_reorder(species, -Estimate), Estimate,
+co$species_year <- as.character(unique(as.factor(d$species_year)))
+co <- co %>%
+  mutate(just_species = gsub(" [0-9]+$", "", species_year)) %>%
+  group_by(just_species) %>%
+  mutate(mean_baci_int = mean(Estimate)) %>%
+  ungroup() %>%
+  arrange(-mean_baci_int, -Estimate) %>%
+  mutate(myorder = seq_len(n()))
+
+p3 <- ggplot(co, aes(forcats::fct_reorder(species_year, myorder), Estimate,
+  colour = just_species,
   ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
 )) +
-  geom_pointrange() + coord_flip() + xlab("")
+  geom_pointrange() + coord_flip() + xlab("") + theme(legend.position = "none")
+#+ ggtitle(paste(model_type))
 
+meta <- s[grep("b_re_sp", row.names(s)), ]
+meta <- as.data.frame(meta)
+row.names(meta) <- NULL
+meta$just_species <- unique(x$species)
+
+p4 <- ggplot(meta, aes(forcats::fct_reorder(just_species, -Estimate), 
+  Estimate, colour = just_species,
+  ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
+)) +
+  geom_pointrange() + coord_flip() + xlab("") + ggtitle(paste(model_type)) 
+
+
+png(
+  file = paste0("figs/", gsub("/", "-", gsub("//vocc..*", "", gsub("data/_all/", "", files[1])))
+, ".png"),
+  res = 600,
+  units = "in",
+  width = 11,
+  height = 8
+)
+gridExtra::grid.arrange(
+  p4, p1, p3 , p2, 
+  nrow = 2)
+dev.off()
+p1
+p2
+p3
+p4

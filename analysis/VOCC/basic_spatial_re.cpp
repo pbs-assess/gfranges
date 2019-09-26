@@ -33,11 +33,15 @@ Type objective_function<Type>::operator()()
   
   DATA_IVECTOR(k_i); // species index
   DATA_INTEGER(n_k);   // number of species
+  DATA_IVECTOR(species_id_k);   // species identifier to calculate the mean for each species across years
+  DATA_INTEGER(n_just_species);  // the true number of species
+  DATA_VECTOR(n_years_per_species);
+  
   DATA_VECTOR(intercept_i);
   DATA_VECTOR(after_i);
   DATA_VECTOR(source_i);
   DATA_IVECTOR(m_i); // cell ID
-  DATA_INTEGER(interaction_position);
+  // DATA_INTEGER(interaction_position);
   
   // ------------------ Parameters ---------------------------------------------
   
@@ -45,11 +49,14 @@ Type objective_function<Type>::operator()()
   // Fixed effects
   PARAMETER_VECTOR(b_j);  // fixed effect parameters
   PARAMETER_ARRAY(b_re);  // re parameters
+  PARAMETER_VECTOR(b_re_sp);  // re parameters
   PARAMETER_VECTOR(b_cell);  // re parameters
   PARAMETER_VECTOR(log_gamma);  // re parameter sigmas
+  PARAMETER(log_omega);  // re sp-level mean BACI interactions
+  // PARAMETER_VECTOR(log_omega);  // re sp-level mean BACI interactions
   PARAMETER(log_varphi);  // re cell sigma
   // PARAMETER(ln_tau_O);    // spatial process
-  PARAMETER_VECTOR(ln_tau_E);    // spatial process
+  PARAMETER_VECTOR(ln_tau_E);    // spatio-temporal process
   PARAMETER(ln_kappa);    // Matern parameter
   
   PARAMETER(ln_phi);           // sigma / dispersion / etc.
@@ -61,12 +68,12 @@ Type objective_function<Type>::operator()()
   // ------------------ End of parameters --------------------------------------
   
   int n_i = y_i.size();   // number of observations
- // int n_j = X_ij.cols();  // number of fixed effect parameters
+  // int n_j = X_ij.cols();  // number of fixed effect parameters
   
   Type nll_data = 0;     // likelihood of data
   Type nll_epsilon = 0;    // spatial effects
   Type nll_re = 0;  // re
-
+  
   // ------------------ Geospatial ---------------------------------------------
   
   // Matern:
@@ -76,8 +83,8 @@ Type objective_function<Type>::operator()()
   // REPORT(sigma_O);
   // ADREPORT(sigma_O);
   
-  vector<Type> sigma_E(n_k);
-  for (int k = 0; k < n_k; k++) {
+  vector<Type> sigma_E(n_just_species);
+  for(int k = 0; k < n_just_species; k++) {
     sigma_E(k) = 1 / sqrt(Type(4.0) * M_PI * exp(Type(2.0) * ln_tau_E(k)) *
       exp(Type(2.0) * ln_kappa));
   }
@@ -110,14 +117,12 @@ Type objective_function<Type>::operator()()
       b_re(k_i(i),0) * intercept_i(i) + 
       b_re(k_i(i),1) * after_i(i) + 
       b_re(k_i(i),2) * source_i(i) +
-      b_re(k_i(i),3) * after_i(i) * source_i(i) +
-      b_cell(m_i(i)) * Type(1.0);
-    
-    // y ~ fixed_effects + baci + (baci | species) + (1 | match_id) + 
-    // spatial_stuff | species)
+      b_re(k_i(i),3) * after_i(i) * source_i(i) + // spp./year BACI interaction random effect 
+      b_re_sp(species_id_k(k_i(i))) * after_i(i) * source_i(i) + // spp. level BACI interaction
+      b_cell(m_i(i)) * Type(1.0); // cell match
     
     epsilon_sk_A_vec(i) = epsilon_sk_A(A_spatial_index(i), k_i(i)); // record it
-      
+    
     eta_i(i) += epsilon_sk_A_vec(i);  // spatial
     mu_i(i) = eta_i(i);
   }
@@ -125,18 +130,32 @@ Type objective_function<Type>::operator()()
   // ------------------ Probability of random effects --------------------------
   
   for(int k = 0; k < b_re.rows(); k++) {
-    for(int r = 0; r < b_re.cols(); r++) {
-      nll_re -= dnorm(b_re(k,r), Type(0.0), exp(log_gamma(r)), true);
+    for(int r = 0; r < (b_re.cols() - 1); r++) {
+      int z;
+      // 1st and 2nd random effects share a variance bc cells are matched
+      if (r == 0) { 
+        z = 0;
+      } else {
+        z = r - 1;
+      }
+      nll_re -= dnorm(b_re(k,r), Type(0.0), exp(log_gamma(z)), true);
     }
   }
+  for(int k = 0; k < b_re.rows(); k++) {
+    // nll_re -= dnorm(b_re(k,3), Type(0.0), exp(log_omega(species_id_k(k))), true);
+    nll_re -= dnorm(b_re(k,3), Type(0.0), exp(log_omega), true);
+  }
+  // for(int u = 0; u < n_just_species; u++) {
+  //   nll_re -= dnorm(b_re_sp(u), Type(0.0), exp(log_omega), true);
+  // }
   
   for(int m = 0; m < b_cell.size(); m++) {
     nll_re -= dnorm(b_cell(m), Type(0.0), exp(log_varphi), true);
   }
   
-  // Spatial random effects by species:
+  // Spatial random effects:
   for (int k = 0; k < n_k; k++) {
-    nll_epsilon += SCALE(GMRF(Q, true), 1. / exp(ln_tau_E(k)))(epsilon_sk.col(k));
+    nll_epsilon += SCALE(GMRF(Q, true), 1. / exp(ln_tau_E(species_id_k(k))))(epsilon_sk.col(k));
   }
   
   // ------------------ Probability of data given random effects ---------------
@@ -152,10 +171,22 @@ Type objective_function<Type>::operator()()
   vector<Type> b_baci_interaction(n_k);
   
   for(int k = 0; k < b_re.rows(); k++) {
-    b_baci_interaction(k) = b_re(k,3) + b_j(interaction_position);
+    b_baci_interaction(k) = b_re(k,3) + b_re_sp(species_id_k(k)); // + b_j(interaction_position);
   }
+  
+  // vector<Type> b_baci_interaction_spp(n_just_species);
+  // for(int k = 0; k < b_re.rows(); k++) {
+  //   b_baci_interaction_spp(species_id_k(k)) += b_baci_interaction(k);
+  // }
+  // for(int i = 0; i < n_years_per_species.size(); i++) {
+  //   b_baci_interaction_spp(i) = b_baci_interaction_spp(i) / n_years_per_species(i);
+  // }
+  // 
   REPORT(b_baci_interaction);    
   ADREPORT(b_baci_interaction);
+  
+  // REPORT(b_baci_interaction_spp);    
+  // ADREPORT(b_baci_interaction_spp);
   
   // ------------------ Reporting ----------------------------------------------
   
