@@ -34,7 +34,7 @@ Type objective_function<Type>::operator()()
   DATA_IVECTOR(k_i); // species index
   DATA_INTEGER(n_k);   // number of species
   DATA_IVECTOR(species_id_k);   // species identifier to calculate the mean for each species across years
-  DATA_INTEGER(n_just_species);  // the true number of species
+  // DATA_INTEGER(n_just_species);  // the true number of species
   DATA_VECTOR(n_years_per_species);
   
   DATA_VECTOR(intercept_i);

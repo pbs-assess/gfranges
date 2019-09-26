@@ -7,20 +7,35 @@ library(TMB)
 
 setwd("analysis/VOCC/")
 
-files <- list.files("data/_all/temperature/perc_50/0.25/adult/", full.names = TRUE) # did not converge
-files <- list.files("data/_all/temperature/perc_50/0.5/adult/", full.names = TRUE) # did not converge
-# files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) # did not converge
-# files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE) # did not converge
-files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) # did not converge
-files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) # did not converge
-files <- list.files("data/_all/do/perc_25/0.25/adult/", full.names = TRUE)
+# files <- list.files("data/_all/temperature/perc_50/0.25/adult/", full.names = TRUE) 
+# files <- list.files("data/_all/temperature/perc_50/0.5/adult/", full.names = TRUE) 
+# # files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) 
+# # files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE) 
 
+files <- list.files("data/_all/temperature/perc_25/0.25/adult/", full.names = TRUE) 
+files <- list.files("data/_all/temperature/perc_25/0.5/adult/", full.names = TRUE) 
+# files <- list.files("data/_all/temperature/perc_25/0.25/imm/", full.names = TRUE) 
+ files <- list.files("data/_all/temperature/perc_25/0.5/imm/", full.names = TRUE) 
+# 
+# # files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) 
+#  files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) 
+# # files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) 
+#  files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) 
 
+# files <- list.files("data/_all/do/perc_25/0.25/adult/", full.names = TRUE)
+# # files <- list.files("data/_all/do/perc_25/0.5/adult/", full.names = TRUE) 
+# files <- list.files("data/_all/do/perc_25/0.25/imm/", full.names = TRUE) # only 3 sp
+# # files <- list.files("data/_all/do/perc_25/0.5/imm/", full.names = TRUE) 
+model_type <- gsub("/", " ", gsub("//vocc..*", " ", gsub("data/_all/", " ", files[1])))
+ 
 .d <- purrr::map_dfr(files, readRDS)
 
+.d <- .d %>% group_by(species) %>% mutate(count = n()) %>% filter(count > 100)
+unique(.d$count)
 
+rm(d)
 d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, X, Y, vect_dist, matchobs)
-d <- mutate(d, source = ifelse(cell_type == "source", 1, 0), age = "mature")
+d <- mutate(d, source = ifelse(cell_type == "source", 1, 0)) #, age = "mature"
 
 unique(d$start_time)
 
@@ -29,10 +44,10 @@ unique(d$start_time)
 nrow(d)
 
 ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.1, alpha = 0.3) +
-  facet_wrap(~species) + coord_fixed()
+  facet_wrap(~species) + coord_fixed()+ ggtitle(paste(model_type))
 
 ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
-  facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
+  facet_grid(species~start_time) + coord_fixed() + scale_color_viridis_c()+ ggtitle(paste(model_type))
 
 # 'scratch' code was here.
 
@@ -104,8 +119,8 @@ tmb_params <- list(
   b_re = matrix(0, nrow = n_k, ncol = n_re),
   b_re_sp = rep(0, tmb_data$n_just_species),
   log_gamma = rep(0, n_re - 1 - 1),
-  # log_omega = 0,
-  # log_omega = rep(0, max(species_id_k)),
+  log_omega = 0,
+  #log_omega = rep(0, max(species_id_k)),
   b_cell = rep(0, length(unique(tmb_data$m_i))),
   log_varphi = 0
 )
@@ -191,7 +206,7 @@ ggplot(co, aes(forcats::fct_reorder(species_year, myorder), Estimate,
   colour = just_species,
   ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
 )) +
-  geom_pointrange() + coord_flip() + xlab("")
+  geom_pointrange() + coord_flip() + xlab("") + ggtitle(paste(model_type))
 
 meta <- s[grep("b_re_sp", row.names(s)), ]
 meta <- as.data.frame(meta)
@@ -202,4 +217,6 @@ ggplot(meta, aes(forcats::fct_reorder(just_species, -Estimate), Estimate,
   colour = just_species,
   ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
 )) +
-  geom_pointrange() + coord_flip() + xlab("")
+  geom_pointrange() + coord_flip() + xlab("") + ggtitle(paste(model_type))
+
+    
