@@ -9,8 +9,8 @@ setwd("analysis/VOCC/")
 
  files <- list.files("data/_all/temperature/perc_50/0.25/adult/", full.names = TRUE) 
  files <- list.files("data/_all/temperature/perc_50/0.5/adult/", full.names = TRUE) 
-# files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) 
-# files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE) 
+files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) 
+files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE) 
 
 
 # files <- list.files("data/_all/temperature/perc_25/0.25/adult/", full.names = TRUE)
@@ -18,10 +18,10 @@ setwd("analysis/VOCC/")
  # files <- list.files("data/_all/temperature/perc_25/0.25/imm/", full.names = TRUE) 
  # files <- list.files("data/_all/temperature/perc_25/0.5/imm/", full.names = TRUE) 
 
-# # files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) 
-#  files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) 
-# # files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) 
-# files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) 
+ files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) 
+  files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) 
+files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) 
+files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) 
 
 # files <- list.files("data/_all/do/perc_25/0.25/adult/", full.names = TRUE)
 # # files <- list.files("data/_all/do/perc_25/0.5/adult/", full.names = TRUE) 
@@ -46,7 +46,7 @@ unique(d$start_time)
 # d <- filter(d, start_time == "2015")
 nrow(d)
 
-p1 <- ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.05, alpha = 0.3) +
+p1 <- ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.01, alpha = 0.3) +
   facet_wrap(~species) + coord_fixed() #+ theme(legend.position = c(0.3,0.7)) 
 #+ ggtitle(paste(model_type))
 
