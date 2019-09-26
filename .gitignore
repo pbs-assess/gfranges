@@ -11,6 +11,7 @@
 *.log
 *.lot
 *.pdf
+*.png
 *.ps
 *.toc
 *.html
@@ -30,3 +31,4 @@ knitr-cache
 *.so
 *.o
 .Rbuildignore
+eg_data
