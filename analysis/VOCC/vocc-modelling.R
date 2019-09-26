@@ -18,13 +18,13 @@ files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE)
  # files <- list.files("data/_all/temperature/perc_25/0.25/imm/", full.names = TRUE) 
  # files <- list.files("data/_all/temperature/perc_25/0.5/imm/", full.names = TRUE) 
 
- files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) 
-  files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) 
+files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) 
+files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) 
 files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) 
 files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) 
 
-# files <- list.files("data/_all/do/perc_25/0.25/adult/", full.names = TRUE)
-# # files <- list.files("data/_all/do/perc_25/0.5/adult/", full.names = TRUE) 
+files <- list.files("data/_all/do/perc_25/0.25/adult/", full.names = TRUE)
+files <- list.files("data/_all/do/perc_25/0.5/adult/", full.names = TRUE) 
 # files <- list.files("data/_all/do/perc_25/0.25/imm/", full.names = TRUE) # only 3 sp
 # # files <- list.files("data/_all/do/perc_25/0.5/imm/", full.names = TRUE) 
 model_type <- gsub("/", " ", gsub("//vocc..*", " ", gsub("data/_all/", " ", files[1])))
