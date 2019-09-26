@@ -3,14 +3,21 @@ library(ggplot2)
 #setwd(here::here())
 setwd("analysis/VOCC/")
 
-library(TMB)
-#files <- list.files("../rockfish-vocc-temp/perc_50/0.75/", full.names = TRUE)
-files <- list.files("data/_all/temperature/perc_50/0.25/adult/", full.names = TRUE) 
+ files <- list.files("data/_all/temperature/perc_50/0.25/adult/", full.names = TRUE) 
+ files <- list.files("data/_all/temperature/perc_50/0.5/adult/", full.names = TRUE) 
 files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) 
-# 
-# files <- list.files("data/_all/temperature/perc_50/0.5/adult/", full.names = TRUE) 
-# files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) 
-# files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) 
+files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE) 
+
+
+# files <- list.files("data/_all/temperature/perc_25/0.25/adult/", full.names = TRUE)
+# files <- list.files("data/_all/temperature/perc_25/0.5/adult/", full.names = TRUE) 
+ # files <- list.files("data/_all/temperature/perc_25/0.25/imm/", full.names = TRUE) 
+ # files <- list.files("data/_all/temperature/perc_25/0.5/imm/", full.names = TRUE) 
+
+ files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) 
+  files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) 
+files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) 
+files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) 
 
 
 .d <- purrr::map_dfr(files, readRDS)
@@ -25,8 +32,9 @@ d <- filter(d, start_time == "2013")
 #d <- filter(d, start_time == "2015")
 nrow(d)
 
-ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.1, alpha = 0.3) +
-  facet_wrap(~species) + coord_fixed()
+p1 <- ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.01, alpha = 0.3) +
+  facet_wrap(~species) + coord_fixed() #+ theme(legend.position = c(0.3,0.7)) 
+#+ ggtitle(paste(model_type))
 
 ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
 facet_wrap(~species) + coord_fixed() + scale_color_viridis_c()
