@@ -14,6 +14,7 @@
 *.ps
 *.toc
 *.html
+*.png
 # *.txt
 *.out
 *.snm
@@ -30,3 +31,9 @@ knitr-cache
 *.so
 *.o
 .Rbuildignore
+eg_data/
+output-cache/
+save-last-round-cv/
+resources/
+cv-output/
+INLA/
