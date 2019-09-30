@@ -3,15 +3,14 @@ title: "BACI of biomass change for VOCC source cells for all years"
 author: "Philina English"
 date: '2019-08-24'
 output: html_document
+params: 
+    species: "Yelloweye Rockfish" 
+    region: "West Coast Vancouver Island"
+    age: "mature"
+    biomass_threshold: "25"
+    climate: "do"
+    threshold: c(0.25) 
 ---
-
-Modified to allow thresholds chosen to vary by maturity class. 
-Therefore need to run this file separately for each species-class combination.
-
-Should matches be selected based on exact depth categories in addition to density (all within time periods)?
-
-What does it mean for the analysis that the depth range at which VOCC occur within a species temperature range varies dramatically between time periods?
-
 
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(
@@ -22,67 +21,33 @@ options(scipen = 999)
 options(digits = 4)
 ```
 
-#### Set species
-```{r echo=TRUE}
-
+```{r pkgs, cache=FALSE, warning=FALSE, message=FALSE}
+library("dplyr")
+library("ggplot2")
+library("gfplot")
+library("sdmTMB")
+library("gfranges")
 ```
 
-#### Set age class
+#### Set parameters
 ```{r echo=TRUE}
-age <- "mature" # or mostly so
-age <- "imm" 
-```
-
-#### Set vector type
-```{r echo=TRUE}
-global_only <- TRUE
-biomass_threshold <- "75" 
-
-# biomass_threshold <- "50" # filter for climate values predicted to support 50% of max biomass 
-#  biomass_threshold <- "25" # filter for climate values predicted to support 25% of max biomass... doesn't work for DO 
- 
-climate <- "temperature"
- temp_threshold <- c(0.25)
-# temp_threshold <- c(0.5)
-# temp_threshold <- c(0.75)
-# temp_threshold <- c(1)
-
- # climate <- "do"
- # do_threshold <- c(0.25)
-# do_threshold <- c(0.5) 
-
-# climate <- "do and temperature"
-```
-
-#### Set Region 
-```{r echo=TRUE}
-# region <- "West Coast Vancouver Island"
-region <- "both odd year surveys"
-# region <- "West Coast Haida Gwaii"
+species <- params$species
+age <- params$age
+region <- params$region
+biomass_threshold <- params$biomass_threshold
+climate <- params$climate
 ```
 
 
 #### Set default cell sizes and scale
 ```{r, echo=FALSE}
+global_only <- TRUE
 input_cell_size <- 2
 dist_intercept <- input_cell_size/2
 scale_fac <- 1
 delta_t_step <- 2
 skip_time <- NULL
 ```
-
-
-```{r, include=FALSE}
-library(dplyr)
-library(ggplot2)
-library(gfplot)
-# library(gfdata)
-library(sdmTMB)
-# library(itsadug)
-library(gfranges)
-```
-
-
 
 
 # Run all subsequent code...
@@ -93,7 +58,7 @@ if (region == "both odd year surveys") {
   model_ssid <- c(1, 3)
   ssid_string <- paste0(model_ssid, collapse = "n")
   start_years <- list("2009"=2009, "2011"=2011, "2013"=2013, "2015"=2015) 
-  # maybe remove 2011 & 2015 once we can add "2017"=2017?
+  # maybe remove 2011 & 2015 once we can add "2017"=2017 to avoid start and end values overlapping
   years <- NULL
 }
 
@@ -101,7 +66,8 @@ if (region == "West Coast Vancouver Island") {
   survey <- c("SYN WCVI")
   model_ssid <- c(4)
   ssid_string <- paste0(model_ssid, collapse = "n")
-  start_years <- list("2008"=2008, "2010"=2010, "2012"=2012, "2014"=2014, "2016"=2016) # prob need to remove 2010 & 2014
+  start_years <- list("2008"=2008, "2010"=2010, "2012"=2012, "2014"=2014, "2016"=2016) 
+  # prob need to remove 2010 & 2014
   years <- NULL
 }
 
@@ -109,7 +75,8 @@ if (region == "West Coast Haida Gwaii") {
   survey <- c("SYN WCHG")
   model_ssid <- c(16)
   ssid_string <- paste0(model_ssid, collapse = "n")
-  start_years <- list("2008"=2008, "2010"=2010, "2012"=2012, "2014"=2014, "2016"=2016) # prob need to remove 2010 & 2014
+  start_years <- list("2008"=2008, "2010"=2010, "2012"=2012, "2014"=2014, "2016"=2016) 
+  # prob need to remove 2010 & 2014
   years <- NULL
 }
 ```
@@ -118,44 +85,46 @@ if (region == "West Coast Haida Gwaii") {
 ```{r, include=FALSE}
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
-params <- readRDS(paste0("data/root-values-by-species-by-age.rds"))
+root_params <- readRDS(paste0("data/root-values-by-species-by-age.rds"))
 
-params <- params %>% mutate(model_type = ifelse(grepl("total", model), "total", "split"))
+root_params <- root_params %>% mutate(model_type = ifelse(grepl("total", model), "total", "split"))
 
 if (age == "imm") {
-  params <- filter(params, age == "imm")
+  root_params <- filter(root_params, age == "imm")
 } else {
-  params <- filter(params, age != "imm")
-  if (any(params$model_type == "split")) { params <- filter(params, model_type != "total") }
+  root_params <- filter(root_params, age != "imm")
+  if (any(root_params$model_type == "split")) { root_params <- filter(root_params, model_type != "total") }
 }
 
-params <- params[params$species == species, ] 
-glimpse(params)
+root_params <- root_params[root_params$species == species, ] 
+glimpse(root_params)
 
 if (global_only) {
- params <- params %>% mutate(global = ifelse(grepl("_", model), "F", "T"))
- params <- filter(params, global == "T")
+ root_params <- root_params %>% mutate(global = ifelse(grepl("_", model), "F", "T"))
+ root_params <- filter(root_params, global == "T")
 } else {
  if (model_ssid == 4) {
-   params <- params %>% mutate(survey4 = ifelse(grepl("4", model), "T", "F"))
-   params <- filter(params, survey4 == "T")
+   root_params <- root_params %>% mutate(survey4 = ifelse(grepl("4", model), "T", "F"))
+   root_params <- filter(root_params, survey4 == "T")
  }
 }
 
 if (climate == "temperature") {
-  # optimal_temps <- params[rev(order(params$t_maxy)), ]$optimal_temp
-  # optimal_temps <- na.omit(optimal_temps)
-  # optimal_temp <- round(optimal_temps[1], digits = 2)
-  # optimal_values <- optimal_temp
-  
+
+temp_threshold <- params$threshold
+
+  if (biomass_threshold == "75") {
+  .lower <- root_params[rev(order(root_params$do_maxy)), ]$upper_t_75 }
   if (biomass_threshold == "50") {
-  .upper <- params[rev(order(params$t_maxy)), ]$upper_t_50 }
+  .upper <- root_params[rev(order(root_params$t_maxy)), ]$upper_t_50 }
   if (biomass_threshold == "25") {
-  .upper <- params[rev(order(params$t_maxy)), ]$upper_t_25 }
+  .upper <- root_params[rev(order(root_params$t_maxy)), ]$upper_t_25 }
   .upper <- na.omit(.upper)
   
   upper_thresholds <- round(.upper[1], digits = 2)
-  upper_model <- params[rev(order(params$t_maxy)), ]$model
+   if (is.na(upper_thresholds)) {stop(print("Temp maximum not modelled"))}
+  
+  upper_model <- root_params[rev(order(root_params$t_maxy)), ]$model
   
   lower_thresholds <- NA
   lower_model <- NULL
@@ -168,20 +137,21 @@ if (climate == "temperature") {
   }
 
 if (climate == "do") {
-  # optimal_dos <- params[rev(order(params$do_maxy)), ]$optimal_do
-  # optimal_dos <- na.omit(optimal_dos)
-  # optimal_do <- round(optimal_dos[1], digits = 2)
-  # optimal_values <- optimal_do
-  params <- filter(params, lower_do_25 > 0.4)
+  do_threshold <- params$threshold
+  root_params <- filter(root_params, lower_do_25 > 0.4)
   
+  if (biomass_threshold == "75") {
+  .lower <- root_params[rev(order(root_params$do_maxy)), ]$lower_do_75 }
   if (biomass_threshold == "50") {
-  .lower <- params[rev(order(params$do_maxy)), ]$lower_do_50 }
+  .lower <- root_params[rev(order(root_params$do_maxy)), ]$lower_do_50 }
   if (biomass_threshold == "25") {
-  .lower <- params[rev(order(params$do_maxy)), ]$lower_do_25 }
+  .lower <- root_params[rev(order(root_params$do_maxy)), ]$lower_do_25 }
 
   .lower <- na.omit(.lower)
   lower_thresholds <- round(.lower[1], digits = 2)
-  lower_model <- params[rev(order(params$do_maxy)), ]$model
+  if (is.na(lower_thresholds)) {stop(print("DO minimum not modelled"))}
+  lower_model <- root_params[rev(order(root_params$do_maxy)), ]$model
+  
   upper_thresholds <- NA
   upper_model <- NULL
   variable_names <- c("do_est")
@@ -193,40 +163,35 @@ if (climate == "do") {
   }
 
 if (climate == "do and temperature") {
-  
-  # optimal_dos <- params[rev(order(params$do_maxy)), ]$optimal_do
-  # optimal_dos <- na.omit(optimal_dos)
-  # optimal_do <- round(optimal_dos[1], digits = 2)
-  # optimal_values <- optimal_do
-  
-  params <- filter(params, lower_do_25 > 0.5)
+  temp_threshold <- params$threshold
+  do_threshold <- params$threshold
+
+  root_params <- filter(root_params, lower_do_25 > 0.5)
+  if (biomass_threshold == "75") {
+  .lower <- root_params[rev(order(root_params$do_maxy)), ]$lower_do_75 }
   if (biomass_threshold == "50") {
-  .lower <- params[rev(order(params$do_maxy)), ]$lower_do_50 }
+  .lower <- root_params[rev(order(root_params$do_maxy)), ]$lower_do_50 }
   if (biomass_threshold == "25") {
-  .lower <- params[rev(order(params$do_maxy)), ]$lower_do_25 }
+  .lower <- root_params[rev(order(root_params$do_maxy)), ]$lower_do_25 }
   .lower <- na.omit(.lower)
   lower_thresholds <- round(.lower[1], digits = 2)
   
-  # optimal_temps <- params[rev(order(params$t_maxy)), ]$optimal_temp
-  # optimal_temps <- na.omit(optimal_temps)
-  # optimal_temp <- round(optimal_temps[1], digits = 2)
-  # optimal_values <- optimal_temp
-  
+  if (biomass_threshold == "75") {
+  .lower <- root_params[rev(order(root_params$do_maxy)), ]$upper_t_75 }
   if (biomass_threshold == "50") {
-  .upper <- params[rev(order(params$t_maxy)), ]$upper_t_50 }
+  .upper <- root_params[rev(order(root_params$t_maxy)), ]$upper_t_50 }
   if (biomass_threshold == "25") {
-  .upper <- params[rev(order(params$t_maxy)), ]$upper_t_25 }
+  .upper <- root_params[rev(order(root_params$t_maxy)), ]$upper_t_25 }
   .upper <- na.omit(.upper)
   upper_thresholds <- round(.upper[1], digits = 2)
-  
   
   variable_names <- c("do_est", "temp")
   lower_thresholds <- c(lower_thresholds, NA)
   upper_thresholds <- c(NA, upper_thresholds)
   lower_change <- c(do_threshold, Inf)
   upper_change <- c(Inf, temp_threshold)
-  upper_model <- params[rev(order(params$t_maxy)), ]$model
-  lower_model <- params[rev(order(params$do_maxy)), ]$model
+  upper_model <- root_params[rev(order(root_params$t_maxy)), ]$model
+  lower_model <- root_params[rev(order(root_params$do_maxy)), ]$model
  
   indices <- c(1, 2)
   delta_t_total <- 2
@@ -241,14 +206,12 @@ max_string <- paste0(upper_change, collapse = "-")
 optimal_string <- paste0(na.omit(trim_thresholds), collapse = "-")
 climate_string <- gsub(" ", "-", gsub("\\/", "-", tolower(climate)))
 
-glimpse(params)
+glimpse(root_params)
 ```
 
 
 # Calculate climate vectors
 ```{r}
-rm(vocc)
-
 vocc_by_year <- lapply(start_years, function(start_time) {    
 
 try({
@@ -296,7 +259,6 @@ if (!exists("vocc")) {
 }
  vocc
 })  
-# glimpse(vocc)
 ```
 
 ### Plot all possible vectors
@@ -388,7 +350,6 @@ print(all_vector_plots)
 ### Filter vectors to match optimal range for chosen species
 ```{r}
 trimmed_vectors <- lapply(vocc_by_year, function(vocc) {    
-#start_time <- vocc$start_time[1]
 
 vectors <- trim_vector_data(vocc, variable_names, 
   lower_change, upper_change, 
@@ -527,7 +488,7 @@ print(trimmed_vector_plots)
 png(
   file = paste0("figs/", spp,
     "/vocc-", min_string, "to", max_string, "-", 
-    climate_string, "-", spp, "-", age, "-", ssid_string, "-perc_", biomass_threshold, "-", optimal_string, "-allpairs.png"
+    climate_string, "-", spp, "-", age, "-", ssid_string, "-perc_", biomass_threshold, "-", optimal_string, "-allpairs-test.png"
   ),
   res = 600,
   units = "in",
@@ -546,38 +507,24 @@ dev.off()
 # Add species biomass data
 
 Get all biomass predictions 
-```{r, echo=FALSE, warning=FALSE, error=FALSE, message=F}
+```{r echo=FALSE, warning=FALSE}
 priors <- FALSE
-# covariates <- "+muddy+any_rock"
-# covs <- gsub("\\+", "-", covariates)
-covs <- gsub("\\+", "-", "-trawled+ssid")
+covs <- "-trawled-ssid"
  
-rm(biomass_predictions)
-
 if (age == "imm") {
-  try({
   biomass_predictions <- readRDS(paste0(
-    "data/", spp,
-    "/all-predictions-", spp, covs, "-imm-biomass-prior-", priors, ".rds"
-  ))
-})
-} else {
-try({
+    "data/", spp, "/all-predictions-", spp, covs, 
+    "-imm-biomass-prior-", priors, ".rds"))
+} 
+
+if (age == "mature") {
   biomass_predictions <- readRDS(paste0(
-    "data/", spp,
-    "/all-predictions-", spp, covs, "-mat-biomass-prior-", priors, ".rds"
-  ))
-})
-if (!exists("biomass_predictions")) {
-try({
-  biomass_predictions <- readRDS(paste0(
-    "data/", spp,
-    "/all-predictions-", spp, covs, "-total-biomass-prior-", priors, ".rds"
-  ))
-})
-}
+    "data/", spp, "/all-predictions-", spp, covs, 
+    "-mat-biomass-prior-", priors, ".rds"))
 }
 ```
+
+
 
 Extract biomass values to match spatial and temporal range of climate vectors
 ```{r}
@@ -640,19 +587,15 @@ Extract biomass values to match spatial and temporal range of climate vectors
     rename(vect_dist = distance)
   alldata$treat <- as.factor(alldata$treat)
   
-  alldata
+ # alldata
 #})
-```
-
-```{r eval=FALSE, include=FALSE, echo=FALSE}
-# lapply(alldata, function(i){ggplot(i, aes(x=cell_type, y=log(start_density))) + geom_boxplot()+facet_wrap(~start_time)})
 ```
 
 
 # Select matched control cells
 
 ```{r}
-rm(vocc_by_sp)
+#rm(vocc_by_sp)
 # try({
 #   vocc_by_sp <- readRDS(paste0(
 #     "data/BACI-", species, "-", age, "-", ssid_string, "-", climate_string, "-", optimal_string, "-", min_string, "to", max_string, "-multiyear-all.rds"
@@ -675,7 +618,6 @@ match_formula <- paste0("treat ~ trawled + x + y + depth_st")
 
 if (!exists("vocc_by_sp")){
 # matched <- lapply(alldata, function(alldata) {  
-
   ## trim non-overlapping values to reduce size of dataset 
   control_min <- quantile(alldata$start_density[alldata$treat=="0"], 0.01)
   source_min <- quantile(alldata$start_density[alldata$treat=="1"], 0.01)
@@ -711,7 +653,7 @@ if (!exists("vocc_by_sp")){
   # alldata <- alldata[(order(alldata$y)), ]
   # if (order == "increasing") alldata <- alldata[rev(order(alldata$start_density)), ]
   # if (order == "decreasing") alldata <- alldata[rev(order(alldata$start_density)), ]
-
+# set.seed(99999)
   matched <- MatchIt::matchit(as.formula(match_formula), 
     exact = c("start_density.st", "start_time"),
     method = "nearest", m.order = "random",
@@ -827,9 +769,9 @@ try({
 n <- nrow(vocc_by_sp[[1]])
 species <- rep(species, n) 
 mature <- rep(age, n)
+ssid <- rep(ssid_string, n)
 data <- vocc_by_sp[[1]]
-class <- cbind(species, mature)
-df <- cbind(class, data)
+df<- cbind(species, mature, ssid, data)
 species <- species[[1]]
 
 # folder to hold vocc data
@@ -837,12 +779,12 @@ biomass_threshold_string <- paste0("perc_", biomass_threshold)
 
 dir.create(file.path("data/_all", climate_string, biomass_threshold_string))
 
-if (climate=="temperature") dir.create(file.path("data/_all", climate_string, biomass_threshold_string, max_string))
-
 if (climate=="temperature") {
-  saveRDS(df, file = paste0(
-    "data/_all/", climate_string,"/", "perc_", biomass_threshold,"/", max_string,"/vocc-", climate_string, "-", 
-     max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"
+dir.create(file.path("data/_all", climate_string, biomass_threshold_string, max_string))
+dir.create(file.path("data/_all", climate_string, biomass_threshold_string, max_string, age))
+}
+if (climate=="temperature") {
+  saveRDS(df, file = paste0("data/_all/", climate_string,"/", "perc_", biomass_threshold,"/", max_string,"/", age, "/vocc-", climate_string, "-", max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"
   ))
 }
 
@@ -850,28 +792,24 @@ if (climate=="temperature") {
 if (climate=="do") {
   dir.create(file.path("data/_all", climate_string))  
   dir.create(file.path("data/_all", climate_string, biomass_threshold_string))  
-  dir.create(file.path("data/_all", climate_string, biomass_threshold_string, min_string))  
+  dir.create(file.path("data/_all", climate_string, biomass_threshold_string, min_string))
+  dir.create(file.path("data/_all", climate_string, biomass_threshold_string, min_string, age))  
   }
 if (climate=="do") {
-  saveRDS(df, file = paste0(
-    "data/_all/", climate_string,"/", "perc_", biomass_threshold,"/", min_string,"/vocc-", climate_string, "-",
-    min_string, "to", max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"
+  saveRDS(df, file = paste0("data/_all/", climate_string,"/", "perc_", biomass_threshold,"/", min_string,"/", age, "/vocc-", climate_string, "-", min_string, "to", max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"
   ))
 }
 
 if (climate=="do and temperature") {
   dir.create(file.path("data/_all", climate_string))  
   dir.create(file.path("data/_all", climate_string, biomass_threshold_string))  
+  dir.create(file.path("data/_all", climate_string, biomass_threshold_string, age))  
 }
 
 if (climate=="do and temperature") {
-  saveRDS(df, file = paste0(
-    "data/_all/", climate_string, "/", "perc_", biomass_threshold,"/vocc-", climate_string, "-",
-    min_string, "to", max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"
+  saveRDS(df, file = paste0("data/_all/", climate_string, "/", "perc_", biomass_threshold,"/", age, "/vocc-", climate_string, "-", min_string, "to", max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"
   ))
 }
-
-# View(df)
 ```
 
 
@@ -963,7 +901,7 @@ png(
   file = paste0("figs/", spp,
     "/matches-", min_string, "to", max_string, "-",
     climate_string, "-", spp, "-", age, "-", ssid_string, "-",
-    climate_string, "-perc_", biomass_threshold, "-", optimal_string, "-allpairs1.png"
+    climate_string, "-perc_", biomass_threshold, "-", optimal_string, ".png"
   ),
   res = 600,
   units = "in",
@@ -977,53 +915,3 @@ gridExtra::grid.arrange(
 )
 dev.off()
 ```
-
-
-### Basic BACI
-```{r eval=F}
-for (j in (variable_names)) {
-  baci_formula <- paste0("log_density~after + cell_type + after:cell_type + n_targets + vect_dist + vect_dist2 + std_", j, "+ std_", j, "2 + (1|icell) + (1|matchobs) + (1|start_time)")
-}
-
-m <- lmerTest::lmer(as.formula(baci_formula), data=data)
-summary(m)
-```
-
-
-```{r eval=F}
-sjPlot::plot_model(m, type = "std2", order.terms=c(1,2,8,3,4,5,6,7), title = paste(species, "adult"))
-```
-
-### GAMM
-```{r eval=F}
- gamm_formula <- paste0("log_density ~ ", 
-  # "time * start_time + ",
-  #"start_time * cell_type + ",
-  "time * cell_type  + s(std_log_depth) + s(X,Y) ") #+ s(vect_dist)
-
-# for (j in (variable_names)) {
-#  gamm_formula <- paste0(gamm_formula, "+ s(std_", j, ")")
-#  }
-
-gam4 <- gamm4::gamm4(as.formula(gamm_formula), 
-  random = ~(1|matchobs) + (1|icell) 
-  # + (1|start_time)
-  + (time|start_time) 
-  # + (cell_type|start_time)
-  , data=data) 
-
-summary(gam4$gam) 
-
-plot(gam4$gam,pages=1)
-```
-
-```{r, eval=FALSE, results="hide", include=FALSE}
-plot_parametric(gam4$gam, pred=list(time=c("begin","end"), cell_type=c("control", "source"), start_time=c("2009","2011","2013","2015")), parametricOnly = TRUE, main="", xlab ="log_density"
-  #, groups = cell_type, gcolor = my_cols, color = my_cols["time"]
-  ) 
-```
-
-```{r}
-spp
-```
-
