@@ -113,8 +113,9 @@ if (climate == "temperature") {
 
 temp_threshold <- params$threshold
 
+ # if more than one model option in dataframe will pick the one with highest peak density
   if (biomass_threshold == "75") {
-  .lower <- root_params[rev(order(root_params$do_maxy)), ]$upper_t_75 }
+  .upper <- root_params[rev(order(root_params$do_maxy)), ]$upper_t_75 }
   if (biomass_threshold == "50") {
   .upper <- root_params[rev(order(root_params$t_maxy)), ]$upper_t_50 }
   if (biomass_threshold == "25") {
@@ -177,7 +178,7 @@ if (climate == "do and temperature") {
   lower_thresholds <- round(.lower[1], digits = 2)
   
   if (biomass_threshold == "75") {
-  .lower <- root_params[rev(order(root_params$do_maxy)), ]$upper_t_75 }
+  .upper <- root_params[rev(order(root_params$do_maxy)), ]$upper_t_75 }
   if (biomass_threshold == "50") {
   .upper <- root_params[rev(order(root_params$t_maxy)), ]$upper_t_50 }
   if (biomass_threshold == "25") {
