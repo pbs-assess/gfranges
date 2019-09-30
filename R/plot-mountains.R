@@ -247,14 +247,15 @@ get_quadratic_roots <- function(m, predictor = "do_mlpl", fixed_param = 1, thres
   
   
   if (quadratic_only) {
+    #browser()
     maxvalue <- exp(c + max(x_pred) * b + max(x_pred)^2 * a) 
     nearmax <- exp(c + (max(x_pred) - m$data[[sd_column]][[1]]/10) * b + (max(x_pred) - m$data[[sd_column]][[1]]/10)^2 * a) 
     minvalue <- exp(c + min(x_pred) * b + min(x_pred)^2 * a) 
-    nearmin <- exp(c + (min(x_pred) - m$data[[sd_column]][[1]]/10) * b + (min(x_pred) - m$data[[sd_column]][[1]]/10)^2 * a) 
+    nearmin <- exp(c + (min(x_pred) + m$data[[sd_column]][[1]]/10) * b + (min(x_pred) + m$data[[sd_column]][[1]]/10)^2 * a) 
     
     # exclude curves that are increasing at extremes and therefore not capturing maxima
     if (nearmax < maxvalue | nearmin < minvalue) {
-      return(  list(optimal = NA, lower_threshold = NA, upper_threshold = NA, range = NA, prop_max = NA))
+      return(  list(optimal = NA_real_, lower_threshold = NA_real_, upper_threshold = NA_real_, range = NA_real_, prop_max = NA_real_))
     } 
   } 
       
