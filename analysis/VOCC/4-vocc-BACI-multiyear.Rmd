@@ -1,15 +1,15 @@
 ---
 title: "BACI of biomass change for VOCC source cells for all years"
 author: "Philina English"
-date: '2019-08-24'
+date: `r Sys.Date()`
 output: html_document
 params: 
-    species: "Yelloweye Rockfish" 
-    region: "West Coast Vancouver Island"
-    age: "mature"
+    species: "Pacific Ocean Perch" 
+    region: "both odd year surveys"
+    age: "imm"
     biomass_threshold: "25"
     climate: "do"
-    threshold: c(0.25) 
+    threshold: 0.25
 ---
 
 ```{r global_options, include=FALSE}
@@ -27,6 +27,7 @@ library("ggplot2")
 library("gfplot")
 library("sdmTMB")
 library("gfranges")
+ggplot2::theme_set(gfplot::theme_pbs())
 ```
 
 #### Set parameters
@@ -42,7 +43,7 @@ climate <- params$climate
 #### Set default cell sizes and scale
 ```{r, echo=FALSE}
 input_cell_size <- 2
-dist_intercept <- input_cell_size / 2
+dist_intercept <- 0 # input_cell_size / 2
 scale_fac <- 1
 delta_t_step <- 2
 skip_time <- NULL
@@ -84,20 +85,21 @@ if (region == "West Coast Haida Gwaii") {
 ```{r, include=FALSE}
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
-root_params <- readRDS(paste0("data/root-values-by-species-by-age.rds"))
+all_params <- readRDS(paste0("data/root-values-by-species-by-age.rds"))
 
-root_params <- root_params %>% mutate(model_type = ifelse(grepl("total", model), "total", "split"))
+all_params <- all_params %>% mutate(model_type = ifelse(grepl("total", model), "total", "split"))
 
 if (age == "imm") {
-  root_params <- filter(root_params, age == "imm")
+  all_params <- filter(all_params, age == "imm")
 } else {
-  root_params <- filter(root_params, age != "imm")
-  if (any(root_params$model_type == "split")) {
-    root_params <- filter(root_params, model_type != "total")
+  all_params <- filter(all_params, age != "imm")
+  if (any(all_params$model_type == "split")) {
+    all_params <- filter(all_params, model_type != "total")
   }
 }
 
-root_params <- root_params[root_params$species == species, ]
+# rm(root_params)
+root_params <- all_params[all_params$species == species, ]
 glimpse(root_params)
 
 if (climate == "temperature") {
@@ -269,92 +271,112 @@ vocc_by_year <- lapply(start_years, function(start_time) {
 
 ### Plot all possible vectors
 ```{r echo=FALSE}
-all_vector_plots <- lapply(vocc_by_year, function(vocc) {
-  start_time <- vocc$start_time[1]
+if (!exists("vocc")) {
+  all_vector_plots <- lapply(vocc_by_year, function(vocc) {
+    start_time <- vocc$start_time[1]
 
-  if (climate == "temperature") {
-    vocc$diff <- vocc$units_per_decade / 10 * delta_t_total
+    if (climate == "temperature") {
+      vocc$diff <- vocc$units_per_decade / 10 * delta_t_total
 
-    vocc_plot <- plot_vocc(vocc,
-      vec_aes = "distance",
-      min_vec_plotted = input_cell_size,
-      NA_label = ".",
-      fill_col = "diff",
-      fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
-      raster_alpha = 1,
-      raster_limits = c(-4, 3),
-      white_zero = TRUE,
-      vec_alpha = 0.25,
-      axis_lables = FALSE,
-      transform_col = no_trans
-    ) + ggtitle(climate)
-  }
+      vocc_plot <- plot_vocc(vocc,
+        vec_aes = "distance",
+        min_vec_plotted = input_cell_size,
+        NA_label = ".",
+        fill_col = "diff",
+        fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
+        raster_alpha = 1,
+        raster_limits = c(-4, 3),
+        white_zero = TRUE,
+        vec_alpha = 0.25,
+        axis_lables = FALSE,
+        transform_col = no_trans
+      ) + ggtitle(climate)
+    }
 
-  if (climate == "do") {
-    vocc$diff <- vocc$units_per_decade / 10 * delta_t_total
+    if (climate == "do") {
+      vocc$diff <- vocc$units_per_decade / 10 * delta_t_total
 
-    vocc_plot <- plot_vocc(vocc,
-      vec_aes = "distance",
-      min_vec_plotted = input_cell_size,
-      NA_label = ".",
-      fill_col = "diff",
-      fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
-      raster_alpha = 1,
-      white_zero = TRUE,
-      high_fill = "Steel Blue 4",
-      low_fill = "Red 3",
-      vec_alpha = 0.25,
-      axis_lables = FALSE,
-      transform_col = no_trans
-    ) + ggtitle(climate)
-  }
+      vocc_plot <- plot_vocc(vocc,
+        vec_aes = "distance",
+        min_vec_plotted = input_cell_size,
+        NA_label = ".",
+        fill_col = "diff",
+        fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
+        raster_alpha = 1,
+        white_zero = TRUE,
+        high_fill = "Steel Blue 4",
+        low_fill = "Red 3",
+        vec_alpha = 0.25,
+        axis_lables = FALSE,
+        transform_col = no_trans
+      ) + ggtitle(climate)
+    }
 
-  if (climate == "do and temperature") {
-    vocc$temp_diff <- vocc$temp.units_per_decade / 10 * delta_t_total
+    if (climate == "do and temperature") {
+      vocc$temp_diff <- vocc$temp.units_per_decade / 10 * delta_t_total
 
-    vocc_plot_temp <- plot_vocc(vocc,
-      vec_aes = "distance",
-      min_vec_plotted = input_cell_size,
-      NA_label = ".",
-      fill_col = "temp_diff",
-      fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
-      raster_alpha = 1,
-      white_zero = TRUE,
-      vec_alpha = 0.25,
-      axis_lables = FALSE,
-      transform_col = no_trans
-    ) + ggtitle("temperature")
+      vocc_plot_temp <- plot_vocc(vocc,
+        vec_aes = "distance",
+        min_vec_plotted = input_cell_size,
+        NA_label = ".",
+        fill_col = "temp_diff",
+        fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
+        raster_alpha = 1,
+        white_zero = TRUE,
+        vec_alpha = 0.25,
+        axis_lables = FALSE,
+        transform_col = no_trans
+      ) + ggtitle("temperature")
 
-    vocc$do_diff <- vocc$do_est.units_per_decade / 10 * delta_t_total
+      vocc$do_diff <- vocc$do_est.units_per_decade / 10 * delta_t_total
 
-    vocc_plot_do <- plot_vocc(vocc,
-      vec_aes = "distance",
-      min_vec_plotted = input_cell_size,
-      NA_label = ".",
-      fill_col = "do_diff",
-      fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
-      raster_alpha = 1,
-      white_zero = TRUE,
-      high_fill = "Steel Blue 4",
-      low_fill = "Red 3",
-      vec_alpha = 0.25,
-      axis_lables = FALSE,
-      transform_col = no_trans
-    ) + ggtitle("do")
+      vocc_plot_do <- plot_vocc(vocc,
+        vec_aes = "distance",
+        min_vec_plotted = input_cell_size,
+        NA_label = ".",
+        fill_col = "do_diff",
+        fill_label = paste("Change from\n", start_time, "to", start_time + delta_t_total, ""),
+        raster_alpha = 1,
+        white_zero = TRUE,
+        high_fill = "Steel Blue 4",
+        low_fill = "Red 3",
+        vec_alpha = 0.25,
+        axis_lables = FALSE,
+        transform_col = no_trans
+      ) + ggtitle("do")
 
-    vocc_plot <- gridExtra::grid.arrange(
-      vocc_plot_temp, vocc_plot_do,
-      ncol = 2,
-      top = grid::textGrob(paste("do of ", optimal_values[1], "less", min_thresholds[1], "or temperature of ", optimal_values[2], "plus", max_thresholds[2], " over ", start_time, "-", start_time + delta_t_total, ""))
-    )
-  }
-  vocc_plot
-})
-print(all_vector_plots)
+      vocc_plot <- gridExtra::grid.arrange(
+        vocc_plot_temp, vocc_plot_do,
+        ncol = 2 # ,
+        # top = grid::textGrob(paste("do decline of", lower_change[1], "or temperature increase of", upper_change[2], " over ", start_time, "-", start_time + delta_t_total, ""))
+      )
+    }
+    vocc_plot
+  })
+
+  png(
+    file = paste0(
+      "figs/vocc-", climate_string, min_string, "to", max_string, "-", ssid_string, ".png"
+    ),
+    res = 600,
+    units = "in",
+    width = 8.5,
+    height = 11
+  )
+  gridExtra::grid.arrange(
+    grobs = all_vector_plots,
+    ncol = 2,
+    top = grid::textGrob(paste("Vectors for a DO decline of", lower_change[1], "and/or temperature increase of", upper_change[2], ""))
+  )
+  dev.off()
+
+  print(all_vector_plots)
+}
 ```
 
 ### Filter vectors to match optimal range for chosen species
 ```{r}
+rm(trimmed_vectors)
 trimmed_vectors <- lapply(vocc_by_year, function(vocc) {
   vectors <- trim_vector_data(vocc, variable_names,
     lower_change, upper_change,
@@ -365,6 +387,17 @@ trimmed_vectors <- lapply(vocc_by_year, function(vocc) {
 })
 
 all_vectors <- do.call("rbind", trimmed_vectors)
+
+## If VOCC change is a useful column?
+# all_vectors$var_1_changeA <- all_vectors$var_1_min
+# all_vectors$var_2_changeA <- all_vectors$var_2_min
+# all_vectors$var_1_changeB <- all_vectors$var_1_max
+# all_vectors$var_2_changeB <- all_vectors$var_2_max
+
+all_vectors$var_1_min <- lower_thresholds[1]
+all_vectors$var_2_min <- lower_thresholds[2]
+all_vectors$var_1_max <- lower_thresholds[1]
+all_vectors$var_2_max <- lower_thresholds[2]
 ```
 
 ### Plot remaining climate vectors for regions where change exceeds thresholds
@@ -523,7 +556,7 @@ Get all biomass predictions
 ```{r echo=FALSE, warning=FALSE}
 priors <- FALSE
 covs <- "-trawled-ssid"
-
+rm(biomass_predictions)
 if (age == "imm") {
   biomass_predictions <- readRDS(paste0(
     "data/", spp, "/all-predictions-", spp, covs,
@@ -578,6 +611,7 @@ biomass_change <- biomass_change %>%
 biomass <- left_join(biomass_change, biomass_covs, by = c("x" = "X", "y" = "Y"))
 
 # keep just one row for each cell that exceeded the end climate threshold
+# FIXME: this code could/maybe should be rewritten with an if_else mutate and then distinct...
 source_cells <- all_vectors %>%
   filter(distance > (-dist_intercept)) %>%
   distinct(icell, start_time, .keep_all = TRUE) %>%
@@ -616,7 +650,7 @@ alldata$treat <- as.factor(alldata$treat)
 # Select matched control cells
 
 ```{r}
-# rm(vocc_by_sp)
+rm(vocc_by_sp)
 # try({
 #   vocc_by_sp <- readRDS(paste0(
 #     "data/BACI-", species, "-", age, "-", ssid_string, "-", climate_string, "-", optimal_string, "-", min_string, "to", max_string, "-multiyear-all.rds"
@@ -637,54 +671,56 @@ for (j in (variable_names)) {
   # (UQ(rlang::sym(paste0(variable_names[j], "_s")))))
 }
 
-if (!exists("vocc_by_sp")) {
-  # matched <- lapply(alldata, function(alldata) {
-  ## trim non-overlapping values to reduce size of dataset
-  control_min <- quantile(alldata$start_density[alldata$treat == "0"], 0.01)
-  source_min <- quantile(alldata$start_density[alldata$treat == "1"], 0.01)
-  # control_max <- quantile(alldata$start_density[alldata$treat=="0"], 1)
-  # source_max <- quantile(alldata$start_density[alldata$treat=="1"], 1)
+# if (!exists("vocc_by_sp")) {
+# matched <- lapply(alldata, function(alldata) {
+## trim non-overlapping values to reduce size of dataset
+control_min <- quantile(alldata$start_density[alldata$treat == "0"], 0.01)
+source_min <- quantile(alldata$start_density[alldata$treat == "1"], 0.01)
+# control_max <- quantile(alldata$start_density[alldata$treat=="0"], 1)
+# source_max <- quantile(alldata$start_density[alldata$treat=="1"], 1)
 
-  group_min <- max(control_min, source_min)
-  # group_max <- min(control_max, source_max)
-  alldata <- filter(alldata, start_density >= group_min)
-  # %>% filter(start_density <= group_max)
+group_min <- max(control_min, source_min)
+# group_max <- min(control_max, source_max)
+alldata <- filter(alldata, start_density >= group_min)
+# %>% filter(start_density <= group_max)
 
-  # need to be standardized? seems not
-  alldata$depth2 <- alldata$depth^2
-  alldata$start_density.st <- round(arm::rescale(log(alldata$start_density)) * 5) / 5
-  alldata$depth_st <- arm::rescale(log(alldata$depth))
-  alldata$depth.st <- round(arm::rescale(log(alldata$depth)) * 5) / 5
-  alldata$muddy.st <- arm::rescale(alldata$muddy)
-  alldata$any_rock.st <- arm::rescale(alldata$any_rock)
+# need to be standardized? seems not
+alldata$depth2 <- alldata$depth^2
+alldata$depth_st <- arm::rescale(log(alldata$depth))
+# alldata$muddy.st <- arm::rescale(alldata$muddy)
+# alldata$any_rock.st <- arm::rescale(alldata$any_rock)
 
-  ## Using optimization ... doesn't work
-  # alldata$start_density_st <- round(arm::rescale(log(alldata$start_density)), 1)
-  # fit_formula <-
-  #   paste0("treat ~ start_density_st + depth.st + muddy.st + any_rock.st")
-  # # for (j in (variable_names)) {
-  # #   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
-  # #   }
-  # # options("optmatch_max_problem_size" = Inf)
-  # matched <- MatchIt::matchit(as.formula(fit_formula),
-  #     method = "optimal", data = alldata)
+# bin some variables for exact matching
+alldata$depth.st <- round(arm::rescale(log(alldata$depth)) * 5) / 5
+alldata$start_density.st <- round(arm::rescale(log(alldata$start_density)) * 5) / 5
 
-  # # Using exact match and rounding
-  # # Choose data order if not using random
-  # alldata <- alldata[(order(alldata$y)), ]
-  # if (order == "increasing") alldata <- alldata[rev(order(alldata$start_density)), ]
-  # if (order == "decreasing") alldata <- alldata[rev(order(alldata$start_density)), ]
-  # set.seed(99999)
-  matched <- MatchIt::matchit(as.formula(match_formula),
-    exact = c("start_density.st", "start_time"),
-    method = "nearest", m.order = "random",
-    distance = "probit",
-    discard = "both",
-    data = alldata
-  )
-  # matched
-  # })
-}
+## Using optimization ... doesn't work
+# alldata$start_density_st <- round(arm::rescale(log(alldata$start_density)), 1)
+# fit_formula <-
+#   paste0("treat ~ start_density_st + depth.st + muddy.st + any_rock.st")
+# # for (j in (variable_names)) {
+# #   fit_formula <- paste0("", fit_formula, " + ", j, "_s")
+# #   }
+# # options("optmatch_max_problem_size" = Inf)
+# matched <- MatchIt::matchit(as.formula(fit_formula),
+#     method = "optimal", data = alldata)
+
+# # Using exact match and rounding
+# # Choose data order if not using random
+# alldata <- alldata[(order(alldata$y)), ]
+# if (order == "increasing") alldata <- alldata[rev(order(alldata$start_density)), ]
+# if (order == "decreasing") alldata <- alldata[rev(order(alldata$start_density)), ]
+# set.seed(99999)
+matched <- MatchIt::matchit(as.formula(match_formula),
+  exact = c("start_density.st", "start_time"),
+  method = "nearest", m.order = "random",
+  distance = "probit",
+  discard = "both",
+  data = alldata
+)
+# matched
+# })
+# }
 ```
 
 Print diagnostics for matching
@@ -697,84 +733,84 @@ if (!exists("vocc_by_sp")) {
 
 Prep matched data for analysis
 ```{r}
-if (!exists("vocc_by_sp")) {
-  # vocc_by_sp <- lapply(matched, function(matched) {
-  mdata <- MatchIt::match.data(matched, distance = "pscore")
+# if (!exists("vocc_by_sp")) {
+# vocc_by_sp <- lapply(matched, function(matched) {
+mdata <- MatchIt::match.data(matched, distance = "pscore")
 
-  sources <- mdata[row.names(matched$match.matrix), ]
-  sources$origobs <- row.names(sources)
-  sources$matchobs <- matched$match.matrix[, 1]
+sources <- mdata[row.names(matched$match.matrix), ]
+sources$origobs <- row.names(sources)
+sources$matchobs <- matched$match.matrix[, 1]
 
-  controls <- mdata[matched$match.matrix, ]
-  controls$origobs <- row.names(controls)
-  controls$matchobs <- matched$match.matrix[, 1]
+controls <- mdata[matched$match.matrix, ]
+controls$origobs <- row.names(controls)
+controls$matchobs <- matched$match.matrix[, 1]
 
-  mdata <- rbind(sources, controls) %>%
-    tidyr::drop_na() %>%
-    filter(matchobs != "-1")
+mdata <- rbind(sources, controls) %>%
+  tidyr::drop_na() %>%
+  filter(matchobs != "-1")
 
-  matched_time0 <- mdata %>% mutate(after = 0, density = start_density)
-  # %>% dplyr::select(-start_density, -end_density)
-  matched_time1 <- mdata %>% mutate(after = 1, density = end_density)
-  # %>% dplyr::select(-start_density, -end_density)
+matched_time0 <- mdata %>% mutate(after = 0, density = start_density)
+# %>% dplyr::select(-start_density, -end_density)
+matched_time1 <- mdata %>% mutate(after = 1, density = end_density)
+# %>% dplyr::select(-start_density, -end_density)
 
-  for (j in seq_along(variable_names)) {
-    climate_var <- paste0(variable_names[j])
-    matched_time0 <- matched_time0 %>%
-      mutate((!!climate_var) := (UQ(rlang::sym(paste0(variable_names[j], "_s")))))
-    matched_time1 <- matched_time1 %>%
-      mutate((!!climate_var) := (UQ(rlang::sym(paste0(variable_names[j], "_e")))))
-  }
-
-  vocc_by_sp <- rbind(matched_time0, matched_time1)
-
-  # calculate standardized climate variables
-  for (j in seq_along(variable_names)) {
-    mean.var <- paste0("mean.", variable_names[j])
-    sd.var <- paste0("sd.", variable_names[j])
-    std.var <- paste0("std_", variable_names[j])
-    std.var2 <- paste0("std_", variable_names[j], "2")
-
-    vocc_by_sp <- mutate(
-      vocc_by_sp,
-      (!!mean.var) := mean(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE),
-      (!!sd.var) := sd(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE),
-      (!!std.var) := ((UQ(rlang::sym(paste0(variable_names[j]))) -
-        mean(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE)) /
-        (sd(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE)) * 2),
-      (!!std.var2) := ((UQ(rlang::sym(paste0(variable_names[j]))) -
-        mean(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE)) /
-        (sd(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE) * 2))^2
-    )
-  }
-
-  # rename spatial coordinates to avoid naming conflict with y~x notation
-  data <- vocc_by_sp %>%
-    rename(X = x, Y = y)
-  # %>% rename(distance = vect_dist) %>%
-  # select(-start_density.st, -depth.st, -muddy.st, -any_rock.st, -omega_s.st)
-
-  # other variable prep
-  data$log_density <- log(data$density)
-  data$log_depth <- log(data$depth)
-  data$std_log_depth <- arm::rescale(log(data$depth))
-  data$vect_dist2 <- data$vect_dist^2
-  data <- mutate(data, time = ifelse(after == 1, "end", "begin"))
-  data$matchobs <- as.factor(data$matchobs)
-  data$origobs <- as.factor(data$origobs)
-  data$start_time <- as.factor(data$start_time)
-
-  #  data
-  # })
-  vocc_by_sp <- list()
-  vocc_by_sp[[1]] <- data
-  vocc_by_sp[[3]] <- match_formula
-  vocc_by_sp[[4]] <- match_plots
-  saveRDS(vocc_by_sp, file = paste0(
-    "data/", spp,
-    "/BACI-", spp, "-", age, "-", ssid_string, "-", climate_string, "-", optimal_string, "-", min_string, "to", max_string, "-multiyear-all.rds"
-  ))
+for (j in seq_along(variable_names)) {
+  climate_var <- paste0(variable_names[j])
+  matched_time0 <- matched_time0 %>%
+    mutate((!!climate_var) := (UQ(rlang::sym(paste0(variable_names[j], "_s")))))
+  matched_time1 <- matched_time1 %>%
+    mutate((!!climate_var) := (UQ(rlang::sym(paste0(variable_names[j], "_e")))))
 }
+
+vocc_by_sp <- rbind(matched_time0, matched_time1)
+
+# calculate standardized climate variables
+for (j in seq_along(variable_names)) {
+  mean.var <- paste0("mean.", variable_names[j])
+  sd.var <- paste0("sd.", variable_names[j])
+  std.var <- paste0("std_", variable_names[j])
+  std.var2 <- paste0("std_", variable_names[j], "2")
+
+  vocc_by_sp <- mutate(
+    vocc_by_sp,
+    (!!mean.var) := mean(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE),
+    (!!sd.var) := sd(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE),
+    (!!std.var) := ((UQ(rlang::sym(paste0(variable_names[j]))) -
+      mean(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE)) /
+      (sd(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE)) * 2),
+    (!!std.var2) := ((UQ(rlang::sym(paste0(variable_names[j]))) -
+      mean(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE)) /
+      (sd(UQ(rlang::sym(paste0(variable_names[j]))), na.rm = TRUE) * 2))^2
+  )
+}
+
+# rename spatial coordinates to avoid naming conflict with y~x notation
+data <- vocc_by_sp %>%
+  rename(X = x, Y = y)
+# %>% rename(distance = vect_dist) %>%
+# select(-start_density.st, -depth.st, -muddy.st, -any_rock.st, -omega_s.st)
+
+# other variable prep
+data$log_density <- log(data$density)
+data$log_depth <- log(data$depth)
+data$std_log_depth <- arm::rescale(log(data$depth))
+data$vect_dist2 <- data$vect_dist^2
+data <- mutate(data, time = ifelse(after == 1, "end", "begin"))
+data$matchobs <- as.factor(data$matchobs)
+data$origobs <- as.factor(data$origobs)
+data$start_time <- as.factor(data$start_time)
+
+#  data
+# })
+vocc_by_sp <- list()
+vocc_by_sp[[1]] <- data
+vocc_by_sp[[3]] <- match_formula
+vocc_by_sp[[4]] <- match_plots
+saveRDS(vocc_by_sp, file = paste0(
+  "data/", spp,
+  "/BACI-", spp, "-", age, "-", ssid_string, "-", climate_string, "-", optimal_string, "-", min_string, "to", max_string, "-multiyear-all.rds"
+))
+# }
 ```
 
 ## Save spp dataframe
@@ -782,12 +818,12 @@ if (!exists("vocc_by_sp")) {
 # biomass_threshold <- "50"
 optimal_string <- paste0(na.omit(trim_thresholds), collapse = "-")
 # climate <- "temperature"
-try({
-  vocc_by_sp <- readRDS(paste0(
-    "data/", spp,
-    "/BACI-", spp, "-", age, "-", ssid_string, "-", climate_string, "-", optimal_string, "-", min_string, "to", max_string, "-multiyear-all.rds"
-  ))
-})
+# try({
+#   vocc_by_sp <- readRDS(paste0(
+#     "data/", spp,
+#     "/BACI-", spp, "-", age, "-", ssid_string, "-", climate_string, "-", optimal_string, "-", min_string, "to", max_string, "-multiyear-all.rds"
+#   ))
+# })
 
 n <- nrow(vocc_by_sp[[1]])
 species <- rep(species, n)
@@ -894,7 +930,7 @@ p2
 p3 <- ggplot(data, aes(log_density, fill = cell_type)) +
   geom_density(alpha = 0.5) +
   scale_fill_viridis_d(option = "C") +
-  facet_grid(start_time ~ time, scales = "fixed") +
+  facet_grid(time ~ start_time, scales = "fixed") +
   theme_bw() + theme(legend.position = "none")
 p3
 
@@ -938,7 +974,7 @@ png(
 gridExtra::grid.arrange(
   p1, p2, p3, p4, p5,
   ncol = 2,
-  top = grid::textGrob(paste("Matched pairs for", climate, "threshold of", optimal_string, "\n based on", biomass_threshold, "percent of maximum predicted", species, "biomass"), gp = grid::gpar(fontsize = 16))
+  top = grid::textGrob(paste("Matched pairs for", climate, "threshold of", optimal_string, "\n based on", biomass_threshold, "percent of maximum predicted", species, "biomass (", age, ")"), gp = grid::gpar(fontsize = 16))
 )
 dev.off()
 ```
