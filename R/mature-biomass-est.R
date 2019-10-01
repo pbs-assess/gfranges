@@ -57,7 +57,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
   tidy_sets <- add_missing_depths(tidy_sets, survey = survey, years = years, bath = bath)
 
   model_ssid <- unique(tidy_sets$ssid)
-  ssid_string <- paste0(model_ssid, collapse = "n")
+  ssid_string <- paste(model_ssid, collapse = " ")
   
   # does maturity data exist at all for this species?
   maturity_codes <- unique(fish$maturity_code)
@@ -160,7 +160,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
         geom_point(size = 1.5, alpha = 0.35, shape = 1) +
         geom_point(aes(length, weight), shape = 16, size = 1.25, alpha = 0.65) +
         scale_color_viridis_d(begin = 0.1, end = 0.6) +
-        facet_wrap(~year) + theme_pbs() +
+        facet_wrap(~year) + gfplot::theme_pbs() +
         xlab("") + ylab("Weight (open circles are estimates)") + labs(colour = "Sex") +
         ggplot2::ggtitle(paste("Length-weight relationship for", species, "surveys", ssid_string, "")))
 

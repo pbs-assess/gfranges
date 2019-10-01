@@ -29,12 +29,12 @@
 #' plot_mat_ogive(m)
 #' }
 fit_mat_ogive_re <- function(dat,
-                          type = c("age", "length"),
-                          sample_id_re = FALSE,
-                          year_re = FALSE,
-                          months = seq(1, 12),
-                          ageing_method_codes = NULL,
-                          usability_codes = c(0, 1, 2, 6)) {
+                             type = c("age", "length"),
+                             sample_id_re = FALSE,
+                             year_re = FALSE,
+                             months = seq(1, 12),
+                             ageing_method_codes = NULL,
+                             usability_codes = c(0, 1, 2, 6)) {
   dat <- mutate(dat, month = lubridate::month(trip_start_date))
 
   dat <- dat %>% filter(maturity_convention_code != 9)
@@ -163,7 +163,7 @@ fit_mat_ogive_re <- function(dat,
 
 
   if (year_re) {
-    mat_perc <- extract_maturity_perc_re (b, re)
+    mat_perc <- extract_maturity_perc_re(b, re)
   } else {
     mat_perc <- extract_maturity_perc(b)
   }
@@ -219,7 +219,6 @@ plot_mat_ogive <- function(object,
                              if (object$type[[1]] == "age") "Age at maturity" else "Length at maturity",
                            rug = TRUE, rug_n = 1500, x_max = 1.75,
                            prediction_type = c("all", "male", "female", "none")) {
-
   if (object$sample_id_re) {
     if (object$year_re) {
       b <- glmmTMB::fixef(object$model)[[1L]]
@@ -383,7 +382,7 @@ plot_mat_ogive <- function(object,
         coord_cartesian(
           expand = FALSE, ylim = c(-0.005, 1.005),
           xlim = c(0, max_x)
-        ) + theme_pbs()
+        ) + gfplot::theme_pbs()
 
       if (rug) {
         if (nrow(object$data) > rug_n) {
@@ -391,7 +390,7 @@ plot_mat_ogive <- function(object,
         } else {
           temp <- object$data
         }
-        position <- "jitter"  #if (object$type == "age") "jitter" else "identity"
+        position <- "jitter" # if (object$type == "age") "jitter" else "identity"
         g <- g + ggplot2::geom_rug(
           data = filter(temp, mature == 0L),
           sides = "b", position = position, alpha = 0.5, lty = 1, lwd = 2,
@@ -425,7 +424,7 @@ plot_mat_ogive <- function(object,
         coord_cartesian(
           expand = FALSE, ylim = c(-0.005, 1.005),
           xlim = c(0, max_x)
-        ) + theme_pbs()
+        ) + gfplot::theme_pbs()
 
       if (rug) {
         if (nrow(object$data) > rug_n) {
@@ -456,7 +455,7 @@ plot_mat_ogive <- function(object,
       coord_cartesian(
         expand = FALSE, ylim = c(-0.005, 1.005),
         xlim = c(0, max_x)
-      ) + theme_pbs()
+      ) + gfplot::theme_pbs()
 
     if (rug) {
       if (nrow(object$data) > rug_n) {
@@ -515,15 +514,17 @@ extract_maturity_perc_re <- function(betas, random_intercepts) {
   re <- random_intercepts
   out <- list()
   for (i in rownames(re)) {
-    m.p0.5 = logit_perc(a = b[[1]] + re[i, ], b = b[[2]], perc = 0.5)
+    m.p0.5 <- logit_perc(a = b[[1]] + re[i, ], b = b[[2]], perc = 0.5)
     m.p0.95 <- logit_perc(a = b[[1]] + re[i, ], b = b[[2]], perc = 0.95)
     m.p0.05 <- logit_perc(a = b[[1]] + re[i, ], b = b[[2]], perc = 0.05)
 
     f.p0.5 <- logit_perc(a = b[[1]] + b[[3]] + re[i, ], b = b[[2]] + b[[4]], perc = 0.5)
     f.p0.95 <- logit_perc(a = b[[1]] + b[[3]] + re[i, ], b = b[[2]] + b[[4]], perc = 0.95)
     f.p0.05 <- logit_perc(a = b[[1]] + b[[3]] + re[i, ], b = b[[2]] + b[[4]], perc = 0.05)
-    out[[i]] <- list(m.p0.5 = m.p0.5, m.p0.95 = m.p0.95, m.p0.05 = m.p0.05,
-                     f.p0.5 = f.p0.5, f.p0.95 = f.p0.95, f.p0.05 = f.p0.05)
+    out[[i]] <- list(
+      m.p0.5 = m.p0.5, m.p0.95 = m.p0.95, m.p0.05 = m.p0.05,
+      f.p0.5 = f.p0.5, f.p0.95 = f.p0.95, f.p0.05 = f.p0.05
+    )
   }
   out
 }
