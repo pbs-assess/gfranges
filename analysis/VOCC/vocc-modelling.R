@@ -1,9 +1,11 @@
 library(dplyr)
 library(ggplot2)
-
-
 library(TMB)
-#setwd(here::here())
+library(gfranges)
+
+getwd()
+#setwd(here::here("/analysis/VOCC"))
+
 #files <- list.files("../rockfish-vocc-temp/perc_50/0.75/", full.names = TRUE)
 
 list_species <- c(
@@ -42,7 +44,7 @@ for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
       try ({
-        rmarkdown::render("4-vocc-BACI-render.Rmd",
+        rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
             age = ages[a],
@@ -62,7 +64,7 @@ for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
       try ({
-        rmarkdown::render("4-vocc-BACI-render.Rmd",
+        rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
             age = ages[a],
@@ -82,14 +84,14 @@ for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
       try ({
-        rmarkdown::render("4-vocc-BACI-render.Rmd",
+        rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
             age = ages[a],
             region = list_regions[r_h],
             biomass_threshold = "50",
             climate = "do",
-            threshold = c(0.75) 
+            threshold = c(0.25) 
           ), 
           output_file = paste0("Match-", list_species[spp_i], ".html")
         )
@@ -103,7 +105,7 @@ for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
       try ({
-        rmarkdown::render("4-vocc-BACI-render.Rmd",
+        rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
             age = ages[a],
@@ -137,50 +139,57 @@ for (a in seq_along(ages)) {
 
 
 
-files <- list.files("data/_all/do/perc_50/0.25/adult/", full.names = TRUE) # doesn't converge
- files <- list.files("data/_all/do/perc_50/0.5/adult/", full.names = TRUE) # no sig
-# files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) # no sig
-# files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) # no sig
+files <- list.files("data/_all/do/perc_50/0.25/mature/", full.names = TRUE) # no sig, but mostly negative
 
-files <- list.files("data/_all/do/perc_25/0.25/adult/", full.names = TRUE) # no sig
-### files <- list.files("data/_all/do/perc_25/0.5/adult/", full.names = TRUE) 
-# files <- list.files("data/_all/do/perc_25/0.25/imm/", full.names = TRUE) # only 3 sp
-# # files <- list.files("data/_all/do/perc_25/0.5/imm/", full.names = TRUE) 
+files <- list.files("data/_all/do/perc_50/0.5/mature/", full.names = TRUE) # no sig
+
+## files <- list.files("data/_all/do/perc_50/0.75/mature/", full.names = TRUE) # only 2015 changes this much
+
+files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) # not converging
+files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) # no sig
+
+files <- list.files("data/_all/do/perc_25/0.25/mature/", full.names = TRUE) # no sig, but interesting POP, Bocaccio
+files <- list.files("data/_all/do/perc_25/0.5/mature/", full.names = TRUE) # 
+files <- list.files("data/_all/do/perc_25/0.25/imm/", full.names = TRUE) # doesn't converge
+#files <- list.files("data/_all/do/perc_25/0.5/imm/", full.names = TRUE) 
  
 # files <- list.files("data/_all/do/perc_75/0.5/imm/", full.names = TRUE) 
 # files <- list.files("data/_all/do/perc_75/0.5/adult/", full.names = TRUE) #no sig
 
-
+knots <- 100
 
 model_type <- gsub("/", " ", gsub("//vocc..*", " ", gsub("data/_all/", " ", files[1])))
 
 .d <- purrr::map_dfr(files, readRDS)
 
-# if do remove severe outlier 
-.d <- filter(.d, !(start_time == "2014" )) #& ssid == 4
-.d <- filter(.d, !(start_time == "2016" )) #& ssid == 4
+# if do remove severe outliers
+.d <- filter(.d, !(start_time == "2014" & ssid == 4)) # & ssid == 4
+.d <- filter(.d, !(start_time == "2016" & ssid == 4)) #
 
 
-.d <- .d %>% group_by(species, start_time) %>% mutate(count = n())  %>% filter(count > 101)
+.d <- .d %>% group_by(species, start_time) %>% mutate(count = n()) %>% filter(count > 30)
 unique(.d$count)
 
 rm(d)
-d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, X, Y, vect_dist, matchobs)
-d <- mutate(d, source = ifelse(cell_type == "source", 1, 0)) #, age = "mature"
+d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, ssid, X, Y, vect_dist, matchobs)
+d <- mutate(d, source = ifelse(cell_type == "source", 1, 0)) 
 
 unique(d$start_time)
 
 nrow(d)
 
-p1 <- ggplot(d, aes(X, Y, colour = cell_type)) + geom_point(size = 0.01, alpha = 0.3) +
- facet_wrap(~species) + coord_fixed() #+ theme(legend.position = c(0.3,0.7)) 
+p1 <- ggplot(d, aes(X, Y, colour = cell_type)) + 
+  geom_point(size = 0.01, alpha = 0.3) + 
+  facet_wrap(~species) + coord_fixed() #+ theme(legend.position = c(0.3,0.7)) 
 #+ ggtitle(paste(model_type))
 
-p2 <- ggplot(d, aes(X, Y, colour = log_density)) + geom_point(size = 0.1, alpha = 0.3) +
-  facet_grid(species~start_time) + coord_fixed() + scale_color_viridis_c() 
+p2 <- ggplot(d, aes(X, Y, colour = log_density)) + 
+  geom_point(size = 0.2, alpha = 0.3) +
+  facet_grid(species~start_time) + coord_fixed() + scale_color_viridis_c() + 
+  theme(strip.text.y = element_text(hjust = 0))
 #+ ggtitle(paste(model_type))
 p2
-# 'scratch' code was here.
+
 
 d$species_year <- paste(d$species, d$start_time)
 
@@ -191,7 +200,7 @@ formula <- log_density ~ after + source + scale(log_depth) * as.factor(species_y
   I((scale(log_depth))^2) * as.factor(species_year)
 
 species_k <- as.integer(as.factor(d$species_year))
-cell_m <- as.integer(as.factor(paste(d$matchobs, d$species_year)))
+cell_m <- as.integer(as.factor(paste(d$matchobs, d$species_year, d$ssid)))
 
 X_ij <- model.matrix(formula, data)
 # colnames(X_ij)
@@ -202,7 +211,7 @@ y_i <- model.response(mf, "numeric")
 x <- dplyr::distinct(select(d, species, species_year))
 species_id_k <- as.integer(as.factor(x$species))
 
-spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = 100)
+spde <- sdmTMB::make_spde(d$X, d$Y, n_knots = knots)
 sdmTMB::plot_spde(spde)
 # data$sdm_spatial_id <- 1:nrow(data)
 n_s <- nrow(spde$mesh$loc)
@@ -234,9 +243,9 @@ tmb_data <- list(
   after_i = d$after,
   source_i = d$source,
   n_k = n_k,
-  m_i = cell_m - 1L,
-  species_id_k = species_id_k - 1L,
-  n_just_species = max(species_id_k),
+  m_i = cell_m - 1L, # random effect of match ids
+  species_id_k = species_id_k - 1L, # random effect of species
+  n_just_species = max(species_id_k), 
   n_years_per_species = as.numeric(table(species_id_k))
   # interaction_position = grep("after:source", colnames(X_ij)) - 1
 )
@@ -354,7 +363,7 @@ p4 <- ggplot(meta, aes(forcats::fct_reorder(just_species, -Estimate),
 
 png(
   file = paste0("figs/", gsub("/", "-", gsub("//vocc..*", "", gsub("data/_all/", "", files[1])))
-, "-200knot.png"),
+, knots, "knot.png"),
   res = 600,
   units = "in",
   width = 11,
