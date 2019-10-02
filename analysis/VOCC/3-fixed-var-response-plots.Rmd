@@ -7,7 +7,6 @@ output: html_document
 
 Species
 ```{r}
-
 # # Species run so far...
 # species <- "Arrowtooth Flounder" # temp good, not DO, imm moving deeper?
 
@@ -243,11 +242,11 @@ for (i in seq_len(length(model_list))) {
         ggtitle(paste(species, names(model_list[i]))) +
         geom_vline(xintercept=(do[[i]]$optimal_do), size= 1.2, colour = "darkgrey") + 
         geom_vline(xintercept=(do[[i]]$lower_do_50), linetype="longdash", alpha = 0.75) + 
-        geom_vline(xintercept=(do[[i]]$upper_do_50), linetype="longdash", alpha = 0.75) +
+        #geom_vline(xintercept=(do[[i]]$upper_do_50), linetype="longdash", alpha = 0.75) +
         geom_vline(xintercept=(do[[i]]$lower_do_75), linetype="dotted", alpha = 0.5) + 
-        geom_vline(xintercept=(do[[i]]$upper_do_75), linetype="dotted", alpha = 0.5) +
-        geom_vline(xintercept=(do[[i]]$lower_do_25), linetype="dotted", alpha = 0.5) + 
-        geom_vline(xintercept=(do[[i]]$upper_do_25), linetype="dotted", alpha = 0.5) 
+        #geom_vline(xintercept=(do[[i]]$upper_do_75), linetype="dotted", alpha = 0.5) +
+        geom_vline(xintercept=(do[[i]]$lower_do_25), linetype="dotted", alpha = 0.5) #+ 
+        #geom_vline(xintercept=(do[[i]]$upper_do_25), linetype="dotted", alpha = 0.5) 
    } else {
     do_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
    }
@@ -295,11 +294,11 @@ for (i in seq_len(length(model_list))) {
      plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(2, 12)) +
         ggtitle(paste(species, names(model_list[i]))) +
         geom_vline(xintercept=td[[i]]$optimal_t, size= 1.2, colour = "darkgrey") + 
-        geom_vline(xintercept=td[[i]]$lower_t_50, linetype="longdash", alpha = 0.75) + 
+        #geom_vline(xintercept=td[[i]]$lower_t_50, linetype="longdash", alpha = 0.75) + 
         geom_vline(xintercept=td[[i]]$upper_t_50, linetype="longdash", alpha = 0.75) +
-        geom_vline(xintercept=td[[i]]$lower_t_75, linetype="dotted", alpha = 0.5) + 
+        #geom_vline(xintercept=td[[i]]$lower_t_75, linetype="dotted", alpha = 0.5) + 
         geom_vline(xintercept=td[[i]]$upper_t_75, linetype="dotted", alpha = 0.5) +
-        geom_vline(xintercept=td[[i]]$lower_t_25, linetype="dotted", alpha = 0.5) + 
+        #geom_vline(xintercept=td[[i]]$lower_t_25, linetype="dotted", alpha = 0.5) + 
         geom_vline(xintercept=td[[i]]$upper_t_25, linetype="dotted", alpha = 0.5) 
 
   } else {
@@ -377,8 +376,8 @@ print(depth_plots)
 ```{r}
 if(!is.null(data$adult_density)){
 odata <- data %>% filter(!is.na(do_mlpl)) %>% 
-  mutate(ad_density_class = ifelse(adult_density==0, 0, (round(log10((adult_density*10000)+1)*2)+1)),
-    im_density_class = ifelse(imm_density==0, 0, (round(log10((imm_density*10000)+1)*2)+1))) %>% 
+  mutate(ad_density_class = ifelse(adult_density==0, 0, round(log10((adult_density*100000)+1))),
+    im_density_class = ifelse(imm_density==0, 0, round(log10((imm_density*10000000)+1)))) %>% 
   group_by(ad_density_class) %>% mutate(ad_mean_density = mean(adult_density, na.rm = TRUE)) %>% ungroup() %>%
   group_by(im_density_class) %>% mutate(im_mean_density = mean(imm_density, na.rm = TRUE)) %>% ungroup()
   
@@ -476,8 +475,8 @@ print(raw_do_plots)
 ```{r}
 if(!is.null(data$adult_density)){
 tdata <- data %>% filter(!is.na(temp)) %>% 
-  mutate(ad_density_class = ifelse(adult_density==0, 0, (round(log10((adult_density*10000)+1)*2)+1)),
-    im_density_class = ifelse(imm_density==0, 0, (round(log10((imm_density*10000)+1))+1)*2)) %>% 
+  mutate(ad_density_class = ifelse(adult_density==0, 0, round(log10((adult_density*100000)+1))),
+    im_density_class = ifelse(imm_density==0, 0, round(log10((imm_density*10000000)+1)))) %>% 
   group_by(ad_density_class) %>% mutate(ad_mean_density = mean(adult_density, na.rm = TRUE)) %>% ungroup() %>%
   group_by(im_density_class) %>% mutate(im_mean_density = mean(imm_density, na.rm = TRUE)) %>% ungroup()
   
@@ -493,7 +492,7 @@ im_density_class_labs
 
 t_count_ad <- ggplot(tdata, aes(x = temp, stat(count),fill = as.factor(ad_density_class))) + 
   geom_density(position = "stack") +
-  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs) + 
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs, begin=0, end=0.5) + 
   geom_vline(xintercept=tdat[tdat$model =="adult", ]$optimal_temp, color="black",  size=1, na.rm = TRUE) +
   geom_vline(xintercept=tdat[tdat$age =="adult", ]$optimal_temp, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
   theme_pbs() +
@@ -503,7 +502,7 @@ t_count_ad <- ggplot(tdata, aes(x = temp, stat(count),fill = as.factor(ad_densit
 
 t_prop_ad <- ggplot(tdata, aes(x = temp, stat(count), fill = as.factor(ad_density_class))) +
   geom_density(position = "fill") +
-  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs) + 
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs, begin=0, end=0.5) + 
   geom_vline(xintercept=tdat[tdat$model =="adult", ]$optimal_temp, color="black", size=1, na.rm = TRUE) +
   geom_vline(xintercept=tdat[tdat$age =="adult", ]$optimal_temp, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
   theme_pbs() +
