@@ -101,6 +101,7 @@ for (a in seq_along(ages)) {
 }
 
 ## Temperature
+
 for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
@@ -121,9 +122,85 @@ for (a in seq_along(ages)) {
   }
 }
 
+for (a in seq_along(ages)) {
+  for (r_h in seq_along(list_regions)) {
+    for (spp_i in seq_along(list_species)) {
+      try ({
+        rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
+          params = list(
+            species = list_species[spp_i],
+            age = ages[a],
+            region = list_regions[r_h],
+            biomass_threshold = "50",
+            climate = "temperature",
+            threshold = c(0.25) 
+          ), 
+          output_file = paste0("Match-", list_species[spp_i], ".html")
+        )
+      })
+    }
+  }
+}
 
+for (a in seq_along(ages)) {
+  for (r_h in seq_along(list_regions)) {
+    for (spp_i in seq_along(list_species)) {
+      try ({
+        rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
+          params = list(
+            species = list_species[spp_i],
+            age = ages[a],
+            region = list_regions[r_h],
+            biomass_threshold = "50",
+            climate = "temperature",
+            threshold = c(0.5) 
+          ), 
+          output_file = paste0("Match-", list_species[spp_i], ".html")
+        )
+      })
+    }
+  }
+}
 
+for (a in seq_along(ages)) {
+  for (r_h in seq_along(list_regions)) {
+    for (spp_i in seq_along(list_species)) {
+      try ({
+        rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
+          params = list(
+            species = list_species[spp_i],
+            age = ages[a],
+            region = list_regions[r_h],
+            biomass_threshold = "25",
+            climate = "temperature",
+            threshold = c(0.5) 
+          ), 
+          output_file = paste0("Match-", list_species[spp_i], ".html")
+        )
+      })
+    }
+  }
+}
 
+for (a in seq_along(ages)) {
+  for (r_h in seq_along(list_regions)) {
+    for (spp_i in seq_along(list_species)) {
+      try ({
+        rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
+          params = list(
+            species = list_species[spp_i],
+            age = ages[a],
+            region = list_regions[r_h],
+            biomass_threshold = "50",
+            climate = "temperature",
+            threshold = c(1) 
+          ), 
+          output_file = paste0("Match-", list_species[spp_i], ".html")
+        )
+      })
+    }
+  }
+}
 
 
 # files <- list.files("data/_all/temperature/perc_50/0.25/adult/", full.names = TRUE)
@@ -131,32 +208,25 @@ for (a in seq_along(ages)) {
 # files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) 
 # files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE) 
 
-
 # files <- list.files("data/_all/temperature/perc_25/0.25/adult/", full.names = TRUE)
 # files <- list.files("data/_all/temperature/perc_25/0.5/adult/", full.names = TRUE) 
 # files <- list.files("data/_all/temperature/perc_25/0.25/imm/", full.names = TRUE) 
 # files <- list.files("data/_all/temperature/perc_25/0.5/imm/", full.names = TRUE) 
 
-
-
 files <- list.files("data/_all/do/perc_50/0.25/mature/", full.names = TRUE) # no sig, but mostly negative
-
-files <- list.files("data/_all/do/perc_50/0.5/mature/", full.names = TRUE) # no sig
-
-## files <- list.files("data/_all/do/perc_50/0.75/mature/", full.names = TRUE) # only 2015 changes this much
+# files <- list.files("data/_all/do/perc_50/0.5/mature/", full.names = TRUE) # no sig
+ files <- list.files("data/_all/do/perc_25/0.25/mature/", full.names = TRUE) # no sig, but interesting
+# files <- list.files("data/_all/do/perc_25/0.5/mature/", full.names = TRUE) # 
 
 files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) # not converging
-files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) # no sig
+# files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) # no sig
+# files <- list.files("data/_all/do/perc_25/0.25/imm/", full.names = TRUE) # doesn't converge
 
-files <- list.files("data/_all/do/perc_25/0.25/mature/", full.names = TRUE) # no sig, but interesting POP, Bocaccio
-files <- list.files("data/_all/do/perc_25/0.5/mature/", full.names = TRUE) # 
-files <- list.files("data/_all/do/perc_25/0.25/imm/", full.names = TRUE) # doesn't converge
-#files <- list.files("data/_all/do/perc_25/0.5/imm/", full.names = TRUE) 
- 
+# files <- list.files("data/_all/do/perc_25/0.5/imm/", full.names = TRUE) 
+# files <- list.files("data/_all/do/perc_50/0.75/mature/", full.names = TRUE) # only 2015 changes this much
 # files <- list.files("data/_all/do/perc_75/0.5/imm/", full.names = TRUE) 
-# files <- list.files("data/_all/do/perc_75/0.5/adult/", full.names = TRUE) #no sig
 
-knots <- 100
+knots <- 150
 
 model_type <- gsub("/", " ", gsub("//vocc..*", " ", gsub("data/_all/", " ", files[1])))
 
@@ -170,6 +240,9 @@ model_type <- gsub("/", " ", gsub("//vocc..*", " ", gsub("data/_all/", " ", file
 .d <- .d %>% group_by(species, start_time) %>% mutate(count = n()) %>% filter(count > 30)
 unique(.d$count)
 
+spp_values <- .d %>% group_by(species, mature) %>% select(species, var_1_min) %>% distinct()
+spp_values 
+
 rm(d)
 d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, ssid, X, Y, vect_dist, matchobs)
 d <- mutate(d, source = ifelse(cell_type == "source", 1, 0)) 
@@ -179,12 +252,13 @@ unique(d$start_time)
 nrow(d)
 
 p1 <- ggplot(d, aes(X, Y, colour = cell_type)) + 
-  geom_point(size = 0.01, alpha = 0.3) + 
-  facet_wrap(~species) + coord_fixed() #+ theme(legend.position = c(0.3,0.7)) 
+  geom_point(size = 0.3, alpha = 0.05) + 
+  scale_colour_manual(values = c("yellow", "slateblue4")) +
+  facet_wrap(~species) + coord_fixed() #+ gfplot::theme_pbs() #legend.position = c(0.3,0.7)
 #+ ggtitle(paste(model_type))
 
 p2 <- ggplot(d, aes(X, Y, colour = log_density)) + 
-  geom_point(size = 0.2, alpha = 0.3) +
+  geom_point(size = 0.4, alpha = 0.3) +
   facet_grid(species~start_time) + coord_fixed() + scale_color_viridis_c() + 
   theme(strip.text.y = element_text(hjust = 0))
 #+ ggtitle(paste(model_type))
@@ -354,10 +428,10 @@ meta <- as.data.frame(meta)
 row.names(meta) <- NULL
 meta$just_species <- unique(x$species)
 
-p4 <- ggplot(meta, aes(forcats::fct_reorder(just_species, -Estimate), 
-  Estimate, colour = just_species,
-  ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
-)) +
+p4 <- ggplot(meta, aes(forcats::fct_reorder(just_species, -Estimate), Estimate, 
+  colour = just_species,
+  ymin = Estimate - 2 * `Std. Error`, 
+  ymax = Estimate + 2 * `Std. Error`)) +
   geom_pointrange() + coord_flip() + xlab("") + ggtitle(paste(model_type)) 
 
 
@@ -377,3 +451,4 @@ p1
 p2
 p3
 p4
+spp_values 
