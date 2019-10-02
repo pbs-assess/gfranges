@@ -202,7 +202,7 @@ for (a in seq_along(ages)) {
   }
 }
 
-
+climate <- "temperature"
 # files <- list.files("data/_all/temperature/perc_50/0.25/adult/", full.names = TRUE)
 # files <- list.files("data/_all/temperature/perc_50/0.5/adult/", full.names = TRUE) 
 # files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) 
@@ -210,15 +210,15 @@ for (a in seq_along(ages)) {
 
 # files <- list.files("data/_all/temperature/perc_25/0.25/adult/", full.names = TRUE)
 # files <- list.files("data/_all/temperature/perc_25/0.5/adult/", full.names = TRUE) 
-# files <- list.files("data/_all/temperature/perc_25/0.25/imm/", full.names = TRUE) 
+files <- list.files("data/_all/temperature/perc_25/0.25/imm/", full.names = TRUE) 
 # files <- list.files("data/_all/temperature/perc_25/0.5/imm/", full.names = TRUE) 
 
-files <- list.files("data/_all/do/perc_50/0.25/mature/", full.names = TRUE) # no sig, but mostly negative
-# files <- list.files("data/_all/do/perc_50/0.5/mature/", full.names = TRUE) # no sig
- files <- list.files("data/_all/do/perc_25/0.25/mature/", full.names = TRUE) # no sig, but interesting
-# files <- list.files("data/_all/do/perc_25/0.5/mature/", full.names = TRUE) # 
-
-files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) # not converging
+# files <- list.files("data/_all/do/perc_50/0.25/mature/", full.names = TRUE) # no sig, but mostly negative
+# # files <- list.files("data/_all/do/perc_50/0.5/mature/", full.names = TRUE) # no sig
+#  files <- list.files("data/_all/do/perc_25/0.25/mature/", full.names = TRUE) # no sig, but interesting
+# # files <- list.files("data/_all/do/perc_25/0.5/mature/", full.names = TRUE) # 
+# 
+# files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) # not converging
 # files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) # no sig
 # files <- list.files("data/_all/do/perc_25/0.25/imm/", full.names = TRUE) # doesn't converge
 
@@ -237,10 +237,15 @@ model_type <- gsub("/", " ", gsub("//vocc..*", " ", gsub("data/_all/", " ", file
 .d <- filter(.d, !(start_time == "2016" & ssid == 4)) #
 
 
-.d <- .d %>% group_by(species, start_time) %>% mutate(count = n()) %>% filter(count > 30)
+.d <- .d %>% group_by(species, start_time) %>% mutate(count = n()) %>% filter(count > 50)
 unique(.d$count)
 
-spp_values <- .d %>% group_by(species, mature) %>% select(species, var_1_min) %>% distinct()
+if(climate=="do") {
+spp_values <- .d %>% group_by(species, mature) %>% select(species, var_1_min) %>% distinct() }
+
+if(climate=="temperature") {
+spp_values <- .d %>% group_by(species, mature) %>% select(species, var_1_max) %>% distinct() }
+
 spp_values 
 
 rm(d)
@@ -256,7 +261,7 @@ p1 <- ggplot(d, aes(X, Y, colour = cell_type)) +
   scale_colour_manual(values = c("yellow", "slateblue4")) +
   facet_wrap(~species) + coord_fixed() #+ gfplot::theme_pbs() #legend.position = c(0.3,0.7)
 #+ ggtitle(paste(model_type))
-
+p1
 p2 <- ggplot(d, aes(X, Y, colour = log_density)) + 
   geom_point(size = 0.4, alpha = 0.3) +
   facet_grid(species~start_time) + coord_fixed() + scale_color_viridis_c() + 
