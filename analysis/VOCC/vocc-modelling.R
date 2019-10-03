@@ -3,10 +3,12 @@ library(ggplot2)
 library(TMB)
 library(gfranges)
 
-getwd()
-#setwd(here::here("/analysis/VOCC"))
+ggplot2::theme_set(gfplot::theme_pbs())
 
-#files <- list.files("../rockfish-vocc-temp/perc_50/0.75/", full.names = TRUE)
+getwd()
+# setwd(here::here("/analysis/VOCC"))
+
+# files <- list.files("../rockfish-vocc-temp/perc_50/0.75/", full.names = TRUE)
 
 list_species <- c(
   "Bocaccio", # winter-birthing, overfished
@@ -20,20 +22,19 @@ list_species <- c(
   "Rougheye/Blackspotted Rockfish Complex",
   "Sharpchin Rockfish",
   "Shortbelly Rockfish", # small sample
-  "Silvergray Rockfish", 
+  "Silvergray Rockfish",
   "Splitnose Rockfish",
-#  list_species <- c(
   "Widow Rockfish", # schooling
   "Yellowtail Rockfish", # schooling
-  "Yelloweye Rockfish", # summer-birthing, overfished, 
+  "Yelloweye Rockfish", # summer-birthing, overfished,
   "Longspine Thornyhead",
   "Shortspine Thornyhead"
 )
 
 list_regions <- c(
-"West Coast Vancouver Island",
-"West Coast Haida Gwaii",
-"both odd year surveys"
+  "West Coast Vancouver Island",
+  "West Coast Haida Gwaii",
+  "both odd year surveys"
 )
 
 ages <- c("mature", "imm")
@@ -43,7 +44,7 @@ ages <- c("mature", "imm")
 for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
-      try ({
+      try({
         rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
@@ -51,8 +52,8 @@ for (a in seq_along(ages)) {
             region = list_regions[r_h],
             biomass_threshold = "25",
             climate = "do",
-            threshold = c(0.25) 
-          ), 
+            threshold = c(0.25)
+          ),
           output_file = paste0("Match-", list_species[spp_i], ".html")
         )
       })
@@ -63,7 +64,7 @@ for (a in seq_along(ages)) {
 for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
-      try ({
+      try({
         rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
@@ -71,8 +72,8 @@ for (a in seq_along(ages)) {
             region = list_regions[r_h],
             biomass_threshold = "50",
             climate = "do",
-            threshold = c(0.5) 
-          ), 
+            threshold = c(0.5)
+          ),
           output_file = paste0("Match-", list_species[spp_i], ".html")
         )
       })
@@ -83,7 +84,7 @@ for (a in seq_along(ages)) {
 for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
-      try ({
+      try({
         rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
@@ -91,8 +92,8 @@ for (a in seq_along(ages)) {
             region = list_regions[r_h],
             biomass_threshold = "50",
             climate = "do",
-            threshold = c(0.25) 
-          ), 
+            threshold = c(0.25)
+          ),
           output_file = paste0("Match-", list_species[spp_i], ".html")
         )
       })
@@ -105,7 +106,7 @@ for (a in seq_along(ages)) {
 for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
-      try ({
+      try({
         rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
@@ -113,8 +114,8 @@ for (a in seq_along(ages)) {
             region = list_regions[r_h],
             biomass_threshold = "25",
             climate = "temperature",
-            threshold = c(0.25) 
-          ), 
+            threshold = c(0.75)
+          ),
           output_file = paste0("Match-", list_species[spp_i], ".html")
         )
       })
@@ -125,7 +126,7 @@ for (a in seq_along(ages)) {
 for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
-      try ({
+      try({
         rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
@@ -133,8 +134,8 @@ for (a in seq_along(ages)) {
             region = list_regions[r_h],
             biomass_threshold = "50",
             climate = "temperature",
-            threshold = c(0.25) 
-          ), 
+            threshold = c(0.25)
+          ),
           output_file = paste0("Match-", list_species[spp_i], ".html")
         )
       })
@@ -145,7 +146,7 @@ for (a in seq_along(ages)) {
 for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
-      try ({
+      try({
         rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
@@ -153,8 +154,8 @@ for (a in seq_along(ages)) {
             region = list_regions[r_h],
             biomass_threshold = "50",
             climate = "temperature",
-            threshold = c(0.5) 
-          ), 
+            threshold = c(0.5)
+          ),
           output_file = paste0("Match-", list_species[spp_i], ".html")
         )
       })
@@ -165,7 +166,7 @@ for (a in seq_along(ages)) {
 for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
-      try ({
+      try({
         rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
@@ -173,8 +174,8 @@ for (a in seq_along(ages)) {
             region = list_regions[r_h],
             biomass_threshold = "25",
             climate = "temperature",
-            threshold = c(0.5) 
-          ), 
+            threshold = c(0.5)
+          ),
           output_file = paste0("Match-", list_species[spp_i], ".html")
         )
       })
@@ -185,7 +186,7 @@ for (a in seq_along(ages)) {
 for (a in seq_along(ages)) {
   for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
-      try ({
+      try({
         rmarkdown::render("4-vocc-BACI-multiyear.Rmd",
           params = list(
             species = list_species[spp_i],
@@ -193,8 +194,8 @@ for (a in seq_along(ages)) {
             region = list_regions[r_h],
             biomass_threshold = "50",
             climate = "temperature",
-            threshold = c(1) 
-          ), 
+            threshold = c(1)
+          ),
           output_file = paste0("Match-", list_species[spp_i], ".html")
         )
       })
@@ -203,28 +204,38 @@ for (a in seq_along(ages)) {
 }
 
 climate <- "temperature"
-# files <- list.files("data/_all/temperature/perc_50/0.25/adult/", full.names = TRUE)
-# files <- list.files("data/_all/temperature/perc_50/0.5/adult/", full.names = TRUE) 
-# files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE) 
-# files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE) 
 
-# files <- list.files("data/_all/temperature/perc_25/0.25/adult/", full.names = TRUE)
-# files <- list.files("data/_all/temperature/perc_25/0.5/adult/", full.names = TRUE) 
-files <- list.files("data/_all/temperature/perc_25/0.25/imm/", full.names = TRUE) 
-# files <- list.files("data/_all/temperature/perc_25/0.5/imm/", full.names = TRUE) 
+# files <- list.files("data/_all/temperature/perc_50/0.25/mature/", full.names = TRUE)
+# files <- list.files("data/_all/temperature/perc_50/0.5/mature/", full.names = TRUE)
+# files <- list.files("data/_all/temperature/perc_50/0.75/mature/", full.names = TRUE)
+# files <- list.files("data/_all/temperature/perc_50/1/mature/", full.names = TRUE)
 
+# files <- list.files("data/_all/temperature/perc_50/0.25/imm/", full.names = TRUE)
+# files <- list.files("data/_all/temperature/perc_50/0.5/imm/", full.names = TRUE)
+# files <- list.files("data/_all/temperature/perc_50/0.75/imm/", full.names = TRUE)
+# files <- list.files("data/_all/temperature/perc_50/1/imm/", full.names = TRUE)
+
+# files <- list.files("data/_all/temperature/perc_25/0.25/mature/", full.names = TRUE)
+# files <- list.files("data/_all/temperature/perc_25/0.5/mature/", full.names = TRUE)
+
+# files <- list.files("data/_all/temperature/perc_25/0.25/imm/", full.names = TRUE)
+# files <- list.files("data/_all/temperature/perc_25/0.5/imm/", full.names = TRUE)
+
+
+
+climate <- "do"
 # files <- list.files("data/_all/do/perc_50/0.25/mature/", full.names = TRUE) # no sig, but mostly negative
-# # files <- list.files("data/_all/do/perc_50/0.5/mature/", full.names = TRUE) # no sig
-#  files <- list.files("data/_all/do/perc_25/0.25/mature/", full.names = TRUE) # no sig, but interesting
-# # files <- list.files("data/_all/do/perc_25/0.5/mature/", full.names = TRUE) # 
-# 
+# files <- list.files("data/_all/do/perc_50/0.5/mature/", full.names = TRUE) # no sig
+# files <- list.files("data/_all/do/perc_25/0.25/mature/", full.names = TRUE) # no sig, but interesting
+# files <- list.files("data/_all/do/perc_25/0.5/mature/", full.names = TRUE) #
+
 # files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) # not converging
 # files <- list.files("data/_all/do/perc_50/0.5/imm/", full.names = TRUE) # no sig
 # files <- list.files("data/_all/do/perc_25/0.25/imm/", full.names = TRUE) # doesn't converge
+# files <- list.files("data/_all/do/perc_25/0.5/imm/", full.names = TRUE)
 
-# files <- list.files("data/_all/do/perc_25/0.5/imm/", full.names = TRUE) 
 # files <- list.files("data/_all/do/perc_50/0.75/mature/", full.names = TRUE) # only 2015 changes this much
-# files <- list.files("data/_all/do/perc_75/0.5/imm/", full.names = TRUE) 
+# files <- list.files("data/_all/do/perc_75/0.5/imm/", full.names = TRUE)
 
 knots <- 150
 
@@ -233,38 +244,49 @@ model_type <- gsub("/", " ", gsub("//vocc..*", " ", gsub("data/_all/", " ", file
 .d <- purrr::map_dfr(files, readRDS)
 
 # if do remove severe outliers
-.d <- filter(.d, !(start_time == "2014" & ssid == 4)) # & ssid == 4
-.d <- filter(.d, !(start_time == "2016" & ssid == 4)) #
+.d <- filter(.d, !(start_time == "2014" & ssid == 4))
+.d <- filter(.d, !(start_time == "2016" & ssid == 4))
 
 
-.d <- .d %>% group_by(species, start_time) %>% mutate(count = n()) %>% filter(count > 50)
+.d <- .d %>%
+  group_by(species, start_time) %>%
+  mutate(count = n()) %>%
+  filter(count > 30)
 unique(.d$count)
 
-if(climate=="do") {
-spp_values <- .d %>% group_by(species, mature) %>% select(species, var_1_min) %>% distinct() }
+if (climate == "do") {
+  spp_values <- .d %>%
+    group_by(species, mature) %>%
+    select(species, var_1_min) %>%
+    distinct()
+}
 
-if(climate=="temperature") {
-spp_values <- .d %>% group_by(species, mature) %>% select(species, var_1_max) %>% distinct() }
+if (climate == "temperature") {
+  spp_values <- .d %>%
+    group_by(species, mature) %>%
+    select(species, var_1_max) %>%
+    distinct()
+}
 
-spp_values 
+spp_values
 
 rm(d)
 d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, ssid, X, Y, vect_dist, matchobs)
-d <- mutate(d, source = ifelse(cell_type == "source", 1, 0)) 
+d <- mutate(d, source = ifelse(cell_type == "source", 1, 0))
 
 unique(d$start_time)
 
 nrow(d)
 
-p1 <- ggplot(d, aes(X, Y, colour = cell_type)) + 
-  geom_point(size = 0.3, alpha = 0.05) + 
+p1 <- ggplot(d, aes(X, Y, colour = cell_type)) +
+  geom_point(size = 0.3, alpha = 0.05) +
   scale_colour_manual(values = c("yellow", "slateblue4")) +
-  facet_wrap(~species) + coord_fixed() #+ gfplot::theme_pbs() #legend.position = c(0.3,0.7)
+  facet_wrap(~species) + coord_fixed()
 #+ ggtitle(paste(model_type))
 p1
-p2 <- ggplot(d, aes(X, Y, colour = log_density)) + 
+p2 <- ggplot(d, aes(X, Y, colour = log_density)) +
   geom_point(size = 0.4, alpha = 0.3) +
-  facet_grid(species~start_time) + coord_fixed() + scale_color_viridis_c() + 
+  facet_grid(species ~ start_time) + coord_fixed() + scale_color_viridis_c() +
   theme(strip.text.y = element_text(hjust = 0))
 #+ ggtitle(paste(model_type))
 p2
@@ -275,7 +297,7 @@ d$species_year <- paste(d$species, d$start_time)
 data <- d
 # formula <- log_density ~ after * source + scale(log_depth) # + as.factor(species)
 # formula <- log_density ~ after * source + scale(log_depth) + scale(vect_dist)
-formula <- log_density ~ after + source + scale(log_depth) * as.factor(species_year) + 
+formula <- log_density ~ after + source + scale(log_depth) * as.factor(species_year) +
   I((scale(log_depth))^2) * as.factor(species_year)
 
 species_k <- as.integer(as.factor(d$species_year))
@@ -324,7 +346,7 @@ tmb_data <- list(
   n_k = n_k,
   m_i = cell_m - 1L, # random effect of match ids
   species_id_k = species_id_k - 1L, # random effect of species
-  n_just_species = max(species_id_k), 
+  n_just_species = max(species_id_k),
   n_years_per_species = as.numeric(table(species_id_k))
   # interaction_position = grep("after:source", colnames(X_ij)) - 1
 )
@@ -377,7 +399,7 @@ tmb_opt <- stats::nlminb(
 # ML:
 # tmb_random <- c("epsilon_sk", "b_re", "b_cell")
 # REML:
- tmb_random <- c("epsilon_sk", "b_re", "b_cell", "b_re_sp", "b_j")
+tmb_random <- c("epsilon_sk", "b_re", "b_cell", "b_re_sp", "b_j")
 
 # Initialize the fixed effects from the first stage:
 set_par_value <- function(opt, par) {
@@ -421,39 +443,76 @@ co <- co %>%
   arrange(-mean_baci_int, -Estimate) %>%
   mutate(myorder = seq_len(n()))
 
+## To choose specific colours for specific species to make consistant across models
+# RColorBrewer::brewer.pal(n = 10, name = 'Spectral')
+
 p3 <- ggplot(co, aes(forcats::fct_reorder(species_year, myorder), Estimate,
   colour = just_species,
-  ymin = Estimate - 2 * `Std. Error`, ymax = Estimate + 2 * `Std. Error`
+  ymin = Estimate - 2 * `Std. Error`,
+  ymax = Estimate + 2 * `Std. Error`
 )) +
-  geom_pointrange() + coord_flip() + xlab("") + theme(legend.position = "none")
+  geom_hline(yintercept = 0) +
+  # scale_colour_manual(values = c(
+  #   "#9E0142", #Bocaccio
+  #   "#D53E4F", #Canary Rockfish
+  #   "#F46D43", #Greenstriped Rockfish
+  #   # "#FDAE61", #Pacific Ocean Perch
+  #   "#bcf60c", #Quillback Rockfish
+  #   # "#ABDDA4", #Redbanded Rockfish
+  #   "#66C2A5", #Sharpchin Rockfish
+  #   "#3288BD", #Silvergray Rockfish
+  #   "#5E4FA2", # Splitnose Rockfish
+  #   "#FFF200" #Yelloweye Rockfish
+  # )) +
+  geom_pointrange() + coord_flip() + xlab("") +
+  theme(legend.position = "none")
 #+ ggtitle(paste(model_type))
+p3
 
 meta <- s[grep("b_re_sp", row.names(s)), ]
 meta <- as.data.frame(meta)
 row.names(meta) <- NULL
 meta$just_species <- unique(x$species)
 
-p4 <- ggplot(meta, aes(forcats::fct_reorder(just_species, -Estimate), Estimate, 
+p4 <- ggplot(meta, aes(forcats::fct_reorder(just_species, -Estimate), Estimate,
   colour = just_species,
-  ymin = Estimate - 2 * `Std. Error`, 
-  ymax = Estimate + 2 * `Std. Error`)) +
-  geom_pointrange() + coord_flip() + xlab("") + ggtitle(paste(model_type)) 
-
+  ymin = Estimate - 2 * `Std. Error`,
+  ymax = Estimate + 2 * `Std. Error`
+)) +
+  geom_hline(yintercept = 0, colour = "darkgray") +
+  # scale_colour_manual(values = c(
+  #   "#9E0142", #Bocaccio
+  #   "#D53E4F", #Canary Rockfish
+  #   "#F46D43", #Greenstriped Rockfish
+  #   # "#FDAE61", #Pacific Ocean Perch
+  #   "#bcf60c", #"#E6F598", #Quillback Rockfish
+  #   # "#ABDDA4", #Redbanded Rockfish
+  #   "#66C2A5", #Sharpchin Rockfish
+  #   "#3288BD", #Silvergray Rockfish
+  #   "#5E4FA2", #Splitnose Rockfish
+  #   "#FFF200" #Yelloweye Rockfish
+  # )) +
+  geom_pointrange() + coord_flip() + xlab("") +
+  ggtitle(paste(model_type))
+p4
 
 png(
-  file = paste0("figs/", gsub("/", "-", gsub("//vocc..*", "", gsub("data/_all/", "", files[1])))
-, knots, "knot.png"),
+  file = paste0(
+    "figs/", gsub("/", "-", gsub("//vocc..*", "", gsub("data/_all/", "", files[1]))),
+    knots, "knot.png"
+  ),
   res = 600,
   units = "in",
   width = 11,
   height = 8
 )
 gridExtra::grid.arrange(
-  p4, p1, p3 , p2, 
-  nrow = 2)
+  p4, p1, p3, p2,
+  nrow = 2
+)
 dev.off()
 p1
 p2
 p3
 p4
-spp_values 
+spp_values
