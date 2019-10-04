@@ -42,6 +42,7 @@ species <- "Yelloweye Rockfish" # summer-birthing, overfished,
 # species <- "Widow Rockfish" # schooling
 # species <- "Yellowtail Rockfish" # schooling
 # species <- "Canary Rockfish" # schooling, winter-birthing
+species <- "Shortraker Rockfish"
    
 # species <- "Longspine Thornyhead"
 # species <- "Shortspine Thornyhead"
@@ -63,10 +64,10 @@ species <- "Yelloweye Rockfish" # summer-birthing, overfished,
 
 Region 
 ```{r}
-# region <- "All synoptic surveys"
- region <- "Both odd year surveys"
- # region <- "West Coast Vancouver Island"
- # region <- "West Coast Haida Gwaii"
+region <- "All synoptic surveys"
+# region <- "Both odd year surveys"
+# region <- "West Coast Vancouver Island"
+# region <- "West Coast Haida Gwaii"
 ```
 
 
@@ -82,17 +83,17 @@ dir.create(file.path("data", spp))
 knitr::opts_chunk$set(fig.width=11, fig.height=8.5, 
                       fig.path=paste0("figs/", spp, "/"),
                       echo=FALSE, warning=FALSE, message=FALSE)
-```
-
-```{r, message=FALSE, warning=FALSE}
 library(dplyr)
 library(ggplot2)
 library(gfplot)
 library(gfdata)
 library(sdmTMB)
 library(gfranges)
+```
 
-fish <- readRDS(paste0("raw/bio-data-", spp, ""))
+```{r, message=FALSE, warning=FALSE}
+
+#fish <- readRDS(paste0("raw/bio-data-", spp, ""))
 
 if (region == "Both odd year surveys") {
   survey <- c("SYN QCS", "SYN HS")
@@ -186,7 +187,7 @@ if (exists("maturity")) {
     res = 600,
     units = "in",
     width = 8, 
-    height = 10
+    height = 6
   )
   print(maturity$maturity)
   dev.off()
