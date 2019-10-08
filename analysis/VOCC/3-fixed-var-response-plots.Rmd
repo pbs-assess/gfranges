@@ -1,97 +1,20 @@
 ---
-title: "Plot responses to model covariates to inform threshold choices for VOCC"
+title: "Plot `r paste(params$species)` responses to climate covariates to inform threshold choices for VOCC"
 author: "Philina English"
-date: '2019-07-18'
+date: "`r Sys.Date()`"
 output: html_document
+params: 
+    species: "Pacific Ocean Perch"
+    priors: FALSE # call model that used priors?
+    log_temp: TRUE
+    covs: "-log-both-trawled" # covariate string used to name model rds
+    cov_number: 2
 ---
 
-Species
-```{r}
-# # Species run so far...
-# species <- "Arrowtooth Flounder" # temp good, not DO, imm moving deeper?
-
-# species <- "Petrale Sole"
-# species <- "English Sole"
-# species <- "Dover Sole"
-# species <- "Southern Rock Sole"
- 
-
-# species <- "Walleye Pollock" # survey 4 or 16 might work
-# species <- "Pacific Cod"
-
-## Sebastes
-# 
-# ## TRY BOTH - not schooling
-#  species <- "Yelloweye Rockfish" # beautiful curves, with depth change ***
-#  species <- "Bocaccio" # good curves, no depth change ... most survey-specific models fail to find minimum ***
-#  species <- "Sharpchin Rockfish" # beautiful curves, imm depth change ***
-#  species <- "Greenstriped Rockfish" # beautiful curves for adults, no depth change ***
-
-# ## TRY BOTH - schooling
-#  species <- "Pacific Ocean Perch" # beautiful curves, no depth change, schooling ***
-#  species <- "Silvergray Rockfish" # beautiful curves, no depth change, schooling ***
-
-# ## TRY JUST TEMPERATURE 
-# # species <- "Rougheye/Blackspotted Rockfish Complex" # good temp, not DO
-# # species <- "Redbanded Rockfish" # good temp, not DO, maybe moving shallower
-#  species <- "Splitnose Rockfish" # good temp, survey 4 DO ok
-
-  
-# # species <- "Yellowtail Rockfish" #  good temp for survey 4 only, no DO, schooling
-# # species <- "Quillback Rockfish" # like warm = overall a bit flat... territorial! 
-# # species <- "Canary Rockfish" # schooling, winter-birthing, and depth change!, but curves at edges... adult1 looks ok?
-#  species <- "Widow Rockfish" # schooling, and depth change, but curves at edges
-
-# species <- "Longspine Thornyhead" # too deep to produce curves
-# species <- "Shortspine Thornyhead"
-# species <- "Sablefish" # temp might work, no DO, no consistant depth change
-# species <- "Lingcod" # curves ok, overall a bit flat
-# # species <- "Pacific Hake" # not useful
-  
-# species <- "North Pacific Spiny Dogfish" # too flat, but with depth change! note: pooled maturity 
-# species <- "Longnose Skate" # do too flat, temp from 4 might be useful, seems to go deeper?
-# species <- "Big Skate"
-# species <- "Sandpaper Skate"
-# species <- "Brown Cat Shark"
-# species <- "Spotted Ratfish" # curves not useful because to abundant in shallow
-```
-
-Choose model details
-```{r}
-covariates <- ""
-# covariates <- "+muddy+mixed+rocky"
-# covariates <- "+mixed+rocky"
-#covariates <- "+muddy+any_rock"
-# covariates <- "+trawled+muddy+rocky+mixed"
-# covariates <- "+trawled+mixed+rocky"
-# covariates <- "+trawled+mixed"
-# 
-# covariates <- "+as.factor(ssid)"
-# covs <- "-both-tv-depth-ssid"
-
-# priors <- FALSE
-# covariates <- "+muddy+any_rock"
-# covs <- gsub("\\+", "-", covariates)
-priors <- TRUE
-#covs <- "-tv-depth"
-# covs <- "-both-tv-depth"
-# covs <- "-log-do"
-covs <- "-log-do-trawled"
-num_params <- 2
-```
-
-Run all subsequent code...
 ```{r global_options, include=FALSE}
-spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
-
-knitr::opts_chunk$set(
-  fig.width = 11, fig.height = 8.5,
-  fig.path = paste0("figs/", spp, "/"),
-  echo = FALSE, warning = FALSE, message = FALSE
-)
-```
-
-```{r, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(fig.width=11, fig.height=8.5, 
+                      #fig.path=paste0("figs/", spp, "/"),
+                      echo=FALSE, warning=FALSE, message=FALSE)
 library(dplyr)
 library(ggplot2)
 library(gfplot)
@@ -100,8 +23,22 @@ library(sdmTMB)
 library(gfranges)
 ```
 
-Load Dissolved O2 models
-```{r}
+```{r params}
+species <- params$species
+priors <- params$priors
+covs <- params$covs
+log_temp <- params$log_temp
+num_params <- params$cov_number
+
+paste("priors =", priors)
+paste("model =", covs)
+paste("log(temperature) =", log_temp)
+
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+```
+
+Load models with environmental covariates
+```{r, results = "hide"}
 rm(adult, imm,
   adult_survey1, imm_survey1,
   adult_survey4, imm_survey4,
@@ -202,13 +139,10 @@ model_list <- model_list[!sapply(model_list, is.null)]
 ```
 
 ```{r}
-# test load small sdm model to avoid crashing R
-# try({imm})
-# or maybe it's crashing when NaNs produced error goes into density function?
+model_list
 ```
 
 ## Density curves from model coefficients
-
 #### Calculate DO curves
 ```{r}
 do <- list()
@@ -225,7 +159,7 @@ for (i in seq_len(length(model_list))) {
    do[[i]]$age <- ifelse(grepl("imm", names(model_list[i])), "imm", "adult")
    do[[i]]$ssid <- paste0(sort(unique(as.numeric(model_list[[i]]$data$ssid))), collapse = "n")
    do[[i]]$model <- names(model_list[i])
-   do[[i]]$covs <- paste0(x2016,covs) 
+   do[[i]]$covs <- paste0(x2016, covs, priors) 
    roots <- get_quadratic_roots(model_list[[i]], predictor = "do_mlpl", fixed_param = 1, threshold = 0.5)
    do[[i]]$optimal_do <- exp(roots[["optimal"]])
    do[[i]]$lower_do_50 <- exp(roots[["lower_threshold"]])
@@ -279,17 +213,37 @@ for (i in seq_len(length(model_list))) {
     td[[i]]$age <- ifelse(grepl("imm", names(model_list[i])), "imm", "adult")
     td[[i]]$ssid <- paste0(sort(unique(as.numeric(model_list[[i]]$data$ssid))), collapse = "n")
     td[[i]]$model <- names(model_list[i])
-    td[[i]]$covs <- paste0(x2016,covs) 
+    td[[i]]$covs <- paste0(x2016, covs, priors)
    roots <- get_quadratic_roots(model_list[[i]], predictor = "temp", fixed_param = num_params, threshold = 0.5)
-   td[[i]]$optimal_temp <- roots[["optimal"]]
-   td[[i]]$lower_t_50 <- roots[["lower_threshold"]]
-   td[[i]]$upper_t_50 <- roots[["upper_threshold"]]
+   
+   if (log_temp) {
+     
+   td[[i]]$optimal_temp <- exp(roots[["optimal"]])
+   td[[i]]$lower_t_50 <- exp(roots[["lower_threshold"]])
+   td[[i]]$upper_t_50 <- exp(roots[["upper_threshold"]])
    roots75 <- get_quadratic_roots(model_list[[i]], predictor = "temp", fixed_param = num_params, threshold = 0.75)
-   td[[i]]$lower_t_75 <- roots75[["lower_threshold"]]
-   td[[i]]$upper_t_75 <- roots75[["upper_threshold"]]
+   td[[i]]$lower_t_75 <- exp(roots75[["lower_threshold"]])
+   td[[i]]$upper_t_75 <- exp(roots75[["upper_threshold"]])
    roots25 <- get_quadratic_roots(model_list[[i]], predictor = "temp", fixed_param = num_params, threshold = 0.25)
-   td[[i]]$lower_t_25 <- roots25[["lower_threshold"]]
-   td[[i]]$upper_t_25 <- roots25[["upper_threshold"]]
+   td[[i]]$lower_t_25 <- exp(roots25[["lower_threshold"]])
+   td[[i]]$upper_t_25 <- exp(roots25[["upper_threshold"]])
+   td[[i]]$x <- exp(td[[i]]$x)
+   
+   } else {
+     
+   td[[i]]$optimal_temp <-  (roots[["optimal"]])
+   td[[i]]$lower_t_50 <-  (roots[["lower_threshold"]])
+   td[[i]]$upper_t_50 <-  (roots[["upper_threshold"]])
+   roots75 <- get_quadratic_roots(model_list[[i]], predictor = "temp", fixed_param = num_params, threshold = 0.75)
+   td[[i]]$lower_t_75 <-  (roots75[["lower_threshold"]])
+   td[[i]]$upper_t_75 <-  (roots75[["upper_threshold"]])
+   roots25 <- get_quadratic_roots(model_list[[i]], predictor = "temp", fixed_param = num_params, threshold = 0.25)
+   td[[i]]$lower_t_25 <-  (roots25[["lower_threshold"]])
+   td[[i]]$upper_t_25 <-  (roots25[["upper_threshold"]])
+   td[[i]]$x <-  (td[[i]]$x)
+   
+   }
+   
    temp_plots[[i]] <- 
      plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(2, 12)) +
         ggtitle(paste(species, names(model_list[i]))) +
@@ -322,9 +276,6 @@ print(temp_plots)
 ```
 
 
-
-
-
 ## Check optimals against raw capture denstiies
 
 #### Combine biomass and sensor data
@@ -349,21 +300,59 @@ print(temp_plots)
 ```
 
 
-Build time-varying depth plots
+### Build time-varying depth plots
+#### Model without environmental covariates
 ```{r }
 max_depth_found <- max(data[data$present==1,]$raw_depth, na.rm = TRUE)
+rm(depth_model_list)
+depth_only <- T
+
+if(depth_only) {
+
+try({  adult_biomass <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, "-trawled-ssid-1n3n4n16-prior-FALSE.rds"
+  ))
+  imm_biomass <- readRDS(paste0(
+    "data/", spp,
+    "/mod-imm-biomass-", spp, "-trawled-ssid-1n3n4n16-prior-FALSE.rds"
+  ))
+ # depth_model_list <- list(adult = adult_biomass, imm = imm_biomass)
+})  
+
+    if (!exists("adult_biomass")) {
+      try({
+        total_biomass <- readRDS(paste0(
+    "data/", spp,
+    "/mod-total-biomass-", spp, "-trawled-ssid-1n3n4n16-prior-FALSE.rds"
+  ))
+      })
+    }
+  
+
+if (!exists("adult_biomass")) adult_biomass <- NULL
+if (!exists("imm_biomass")) imm_biomass <- NULL
+if (!exists("total_biomass")) total_biomass <- NULL
+
+  depth_model_list <- list(adult = adult_biomass, imm = imm_biomass, total = total_biomass)
+  depth_model_list <- depth_model_list[!sapply(depth_model_list, is.null)]
+
+}  else {
+  depth_model_list <- model_list
+}
+  
 d <- list()
 depth_plots <- list()
-for (i in seq_len(length(model_list))) {
- if(model_list[[i]]$model$convergence==0){
-  d[[i]] <- time_varying_density(model_list[[i]], predictor = "depth")
+for (i in seq_len(length(depth_model_list))) {
+ if(depth_model_list[[i]]$model$convergence==0){
+  d[[i]] <- time_varying_density(depth_model_list[[i]], predictor = "depth")
 
   if (length(d[[i]]) == 0) {
     depth_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
   } else {
     d[[i]]$x <- exp(d[[i]]$x)
-    depth_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Depth", xlimits = c(0, max_depth_found)) +
-      ggtitle(paste(species, names(model_list[i])))
+    depth_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Depth (in model without environmental variables)", xlimits = c(0, max_depth_found)) +
+      ggtitle(paste(species, names(depth_model_list[i])))
   }
  } else {
     depth_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
@@ -372,7 +361,33 @@ for (i in seq_len(length(model_list))) {
 print(depth_plots)
 ```
 
-#### Plot raw DO
+#### Model with environmental covariates
+```{r }
+max_depth_found <- max(data[data$present==1,]$raw_depth, na.rm = TRUE)
+
+depth_model_list <- model_list
+d <- list()
+depth_plots2 <- list()
+for (i in seq_len(length(depth_model_list))) {
+ if(depth_model_list[[i]]$model$convergence==0){
+  d[[i]] <- time_varying_density(depth_model_list[[i]], predictor = "depth")
+
+  if (length(d[[i]]) == 0) {
+    depth_plots2[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
+  } else {
+    d[[i]]$x <- exp(d[[i]]$x)
+    depth_plots2[[i]] <- plot_mountains(d[[i]], variable_label = "Depth (controling for DO and temperature)", xlimits = c(0, max_depth_found)) +
+      ggtitle(paste(species, names(depth_model_list[i])))
+  }
+ } else {
+    depth_plots2[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
+  } 
+}
+print(depth_plots2)
+```
+
+
+### Plot raw DO
 ```{r}
 if(!is.null(data$adult_density)){
 odata <- data %>% filter(!is.na(do_mlpl)) %>% 
@@ -471,7 +486,7 @@ print(raw_do_plots)
 }
 ```
 
-#### Plot raw temperature
+### Plot raw temperature
 ```{r}
 if(!is.null(data$adult_density)){
 tdata <- data %>% filter(!is.na(temp)) %>% 
@@ -492,7 +507,7 @@ im_density_class_labs
 
 t_count_ad <- ggplot(tdata, aes(x = temp, stat(count),fill = as.factor(ad_density_class))) + 
   geom_density(position = "stack") +
-  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs, begin=0, end=0.5) + 
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs, begin=0, end=1) + 
   geom_vline(xintercept=tdat[tdat$model =="adult", ]$optimal_temp, color="black",  size=1, na.rm = TRUE) +
   geom_vline(xintercept=tdat[tdat$age =="adult", ]$optimal_temp, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
   theme_pbs() +
@@ -502,7 +517,7 @@ t_count_ad <- ggplot(tdata, aes(x = temp, stat(count),fill = as.factor(ad_densit
 
 t_prop_ad <- ggplot(tdata, aes(x = temp, stat(count), fill = as.factor(ad_density_class))) +
   geom_density(position = "fill") +
-  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs, begin=0, end=0.5) + 
+  scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=ad_density_class_labs, begin=0, end=1) + 
   geom_vline(xintercept=tdat[tdat$model =="adult", ]$optimal_temp, color="black", size=1, na.rm = TRUE) +
   geom_vline(xintercept=tdat[tdat$age =="adult", ]$optimal_temp, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
   theme_pbs() +
@@ -571,9 +586,9 @@ print(raw_t_plots)
 
 
 Save DO plots
-```{r}
+```{r eval=F}
 png(
-  file = paste0("figs/", spp, "/do-fixed-", spp, x2016, covs, "-priors-", priors, ".png"),
+  file = paste0("figs/", spp, "/do-both-log-", spp, x2016, covs, "-priors-", priors, ".png"),
   res = 600,
   units = "in",
   width = 8.5,
@@ -587,10 +602,10 @@ gridExtra::grid.arrange(
 dev.off()
 ```
 
-Save Temperature plots
-```{r}
+Save temperature plots
+```{r eval=F}
 png(
-  file = paste0("figs/", spp, "/temp-fixed-", spp, x2016, covs, "-priors-", priors, ".png"),
+  file = paste0("figs/", spp, "/temp-both-log-", spp, x2016, covs, "-priors-", priors, ".png"),
   res = 600,
   units = "in",
   width = 8.5,
@@ -634,22 +649,21 @@ png(
   height = 11
 )
 gridExtra::grid.arrange(
-  grobs = depth_plots,
+  grobs = c(depth_plots, depth_plots2),
   nrow = 4,
   top = grid::textGrob(paste(species))
 )
 dev.off()
 ```
 
-
 ## Save optimal values
-```{r }
+```{r}
 other_params <- readRDS(paste0("data/root-values-by-species-by-age.rds"))
 
 if(!is.null(odat)) {
   if(!is.null(tdat)) {
-    params <- full_join(tdat, odat, by=c("species", "age", "model", "covs", "ssid"))
-    all_params <- full_join(other_params, params)
+    new_params <- full_join(tdat, odat, by=c("species", "age", "model", "covs", "ssid"))
+    all_params <- full_join(other_params, new_params)
   } else {
   try({all_params <- full_join(other_params, odat)})
   }
@@ -665,8 +679,6 @@ all_params <- all_params %>% distinct()
 saveRDS(all_params, file = "data/root-values-by-species-by-age.rds")
 all_params
 ```
-
-
 
 
 
@@ -734,105 +746,6 @@ dev.off()
 ```
 
 
-Load Depth models (if using old depth only models)
-```{r eval=FALSE}
-rm(
-  adult_survey1, imm_survey1,
-  adult_survey4, imm_survey4,
-  adult_survey16, imm_survey16
-)
-priors <- FALSE
-covariates <- "+muddy+any_rock"
-covs <- gsub("\\+", "-", covariates)
-try({
-  survey <- c("SYN QCS", "SYN HS")
-  model_ssid <- c(1, 3)
-  ssid_string <- paste0(model_ssid, collapse = "n")
-  adult_survey1 <- readRDS(paste0("data/", spp,
-    "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
-  ))
-  imm_survey1 <- readRDS(paste0("data/", spp,
-    "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
-  ))
-})
-if (!exists("adult_survey1")) adult_survey1 <- NULL
-if (!exists("imm_survey1")) imm_survey1 <- NULL
-
-try({
-  survey <- c("SYN WCVI")
-  model_ssid <- c(4)
-  ssid_string <- paste0(model_ssid, collapse = "n")
-  adult_survey4 <- readRDS(paste0("data/", spp,
-    "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
-  ))
-  imm_survey4 <- readRDS(paste0("data/", spp,
-    "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
-  ))
-})
-if (!exists("adult_survey4")) adult_survey4 <- NULL
-if (!exists("imm_survey4")) imm_survey4 <- NULL
-
-try({
-  survey <- c("SYN WCHG")
-  model_ssid <- c(16)
-  ssid_string <- paste0(model_ssid, collapse = "n")
-  adult_survey16 <- readRDS(paste0("data/", spp,
-    "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
-  ))
-  imm_survey16 <- readRDS(paste0("data/", spp,
-    "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
-  ))
-})
-
-if (!exists("adult_survey16")) adult_survey16 <- NULL
-if (!exists("imm_survey16")) imm_survey16 <- NULL
-
-depth_model_list <- list(
-  adult_survey1 = adult_survey1, imm_survey1 = imm_survey1,
-  adult_survey4 = adult_survey4, imm_survey4 = imm_survey4,
-  adult_survey16 = adult_survey16, imm_survey16 = imm_survey16
-)
-depth_model_list <- depth_model_list[!sapply(depth_model_list, is.null)]
-```
-
-Build depth plots
-```{r eval=FALSE}
-
-max_depth_found <- max(data[data$present==1,]$raw_depth, na.rm = TRUE)
-d <- list()
-depth_plots <- list()
-for (i in seq_len(length(depth_model_list))) {
-  d[[i]] <- time_varying_density(depth_model_list[[i]], predictor = "depth")
-
-  if (length(d[[i]]) == 0) {
-    depth_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
-  } else {
-    d[[i]]$x <- exp(d[[i]]$x)
-    depth_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Depth", xlimits = c(0, max_depth_found)) +
-      ggtitle(paste(species, names(depth_model_list[i])))
-  }
-}
-print(depth_plots)
-```
-
-```{r eval=FALSE}
-png(
-  file = paste0(
-    "figs/", spp,
-    "/depth-only-", spp, covs, "-priors-", priors, ".png"
-  ),
-  res = 600,
-  units = "in",
-  width = 8.5,
-  height = 11
-)
-gridExtra::grid.arrange(
-  grobs = depth_plots,
-  ncol = 2,
-  top = grid::textGrob(paste(species))
-)
-dev.off()
-```
 
 # TRAWLING
 Plot time-varying effect of trawling at mean depth
@@ -897,54 +810,3 @@ b_j <- m$tmb_params$b_j[1:8]
 
 trawled <- data.frame(year = yrs, intercept = b_j, trawling = b3)
 ```
-
-
-Get all biomass predictions 
-#### Get all biomass predictions 
-```{r, eval=FALSE, echo=FALSE, warning=FALSE}
-priors <- FALSE
-covariates <- "+muddy+any_rock"
-covs <- gsub("\\+", "-", covariates)
-
-rm(adult_predictions)
-rm(imm_predictions)
-rm(predictions)
-pred_temp_do <- readRDS(here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds"))
-
-try({adult_predictions <- readRDS(paste0("data/", spp,
-    "/all-predictions-", spp, covs, "-mat-biomass-prior-", priors, ".rds"
-  ))%>% filter(year > 2007)
-adult_predictions <- left_join(adult_predictions, pred_temp_do, c("X", "Y", "year", "ssid"))
-})
-
-try({imm_predictions <- readRDS(paste0("data/", spp,
-    "/all-predictions-", spp, covs, "-imm-biomass-prior-", priors, ".rds"
-  )) %>% filter(year > 2007)
-imm_predictions <- left_join(imm_predictions, pred_temp_do, c("X", "Y", "year", "ssid"))
-})
-
-try({predictions <- readRDS(paste0("data/", spp,
-    "/all-predictions-", spp, covs, "-total-biomass-prior-", priors, ".rds"
-  ))%>% filter(year > 2007)
-predictions <- left_join(predictions, pred_temp_do, c("X", "Y", "year", "ssid"))
-})
-
-if (!exists("adult_predictions")) adult_predictions <- NULL
-if (!exists("imm_predictions")) imm_predictions <- NULL
-if (!exists("predictions")) predictions <- NULL
-
-biomass_list <- list(
-  adult = adult_predictions,
-  imm = imm_predictions,
-  total = predictions
-)
-
-biomass_list <- biomass_list[!sapply(biomass_list, is.null)]
-
-# 
-# ggplot(biomass_list[[1]], aes(x = do_est, y = log(est_exp))) + 
-#   geom_point(alpha = 0.3) #+ #geom_smooth()
-#   geom_smooth(method = "lm", formula = y ~ x + I(x^2) , size = 1) #+ I(x^3)
-```
-
-

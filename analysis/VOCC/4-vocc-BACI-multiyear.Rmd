@@ -1,19 +1,19 @@
 ---
-title: "BACI of biomass change for VOCC source cells for all years"
+title: "BACI of `r paste(params$species)` biomass for `r paste(params$region)` VOCC"
 author: "Philina English"
 date: "`r Sys.Date()`"
-output: html_document
+output: html_document 
 params: 
     species: "Pacific Ocean Perch" 
-    region: "both odd year surveys"
+    region: "West Coast Vancouver Island"
     age: "imm"
-    biomass_threshold: "25"
+    biomass_threshold: "50"
     climate: "temperature"
     threshold: 0.25
 ---
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(
+knitr::opts_chunk$set(fig.keep = "all", fig.show = "asis",
   fig.width = 11, fig.height = 8.5,
   echo = FALSE, warning = FALSE, message = FALSE
 )
@@ -22,21 +22,27 @@ options(digits = 4)
 ```
 
 ```{r pkgs, cache=FALSE, warning=FALSE, message=FALSE}
-library("dplyr")
-library("ggplot2")
-library("gfplot")
-library("sdmTMB")
-library("gfranges")
+library(dplyr)
+library(ggplot2)
+library(gfplot)
+library(sdmTMB)
+library(gfranges)
 ggplot2::theme_set(gfplot::theme_pbs())
 ```
 
 #### Set parameters
-```{r echo=TRUE}
+```{r }
 species <- params$species
 age <- params$age
 region <- params$region
 biomass_threshold <- params$biomass_threshold
 climate <- params$climate
+
+paste("species =", species)
+paste("age =", age)
+paste("region =", region)
+paste("biomass_threshold =", biomass_threshold)
+paste("climate =", climate)
 ```
 
 
@@ -49,16 +55,17 @@ delta_t_step <- 2
 skip_time <- NULL
 ```
 
-
-# Run all subsequent code...
-
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 if (region == "both odd year surveys") {
   survey <- c("SYN QCS", "SYN HS")
   model_ssid <- c(1, 3)
   ssid_string <- paste0(model_ssid, collapse = "n")
+  
+  if(climate=="temperature") {
+    start_years <- list("2005" = 2005, "2007" = 2007, "2009" = 2009, "2011" = 2011, "2013" = 2013, "2015" = 2015)
+  } else {
   start_years <- list("2009" = 2009, "2011" = 2011, "2013" = 2013, "2015" = 2015)
-  # maybe remove 2011 & 2015 once we can add "2017"=2017 to avoid start and end values overlapping
+  }
   years <- NULL
 }
 
@@ -66,8 +73,11 @@ if (region == "West Coast Vancouver Island") {
   survey <- c("SYN WCVI")
   model_ssid <- c(4)
   ssid_string <- paste0(model_ssid, collapse = "n")
-  start_years <- list("2008" = 2008, "2010" = 2010, "2012" = 2012, "2014" = 2014, "2016" = 2016)
-  # prob need to remove 2010 & 2014
+  if(climate=="temperature") {
+    start_years <- list("2004" = 2004, "2006" = 2006, "2008" = 2008, "2010" = 2010, "2012" = 2012, "2014" = 2014, "2016" = 2016)
+  } else {
+  start_years <- list("2008" = 2008, "2010" = 2010, "2012" = 2012, "2016" = 2016) # "2014" = 2014, # removed due to extreme DO values
+  }
   years <- NULL
 }
 
@@ -75,8 +85,11 @@ if (region == "West Coast Haida Gwaii") {
   survey <- c("SYN WCHG")
   model_ssid <- c(16)
   ssid_string <- paste0(model_ssid, collapse = "n")
+  if(climate=="temperature") {
+    start_years <- list("2006" = 2006, "2008" = 2008, "2010" = 2010, "2012" = 2012, "2014" = 2014, "2016" = 2016)
+  } else {
   start_years <- list("2008" = 2008, "2010" = 2010, "2012" = 2012, "2014" = 2014, "2016" = 2016)
-  # prob need to remove 2010 & 2014
+  }
   years <- NULL
 }
 ```
@@ -86,8 +99,8 @@ if (region == "West Coast Haida Gwaii") {
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 all_params <- readRDS(paste0("data/root-values-by-species-by-age.rds"))
-
-all_params <- all_params %>% mutate(model_type = ifelse(grepl("total", model), "total", "split"))
+#browser()
+all_params <- all_params %>% filter(covs == "x2016-log-both-trawledFALSE") %>% mutate(model_type = ifelse(grepl("total", model), "total", "split"))
 
 if (age == "imm") {
   all_params <- filter(all_params, age == "imm")
@@ -220,7 +233,7 @@ glimpse(root_params)
 
 
 # Calculate climate vectors
-```{r}
+```{r }
 vocc_by_year <- lapply(start_years, function(start_time) {
   try({
     vocc <- readRDS(paste0(
@@ -231,12 +244,18 @@ vocc_by_year <- lapply(start_years, function(start_time) {
 
 
   if (!exists("vocc")) {
-    pred_temp_do <- readRDS(here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds"))
-
-    if (length(variable_names) > 1) {
-      climate_predictions <- replicate(length(variable_names), pred_temp_do, simplify = FALSE)
+    
+    if (climate=="temperature") {
+      climate_predictions <- readRDS("data/predicted_temp_allyears.rds") %>% mutate(temp = est)
+        
     } else {
-      climate_predictions <- pred_temp_do
+      pred_temp_do <- readRDS(here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds")) 
+      
+      if (length(variable_names) > 1) {
+        climate_predictions <- replicate(length(variable_names), pred_temp_do, simplify = FALSE)
+      } else {
+        climate_predictions <- pred_temp_do
+      }
     }
     end_time <- start_time + 2
     vocc <- make_vector_data(climate_predictions,
@@ -270,7 +289,7 @@ vocc_by_year <- lapply(start_years, function(start_time) {
 ```
 
 ### Plot all possible vectors
-```{r echo=FALSE}
+```{r }
 if (!exists("vocc")) {
   all_vector_plots <- lapply(vocc_by_year, function(vocc) {
     start_time <- vocc$start_time[1]
@@ -369,9 +388,9 @@ if (!exists("vocc")) {
     top = grid::textGrob(paste("Vectors for a DO decline of", lower_change[1], "and/or temperature increase of", upper_change[2], ""))
   )
   dev.off()
-
-  print(all_vector_plots)
 }
+#print(all_vector_plots)
+invisible(lapply(all_vector_plots, print))
 ```
 
 ### Filter vectors to match optimal range for chosen species
@@ -526,7 +545,8 @@ trimmed_vector_plots <- lapply(trimmed_vectors, function(vectors) {
   })
 })
 
-print(trimmed_vector_plots)
+#print(trimmed_vector_plots)
+invisible(lapply(trimmed_vector_plots, print))
 ```
 
 ```{r}
@@ -851,37 +871,33 @@ species <- species[[1]]
 # folder to hold vocc data
 biomass_threshold_string <- paste0("perc_", biomass_threshold)
 
-dir.create(file.path("data/_all", climate_string, biomass_threshold_string))
+dir.create(file.path("data/log-both"))
+dir.create(file.path("data/log-both", climate_string))
+dir.create(file.path("data/log-both", climate_string, biomass_threshold_string))
 
 if (climate == "temperature") {
-  dir.create(file.path("data/_all", climate_string))
-  dir.create(file.path("data/_all", climate_string, biomass_threshold_string))
-  dir.create(file.path("data/_all", climate_string, biomass_threshold_string, max_string))
-  dir.create(file.path("data/_all", climate_string, biomass_threshold_string, max_string, age))
+  dir.create(file.path("data/log-both", climate_string, biomass_threshold_string, max_string))
+  dir.create(file.path("data/log-both", climate_string, biomass_threshold_string, max_string, age))
 }
 if (climate == "temperature") {
-  saveRDS(df, file = paste0("data/_all/", climate_string, "/", "perc_", biomass_threshold, "/", max_string, "/", age, "/vocc-", climate_string, "-", max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"))
+  saveRDS(df, file = paste0("data/log-both/", climate_string, "/", "perc_", biomass_threshold, "/", max_string, "/", age, "/vocc-", climate_string, "-", max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"))
 }
 
 
 if (climate == "do") {
-  dir.create(file.path("data/_all", climate_string))
-  dir.create(file.path("data/_all", climate_string, biomass_threshold_string))
-  dir.create(file.path("data/_all", climate_string, biomass_threshold_string, min_string))
-  dir.create(file.path("data/_all", climate_string, biomass_threshold_string, min_string, age))
+  dir.create(file.path("data/log-both", climate_string, biomass_threshold_string, min_string))
+  dir.create(file.path("data/log-both", climate_string, biomass_threshold_string, min_string, age))
 }
 if (climate == "do") {
-  saveRDS(df, file = paste0("data/_all/", climate_string, "/", "perc_", biomass_threshold, "/", min_string, "/", age, "/vocc-", climate_string, "-", min_string, "to", max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"))
+  saveRDS(df, file = paste0("data/log-both/", climate_string, "/", "perc_", biomass_threshold, "/", min_string, "/", age, "/vocc-", climate_string, "-", min_string, "to", max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"))
 }
 
 if (climate == "do and temperature") {
-  dir.create(file.path("data/_all", climate_string))
-  dir.create(file.path("data/_all", climate_string, biomass_threshold_string))
-  dir.create(file.path("data/_all", climate_string, biomass_threshold_string, age))
+  dir.create(file.path("data/log-both", climate_string, biomass_threshold_string, age))
 }
 
 if (climate == "do and temperature") {
-  saveRDS(df, file = paste0("data/_all/", climate_string, "/", "perc_", biomass_threshold, "/", age, "/vocc-", climate_string, "-", min_string, "to", max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"))
+  saveRDS(df, file = paste0("data/log-both/", climate_string, "/", "perc_", biomass_threshold, "/", age, "/vocc-", climate_string, "-", min_string, "to", max_string, "-", spp, "-", age, "-", optimal_string, "-", ssid_string, "-all.rds"))
 }
 ```
 

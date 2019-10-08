@@ -1,72 +1,50 @@
 ---
-title: "Spatiotemporal models of species biomass with time-varying DO"
+title: "Spatiotemporal models of `r paste(params$species)` biomass with climate covariates"
 author: "Philina English"
-date: '2019-07-18'
+date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Arrowtooth Flounder"
-
+    species: "Pacific Ocean Perch"
+    region: "All synoptic surveys"
+    #region: "Both odd year surveys"
+    log_temp: TRUE # should temperature be log()
+    priors: FALSE
+    covariates: "+trawled" # additional non-climate variables
+    covs: "-log-both-trawled" # string describing model covariates
 ---
 
-Choose one value for each parameter:
-
-Species
-```{r}
-# species <- "Canary Rockfish" 
-```
-
-Region 
-```{r}
- region <- "All synoptic surveys"
-  # region <- "Both odd year surveys"
-# region <- "West Coast Vancouver Island"
- #  region <- "West Coast Haida Gwaii"
-```
-
-Choose model details
-```{r}
-# priors <- FALSE
-priors <- TRUE
-# covariates <- "+muddy+any_rock"
-# covariates <- ""
-# covariates <- "+as.factor(ssid)"
-covariates <- "+trawled"
-# covariates <- "+muddy+mixed+rocky"
-# covariates <- "+mixed+rocky"
-# covariates <- "+trawled+muddy+rocky+mixed"
-# covariates <- "+trawled+mixed+rocky"
-# covariates <- "+trawled+mixed"
-# covs <- gsub("\\+", "-", covariates)
-# covs <- "-both-tv-depth-ssid"
-# covs <- "-both-tv-depth"
-# covs <- "-log-do"
-# covs <- "-log-do-ssid"
-covs <- "-log-do-trawled"
-
-```
-
-
-Run all subsequent code...
 ```{r global_options, include=FALSE}
-
-spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
-
-# folder to hold figs for this species
-dir.create(file.path("figs", spp))
-dir.create(file.path("data", spp))
-
 knitr::opts_chunk$set(fig.width=11, fig.height=8.5, 
-                      fig.path=paste0("figs/", spp, "/"),
+                     # fig.path=paste0("figs/", spp, "/"),
                       echo=FALSE, warning=FALSE, message=FALSE)
-```
-
-```{r, message=FALSE, warning=FALSE}
 library(dplyr)
 library(ggplot2)
 library(gfplot)
 library(gfdata)
 library(sdmTMB)
 library(gfranges)
+```
+
+
+```{r params}
+species <- params$species
+region <- params$region
+covariates <- params$covariates 
+covs <- params$covs
+log_temp <- params$log_temp
+priors <- params$priors
+
+paste("region =", region)
+paste("model covariates =", covariates)
+paste("model label =", covs)
+paste("log(temperature) =", log_temp)
+paste("priors =", priors)
+
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+
+# folder to hold figs for this species
+dir.create(file.path("figs", spp))
+dir.create(file.path("data", spp))
 
 if (region == "Both odd year surveys") {
   survey <- c("SYN QCS", "SYN HS")
@@ -106,6 +84,10 @@ Combine biomass and sensor data
   data <- dplyr::left_join(biomass, covars) %>% mutate(depth_akima = depth) %>% select(-depth)
   
   CTD <- readRDS("../tmb-sensor-explore/data/all-sensor-data-processed.rds")
+  
+  min(CTD$temperature_c, na.rm = T) #  
+  mintemp <- 2.6
+  
   data <- dplyr::left_join(data, CTD) %>% 
     mutate(exclude = if_else(do_mlpl>8, 1, 0)) %>% 
     #mutate(exclude = if_else(do_mlpl>6, 1, 0)) %>% #try excluding high values?
@@ -113,9 +95,17 @@ Combine biomass and sensor data
     filter(year > 2007) # 2007 DO data is flawed
   
   # scale predictors before filtering to ensure mean and SD are global
-  data <- data %>% mutate(raw_depth = depth_bath, depth = log(raw_depth), temp = temperature_c, raw_do = do_mlpl, do_mlpl = log(do_mlpl)) 
+  data <- data %>% mutate(raw_depth = depth_bath, depth = log(raw_depth), 
+     raw_do = do_mlpl, do_mlpl = log(do_mlpl)) 
+  
+  if (log_temp) {data <- mutate(data, temp = log(temperature_c))
+  } else {
+    data <- mutate(data, temp = temperature_c)
+  }
+  
   do_data <- scale_predictors(data, predictors = c(quo(depth), quo(temp), quo(do_mlpl))) 
        # c(quo(log_depth), quo(mixed), quo(muddy), quo(sandy), quo(rocky), quo(any_rock)))
+  
   data <- do_data %>% mutate(depth = raw_depth) %>% #filter(year != 2016) %>%
     filter(ssid %in% model_ssid) %>% 
     filter(!is.na(depth_scaled)) %>% filter(!is.na(do_mlpl)) %>% filter(!is.na(temp)) 
@@ -127,7 +117,7 @@ if (any(names(data) == "adult_density")) {
       do_mlpl_scaled, do_mlpl_scaled2,  do_mlpl_mean, do_mlpl_sd, 
       temp_scaled, temp_scaled2, temp_mean, temp_sd, 
       trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, 
-      depth, do_mlpl, raw_do) 
+      depth, do_mlpl, raw_do, temp, temperature_c) 
  } else {
     data <- data %>% select(X, Y, X10, Y10,
       density,
@@ -135,12 +125,10 @@ if (any(names(data) == "adult_density")) {
       do_mlpl_scaled, do_mlpl_scaled2,  do_mlpl_mean, do_mlpl_sd, 
       temp_scaled, temp_scaled2, temp_mean, temp_sd, 
       trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, 
-      depth, do_mlpl, raw_do) 
+      depth, do_mlpl, raw_do, temp, temperature_c) 
  }
   
  data <- filter(data, !(year == 2016 & ssid == 4) ) # 2016 do an outlier for survey 4
-# unique(data$year)
-# table(data$year,data$ssid)
 ```
 
 
@@ -173,7 +161,6 @@ tictoc::tic()
       "adult_density ~ 0 + as.factor(year) + do_mlpl_scaled + do_mlpl_scaled2 + temp_scaled + temp_scaled2", covariates, ""
       ))
     
-    starttime1 <- Sys.time()
     adult_biomass_d <- sdmTMB::sdmTMB(data,
       adult_formula,
       time_varying = ~ 0 + depth_scaled + depth_scaled2, 
@@ -185,8 +172,6 @@ tictoc::tic()
       control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
       silent = FALSE
     )
-    endtime1 <- Sys.time()
-    time1 <- round(starttime1 - endtime1)
 
     saveRDS(adult_biomass_d, 
       file = paste0("data/", spp, 
@@ -198,7 +183,6 @@ tictoc::tic()
       "imm_density ~ 0 + as.factor(year) + do_mlpl_scaled + do_mlpl_scaled2 + temp_scaled + temp_scaled2", covariates, ""
       ))
     
-    starttime2 <- Sys.time()
     imm_biomass_d <- sdmTMB::sdmTMB(data, 
       imm_formula,
       time_varying = ~ 0 + depth_scaled + depth_scaled2, 
@@ -210,8 +194,6 @@ tictoc::tic()
       control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
       silent = FALSE
     )
-    endtime2 <- Sys.time()
-    time2 <- round(starttime2 - endtime2)
 
     saveRDS(imm_biomass_d, 
       file = paste0("data/", spp, 
@@ -220,7 +202,6 @@ tictoc::tic()
     
   } else {
 
-    starttime3 <- Sys.time()
     dens_formula <- as.formula(paste("density ~ 0 + as.factor(year) + do_mlpl_scaled + do_mlpl_scaled2 + temp_scaled + temp_scaled2", covariates, ""))
     
     total_biomass_d <- sdmTMB::sdmTMB(data,
@@ -234,8 +215,6 @@ tictoc::tic()
       control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
       silent = FALSE
     )
-    endtime3 <- Sys.time()
-    time3 <- round(starttime3 - endtime3)
 
     saveRDS(total_biomass_d, file = paste0("data/", spp, 
       "/model-total-biomass-", spp, "-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"

@@ -1,85 +1,15 @@
 ---
-title: "Spatiotemporal models of species biomass split by maturity class"
+title: "Split `r paste(params$species)` biomass by maturity class"
 author: "Philina English"
-date: '2019-07-18'
+date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Arrowtooth Flounder"
-
+    species: "Curlfin Sole"
+    region: "All synoptic surveys"
+    #region: "Both odd year surveys"
 ---
 
-Choose one value for each parameter:
-
-Species
-```{r}
-species <- params$species
-
-# # Species run so far...
-# species <- "Arrowtooth Flounder"
-# species <- "Petrale Sole"
-# species <- "English Sole"
-# species <- "Dover Sole" # maturity data error for WCHG
-# species <- "Southern Rock Sole"
-# species <- "Flathead Sole"
- 
-
-
-# species <- "Silvergray Rockfish"
-# species <- "Quillback Rockfish" # summer-birthing
-species <- "Yelloweye Rockfish" # summer-birthing, overfished, 
-# species <- "Bocaccio" # winter-birthing, overfished
-# species <- "Sharpchin Rockfish"
-# species <- "Splitnose Rockfish"
-
-# species <- "Rougheye/Blackspotted Rockfish Complex"
-# species <- "Redbanded Rockfish"
-# species <- "Greenstriped Rockfish"
-# # species <- "Copper Rockfish" # small sample
-# species <- "Darkblotched Rockfish"
-# # species <- "Shortbelly Rockfish" # small sample
-
-# species <- "Pacific Ocean Perch" # schooling
-# species <- "Widow Rockfish" # schooling
-# species <- "Yellowtail Rockfish" # schooling
-# species <- "Canary Rockfish" # schooling, winter-birthing
-species <- "Shortraker Rockfish"
-   
-# species <- "Longspine Thornyhead"
-# species <- "Shortspine Thornyhead"
-
-
-# species <- "Walleye Pollock"
-# species <- "Pacific Cod"
-# species <- "Sablefish"
-# species <- "Lingcod"
-# species <- "Pacific Hake"
- 
-# species <- "North Pacific Spiny Dogfish" # note: using all data for maturity thresholds
-# species <- "Longnose Skate"
-# species <- "Big Skate"
-# species <- "Spotted Ratfish"
-# # species <- "Sandpaper Skate" # small sample
-# # species <- "Brown Cat Shark" # small sample
-```
-
-Region 
-```{r}
-region <- "All synoptic surveys"
-# region <- "Both odd year surveys"
-# region <- "West Coast Vancouver Island"
-# region <- "West Coast Haida Gwaii"
-```
-
-
-Run all subsequent code...
 ```{r global_options, include=FALSE}
-# covs <- gsub("\\+", "-", covariates)
-spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
-
-# folder to hold figs for this species
-dir.create(file.path("figs", spp))
-dir.create(file.path("data", spp))
-
 knitr::opts_chunk$set(fig.width=11, fig.height=8.5, 
                       fig.path=paste0("figs/", spp, "/"),
                       echo=FALSE, warning=FALSE, message=FALSE)
@@ -91,9 +21,16 @@ library(sdmTMB)
 library(gfranges)
 ```
 
-```{r, message=FALSE, warning=FALSE}
 
-#fish <- readRDS(paste0("raw/bio-data-", spp, ""))
+```{r params}
+species <- params$species
+region <- params$region
+
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+
+# folder to hold figs for this species
+dir.create(file.path("figs", spp))
+dir.create(file.path("data", spp))
 
 if (region == "Both odd year surveys") {
   survey <- c("SYN QCS", "SYN HS")
@@ -129,9 +66,10 @@ if (region == "All synoptic surveys") {
 
 #### Calculate maturity weighted biomass if not done before
 ```{r}
- rm(biomass)
- rm(maturity)
-# try(biomass <- readRDS(paste0("data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds")))
+rm(biomass)
+rm(maturity)
+
+#try(biomass <- readRDS(paste0("data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds")))
 
 if (!exists("biomass")) {
   survey_sets <- readRDS(paste0("raw/event-data-", spp, ""))
