@@ -4,6 +4,8 @@ library(TMB)
 library(gfranges)
 ggplot2::theme_set(gfplot::theme_pbs())
 
+manual_colours <- FALSE
+
 getwd()
 # setwd(here::here("/analysis/VOCC"))
 
@@ -11,7 +13,7 @@ getwd()
 
 climate <- "temperature"
 # files <- list.files("data/_all/temperature/perc_50/0.25/mature/", full.names = TRUE)
-# files <- list.files("data/_all/temperature/perc_50/0.5/mature/", full.names = TRUE)
+files <- list.files("data/_all/temperature/perc_50/0.5/mature/", full.names = TRUE)
 # files <- list.files("data/_all/temperature/perc_50/0.75/mature/", full.names = TRUE)
 # files <- list.files("data/_all/temperature/perc_50/1/mature/", full.names = TRUE)
 
@@ -28,9 +30,9 @@ climate <- "temperature"
 
 
 climate <- "do"
-# files <- list.files("data/_all/do/perc_50/0.25/mature/", full.names = TRUE) # no sig, but mostly negative
+files <- list.files("data/_all/do/perc_50/0.25/mature/", full.names = TRUE) # no sig, but mostly negative
 # files <- list.files("data/_all/do/perc_50/0.5/mature/", full.names = TRUE) # no sig
-# files <- list.files("data/_all/do/perc_25/0.25/mature/", full.names = TRUE) # no sig, but interesting
+files <- list.files("data/_all/do/perc_25/0.25/mature/", full.names = TRUE) # no sig, but interesting
 # files <- list.files("data/_all/do/perc_25/0.5/mature/", full.names = TRUE) #
 
 # files <- list.files("data/_all/do/perc_50/0.25/imm/", full.names = TRUE) # not converging
@@ -43,6 +45,44 @@ climate <- "do"
 
 knots <- 150
 
+model_type <- gsub("/", " ", gsub("//vocc..*", " ", gsub("data/_all/", " ", files[1])))
+
+.d <- purrr::map_dfr(files, readRDS)
+
+# if do remove severe outliers
+.d <- filter(.d, !(start_time == "2014" & ssid == 4))
+.d <- filter(.d, !(start_time == "2016" & ssid == 4))
+
+.d <- .d %>%
+  group_by(species, start_time) %>%
+  mutate(count = n()) %>%
+  filter(count > 30)
+unique(.d$count)
+
+if (climate == "do") {
+  spp_values <- .d %>%
+    group_by(species) %>%
+    select(species, mature, var_1_min) %>%
+    distinct() %>% arrange(-var_1_min)
+}
+
+if (climate == "temperature") {
+  spp_values <- .d %>%
+    group_by(species) %>%
+    select(species, mature, var_1_max) %>%
+    distinct() %>% arrange(var_1_max)
+}
+
+# spp_values
+
+rm(d)
+d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, ssid, X, Y, vect_dist, matchobs)
+d <- mutate(d, source = ifelse(cell_type == "source", 1, 0))
+
+unique(d$start_time)
+
+if (manual_colours) {
+  
 species <- c(
   "Bocaccio", 
   "Pacific Ocean Perch", 
@@ -59,7 +99,6 @@ species <- c(
   "Yellowtail Rockfish",
   "Shortspine Thornyhead"
 )
-
 
 ## To choose specific colours for specific species 
 # RColorBrewer::brewer.pal(n = 10, name = 'Spectral')
@@ -84,48 +123,21 @@ colours <- c(
 )
 
 colour_key <- as_tibble(cbind(species, colours))
-
-model_type <- gsub("/", " ", gsub("//vocc..*", " ", gsub("data/_all/", " ", files[1])))
-
-.d <- purrr::map_dfr(files, readRDS)
-
-# if do remove severe outliers
-.d <- filter(.d, !(start_time == "2014" & ssid == 4))
-.d <- filter(.d, !(start_time == "2016" & ssid == 4))
-
-
-.d <- .d %>%
-  group_by(species, start_time) %>%
-  mutate(count = n()) %>%
-  filter(count > 30)
-unique(.d$count)
-
-if (climate == "do") {
-  spp_values <- .d %>%
-    group_by(species, mature) %>%
-    select(species, var_1_min) %>%
-    distinct()
-}
-
-if (climate == "temperature") {
-  spp_values <- .d %>%
-    group_by(species, mature) %>%
-    select(species, var_1_max) %>%
-    distinct()
-}
-
-# spp_values
-
-rm(d)
-d <- select(.d, species, log_density, after, cell_type, log_depth, icell, start_time, ssid, X, Y, vect_dist, matchobs)
-d <- mutate(d, source = ifelse(cell_type == "source", 1, 0))
-
-unique(d$start_time)
-
 d <- left_join(d, colour_key, by = "species") 
 missing_colours <- d$species[is.na(d$colours)] 
+
 if (length(missing_colours)>0) {
   stop(paste(missing_colours, "need a colour assigned."))
+}
+
+} else {
+  
+N <- length(unique(d$species))
+species <- unique(d$species)
+colours <- gfutilities::rich.colors(n = N, alpha = 1)
+colour_key <- as_tibble(cbind(species, colours))
+d <- left_join(d, colour_key, by = "species") 
+
 }
 
 d <- arrange(d, species)
@@ -291,15 +303,15 @@ r$range
 
 co <- as.data.frame(s[row.names(s) == "b_baci_interaction", ])
 co$species_year <- as.character(unique(as.factor(d$species_year)))
-co <- co %>%
+co <- co %>% 
   mutate(just_species = gsub(" [0-9]+$", "", species_year)) %>%
-  group_by(just_species) %>%
+  group_by(just_species) %>% 
   mutate(mean_baci_int = mean(Estimate)) %>%
   ungroup() %>%
-  arrange(-mean_baci_int, -Estimate) %>%
+  arrange(mean_baci_int, species_year) %>%
   mutate(myorder = seq_len(n()))
 
-p3 <- ggplot(co, aes(forcats::fct_reorder(species_year, myorder), Estimate,
+p3 <- ggplot(co, aes(forcats::fct_reorder(species_year, -myorder), Estimate,
   colour = just_species,
   ymin = Estimate - 2 * `Std. Error`,
   ymax = Estimate + 2 * `Std. Error`
