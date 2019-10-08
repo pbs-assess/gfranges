@@ -61,12 +61,12 @@ fit_mat_ogive_re <- function(dat,
   }
 
   dat <- dat[!duplicated(dat$specimen_id), , drop = FALSE] # critical!
-  dat <- dat %>%
+  dat <- dat %>% 
     select(
       species_common_name,
       year, age, length, weight,
       maturity_code, sex,
-      maturity_convention_desc,
+      maturity_convention_code,
       specimen_id, sample_id, trip_start_date
     )
 
@@ -83,8 +83,9 @@ fit_mat_ogive_re <- function(dat,
     )
   )
 
-  dat <- left_join(dat, mat_df, by = c("sex", "maturity_convention_desc"))
-  dat <- mutate(dat, mature = maturity_code >= mature_at)
+
+  .dat <- left_join(dat, mat_df, by = c("sex", "maturity_convention_code"))
+  dat <- mutate(.dat, mature = maturity_code >= mature_at)
 
   type <- match.arg(type)
   .d <- switch(type,
@@ -98,7 +99,7 @@ fit_mat_ogive_re <- function(dat,
     warning("No data")
     return(NA)
   }
-
+#browser()
   if (sample_id_re) {
     if (year_re) {
       m <- glmmTMB::glmmTMB(mature ~ age_or_length * female + (1 | sample_id) + (1 | year),
@@ -355,12 +356,12 @@ plot_mat_ogive <- function(object,
   labs$sex <- factor(labs$sex, levels = c("F", "M"))
   labs$sex <- factor(labs$sex, levels = c("F", "M"))
 
-
   # add prediction curve
   if (prediction_type != "none") {
 
     # if year is a random effect plot separate facets for each year
-    if ("glmm_re" %in% names(nd_re)) {
+    #if ("glmm_re" %in% names(nd_re)) {
+    if(object$year_re) {
       nd_re$year <- as.factor(nd_re$year)
 
       g <- ggplot(nd_re, aes_string("age_or_length", "glmm_re2", colour = "year"))
