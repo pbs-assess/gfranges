@@ -4,7 +4,7 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Dover Sole"
+    species: "Redbanded Rockfish"
     priors: FALSE # call model that used priors?
     log_temp: TRUE # should temperature be log()
     model_w_do: TRUE
@@ -13,9 +13,9 @@ params:
 ---
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width=11, fig.height=8.5, 
-                      #fig.path=paste0("figs/", spp, "/"),
-                      echo=FALSE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(dpi = 300,
+  fig.width = 5, fig.height = 2.5,
+  echo=FALSE, warning=FALSE, message=FALSE)
 library(dplyr)
 library(ggplot2)
 library(gfplot)
@@ -175,7 +175,7 @@ for (i in seq_len(length(model_list))) {
    do[[i]]$upper_do_25 <- exp(roots25[["upper_threshold"]])
    do[[i]]$x <- exp(do[[i]]$x)
    do_plots[[i]] <- 
-     plot_mountains(do[[i]], variable_label = "Dissolved O2", xlimits = c(0.2, 8)) +
+     plot_mountains(do[[i]], variable_label = "Dissolved O2", xlimits = c(0.2, 8), x_breaks = c(1,2,3,4,5,6,7,8)) +
         ggtitle(paste(species, names(model_list[i]))) +
         geom_vline(xintercept=(do[[i]]$optimal_do), size= 1.2, colour = "darkgrey") + 
         geom_vline(xintercept=(do[[i]]$lower_do_50), linetype="longdash", alpha = 0.75) + 
@@ -249,7 +249,7 @@ for (i in seq_len(length(model_list))) {
    }
    
    temp_plots[[i]] <- 
-     plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(2, 12)) +
+     plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(2, 12), x_breaks = c(3,4,5,6,7,8,9,10,11)) +
         ggtitle(paste(species, names(model_list[i]))) +
         geom_vline(xintercept=td[[i]]$optimal_t, size= 1.2, colour = "darkgrey") + 
         #geom_vline(xintercept=td[[i]]$lower_t_50, linetype="longdash", alpha = 0.75) + 
@@ -688,7 +688,8 @@ all_params <- all_params %>% distinct()
 # # or certain rows need removal
 # all_params <- all_params[-c(#row number#), ] 
 saveRDS(all_params, file = "data/root-values-by-species-by-age.rds")
-all_params
+#spp_params <- all_params[all_params$species==species,]
+glimpse(new_params)
 ```
 
 
