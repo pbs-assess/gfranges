@@ -52,8 +52,8 @@ hist(d_trawl$temperature_c)
 
 d_trawl <- d_trawl[!is.na(d_trawl$depth), ]
 d_trawl <- d_trawl[!is.na(d_trawl$temperature_c), ]
-d_trawl <- d_trawl[!is.na(d_trawl$SST), ]
-d_trawl <- d_trawl[!is.na(d_trawl$meanSST), ]
+#d_trawl <- d_trawl[!is.na(d_trawl$SST), ]
+#d_trawl <- d_trawl[!is.na(d_trawl$meanSST), ]
 d_trawl <- mutate(d_trawl,
   DOY = lubridate::yday(date),
   DOY_scaled = arm::rescale(lubridate::yday(date)),
@@ -63,14 +63,14 @@ d_trawl <- mutate(d_trawl,
   #depth_scaled2 = depth_scaled^2,
   depth_scaled3 = depth_scaled^3,
   shallow = ifelse(depth>35,0,1),
-    deep = ifelse(depth<35,0,1)
+  deep = ifelse(depth<35,0,1)
 )
 # d_trawl[is.na(d_trawl$shallow), ]
 # d_trawl[is.na(d_trawl$SST_scaled), ]
 
 glimpse(d_trawl)
 
-d_trawl <- d_trawl %>% dplyr::filter(year>2003)
+#d_trawl <- d_trawl %>% dplyr::filter(year>2003)
 ```
 
 Explore SST 
@@ -124,48 +124,14 @@ ggplot(d_trawl, aes(log(depth),temperature_c, colour = depth_max)) + geom_point(
 ggplot(d_trawl, aes(DOY, temperature_c, colour = -depth, alpha=0.5)) + geom_point() + facet_wrap(~year) 
 ```
 
-```{r}
-d_trawl1 <- d_trawl %>% filter(ssid == 3)
-spde <- make_spde(d_trawl1$X, d_trawl1$Y, n_knots = 150)
-plot_spde(spde)
-sum(d_trawl1$shallow)
-```
-
-
-```{r}
-d_trawl1$year_scaled <- arm::rescale(d_trawl1$year)
-d_trawl1$x_scaled <- arm::rescale(d_trawl1$X)
-d_trawl1$y_scaled <- arm::rescale(d_trawl1$Y)
-
-m_temp_SST <- sdmTMB(d_trawl1,
-  temperature_c ~ year_scaled + poly(SST_scaled,3)*depth_scaled , #+ SST_scaled*x_scaled + SST_scaled*y_scaled
-  #time_varying = ~ 0 + depth_scaled2,
-  ar1_fields = FALSE, include_spatial = FALSE,
-  time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = FALSE
-)
-
-p_SST <- predict(m_temp_SST)
-
-p_SST$residuals <- residuals(m_temp_SST)
-
-ggplot(p_SST, aes(depth_scaled, residuals)) +
-  geom_point(alpha=0.4) +
-  ylim(-8,8) +
-  geom_smooth()
-
-
-
-```
 
 
 
 ```{r}
 library(gbm)
 
-m <- gbm( temperature_c ~ depth_scaled + X + Y, data = d_trawl1, n.trees = 2000, interaction.depth = 3, shrinkage = 0.02)
-
-m2 <- gbm( temperature_c ~ SST_scaled + depth_scaled + X + Y, data = d_trawl1, n.trees = 2000, interaction.depth = 3, shrinkage = 0.02)
+m <- gbm( temperature_c ~ depth_scaled + X + Y, data = d_trawl, n.trees = 2000, interaction.depth = 3, shrinkage = 0.02)
+m2 <- gbm( temperature_c ~ SST_scaled + depth_scaled + X + Y, data = d_trawl, n.trees = 2000, interaction.depth = 3, shrinkage = 0.02)
 
 plot(m,i.var=2)
 plot(m,i.var=3)
@@ -187,71 +153,6 @@ ggplot(d_trawl, aes(depth_scaled, r)) +
   geom_point(alpha=0.4) +
   ylim(-8,8) +
   geom_smooth()
-```
-
-```{r}
-
-p_SST <- predict(m_temp_SST)
-p <- predict(m_temp)
-#predictions3b <- predict(m_temp3_nosst)
-
-p_SST$residuals <- residuals(m_temp_SST)
-p$residuals <- residuals(m_temp)
-
-# nd <- data.frame(sst_resid = predictions3$data$residuals, nosst_resid = predictions3b$data$residuals, shallow = d_trawl$shallow, depth = d_trawl$depth)
-# 
-# ggplot(filter(nd, shallow == 1), aes(nosst_resid,sst_resid, colour = as.factor(shallow))) + 
-#   geom_point() + geom_abline(intercept = 0, slope = 1)
-```
-Residual plots:
-```{r}
-ggplot(p_SST, aes(est, residuals)) +
-  geom_point() +
-  geom_smooth() +
-  ylim(-8,8) +
-  xlim(2,15) +
-  facet_wrap(~year)
-ggplot(p, aes(est, residuals)) +
-  geom_point() +
-  geom_smooth() +
-  ylim(-8,8) +
-   xlim(2,15) +
-  facet_wrap(~year)
-```
-
-```{r}
-ggplot(p_SST, aes(depth_scaled, residuals)) +
-  geom_point() +
-  geom_smooth() +
-  ylim(-7,8) +
-  facet_wrap(~year)
-ggplot(p, aes(depth_scaled, residuals)) +
-  geom_point() +
-  geom_smooth() +
-  ylim(-7,8) +
-  facet_wrap(~year)
-```
-
-```{r}
-p_SST$depth_mean <- exp(p_SST$depth_scaled*0.66+5)
-glimpse(d_trawl)
-ggplot(d_trawl, aes(depth_scaled, r)) +
-  geom_point(alpha=0.4) +
-  ylim(-8,8) +
-  geom_smooth()
-```
-
-
-```{r}
-p1 <- ggplot(p_SST, aes(depth_scaled, residuals)) +
-  geom_point() +
-  ylim(-8,8) +
-  geom_smooth()
-p2 <- ggplot(p, aes(depth_scaled, residuals)) +
-  geom_point() +
-  ylim(-8,8) +
-  geom_smooth()
-gridExtra::grid.arrange(p1, p2, nrow = 2)
 ```
 
 ### Functions for model exploration:
@@ -545,21 +446,10 @@ write.csv(all_cv_loglik, file = "all_cv_loglik.csv")
 ```
 
 Current top model
-```{r}
-plan(multiprocess)
-temp_rw <- sdmTMB_cv(
-  data = d_trawl, n_knots = 130, x = "X", y = "Y", k_folds = 10,
-  formula = temperature_c ~ 0 + as.factor(year) + SST_scaled,
-  time_varying = ~ 0 + depth_scaled + depth_scaled2,
-  time = "year", family = gaussian(link = "identity"),
-  ar1_fields = FALSE, include_spatial = TRUE, seed = 999
-)
-sum(temp_rw$sum_loglik)
-```
 
 
 ```{r}
-spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 220)
+spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 400)
 plot_spde(spde)
 ```
 
@@ -568,16 +458,25 @@ plot_spde(spde)
 m_temp_rw <- sdmTMB(d_trawl,
   temperature_c ~ 0 + as.factor(year),
   time_varying = ~ 0 + depth_scaled + depth_scaled2,
-  ar1_fields = FALSE, include_spatial = TRUE,
+  ar1_fields = TRUE, include_spatial = TRUE, # changed AR1_field to true
   time = "year", spde = spde, family = gaussian(link = "identity"),
-  silent = TRUE
+  silent = FALSE
 )
 
+saveRDS(m_temp_rw, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-400kn.rds")))
+
+```
+
+
+```{r}
 predictions_rw <- predict(m_temp_rw)
 predictions_rw$residuals <- residuals(m_temp_rw)
 cor(predictions_rw$est, predictions_rw$temperature_c)^2 #
 # aic(m_temp3_rw)
+
 ```
+
+
 
 Residual plots:
 ```{r}
@@ -602,9 +501,9 @@ ggplot(predictions_rw, aes(depth_scaled, residuals)) +
 
 Does a fixed interaction with SST_scaled do any better?
 
-```{r}
+```{r eval=FALSE}
 m_temp3 <- sdmTMB(d_trawl,
-  temperature_c ~ 0 + as.factor(year) + SST_scaled*depth_scaled + SST_scaled*depth_scaled2 + SST_scaled*depth_scaled3,
+  temperature_c ~ 0 + as.factor(year) + SST_scaled*depth_scaled + SST_scaled*depth_scaled2 ,
   ar1_fields = FALSE, include_spatial = TRUE,
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = TRUE
@@ -615,21 +514,21 @@ predictions3$residuals <- residuals(m_temp3)
 cor(predictions3$est, predictions3$temperature_c)^2 #
 ```
 
-```{r}
+```{r eval=FALSE}
 ggplot(predictions3, aes(est, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
 ```
 
-```{r}
+```{r eval=FALSE}
 ggplot(predictions3, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth() +
   facet_wrap(~year)
 ```
 
-```{r}
+```{r eval=FALSE}
 ggplot(predictions3, aes(depth_scaled, residuals)) +
   geom_point() +
   geom_smooth()
@@ -643,7 +542,13 @@ ggplot(predictions3, aes(depth_scaled, residuals)) +
 ## Plotting predictions from saved temperature model
 
 ```{r}
-p_nd <- readRDS("../VOCC/data/predicted_temp_allyears.rds")
+nd_all <- readRDS(paste0("../VOCC/data/nd_all_synoptic.rds")) %>% filter(year<2019)
+unique(nd_all$year)
+glimpse(nd_all)
+predict_temp <- predict(m_temp_rw, newdata = nd_all)
+saveRDS(predict_temp, file = "../VOCC/data/predicted_temp_allyears_revised")
+p_nd <- predict_temp
+#p_nd <- readRDS("../VOCC/data/predicted_temp_allyears.rds")
 # View(p_nd)
 ```
 
@@ -717,9 +622,9 @@ plot_map_raster(p_nd, "est_rf") +
 
 omega_s_all <- plot_map_raster(p_nd, "omega_s") +
   ggtitle("Spatial random effects only") +
-   scale_fill_gradient2( low = "Steel Blue 4",
- high = "Red 3", limits = c(-1.5,2.5))+
-  labs(fill = "") + 
+    scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1.5,1.5),
+    na.value = "red") +  labs(fill = "") + 
 gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = c(.82,.75))
 
 omega_s_all
@@ -728,9 +633,9 @@ omega_s_all
 ```{r}
  plot_map_raster(p_nd, "epsilon_st") +
   ggtitle("Spatiotemporal random effects only") +
-  facet_wrap(~year) +
-  scale_fill_gradient2( low = "Steel Blue 4",
- high = "Red 3")
+  facet_wrap(~year) +   scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1.5,1.5),
+    na.value = "red")
 ```
 
 ```{r}
@@ -738,10 +643,8 @@ p_nd1 <- p_nd %>% filter(ssid!=16) %>% filter(ssid!=4)
 st_1n3 <- plot_map_raster(p_nd1, "epsilon_st") +
   ggtitle("Spatiotemporal random effects") +
   facet_wrap(~year) +
-  scale_fill_gradient2(
-    low = "Steel Blue 4",
-    high = "Red 3", 
-    limits = c(-1,1), 
+   scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1.5,1.5),
     na.value = "red") +
   labs(fill = "epsilon") + 
   gfplot::theme_pbs() + 
@@ -756,8 +659,9 @@ p_nd4 <- p_nd %>% filter(ssid==4) #%>% filter(ssid!=4)
 st_4 <- plot_map_raster(p_nd4, "epsilon_st") +
   #ggtitle(" ") +
   facet_wrap(~year) +
-  scale_fill_gradient2( low = "Steel Blue 4",
- high = "Red 3", limits = c(-1,1)) +
+     scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1.5,1.5),
+    na.value = "red") +
           labs(fill = " ") + 
 gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = c(.85,.15))
 st_4
@@ -772,8 +676,9 @@ p_nd16 <- p_nd %>% filter(ssid==16) #%>% filter(ssid!=4)
 st_16 <- plot_map_raster(p_nd16, "epsilon_st") +
   #ggtitle(" ") +
   facet_wrap(~year) +
-  scale_fill_gradient2( low = "Steel Blue 4",
- high = "Red 3", limits = c(-1,1)) +
+   scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1.5,1.5),
+    na.value = "red") +
   xlim(65,345) +
     ylim(5800,6100) +
 gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = "none")
