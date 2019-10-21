@@ -4,10 +4,12 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Copper Rockfish"
+    species: "Petrale Sole"
     region: "All synoptic surveys"
+    knots: 600
     covariates: "+trawled+as.factor(ssid)" # additional fixed-effect covariates
     covs: "-trawled-ssid" # covariate string used to name model rds 
+    update_model: TRUE
 ---
 
 ```{r global_options, include=FALSE}
@@ -27,12 +29,14 @@ species <- params$species
 region <- params$region
 covariates <- params$covariates
 covs <- params$covs
+knots <- params$knots
 priors <- FALSE
 
 paste("region =", region)
 paste("model covariates =", covariates)
 paste("model label =", covs)
 paste("priors =", priors)
+paste("knots =", knots)
 ```
 
 ```{r, message=FALSE, warning=FALSE}
@@ -87,7 +91,8 @@ data <- gfranges::scale_predictors(data, # predictors = c(quo(depth)))
 )
 data <- data %>%
   mutate(depth = raw_depth) %>%
-  filter(ssid %in% model_ssid)
+  filter(ssid %in% model_ssid) %>% 
+  filter(year < 2019)
 ```
 
 Make mesh
@@ -105,7 +110,7 @@ if (region == "West Coast Haida Gwaii") {
 }
 
 if (region == "All synoptic surveys") {
-  spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 500)
+  spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = knots)
 }
 
 sdmTMB::plot_spde(spde)
@@ -113,7 +118,8 @@ sdmTMB::plot_spde(spde)
 
 
 Run climate independent sdmTMB model
-```{r}
+```{r }
+if (params$update_model) {
 tictoc::tic()
 if (any(names(data) == "adult_density")) {
   adult_formula <- as.formula(paste(
@@ -149,7 +155,7 @@ if (any(names(data) == "adult_density")) {
     time_varying = ~ 0 + depth_scaled + depth_scaled2, #+ trawled
     time = "year", spde = spde,
     family = tweedie(link = "log"),
-    ar1_fields = FALSE,
+    ar1_fields = TRUE, # changed to TRUE on Oct 17 2019
     include_spatial = TRUE,
     enable_priors = priors,
     control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
@@ -185,11 +191,12 @@ if (any(names(data) == "adult_density")) {
   ))
 }
 tictoc::toc()
+}
 ```
 
 
 Make prediction grids for all surveys and years, if not done before.
-```{r, message=FALSE, warning=FALSE}
+```{r, eval=FALSE, message=FALSE, warning=FALSE}
 try(nd_all <- readRDS("data/nd_all_synoptic.rds"))
 
 if (!exists("nd_all")) {
@@ -206,6 +213,8 @@ if (!exists("nd_all")) {
   ssid <- 1
   survey_abbrev <- "SYN QCS"
   nd_1 <- spatiotemporal_grid(dat, ssid, survey_abbrev, dummy_year)
+  
+  
   unique(nd_1$year)
 
   ssid <- 3
@@ -228,7 +237,7 @@ if (!exists("nd_all")) {
 
   newcov <- readRDS("data/new_covariates.rds") %>% dplyr::select(X, Y, trawled, muddy, rocky, mixed, any_rock)
   nd_all <- left_join(nd_all, newcov, by = c("X", "Y"))
-
+  nd_all$trawled[is.na(nd_all$trawled)] <- 0 # correct missing values for small area on edge of QCS grid
   # nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
 
   saveRDS(nd_all, file = paste0("data/nd_all_synoptic.rds"))
@@ -264,18 +273,29 @@ if (any(names(data) == "adult_density")) {
   imm_biomass <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
+  
+    nd <- nd_all %>%
+    filter(ssid %in% model_ssid) %>%
+    filter(year %in% unique(imm_biomass$data$year))
+  nd <- na.omit(nd)
+  nd$year <- as.integer(nd$year)
+  
   imm_predictions <- predict(imm_biomass, newdata = nd)
   saveRDS(imm_predictions, file = paste0("data/", spp,
     "/predictions-", spp, covs, "-", ssid_string, "-imm-biomass-prior-", priors, ".rds"))
   
 } else {
+  
+    total_biomass <- readRDS(paste0("data/", spp,
+      "/model-total-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+    
     nd_all <- readRDS(paste0("data/nd_all_synoptic.rds"))
-    nd <- nd_all %>% filter(ssid %in% model_ssid)
+    nd <- nd_all %>% 
+      filter(ssid %in% model_ssid) %>%
+      filter(year %in% unique(total_biomass$data$year))
     nd <- na.omit(nd)
     nd$year <- as.integer(nd$year)
 
-    total_biomass <- readRDS(paste0("data/", spp,
-      "/model-total-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
     predictions <- predict(total_biomass, newdata = nd)
     saveRDS(predictions, file = paste0("data/", spp,
       "/predictions-", spp, covs, "-", ssid_string, "-total-biomass-prior-", priors, ".rds"))

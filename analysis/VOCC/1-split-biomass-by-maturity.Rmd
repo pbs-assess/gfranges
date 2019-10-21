@@ -4,7 +4,7 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Curlfin Sole"
+    species: "Pacific Cod"
     region: "All synoptic surveys"
     #region: "Both odd year surveys"
 ---
