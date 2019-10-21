@@ -40,7 +40,7 @@ plot_vocc <- function(df,
                       fill_label = NULL,
                       raster_alpha = 1,
                       vec_aes = "distance",
-                      arrowhead_size = 0.015,
+                      arrowhead_size = 0.005,
                       vec_lwd_range = c(0.7, 0.8),
                       vec_alpha = 1,
                       max_vec_plotted = max(df$distance),
@@ -50,6 +50,7 @@ plot_vocc <- function(df,
                       low_fill = "Steel Blue 4",
                       mid_fill = "white",
                       high_fill = "Red 3",
+                      na_colour = "red",
                       vec_col = "grey37",
                       coast = NULL,
                       contours = NULL,
@@ -118,7 +119,7 @@ plot_vocc <- function(df,
       gvocc <- gvocc +
         geom_tile(aes(fill = fill), alpha = raster_alpha) +
         scale_fill_gradient2(
-          low = low_fill, mid = mid_fill, high = high_fill,
+          low = low_fill, mid = mid_fill, high = high_fill, na.value = na_colour,
           trans = transform_col, breaks = breaks, labels = labels,
           limits = raster_limits
         ) +
