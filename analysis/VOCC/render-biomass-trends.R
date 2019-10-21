@@ -3,26 +3,26 @@ setwd(here::here("/analysis/VOCC"))
 env <- new.env() #parent = baseenv()
 
 list_species <- c(
+  #"North Pacific Spiny Dogfish",
+  #"Spotted Ratfish",
+  # "Pacific Tomcod",
   # "Walleye Pollock",
-  # "Pacific Cod",
+   "Pacific Cod",
   # "Sablefish",
   # "Lingcod",
   # "Pacific Hake",
-  # "North Pacific Spiny Dogfish",
-  # "Spotted Ratfish",
-  # "Pacific Tomcod",
   # "Rosethorn Rockfish",
   # "Redstripe Rockfish",
   # "Yellowmouth Rockfish",
-  # "Harlequin Rockfish"
+  # "Harlequin Rockfish",
   # "Bocaccio", # winter-birthing, overfished
   # "Canary Rockfish", # schooling, winter-birthing
   # "Copper Rockfish", # small sample
   # "Darkblotched Rockfish",
   # "Greenstriped Rockfish",
-  # "Pacific Ocean Perch", # schooling
+   "Pacific Ocean Perch", # schooling
   # "Quillback Rockfish",
-  # "Redbanded Rockfish",
+   "Redbanded Rockfish",
   # "Rougheye/Blackspotted Rockfish Complex",
   # "Sharpchin Rockfish",
   # "Shortbelly Rockfish", # small sample
@@ -33,26 +33,21 @@ list_species <- c(
   # "Yelloweye Rockfish", # summer-birthing, overfished,
   # "Longspine Thornyhead",
   # "Shortspine Thornyhead",
-  #"Arrowtooth Flounder",
-  "Rex Sole",
-  "Petrale Sole",
-  "English Sole",
-  "Dover Sole",
-  "Southern Rock Sole",
-  "Flathead Sole",
-  "Curlfin Sole",
-  "Sand Sole",
-  "Slender Sole",
-  "Pacific Sanddab",
+  # "Arrowtooth Flounder",
+  # "Rex Sole",
+  # "Petrale Sole",
+  # "English Sole",
+  # "Dover Sole",
+  # "Southern Rock Sole",
+  # "Flathead Sole",
+  # "Curlfin Sole",
+  # "Sand Sole",
+ # "Slender Sole",
+ # "Pacific Sanddab",
   "Pacific Halibut"
 )
 list_regions <- c("All synoptic surveys")
 
-# list_regions <- c(
-#   "West Coast Vancouver Island",
-#   "West Coast Haida Gwaii",
-#   "both odd year surveys"
-# )
 
 # dir.create(file.path("html/biomass-by-depth"))
 
@@ -65,7 +60,9 @@ for (r_h in seq_along(list_regions)) {
             species = list_species[spp_i],
             region = list_regions[r_h],
             covariates = "+trawled+as.factor(ssid)", # additional non-climate variables
-            covs = "-trawled-ssid" # string describing model covariates
+            covs = "-trawled-ssid", # string describing model covariates
+            knots = 600,
+            update_model = FALSE
           ),
           output_file = paste0("html/biomass-by-depth/biomass-by-depth-", spp, ".html")
         )
@@ -74,6 +71,14 @@ for (r_h in seq_along(list_regions)) {
 }
 
 #dir.create(file.path("html/biomass-trends"))
+
+list_regions <- c(
+   "West Coast Vancouver Island",
+#   "West Coast Haida Gwaii",
+   "both odd year surveys"
+#   "All synoptic surveys"
+)
+
 
 for (r_h in seq_along(list_regions)) {
   for (spp_i in seq_along(list_species)) {
@@ -86,7 +91,7 @@ for (r_h in seq_along(list_regions)) {
           region = list_regions[r_h],
           covs = covs
         ),
-        output_file = paste0("html/biomass-trends/biomass-trends-", spp, "-", covs, ".html")
+        output_file = paste0("html/biomass-trends/biomass-trends-", spp, covs, ".html")
       )
     })
   }

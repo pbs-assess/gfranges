@@ -48,6 +48,21 @@ list_species <- c(
   "Pacific Halibut"
 )
 
+list_species <- c(
+  "Pacific Cod",
+  # "Lingcod",
+  "Pacific Ocean Perch", # schooling
+  # "Quillback Rockfish",
+  "Redbanded Rockfish",
+  #"Rougheye/Blackspotted Rockfish Complex",
+  # "Silvergray Rockfish",
+  # "Splitnose Rockfish",
+  # "Petrale Sole",
+  # "Arrowtooth Flounder",
+  "Pacific Halibut"
+)
+
+
 list_regions <- c("All synoptic surveys")
 
 # list_regions <- c(
@@ -58,61 +73,61 @@ list_regions <- c("All synoptic surveys")
 
 #dir.create(file.path("html/biomass-by-climate"))
 
-# raw temperature alone for all years
-for (r_h in seq_along(list_regions)) {
-  for (spp_i in seq_along(list_species)) {
-    spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
-    covs <- "-all-temp-trawled" # string describing model covariates
-    priors <- FALSE # call model that used priors?
-    try({
-      rmarkdown::render("3-climate-models-fixed-both.Rmd",
-        params = list(
-          species = list_species[spp_i],
-          region = list_regions[r_h],
-          log_temp = FALSE, # must match covs
-          model_w_do = FALSE,
-          priors = priors, 
-          knots = 800,
-          covariates = "+trawled", # additional non-climate variables
-          covs = covs 
-        ),
-        output_file = paste0("html/biomass-by-climate/biomass-by-climate-", spp, covs, "-priors-", priors,".html"),
-        envir = env
-      )
-    })
-  }
-}
+# # raw temperature alone for all years
+# for (r_h in seq_along(list_regions)) {
+#   for (spp_i in seq_along(list_species)) {
+#     spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+#     covs <- "-all-temp-trawled" # string describing model covariates
+#     priors <- FALSE # call model that used priors?
+#     try({
+#       rmarkdown::render("3-climate-models-fixed-both.Rmd",
+#         params = list(
+#           species = list_species[spp_i],
+#           region = list_regions[r_h],
+#           log_temp = FALSE, # must match covs
+#           model_w_do = FALSE,
+#           priors = priors, 
+#           knots = 600,
+#           covariates = "+trawled", # additional non-climate variables
+#           covs = covs 
+#         ),
+#         output_file = paste0("html/biomass-by-climate/biomass-by-climate-", spp, covs, "-priors-", priors,".html"),
+#         envir = env
+#       )
+#     })
+#   }
+# }
 
-# log(temperature) alone for all years
-for (r_h in seq_along(list_regions)) {
-  for (spp_i in seq_along(list_species)) {
-    spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
-    covs <- "-log-temp-trawled" # string describing model covariates
-    priors <- FALSE # call model that used priors?
-    try({
-      rmarkdown::render("3-climate-models-fixed-both.Rmd",
-        params = list(
-          species = list_species[spp_i],
-          region = list_regions[r_h],
-          priors = priors, 
-          log_temp = TRUE, # must match covs
-          model_w_do = FALSE,
-          covariates = "+trawled", # additional non-climate variables
-          covs = covs 
-        ),
-        output_file = paste0("html/biomass-by-climate/biomass-by-climate-", spp, covs, "-priors-", priors,".html"),
-        envir = env
-      )
-    })
-  }
-}
+# # log(temperature) alone for all years
+# for (r_h in seq_along(list_regions)) {
+#   for (spp_i in seq_along(list_species)) {
+#     spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+#     covs <- "-log-temp-trawled" # string describing model covariates
+#     priors <- FALSE # call model that used priors?
+#     try({
+#       rmarkdown::render("3-climate-models-fixed-both.Rmd",
+#         params = list(
+#           species = list_species[spp_i],
+#           region = list_regions[r_h],
+#           priors = priors, 
+#           log_temp = TRUE, # must match covs
+#           model_w_do = FALSE,
+#           covariates = "+trawled", # additional non-climate variables
+#           covs = covs 
+#         ),
+#         output_file = paste0("html/biomass-by-climate/biomass-by-climate-", spp, covs, "-priors-", priors,".html"),
+#         envir = env
+#       )
+#     })
+#   }
+# }
 
 
-# log(temperature) 
+# log(temperature) and log(DO)
 for (r_h in seq_along(list_regions)) {
     for (spp_i in seq_along(list_species)) {
     spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
-    covs <- "-log-both-trawled" # string describing model covariates
+    covs <- "-log-both-AR1" # string describing model covariates
     priors <- FALSE # call model that used priors?
     try({
       rmarkdown::render("3-climate-models-fixed-both.Rmd",
@@ -120,6 +135,7 @@ for (r_h in seq_along(list_regions)) {
           species = list_species[spp_i],
           region = list_regions[r_h],
           priors = priors, 
+          knots = 600,
           log_temp = TRUE, # must match covs
           covariates = "+trawled", # additional non-climate variables
           covs = covs 
@@ -240,6 +256,28 @@ for (spp_i in seq_along(list_species)) {
     )
   })
 }
+
+dir.create(file.path("html/threshold-plots/all-all-temp-trawled"))
+
+for (spp_i in seq_along(list_species)) {
+  spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+  covs <- "-all-temp-trawled"
+  priors <- FALSE # call model that used priors?
+  try({
+    rmarkdown::render("3-fixed-var-response-plots.Rmd",
+      params = list(
+        species = list_species[spp_i],
+        priors = priors, 
+        log_temp = FALSE, 
+        model_w_do = FALSE,
+        covs = covs, 
+        cov_number = 2 # how many climate covariates 
+      ),
+      output_file = paste0("html/threshold-plots/all", covs, "/threshold-plots-", spp, covs, "-priors-", priors, ".html")
+    )
+  })
+}
+
 
 # # Species run so far...
 # species <- "Arrowtooth Flounder" # temp good, not DO, imm moving deeper?
