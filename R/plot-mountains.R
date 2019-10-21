@@ -4,10 +4,11 @@
 #' @param time_varying Logical for if the parameter of interest is time-varying
 #' @param variable_label Descriptive label for parameter "x"
 #' @param xlimits X-axis limits. Default is c(0, max(dat$x)).
+#' @param x_breaks Give breaks. Default is the ggplot default.
 #'
 #' @export
 #'
-plot_mountains <- function(dat, time_varying = TRUE, variable_label = "Depth", xlimits = c(0, max(dat$x))) {
+plot_mountains <- function(dat, time_varying = TRUE, variable_label = "Depth", xlimits = c(0, max(dat$x)), x_breaks = waiver()) {
 
   if (time_varying) {
     # mountain_scaler <- max(dat$y_hat)  
@@ -33,7 +34,7 @@ plot_mountains <- function(dat, time_varying = TRUE, variable_label = "Depth", x
       geom_vline(aes_string(xintercept = "xintercept", group = "year", colour = "year"), linetype =2) +
       scale_y_continuous(limits = c(0, ymaximum*10000 )) +
       #scale_y_continuous(limits = c(0, median(dat$y_hat*100)*20)) +
-      scale_x_continuous(expand = c(0,0), limits = xlimits) +
+      scale_x_continuous(expand = c(0,0), limits = xlimits, breaks = x_breaks) +
       xlab(variable_label) +
       scale_color_viridis_d(option = "C") +
       scale_fill_viridis_d(option = "C") +
