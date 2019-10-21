@@ -90,7 +90,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
     }
 
     if (min(levels_per_year) < 3) {
-      m <- fit_mat_ogive_re(fish, type = "length", sample_id_re = FALSE, year_re = FALSE)
+      m <- fit_mat_ogive_re(fish, type = "length", sample_id_re = TRUE, year_re = FALSE)
       f_fish$threshold <- m$mat_perc$f.p0.5
       m_fish$threshold <- m$mat_perc$m.p0.5
     } else {
@@ -153,7 +153,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
       mutate(adult_density = density * mass_ratio_mature, imm_density = density * (1 - mass_ratio_mature))
 
     if (plot) {
-      try(maturity_plot <- gfranges::plot_mat_ogive(m) +
+      try(maturity_plot <- plot_mat_ogive(m) +
         ggplot2::ggtitle(paste("Length at maturity for", species, "surveys", ssid_string, "")))
 
       try(mass_plot <- ggplot(fish_maturity, aes(length, new_mass, colour = as.factor(sex))) +
