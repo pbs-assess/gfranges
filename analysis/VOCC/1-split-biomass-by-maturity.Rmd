@@ -4,7 +4,7 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Pacific Cod"
+    species: "Redbanded Rockfish"
     region: "All synoptic surveys"
     #region: "Both odd year surveys"
 ---
@@ -75,10 +75,16 @@ if (!exists("biomass")) {
   survey_sets <- readRDS(paste0("raw/event-data-", spp, ""))
   fish <- readRDS(paste0("raw/bio-data-", spp, ""))
   bath <- readRDS("data/bathymetry-data")
+  
   # for POP: exclude sample with unusually large fish 
   # sizes are impossible given recorded catch weight
   # fish <- fish[fish$fishing_event_id!=1506954,]
-
+  
+  # for Redbanded: 1 fish found at too shallow a depth... 
+  # probably leftover in net?
+  # survey_sets <- survey_sets[survey_sets$fishing_event_id!=2536031,] 
+  # fish <- fish[fish$fishing_event_id!=2536031,] 
+  
  try({ 
    maturity <- split_catch_maturity(survey_sets, fish, bath,
     survey = survey,
