@@ -5,7 +5,7 @@
 \title{Predicted curves for parameters in sdmTMB models}
 \usage{
 plot_mountains(dat, time_varying = TRUE, variable_label = "Depth",
-  xlimits = c(0, max(dat$x)))
+  xlimits = c(0, max(dat$x)), x_breaks = waiver())
 }
 \arguments{
 \item{dat}{Dataframe of density estimates containing x, y_hat, and year}
@@ -15,6 +15,8 @@ plot_mountains(dat, time_varying = TRUE, variable_label = "Depth",
 \item{variable_label}{Descriptive label for parameter "x"}
 
 \item{xlimits}{X-axis limits. Default is c(0, max(dat$x)).}
+
+\item{x_breaks}{Give breaks. Default is the ggplot default.}
 }
 \description{
 Predicted curves for parameters in sdmTMB models

@@ -5,8 +5,10 @@
 \title{Raster map with year facets}
 \usage{
 plot_facet_map(df, column = "est", X = "X", Y = "Y",
-  viridis_option = "C", transform_col = no_trans,
-  raster_limits = NULL, legend_position = "right")
+  viridis_option = "C", white_zero = FALSE,
+  low_fill = "Steel Blue 4", mid_fill = "white", high_fill = "Red 3",
+  na_colour = "red", transform_col = no_trans, raster_limits = NULL,
+  legend_position = "right")
 }
 \arguments{
 \item{df}{Dataframe.}

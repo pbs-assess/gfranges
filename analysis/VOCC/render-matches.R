@@ -92,7 +92,7 @@ list_regions <- c(
   "both odd year surveys"
 )
 
-ages <- c("mature", "imm")
+ages <- c("mature") # , "imm"
 
 render_matches <- function(climate, biomass_threshold, change_threshold){
  for (a in seq_along(ages)) {
@@ -124,6 +124,8 @@ render_matches <- function(climate, biomass_threshold, change_threshold){
 
 ## DO matches
 render_matches(climate = "do", biomass_threshold = "50", change_threshold = 0.25)
+
+
 render_matches(climate = "do", biomass_threshold = "50", change_threshold = 0.5)
 #render_matches(climate = "do", biomass_threshold = "25", change_threshold = 0.25)
 #render_matches(climate = "do", biomass_threshold = "25", change_threshold = 0.5)

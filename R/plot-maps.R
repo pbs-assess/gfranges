@@ -16,7 +16,7 @@
 #' @param high_fill Colour of positive values if raster values span zero.
 #' @param vec_col Colour of vectors.
 #' @param coast Coast polygons where (x = "X", y = "Y", group = "PID").
-#'    If TRUE, will attempt to create them for xy values in df. Will not include if FALSE. 
+#'    If TRUE, will attempt to create them for xy values in df. Will not include if FALSE.
 #' @param contours Polygons of contour lines where (x = "X", y = "Y", group = "paste(PID, SID)").
 #'    If TRUE, will attempt to create bathymetry layer for xy values in df using gfplot.
 #' @param arrowhead_size Changes head size for custom geom_quiver function.
@@ -32,8 +32,8 @@
 #' @param raster_limits Range of values to plot; those in excess will be red. Default of "NULL" plots full range.
 #' @param legend_position Vector of coordinates for legend placement. Or "none" to remove legend.
 #' @param raster_cell_size Raster cell width. Used to centre NA_label.
-#' @param na_colour 
-#' @param theme 
+#' @param na_colour
+#' @param theme
 #'
 #' @export
 #'
@@ -64,16 +64,15 @@ plot_vocc <- function(df,
                       raster_cell_size = 2,
                       legend_position = c(0.15, 0.25),
                       theme = "PBS") {
-
   if (!is.null(vec_aes)) {
-  # order so smaller vectors are on top?
-  df <- df[order(df$distance), ]
-  df[df$distance < min_vec_plotted, ]$target_X <- NA
-  df[df$distance < min_vec_plotted, ]$target_Y <- NA
-  if (max(df$distance) > max_vec_plotted) {
-    df[df$distance > max_vec_plotted, ]$target_X <- NA
-    df[df$distance > max_vec_plotted, ]$target_Y <- NA
-  }
+    # order so smaller vectors are on top?
+    df <- df[order(df$distance), ]
+    df[df$distance < min_vec_plotted, ]$target_X <- NA
+    df[df$distance < min_vec_plotted, ]$target_Y <- NA
+    if (max(df$distance) > max_vec_plotted) {
+      df[df$distance > max_vec_plotted, ]$target_X <- NA
+      df[df$distance > max_vec_plotted, ]$target_Y <- NA
+    }
   }
 
   # Set plot boundaries so that dimensions are close to square
@@ -95,7 +94,7 @@ plot_vocc <- function(df,
   if (isFALSE(axis_lables)) {
     gvocc <- ggplot2::ggplot(df, aes(x, y)) +
       coord_fixed(xlim = range(df$x) + buffer_X, ylim = range(df$y) + buffer_Y) +
-      gfplot::theme_pbs() + 
+      gfplot::theme_pbs() +
       theme(axis.title.x = element_blank(), axis.title.y = element_blank())
   } else {
     gvocc <- ggplot2::ggplot(df, aes(x, y)) +
@@ -126,166 +125,169 @@ plot_vocc <- function(df,
           trans = transform_col, breaks = breaks, labels = labels,
           limits = raster_limits
         ) +
-        labs(fill = fill_label)  
-      
+        labs(fill = fill_label)
+
       if (theme == "black") {
-          gvocc <- gvocc +  theme(legend.position = legend_position,
-            legend.background = element_rect(color = NA, fill = "black"),  
-            legend.key = element_rect(color = "white",  fill = "black"),  
-            legend.text = element_text(color = "white"),  
-            legend.title = element_text(color = "white"),  
-            panel.background = element_rect(fill = "black", color  =  NA),  
-            panel.border = element_rect(fill = NA, color = "white"),  
-            plot.background = element_rect(color = "black", fill = "black"))
-        } else {
-          gvocc <- gvocc +  theme(legend.position = legend_position)
-        }
-      
+        gvocc <- gvocc + theme(
+          legend.position = legend_position,
+          legend.background = element_rect(color = NA, fill = "black"),
+          legend.key = element_rect(color = "white", fill = "black"),
+          legend.text = element_text(color = "white"),
+          legend.title = element_text(color = "white"),
+          panel.background = element_rect(fill = "black", color = NA),
+          panel.border = element_rect(fill = NA, color = "white"),
+          plot.background = element_rect(color = "black", fill = "black")
+        )
+      } else {
+        gvocc <- gvocc + theme(legend.position = legend_position)
+      }
     } else {
       gvocc <- gvocc +
         geom_tile(aes(fill = fill), alpha = raster_alpha) +
         scale_fill_viridis_c(
           direction = viridis_dir,
           option = viridis_option, na.value = "red",
-          trans = transform_col, breaks = breaks, labels = labels, 
+          trans = transform_col, breaks = breaks, labels = labels,
           limits = raster_limits
         ) +
-        labs(fill = fill_label) 
-      
+        labs(fill = fill_label)
+
       if (theme == "black") {
-        gvocc <- gvocc +  theme(legend.position = legend_position,
-        legend.background = element_rect(color = NA, fill = "black"),  
-        legend.key = element_rect(color = "white",  fill = "black"),  
-        legend.text = element_text(color = "white"),  
-        legend.title = element_text(color = "white"),  
-        panel.background = element_rect(fill = "black", color  =  NA),  
-        panel.border = element_rect(fill = NA, color = "white"),  
-        plot.background = element_rect(color = "black", fill = "black"))
+        gvocc <- gvocc + theme(
+          legend.position = legend_position,
+          legend.background = element_rect(color = NA, fill = "black"),
+          legend.key = element_rect(color = "white", fill = "black"),
+          legend.text = element_text(color = "white"),
+          legend.title = element_text(color = "white"),
+          panel.background = element_rect(fill = "black", color = NA),
+          panel.border = element_rect(fill = NA, color = "white"),
+          plot.background = element_rect(color = "black", fill = "black")
+        )
       } else {
-        gvocc <- gvocc +  theme(legend.position = legend_position)
-        }
+        gvocc <- gvocc + theme(legend.position = legend_position)
       }
     }
+  }
 
-  
-  if(!isFALSE(contours)) { 
-  #### Add bathymetry ####
-  if (!isTRUE(contours)) {
-  #if (!is.null(contours)) {
-    # add premade contour layers (will all be same colour and must be in utms)
-    gvocc <- gvocc +
-      geom_path(
-        data = contours,
-        aes_string(
-          x = "X", y = "Y",
-          group = "paste(PID, SID)"
-        ),
-        inherit.aes = FALSE, lwd = 0.1, alpha = 0.4, colour = "grey55"
-      )
-  } else {
-    # add bathymetry layer from gfplot
-    try({
-      # convert coordinate data to lat lon
-      df <- df %>%
-        dplyr::mutate(X = x, Y = y) %>%
-        gfplot:::utm2ll(., utm_zone = 9)
 
-      # select bathymetry lines (output in utm) for area defined in lat lon
-      isobath <- gfplot:::load_isobath(
-        range(df$X) + c(-5, 5),
-        range(df$Y) + c(-5, 5),
-        bath = c(100, 200, 300, 400, 500),
-        utm_zone = 9
-      )
-      isobath$PID2 <- as.factor(isobath$PID)
-
-      # add lines to plot
-      # TODO: should functionize so that colours change automatically with contour PID
+  if (!isFALSE(contours)) {
+    #### Add bathymetry ####
+    if (!isTRUE(contours)) {
+      # if (!is.null(contours)) {
+      # add premade contour layers (will all be same colour and must be in utms)
       gvocc <- gvocc +
         geom_path(
-          data = isobath[isobath$PID == 100, ],
+          data = contours,
           aes_string(
             x = "X", y = "Y",
             group = "paste(PID, SID)"
           ),
-          inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey85"
-        ) +
-        geom_path(
-          data = isobath[isobath$PID == 200, ],
-          aes_string(
-            x = "X", y = "Y",
-            group = "paste(PID, SID)"
-          ),
-          inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey70"
-        ) +
-        geom_path(
-          data = isobath[isobath$PID == 300, ],
-          aes_string(
-            x = "X", y = "Y",
-            group = "paste(PID, SID)"
-          ),
-          inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey55"
-        ) +
-        geom_path(
-          data = isobath[isobath$PID == 400, ],
-          aes_string(
-            x = "X", y = "Y",
-            group = "paste(PID, SID)"
-          ),
-          inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey40"
-        ) +
-        geom_path(
-          data = isobath[isobath$PID == 500, ],
-          aes_string(
-            x = "X", y = "Y",
-            group = "paste(PID, SID)"
-          ),
-          inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey30"
+          inherit.aes = FALSE, lwd = 0.1, alpha = 0.4, colour = "grey55"
         )
-      gvocc
-    }, silent = TRUE)
-  }
+    } else {
+      # add bathymetry layer from gfplot
+      try({
+        # convert coordinate data to lat lon
+        df <- df %>%
+          dplyr::mutate(X = x, Y = y) %>%
+          gfplot:::utm2ll(., utm_zone = 9)
+
+        # select bathymetry lines (output in utm) for area defined in lat lon
+        isobath <- gfplot:::load_isobath(
+          range(df$X) + c(-5, 5),
+          range(df$Y) + c(-5, 5),
+          bath = c(100, 200, 300, 400, 500),
+          utm_zone = 9
+        )
+        isobath$PID2 <- as.factor(isobath$PID)
+
+        # add lines to plot
+        # TODO: should functionize so that colours change automatically with contour PID
+        gvocc <- gvocc +
+          geom_path(
+            data = isobath[isobath$PID == 100, ],
+            aes_string(
+              x = "X", y = "Y",
+              group = "paste(PID, SID)"
+            ),
+            inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey85"
+          ) +
+          geom_path(
+            data = isobath[isobath$PID == 200, ],
+            aes_string(
+              x = "X", y = "Y",
+              group = "paste(PID, SID)"
+            ),
+            inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey70"
+          ) +
+          geom_path(
+            data = isobath[isobath$PID == 300, ],
+            aes_string(
+              x = "X", y = "Y",
+              group = "paste(PID, SID)"
+            ),
+            inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey55"
+          ) +
+          geom_path(
+            data = isobath[isobath$PID == 400, ],
+            aes_string(
+              x = "X", y = "Y",
+              group = "paste(PID, SID)"
+            ),
+            inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey40"
+          ) +
+          geom_path(
+            data = isobath[isobath$PID == 500, ],
+            aes_string(
+              x = "X", y = "Y",
+              group = "paste(PID, SID)"
+            ),
+            inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey30"
+          )
+        gvocc
+      }, silent = TRUE)
+    }
   }
 
 
- 
-  if(!isFALSE(coast)) { 
+
+  if (!isFALSE(coast)) {
     #### Add coast ####
     if (!isTRUE(coast)) {
-     # add premade coast polygons layer (must be in utms)
+      # add premade coast polygons layer (must be in utms)
       gvocc <- gvocc +
         geom_polygon(
           data = coast, aes_string(x = "X", y = "Y", group = "PID"),
           fill = "grey87", col = "grey70", lwd = 0.2
         )
     } else {
-    # add coast polygons from gfplot
-    try({
-      # convert coordinate data to lat lon
-      df <- df %>%
-        dplyr::mutate(X = x, Y = y) %>%
-        gfplot:::utm2ll(., utm_zone = 9)
+      # add coast polygons from gfplot
+      try({
+        # convert coordinate data to lat lon
+        df <- df %>%
+          dplyr::mutate(X = x, Y = y) %>%
+          gfplot:::utm2ll(., utm_zone = 9)
 
-      # creates coast lines for area defined in lat lon
-      coast <- gfplot:::load_coastline(
-        range(df$X) + c(-1, 1),
-        range(df$Y) + c(-1, 1),
-        utm_zone = 9
-      )
-
-      # add polygons to plot
-      gvocc <- gvocc +
-        geom_polygon(
-          data = coast, aes_string(x = "X", y = "Y", group = "PID"),
-          fill = "grey87", col = "grey70", lwd = 0.2
+        # creates coast lines for area defined in lat lon
+        coast <- gfplot:::load_coastline(
+          range(df$X) + c(-1, 1),
+          range(df$Y) + c(-1, 1),
+          utm_zone = 9
         )
+
+        # add polygons to plot
+        gvocc <- gvocc +
+          geom_polygon(
+            data = coast, aes_string(x = "X", y = "Y", group = "PID"),
+            fill = "grey87", col = "grey70", lwd = 0.2
+          )
       }, silent = TRUE)
     }
   }
 
   ####  Add arrows indicating target cells ####
   if (!is.null(vec_aes)) {
-    vector <- 0.25 #as.vector(na.omit(df[[vec_aes]]))
+    vector <- 0.25 # as.vector(na.omit(df[[vec_aes]]))
 
     gvocc <- gvocc +
       geom_quiver(aes(x, y,
@@ -305,12 +307,11 @@ plot_vocc <- function(df,
     gvocc <- gvocc +
       guides(colour = "none", size = "none") +
       geom_text(
-        data = df[df$distance > max_vec_plotted, ], 
-        aes(x = x , y = y + raster_cell_size/2), inherit.aes = FALSE,
+        data = df[df$distance > max_vec_plotted, ],
+        aes(x = x, y = y + raster_cell_size / 2), inherit.aes = FALSE,
         size = 2, colour = vec_col,
         alpha = 0.75, label = NA_label
       )
-   
   }
 
   gvocc
@@ -334,7 +335,6 @@ plot_facet_map <- function(df, column = "est",
                            transform_col = no_trans,
                            raster_limits = NULL,
                            legend_position = "right") {
-  
   breaks <- scales::trans_breaks(transform_col[["transform"]],
     transform_col[["inverse"]],
     n = 5
@@ -373,25 +373,25 @@ plot_facet_map <- function(df, column = "est",
     gfplot::theme_pbs() +
     theme(
       axis.title.x = element_blank(), axis.title.y = element_blank(),
-      axis.text.x = element_blank(), axis.text.y = element_blank(), 
+      axis.text.x = element_blank(), axis.text.y = element_blank(),
       axis.ticks = element_blank(),
       legend.position = legend_position, strip.text = element_blank()
     )
 
-  
+
   if (white_zero) {
     gfacet <- gfacet + scale_fill_gradient2(
-        low = low_fill, mid = mid_fill, high = high_fill, na.value = na_colour,
-        trans = transform_col, breaks = breaks, labels = labels,
-        limits = raster_limits
-      ) 
-    } else {
+      low = low_fill, mid = mid_fill, high = high_fill, na.value = na_colour,
+      trans = transform_col, breaks = breaks, labels = labels,
+      limits = raster_limits
+    )
+  } else {
     gfacet <- gfacet + scale_fill_viridis_c(
       option = viridis_option, na.value = na_colour,
       trans = transform_col, breaks = breaks, labels = labels, limits = raster_limits
-    ) 
-    }
-  
+    )
+  }
+
   # convert coordinate data to lat lon
   df <- df %>%
     dplyr::mutate(X = X, Y = Y) %>%

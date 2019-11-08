@@ -75,7 +75,7 @@ dist_based_vocc <- function(start_data,
     }
   }
 
-  #round_fact <- c()
+  # round_fact <- c()
   start <- list()
   end <- list()
   n_variables <- length(variable_names)
@@ -234,7 +234,7 @@ dist_simple_search <- function(data,
         matches_upper[, j] <- e_split[, j] <= u_split[j] + max_thresholds[j]
         matches_lower[, j] <- e_split[, j] >= u_split[j] - min_thresholds[j]
         matches_both[, j] <- matches_upper[, j] & matches_lower[, j]
-        #matches_both[, j] <- vapply(seq_len(nrow(e_split)), function(i)
+        # matches_both[, j] <- vapply(seq_len(nrow(e_split)), function(i)
         #  all(matches_lower[i, j], matches_upper[i, j]), FUN.VALUE = logical(1))
       } else {
         matches_round[, j] <- vapply(seq_len(nrow(e_split)), function(i)
@@ -291,15 +291,15 @@ dist_simple_search <- function(data,
       value_k <- data.frame()
       v <- list()
       for (k in seq_along(variable_names)) {
-        value_k[i,k] <-
+        value_k[i, k] <-
           round(mean(as.numeric(na.omit(txy[, (2 + n_variables + k)])),
             na.rm = TRUE
           ), digits = 2)
-  
+
         if (k == 1) {
-          v[[i]] <- paste(as.vector(value_k[[i,k]]))
+          v[[i]] <- paste(as.vector(value_k[[i, k]]))
         } else {
-          v[[i]] <- paste(v[[i]], as.vector(value_k[[i,k]]))
+          v[[i]] <- paste(v[[i]], as.vector(value_k[[i, k]]))
         }
       }
 

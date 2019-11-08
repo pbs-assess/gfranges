@@ -14,13 +14,13 @@
 #' @export
 #'
 vocc_gradient_calc <- function(data,
-                      layer,
-                      scale_fac = 1,
-                      time_step = "year",
-                      indices = NULL,
-                      divisor = 10,
-                      latlon = FALSE,
-                      quantile_cutoff = 0.05) {
+                               layer,
+                               scale_fac = 1,
+                               time_step = "year",
+                               indices = NULL,
+                               divisor = 10,
+                               latlon = FALSE,
+                               quantile_cutoff = 0.05) {
 
   # # devtools::install_github("seananderson/vocc")
   # # install.package(ggnewscale)
@@ -46,7 +46,7 @@ vocc_gradient_calc <- function(data,
     mnraster_brick <- raster::stackApply(rbrick, indices = indices, fun = mean)
     mnraster <- mnraster_brick[[raster::nlayers(mnraster_brick)]]
   } else {
-    # uses average spatial gradient 
+    # uses average spatial gradient
     mnraster <- raster::calc(rbrick, mean)
   }
   # # library(rgdal)
@@ -85,7 +85,7 @@ vocc_gradient_calc <- function(data,
     dplyr::rename(velocity = layer)
   rgrad_df <- as.data.frame(raster::rasterToPoints(rgrad)) %>%
     dplyr::rename(gradient = layer)
-  
+
   # create ggquiver plots. need dataframe of lon, lat, delta_lon, delta_lat, trend, velocity
   df <- dplyr::left_join(rtrend_df, rmnvalues_df, by = c("x", "y")) %>%
     dplyr::left_join(rgradlat_df, by = c("x", "y")) %>%
@@ -112,13 +112,13 @@ vocc_gradient_calc <- function(data,
 
 #' Create a RasterBrick from gridded predictions
 make_gradient_brick <- function(data,
-                              layer,
-                              scale_fac = 1,
-                              time_step = "year") {
+                                layer,
+                                scale_fac = 1,
+                                time_step = "year") {
   d <- data[order(data[[time_step]]), ]
   time_vec <- d[[time_step]]
   d$var <- d[[layer]]
-  
+
   # raster for each time_step
   rlist <- list()
   for (i in 1:length(unique(d[[time_step]]))) {
@@ -151,7 +151,7 @@ make_gradient_brick <- function(data,
 #' @param mid_col
 #' @param coast
 #' @param isobath
-#' @param raster 
+#' @param raster
 #'
 #' @export
 plot_gradient_vocc <- function(df,
@@ -168,25 +168,25 @@ plot_gradient_vocc <- function(df,
                                isobath = NULL) {
   colour <- df[[vec_col]]
   fill <- df[[raster]]
-  
-  
+
+
   gvocc <- ggplot(df) +
     xlab("UTM") + ylab("UTM") +
     coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
     gfplot::theme_pbs()
-  
-  
-  if(!is.null(raster)) {
+
+
+  if (!is.null(raster)) {
     gvocc <- gvocc +
-      geom_raster(aes(x,y, fill = fill), inherit.aes = FALSE) +
-      scale_fill_gradient2(low = low_col, high = high_col, mid = "white" ) +
-      #scale_fill_viridis_c() +
+      geom_raster(aes(x, y, fill = fill), inherit.aes = FALSE) +
+      scale_fill_gradient2(low = low_col, high = high_col, mid = "white") +
+      # scale_fill_viridis_c() +
       labs(fill = fill_label)
   }
 
   if (!is.null(coast)) {
     gvocc <- gvocc +
-      #ggnewscale::new_scale_fill() +
+      # ggnewscale::new_scale_fill() +
       geom_polygon(
         data = coast, aes_string(x = "X", y = "Y", group = "PID"),
         fill = "grey87", col = "grey70", lwd = 0.2
@@ -196,7 +196,7 @@ plot_gradient_vocc <- function(df,
       df <- df %>%
         dplyr::mutate(X = x, Y = y) %>%
         gfplot:::utm2ll(., utm_zone = 9)
-      
+
       # creates coast lines for area defined in lat lon
       coast <- gfplot:::load_coastline(
         range(df$X) + c(-1, 1),
@@ -204,7 +204,7 @@ plot_gradient_vocc <- function(df,
         utm_zone = 9
       )
       gvocc <- gvocc +
-        #ggnewscale::new_scale_fill() +
+        # ggnewscale::new_scale_fill() +
         geom_polygon(
           data = coast, aes_string(x = "X", y = "Y", group = "PID"),
           fill = "grey87", col = "grey70", lwd = 0.2
@@ -212,21 +212,23 @@ plot_gradient_vocc <- function(df,
       gvocc
     }, silent = TRUE)
   }
-  
-  
-  gvocc <- gvocc + 
+
+
+  gvocc <- gvocc +
     ggquiver::geom_quiver(aes(x, y,
       u = u_velo, v = v_velo,
       colour = colour
     ),
-      vecsize = vecsize,
-      lwd = lwd
+    vecsize = vecsize,
+    lwd = lwd
     ) +
-    #ggnewscale::new_scale_color() +
-    scale_colour_gradient2(trans = fourth_root_power, 
-      low = low_col, high = high_col, mid = mid_col) +
+    # ggnewscale::new_scale_color() +
+    scale_colour_gradient2(
+      trans = fourth_root_power,
+      low = low_col, high = high_col, mid = mid_col
+    ) +
     labs(colour = col_label)
-  
+
   if (!is.null(isobath)) {
     gvocc <- gvocc +
       ggnewscale::new_scale_color() +
@@ -270,8 +272,6 @@ plot_gradient_vocc <- function(df,
     }, silent = TRUE)
   }
 
- 
+
   gvocc
 }
-
-
