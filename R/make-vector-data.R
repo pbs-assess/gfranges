@@ -33,6 +33,7 @@ make_vector_data <- function(data,
                              skip_time = NULL,
                              input_cell_size = 2,
                              scale_fac = 1,
+                             min_dist = input_cell_size*scale_fac/2,
                              time_var = "year",
                              delta_t_total = 10,
                              delta_t_step = 2,
@@ -44,18 +45,15 @@ make_vector_data <- function(data,
                              plus_minus = c(0.5), # default symmetrical thresholds of 1 unit
                              match_logic = NULL) {
   var_number <- length(variable_names)
-  # browser()
+
   # if (!identical(time_steps, length(indices)))
   length_indices <- length(indices)
-
 
   if (isTRUE(var_number == 1)) {
     if (!is.null(ssid)) data <- data[data$ssid %in% ssid, ]
     if (!is.null(start_time)) data <- data %>% dplyr::filter(.data[[time_var]] >= start_time)
     if (!is.null(end_time)) data <- data %>% dplyr::filter(.data[[time_var]] <= end_time)
     if (!is.null(skip_time)) data <- data %>% dplyr::filter(!.data[[time_var]] %in% skip_time)
-
-#browser()
 
     length_time_steps <- length(unique(data[[time_var]]))
 
@@ -113,13 +111,13 @@ make_vector_data <- function(data,
       if (!is.null(end_time)) d <- d %>% dplyr::filter(.data[[time_var]] <= end_time)
       if (!is.null(skip_time)) d <- d %>% dplyr::filter(.data[[time_var]] != skip_time)
       length_time_steps <- length(unique(d[[time_var]]))
-      
+
       if (!isTRUE(length_time_steps == length_indices)) {
         stop("Must have an indice assigned to each unique time step retained in analysis.",
           call. = FALSE
         )
       }
-      
+
       rbrick <- make_raster_brick(d,
         parameter = parameter, time_var = time_var, scale_fac = scale_fac
       )
@@ -138,13 +136,13 @@ make_vector_data <- function(data,
         start_raster[[i]] <- rbrick[[1]]
         end_raster[[i]] <- rbrick[[2]]
       }
-#browser()
+
       start_data[[i]] <- start_raster[[i]]
-      #names(start_data)[[i]] <- paste0("var_", i, "")
+      # names(start_data)[[i]] <- paste0("var_", i, "")
       names(start_data)[[i]] <- parameter
-      
+
       end_data[[i]] <- end_raster[[i]]
-      #names(end_data)[[i]] <- paste0("var_", i, "")
+      # names(end_data)[[i]] <- paste0("var_", i, "")
       names(end_data)[[i]] <- parameter
     }
 
@@ -154,6 +152,7 @@ make_vector_data <- function(data,
     slopedat$y <- y
     slopedat$icell <- icell ####
   }
+  # browser()
   out <- dist_based_vocc(
     start_data = start_data,
     end_data = end_data,
@@ -166,6 +165,7 @@ make_vector_data <- function(data,
     plus_minus = plus_minus,
     match_logic = match_logic,
     cell_size = input_cell_size * scale_fac,
+    min_dist = min_dist, 
     delta_t = delta_t_total,
     raster = TRUE
   )
@@ -177,56 +177,61 @@ make_vector_data <- function(data,
   out
 }
 
-#' Trim VOCC output to only include vectors for cells with specific end conditions 
+#' Trim VOCC output to only include vectors for cells with specific end conditions
 #'
 #' @param data Dataframe created by make-vector-data function
 #' @param variable_names Names of climate variable(s) used in make-vector-data function
 #' @param cell_size Cell size used in make-vector-data function
 #' @param dist_intercept Distance at which model estimates will be calculated.
-#'   Defaults to nearest neighbouring cells 
+#'   Defaults to nearest neighbouring cells
 #' @param lower_change When not c(Inf), cells will be trimmed based on lower_thresholds
 #' @param upper_change When not c(Inf), cells will be trimmed based on upper_thresholds
 #' @param lower_thresholds Default of NULL only allowed when change is Inf
 #' @param upper_thresholds Default of NULL only allowed when change is Inf
 #' @param max_dist Value at which to truncate distances (defaults to no truncation)
+#' @param min_dist Defaults to half cell size. 
 #'
 #' @export
-trim_vector_data <- function(data, variable_names, 
-  lower_change, upper_change, 
-  lower_thresholds = NULL, upper_thresholds = NULL,
-  cell_size = 2, dist_intercept = cell_size, 
-  max_dist = max(data$distance, na.rm = TRUE)
-  ){
-
-  newdata <- list()
-  for (j in seq_along(variable_names)){
-      
-    if (lower_change[j] != Inf) { 
-      newdata[[j]] <- filter(data, 
-        UQ(rlang::sym(paste0(variable_names[j], "_e"))) < lower_thresholds[j] ) 
+trim_vector_data <- function(data, variable_names,
+                             lower_change, upper_change,
+                             lower_thresholds = NULL, upper_thresholds = NULL,
+                             cell_size = 2, dist_intercept = cell_size,
+                             max_dist = max(data$distance, na.rm = TRUE),
+                             min_dist = cell_size/2) {
+  trimdata <- list()
+  for (j in seq_along(variable_names)) {
+    if (lower_change[j] != Inf) {
+      trimdata[[j]] <- filter(
+        data,
+        UQ(rlang::sym(paste0(variable_names[j], "_e"))) < lower_thresholds[j]
+      )
     }
     if (upper_change[j] != Inf) {
-      newdata[[j]] <- filter(data, 
-        UQ(rlang::sym(paste0(variable_names[j], "_e"))) > upper_thresholds[j] ) 
+      trimdata[[j]] <- filter(
+        data,
+        UQ(rlang::sym(paste0(variable_names[j], "_e"))) > upper_thresholds[j]
+      )
     }
-  }  
-  
-  vect_data <- do.call("rbind", newdata) %>% distinct()
-  
+  }
+
+  vect_data <- do.call("rbind", trimdata) %>% distinct()
+
   # remove cells that require no movement
-  vect_data <- filter(vect_data, distance >= cell_size) 
-  
+  vect_data <- filter(vect_data, distance >= cell_size)
+
   # truncate max distance (defaults to no truncation)
   vect_data <- mutate(vect_data, distance = ifelse(distance > max_dist, max_dist, distance))
-  
+
   # set intercept for distance (defaults to be the nearest neighbouring cells)
   vect_data <- mutate(vect_data, distance = (distance - dist_intercept))
-  
-  change_raster <- anti_join(data, vect_data, by = "icell") %>% 
-    mutate(distance = (- dist_intercept), tid = NA, 
-      target_X = NA, target_Y = NA, 
-      target_values = NA, n_targets = 0, 
-      mean_target_X = NA, mean_target_Y = NA)
+
+  change_raster <- anti_join(data, vect_data, by = "icell") %>%
+    mutate(
+      distance = min_dist - dist_intercept, tid = NA,
+      target_X = NA, target_Y = NA,
+      target_values = NA, n_targets = 0,
+      mean_target_X = NA, mean_target_Y = NA
+    )
   trimmed_data <- rbind(vect_data, change_raster)
   trimmed_data
 }

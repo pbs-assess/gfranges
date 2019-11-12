@@ -17,10 +17,12 @@
 #' @param cell_size Cell size in raster or distance to nearest data point.
 #' @param max_dist Distance reported when no analogue found. Default will
 #'  estimate this assuming that both major axes are likely to hold an analogue.
+#' @param min_dist Defaults to half cell size. 
 #' @param delta_t Time difference between starting and target time periods.
 #' @param raster Logical for whether climate data is in raster form.
 #' @param kNN Logical for whether to use kNN search for extra speed
 #'  (but uses rounding, symmetrical thresholds, and only returns 1 target cell per source).
+
 #'
 #' @export
 #'
@@ -36,6 +38,7 @@ dist_based_vocc <- function(start_data,
                             match_logic = NULL, # use c("==","==") to apply fastest rounding based search
                             cell_size = 2, # works best if >/= 1
                             max_dist = NULL,
+                            min_dist = cell_size / 2, 
                             delta_t = 10, # time difference between start and end
                             raster = FALSE,
                             kNN = FALSE) {
@@ -139,7 +142,7 @@ dist_based_vocc <- function(start_data,
   }
 
   dist_tab$distance[dist_tab$distance == Inf] <- max_dist # sets no analogue
-  dist_tab$distance[dist_tab$distance == 0] <- cell_size / 2 # sets zero distance to half cell size
+  dist_tab$distance[dist_tab$distance == 0] <- min_dist # sets zero distance to half cell size
 
   # calculate speed in units of distance by time in same units as `max_dist` and `delta_t`
   dist_tab$speed <- dist_tab$distance / delta_t
