@@ -34,6 +34,7 @@
 #' @param raster_cell_size Raster cell width. Used to centre NA_label.
 #' @param na_colour
 #' @param theme
+#' @param grad_vec_aes
 #'
 #' @export
 #'
@@ -42,6 +43,7 @@ plot_vocc <- function(df,
                       fill_label = NULL,
                       raster_alpha = 1,
                       vec_aes = "distance",
+                      grad_vec_aes = NULL,
                       arrowhead_size = 0.005,
                       vec_lwd_range = c(0.7, 0.8),
                       vec_alpha = 1,
@@ -112,7 +114,6 @@ plot_vocc <- function(df,
       n = 6
     )
 
-
     labels <- function(x) {
       format(x, digits = 2, scientific = FALSE)
     }
@@ -168,7 +169,6 @@ plot_vocc <- function(df,
       }
     }
   }
-
 
   if (!isFALSE(contours)) {
     #### Add bathymetry ####
@@ -249,8 +249,6 @@ plot_vocc <- function(df,
     }
   }
 
-
-
   if (!isFALSE(coast)) {
     #### Add coast ####
     if (!isTRUE(coast)) {
@@ -287,7 +285,7 @@ plot_vocc <- function(df,
 
   ####  Add arrows indicating target cells ####
   if (!is.null(vec_aes)) {
-    vector <- 0.25 # as.vector(na.omit(df[[vec_aes]]))
+    vector <- as.vector(na.omit(df[[vec_aes]]))
 
     gvocc <- gvocc +
       geom_quiver(aes(x, y,
@@ -301,9 +299,7 @@ plot_vocc <- function(df,
       ) +
       scale_size_continuous(range = vec_lwd_range)
 
-
     # add NAs to plot where grid cells have no target cell within the distance range of 'max_vec_plotted'
-
     gvocc <- gvocc +
       guides(colour = "none", size = "none") +
       geom_text(
@@ -312,6 +308,22 @@ plot_vocc <- function(df,
         size = 2, colour = vec_col,
         alpha = 0.75, label = NA_label
       )
+  }
+
+  if (!is.null(grad_vec_aes)) {
+    vector <- as.vector(na.omit(df[[grad_vec_aes]]))
+    gvocc <- gvocc +
+      ggquiver::geom_quiver(aes(x, y,
+        u = u_velo, v = v_velo,
+        size = vector
+      ),
+      colour = vec_col, vecsize = 1,
+      arrowhead_size = arrowhead_size,
+      alpha = vec_alpha,
+      inherit.aes = FALSE
+      ) +
+      scale_size_continuous(range = vec_lwd_range) +
+      guides(colour = "none", size = "none")
   }
 
   gvocc
@@ -476,6 +488,131 @@ plot_facet_map <- function(df, column = "est",
       size = 2, col = "grey40", inherit.aes = FALSE
     )
   gfacet
+}
+
+
+#' Plot gradient vocc with vectors coloured by variable
+#'
+#' @export
+#' 
+plot_gradient_vocc <- function(df,
+                               vec_col = "C_per_decade",
+                               col_label = "Local\nclimate trend\n(°C/decade)",
+                               vecsize = 1,
+                               lwd = 1,
+                               low_col = scales::muted("blue"),
+                               high_col = scales::muted("red"),
+                               mid_col = "white",
+                               raster = NULL,
+                               fill_label = raster,
+                               coast = NULL,
+                               isobath = NULL) {
+  colour <- df[[vec_col]]
+  fill <- df[[raster]]
+
+
+  gvocc <- ggplot(df) +
+    xlab("UTM") + ylab("UTM") +
+    coord_fixed(xlim = range(df$x) + c(-3, 3), ylim = range(df$y) + c(-3, 3)) +
+    gfplot::theme_pbs()
+
+
+  if (!is.null(raster)) {
+    gvocc <- gvocc +
+      geom_raster(aes(x, y, fill = fill), inherit.aes = FALSE) +
+      scale_fill_gradient2(low = low_col, high = high_col, mid = "white") +
+      # scale_fill_viridis_c() +
+      labs(fill = fill_label)
+  }
+
+  if (!is.null(coast)) {
+    gvocc <- gvocc +
+      # ggnewscale::new_scale_fill() +
+      geom_polygon(
+        data = coast, aes_string(x = "X", y = "Y", group = "PID"),
+        fill = "grey87", col = "grey70", lwd = 0.2
+      )
+  } else {
+    try({
+      df <- df %>%
+        dplyr::mutate(X = x, Y = y) %>%
+        gfplot:::utm2ll(., utm_zone = 9)
+
+      # creates coast lines for area defined in lat lon
+      coast <- gfplot:::load_coastline(
+        range(df$X) + c(-1, 1),
+        range(df$Y) + c(-1, 1),
+        utm_zone = 9
+      )
+      gvocc <- gvocc +
+        # ggnewscale::new_scale_fill() +
+        geom_polygon(
+          data = coast, aes_string(x = "X", y = "Y", group = "PID"),
+          fill = "grey87", col = "grey70", lwd = 0.2
+        )
+      gvocc
+    }, silent = TRUE)
+  }
+
+
+  gvocc <- gvocc +
+    ggquiver::geom_quiver(aes(x, y,
+      u = u_velo, v = v_velo,
+      colour = colour
+    ),
+    vecsize = vecsize,
+    lwd = lwd
+    ) +
+    # ggnewscale::new_scale_color() +
+    scale_colour_gradient2(
+      trans = fourth_root_power,
+      low = low_col, high = high_col, mid = mid_col
+    ) +
+    labs(colour = col_label)
+
+  if (!is.null(isobath)) {
+    gvocc <- gvocc +
+      ggnewscale::new_scale_color() +
+      geom_path(
+        data = isobath,
+        aes_string(
+          x = "X", y = "Y",
+          group = "paste(PID, SID)", colour = "PID"
+        ),
+        inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
+      ) +
+      scale_colour_continuous(low = "grey80", high = "grey10") +
+      guides(colour = FALSE)
+  } else {
+    try({
+      df <- df %>%
+        dplyr::mutate(X = x, Y = y) %>%
+        gfplot:::utm2ll(., utm_zone = 9)
+
+      # creates utm bathymetry lines for area defined in lat lon
+      isobath <- gfplot:::load_isobath(
+        range(df$X) + c(-5, 5),
+        range(df$Y) + c(-5, 5),
+        bath = c(100, 200, 300, 400, 500),
+        utm_zone = 9
+      )
+
+      gvocc <- gvocc +
+        ggnewscale::new_scale_color() +
+        geom_path(
+          data = isobath,
+          aes_string(
+            x = "X", y = "Y",
+            group = "paste(PID, SID)", colour = "PID"
+          ),
+          inherit.aes = FALSE, lwd = 0.4, alpha = 0.4
+        ) +
+        scale_colour_continuous(low = "grey80", high = "grey10") +
+        guides(colour = FALSE)
+      gvocc
+    }, silent = TRUE)
+  }
+  gvocc
 }
 
 

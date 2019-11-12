@@ -5,7 +5,7 @@
 \title{Plot climate change vectors}
 \usage{
 plot_vocc(df, fill_col = NULL, fill_label = NULL, raster_alpha = 1,
-  vec_aes = "distance", arrowhead_size = 0.005,
+  vec_aes = "distance", grad_vec_aes = NULL, arrowhead_size = 0.005,
   vec_lwd_range = c(0.7, 0.8), vec_alpha = 1,
   max_vec_plotted = max(df$distance), min_vec_plotted = 4,
   NA_label = "NA", white_zero = min(fill, na.rm = TRUE) < 0,
@@ -26,6 +26,8 @@ plot_vocc(df, fill_col = NULL, fill_label = NULL, raster_alpha = 1,
 \item{raster_alpha}{Raster transparency.}
 
 \item{vec_aes}{Vector name for any plotting variation.}
+
+\item{grad_vec_aes}{}
 
 \item{arrowhead_size}{Changes head size for custom geom_quiver function.}
 
@@ -48,8 +50,6 @@ Default will plot on this scale only if raster has negative values.}
 \item{mid_fill}{Colour of zero value raster cells.}
 
 \item{high_fill}{Colour of positive values if raster values span zero.}
-
-\item{na_colour}{}
 
 \item{vec_col}{Colour of vectors.}
 
@@ -75,8 +75,6 @@ Default is to apply no transformation (no_trans).}
 \item{raster_cell_size}{Raster cell width. Used to centre NA_label.}
 
 \item{legend_position}{Vector of coordinates for legend placement. Or "none" to remove legend.}
-
-\item{theme}{}
 }
 \description{
 Plot climate change vectors
