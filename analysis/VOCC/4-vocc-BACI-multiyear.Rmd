@@ -4,13 +4,13 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document 
 params: 
-    species: "Redbanded Rockfish" 
-    region: "both odd year surveys"
-    #region: "West Coast Vancouver Island"
+    species: "Pacific Cod" 
+    #region: "both odd year surveys"
+    region: "West Coast Vancouver Island"
     age: "mature"
     biomass_threshold: "50"
     climate: "temperature"
-    threshold: 0.25
+    threshold: 0.5
 editor_options: 
   chunk_output_type: inline
 ---
@@ -266,12 +266,12 @@ if (climate=="temperature") {
 # Calculate climate vectors
 ```{r }
 vocc_by_year <- lapply(start_years, function(start_time) {
-  # try({
-  #   vocc <- readRDS(paste0(
-  #     "data/vocc-", ssid_string, "-", climate_string, "-",
-  #     min_string, "to", max_string, "-", start_time, "-", delta_t_total, "-update.rds"
-  #   ))
-  # })
+  try({
+    vocc <- readRDS(paste0(
+      "data/vocc-", ssid_string, "-", climate_string, "-",
+      min_string, "to", max_string, "-", start_time, "-", delta_t_total, "-update.rds"
+    ))
+  })
 
 if (!exists("vocc")) {
     end_time <- start_time + 2
@@ -320,7 +320,7 @@ if (!exists("vocc")) {
     if (climate == "temperature") {
       vocc$diff <- vocc$units_per_decade / 10 * delta_t_total
       vocc_plot <- plot_vocc(vocc,  
-        # theme = "black",
+        theme_black = TRUE,
         coast = TRUE,
         vec_aes = "distance",
         vec_col = "white",
@@ -345,7 +345,8 @@ if (!exists("vocc")) {
     if (climate == "do") {
       vocc$diff <- vocc$units_per_decade / 10 * delta_t_total
       vocc_plot <- plot_vocc(vocc, 
-        # theme = "black",
+        theme_black = TRUE,
+        coast = TRUE,
         vec_aes = "distance",
         vec_col = "white",
         arrowhead_size = 0.01,
@@ -383,7 +384,7 @@ if (!exists("vocc")) {
         fill_label = paste(" Temperature\n change\n", 
           start_time, "to", start_time + delta_t_total, ""),
         raster_alpha = 1,
-        # raster_limits = c(raster_min_temp, raster_max_temp),
+        #raster_limits = c(raster_min_temp, raster_max_temp),
         # white_zero = TRUE,
         vec_alpha = 0.35,
         axis_lables = FALSE,
@@ -508,7 +509,7 @@ if (!exists("vocc")) {
     if (climate == "temperature") {
       vocc$diff <- vocc$units_per_decade / 10 * delta_t_total
       vocc_plot <- plot_vocc(vocc, 
-        theme = "black",
+        theme_black = TRUE,
         coast = TRUE,
         vec_aes = "distance",
         arrowhead_size = 0.01,
@@ -535,7 +536,7 @@ if (!exists("vocc")) {
     if (climate == "do") {
       vocc$diff <- vocc$units_per_decade / 10 * delta_t_total
       vocc_plot <- plot_vocc(vocc,  
-        theme = "black",
+        theme_black = TRUE,
         coast = TRUE,
         vec_aes = "distance",
         arrowhead_size = 0.01,
@@ -561,7 +562,7 @@ if (!exists("vocc")) {
       vocc$temp_diff <- vocc$temp.units_per_decade / 10 * delta_t_total
 
       vocc_plot_temp <- plot_vocc(vocc,  
-        theme = "black",
+        theme_black = TRUE,
         coast = TRUE,
         vec_aes = "distance",
         arrowhead_size = 0.01,
@@ -582,7 +583,7 @@ if (!exists("vocc")) {
       vocc$do_diff <- vocc$do_est.units_per_decade / 10 * delta_t_total
 
       vocc_plot_do <- plot_vocc(vocc,  
-        theme = "black",
+        theme_black = TRUE,
         coast = TRUE,
         vec_aes = "distance",
         arrowhead_size = 0.01,
@@ -645,7 +646,7 @@ trimmed_vector_plots <- lapply(trimmed_vectors, function(vectors) {
 
   
       vocc_plot <- plot_vocc(vectors,
-        theme = "black",
+        theme_black = TRUE,
         coast = TRUE,
         vec_aes = "distance",
         arrowhead_size = 0.01,
@@ -670,7 +671,7 @@ trimmed_vector_plots <- lapply(trimmed_vectors, function(vectors) {
       vectors$diff <- vectors$units_per_decade / 10 * delta_t_total
 
       vocc_plot <- plot_vocc(vectors,
-        theme = "black",
+        theme_black = TRUE,
         coast = TRUE,
         vec_aes = "distance",
         arrowhead_size = 0.01,
@@ -697,7 +698,7 @@ trimmed_vector_plots <- lapply(trimmed_vectors, function(vectors) {
       vectors$temp_diff <- vectors$temp.units_per_decade / 10 * delta_t_total
 
       vocc_plot_temp <- plot_vocc(vectors,
-        theme = "black",
+        theme_black = TRUE,
         coast = TRUE,
         vec_aes = "distance",
         min_vec_plotted = input_cell_size,
@@ -719,7 +720,7 @@ trimmed_vector_plots <- lapply(trimmed_vectors, function(vectors) {
       vectors$do_diff <- vectors$do_est.units_per_decade / 10 * delta_t_total
 
       vocc_plot_do <- plot_vocc(vectors,
-        theme = "black",
+        theme_black = TRUE,
         coast = TRUE,
         vec_aes = "distance",
         arrowhead_size = 0.01,
@@ -980,7 +981,7 @@ biomass_vector_plots <- lapply(trimmed_vectors, function(vectors) {
     
     
     vocc_plot <- plot_vocc(biomass,
-        theme = "black",
+        theme_black = TRUE,
         coast = TRUE,
         vec_aes = "distance",
         arrowhead_size = 0.01,
@@ -1049,7 +1050,7 @@ biomass_vector_plots_raw <- lapply(vocc_by_year, function(vectors) {
       filter(start_time == !!start_time) 
 
     vocc_plot <- plot_vocc(biomass,
-      theme = "black",
+      theme_black = TRUE,
        coast = TRUE,
         vec_aes = "distance",
         vec_col = "white",
@@ -1124,7 +1125,7 @@ biomass_vector_plots_raw <- lapply(vocc_by_year, function(vectors) {
 
 
        vocc_plot <- plot_vocc(biomass,
-         theme = "black",
+         theme_black = TRUE,
          coast = TRUE,
         vec_aes = "distance",
         vec_col = "white",
@@ -1189,7 +1190,7 @@ biomass_vector_plots_present <- lapply(trimmed_vectors, function(vectors) {
        
 
        vocc_plot <- plot_vocc(biomass,
-         theme = "black",
+         theme_black = TRUE,
          coast = TRUE,
         vec_aes = "distance",
         vec_col = "white",
