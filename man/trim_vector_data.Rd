@@ -7,7 +7,7 @@
 trim_vector_data(data, variable_names, lower_change, upper_change,
   lower_thresholds = NULL, upper_thresholds = NULL, cell_size = 2,
   dist_intercept = cell_size, max_dist = max(data$distance, na.rm =
-  TRUE))
+  TRUE), min_dist = cell_size/2)
 }
 \arguments{
 \item{data}{Dataframe created by make-vector-data function}
@@ -28,6 +28,8 @@ trim_vector_data(data, variable_names, lower_change, upper_change,
 Defaults to nearest neighbouring cells}
 
 \item{max_dist}{Value at which to truncate distances (defaults to no truncation)}
+
+\item{min_dist}{Defaults to half cell size.}
 }
 \description{
 Trim VOCC output to only include vectors for cells with specific end conditions

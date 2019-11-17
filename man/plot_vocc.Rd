@@ -14,7 +14,7 @@ plot_vocc(df, fill_col = NULL, fill_label = NULL, raster_alpha = 1,
   contours = TRUE, axis_lables = FALSE, viridis_option = "D",
   viridis_dir = 1, transform_col = no_trans, raster_limits = NULL,
   raster_cell_size = 2, legend_position = c(0.15, 0.25),
-  theme = "PBS")
+  theme_black = FALSE)
 }
 \arguments{
 \item{df}{Dataframe produced by dist_based_vocc function.}
@@ -25,9 +25,10 @@ plot_vocc(df, fill_col = NULL, fill_label = NULL, raster_alpha = 1,
 
 \item{raster_alpha}{Raster transparency.}
 
-\item{vec_aes}{Vector name for any plotting variation.}
+\item{vec_aes}{Vector name for any plotting distance-based vectors.}
 
-\item{grad_vec_aes}{}
+\item{grad_vec_aes}{Vector name for plotting gradient-based vectors. 
+Default NULL for distance-based vectors.}
 
 \item{arrowhead_size}{Changes head size for custom geom_quiver function.}
 
@@ -51,6 +52,8 @@ Default will plot on this scale only if raster has negative values.}
 
 \item{high_fill}{Colour of positive values if raster values span zero.}
 
+\item{na_colour}{Raster colour for values exceeding raster_limits.}
+
 \item{vec_col}{Colour of vectors.}
 
 \item{coast}{Coast polygons where (x = "X", y = "Y", group = "PID").
@@ -70,11 +73,15 @@ Accepts standard options (e.g. "sqrt") or unquoted custom transformations
 defined using scales::trans_new (e.g. fourth_root_power).
 Default is to apply no transformation (no_trans).}
 
-\item{raster_limits}{Range of values to plot; those in excess will be red. Default of "NULL" plots full range.}
+\item{raster_limits}{Range of values to plot; those in excess will be red. 
+Default of "NULL" plots full range.}
 
 \item{raster_cell_size}{Raster cell width. Used to centre NA_label.}
 
-\item{legend_position}{Vector of coordinates for legend placement. Or "none" to remove legend.}
+\item{legend_position}{Vector of coordinates for legend placement. 
+Or "none" to remove legend.}
+
+\item{theme_black}{}
 }
 \description{
 Plot climate change vectors

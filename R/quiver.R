@@ -3,8 +3,8 @@
 #' @description
 #' Displays the direction and length of vectors on a graph.
 #'
-#' @inheritParams ggplot2::layer
-#' @param center If \code{FALSE} (the default), the vector lines will start at the specified x and y. If \code{TRUE}, the arrows will be centered about x and y.
+#' @param center If \code{FALSE} (the default), the vector lines will start at the specified x and y. 
+#'    If \code{TRUE}, the arrows will be centered about x and y.
 #' @param rescale If \code{FALSE} (the default), the vectors will not be rescaled. If \code{TRUE}, the vectors given by (u, v) will be rescaled using the \code{scale} function.
 #' @param vecsize By default (NULL), vectors sizing is automatically determined. If a grid can be identified, they will be scaled to the grid, if not, the vectors will not be scaled. By specifying a numeric input here, the length of all arrows can be adjusted. Setting vecsize to zero will prevent scaling the arrows.
 #'

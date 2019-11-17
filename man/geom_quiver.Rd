@@ -47,7 +47,8 @@ from a \code{formula} (e.g. \code{~ head(.x, 10)}).}
 \item{position}{Position adjustment, either as a string, or the result of
 a call to a position adjustment function.}
 
-\item{center}{If \code{FALSE} (the default), the vector lines will start at the specified x and y. If \code{TRUE}, the arrows will be centered about x and y.}
+\item{center}{If \code{FALSE} (the default), the vector lines will start at the specified x and y. 
+If \code{TRUE}, the arrows will be centered about x and y.}
 
 \item{rescale}{If \code{FALSE} (the default), the vectors will not be rescaled. If \code{TRUE}, the vectors given by (u, v) will be rescaled using the \code{scale} function.}
 

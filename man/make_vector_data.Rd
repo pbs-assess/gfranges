@@ -6,10 +6,11 @@
 \usage{
 make_vector_data(data, ssid = NULL, start_time = NULL,
   end_time = NULL, skip_time = NULL, input_cell_size = 2,
-  scale_fac = 1, time_var = "year", delta_t_total = 10,
-  delta_t_step = 2, indices = c(1, 2), variable_names = "est",
-  round_fact = NULL, min_thresholds = NULL, max_thresholds = NULL,
-  plus_minus = c(0.5), match_logic = NULL)
+  scale_fac = 1, min_dist = input_cell_size * scale_fac/2,
+  time_var = "year", delta_t_total = 10, delta_t_step = 2,
+  indices = c(1, 2), variable_names = "est", round_fact = NULL,
+  min_thresholds = NULL, max_thresholds = NULL, plus_minus = c(0.5),
+  match_logic = NULL)
 }
 \arguments{
 \item{data}{List of dataframes each containing output from predict.}

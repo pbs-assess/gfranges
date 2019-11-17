@@ -8,7 +8,8 @@ dist_based_vocc(start_data, end_data, x = "x", y = "y",
   variable_names = c("var.1", "var.2"), round_fact = NULL,
   min_thresholds = NULL, max_thresholds = NULL, plus_minus = c(0.5,
   0.5), match_logic = NULL, cell_size = 2, max_dist = NULL,
-  delta_t = 10, raster = FALSE, kNN = FALSE)
+  min_dist = cell_size/2, delta_t = 10, raster = FALSE,
+  kNN = FALSE)
 }
 \arguments{
 \item{start_data}{Named list containing starting climate data.}
@@ -39,6 +40,8 @@ If max_thresholds are not provided, the default of 'NULL' applies symmetrical pl
 
 \item{max_dist}{Distance reported when no analogue found. Default will
 estimate this assuming that both major axes are likely to hold an analogue.}
+
+\item{min_dist}{Defaults to half cell size.}
 
 \item{delta_t}{Time difference between starting and target time periods.}
 
