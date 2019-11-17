@@ -4,7 +4,9 @@
 #' @param fill_col Vector name for colouring raster grid cells.
 #' @param fill_label Label for legend for raster grid cell colour.
 #' @param raster_alpha Raster transparency.
-#' @param vec_aes Vector name for any plotting variation.
+#' @param vec_aes Vector name for any plotting distance-based vectors. 
+#' @param grad_vec_aes Vector name for plotting gradient-based vectors. 
+#'   Default NULL for distance-based vectors.
 #' @param vec_lwd_range Range in vector line widths.
 #' @param vec_alpha Vector transparency.
 #' @param max_vec_plotted Upper limit for vector lengths.
@@ -29,12 +31,13 @@
 #'    Default is to apply no transformation (no_trans).
 #' @param white_zero If TRUE, will always plot on custom fill scale.
 #'    Default will plot on this scale only if raster has negative values.
-#' @param raster_limits Range of values to plot; those in excess will be red. Default of "NULL" plots full range.
-#' @param legend_position Vector of coordinates for legend placement. Or "none" to remove legend.
+#' @param raster_limits Range of values to plot; those in excess will be red. 
+#'    Default of "NULL" plots full range.
+#' @param na_colour Raster colour for values exceeding raster_limits.
 #' @param raster_cell_size Raster cell width. Used to centre NA_label.
-#' @param na_colour
-#' @param theme
-#' @param grad_vec_aes
+#' @param legend_position Vector of coordinates for legend placement. 
+#'    Or "none" to remove legend.
+#' @param theme_black
 #'
 #' @export
 #'
@@ -65,7 +68,7 @@ plot_vocc <- function(df,
                       raster_limits = NULL,
                       raster_cell_size = 2,
                       legend_position = c(0.15, 0.25),
-                      theme = "PBS") {
+                      theme_black = FALSE ) {
   if (!is.null(vec_aes)) {
     # order so smaller vectors are on top?
     df <- df[order(df$distance), ]
@@ -128,7 +131,7 @@ plot_vocc <- function(df,
         ) +
         labs(fill = fill_label)
 
-      if (theme == "black") {
+      if (theme_black) {
         gvocc <- gvocc + theme(
           legend.position = legend_position,
           legend.background = element_rect(color = NA, fill = "black"),
@@ -153,7 +156,7 @@ plot_vocc <- function(df,
         ) +
         labs(fill = fill_label)
 
-      if (theme == "black") {
+      if (theme_black) {
         gvocc <- gvocc + theme(
           legend.position = legend_position,
           legend.background = element_rect(color = NA, fill = "black"),
