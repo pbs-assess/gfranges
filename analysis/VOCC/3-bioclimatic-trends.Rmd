@@ -8,7 +8,9 @@ params:
     region: "All synoptic surveys"
     start_year: 2008
     bind_predictions: FALSE
-    covs: "-log-both-noAR1" # covariate string used to name model rds 
+    covs: "-AR1-spatial" 
+    #covs: "-log-both-fixed-depth"
+    #covs: "-log-both-noAR1" # covariate string used to name model rds 
 ---
 
 ```{r global_options, include=FALSE}
@@ -301,7 +303,8 @@ if (exists("adult_predictions")) {
   predictions <- filter(predictions, year >= start_year)
   
   predictions$est_exp <- exp(predictions$est) * 10000
-  predictions$bioclimatic <- exp(predictions$est - predictions$epsilon_st) * 10000
+  
+  predictions <- predictions %>% group_by(X,Y) %>% arrange(year) %>% mutate(lag_epsilon = lag(epsilon_st), bioclimatic = est - epsilon_st + lag_epsilon)
   
   predictions$total_bio <- exp(predictions$est) * 10000
   max_raster <- quantile(predictions$total_bio, .999)
@@ -553,7 +556,7 @@ if (!exists("out_mature")) {out_recent <- out_total} else {out_recent <- out_mat
 
 ## Trends in biomass density
 ```{r, error=TRUE}
-if (exists("out_mature")) {
+if (exists("out_mature")) { 
   data <- out_mature
   biotrend_ad <- plot_vocc(data,
     fill_col = "units_per_decade",
