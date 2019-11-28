@@ -1,0 +1,275 @@
+---
+title: "Spatiotemporal models of `r paste(params$species)` biomass with climate covariates"
+author: "Philina English"
+date: "`r Sys.Date()`"
+output: html_document
+params: 
+    species: "Redbanded Rockfish"
+    region: "All synoptic surveys"
+    #region: "Both odd year surveys"
+    log_temp: TRUE # should temperature be log()
+    model_w_do: TRUE
+    priors: FALSE
+    knots: 500
+    covariates: "+trawled" # additional non-climate variables #+as.factor(ssid)
+    covs: "-AR1-spatial" #
+    #covs: "-log-both-fixed-depth" #"-log-both-noAR1" # string describing model covariates
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=11, fig.height=8.5, 
+                     # fig.path=paste0("figs/", spp, "/"),
+                      echo=FALSE, warning=FALSE, message=FALSE)
+library(dplyr)
+library(ggplot2)
+library(gfplot)
+library(gfdata)
+library(sdmTMB)
+library(gfranges)
+```
+
+
+```{r params}
+species <- params$species
+region <- params$region
+covariates <- params$covariates 
+covs <- params$covs
+log_temp <- params$log_temp
+model_w_do <- params$model_w_do
+priors <- params$priors
+knots <- params$knots
+
+paste("region =", region)
+paste("model covariates =", covariates)
+paste("model label =", covs)
+paste("log(temperature) =", log_temp)
+paste("model_w_do =", model_w_do)
+paste("priors =", priors)
+paste("knots =", knots)
+
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+
+# folder to hold figs for this species
+dir.create(file.path("figs", spp))
+dir.create(file.path("data", spp))
+
+if (region == "Both odd year surveys") {
+  survey <- c("SYN QCS", "SYN HS")
+  model_ssid <- c(1, 3)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+if (region == "West Coast Vancouver Island") {
+  survey <- c("SYN WCVI")
+  model_ssid <- c(4)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+if (region == "West Coast Haida Gwaii") {
+  survey <- c("SYN WCHG")
+  model_ssid <- c(16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+if (region == "All synoptic surveys") {
+  survey <- c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG")
+  model_ssid <- c(1, 3, 4, 16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+```
+
+Combine biomass and sensor data
+```{r}
+  biomass <- readRDS(paste0(
+    "data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds"
+    ))
+  covars <- readRDS("data/event-covariates.rds")
+  data <- dplyr::left_join(biomass, covars) %>% mutate(depth_akima = depth) %>% select(-depth)
+  
+  CTD <- readRDS("../tmb-sensor-explore/data/all-sensor-data-processed.rds")
+  
+  min(CTD$temperature_c, na.rm = T) #  
+  mintemp <- 2.6
+  
+  data <- dplyr::left_join(data, CTD) 
+  
+  # scale predictors before filtering to ensure mean and SD are global
+  data <- data %>% mutate(raw_depth = depth_bath, depth = log(raw_depth))
+  
+  if (log_temp) {data <- mutate(data, temp = log(temperature_c))
+  } else {
+    data <- mutate(data, temp = temperature_c)
+  }
+
+if (model_w_do) {
+  data <- filter(data, !(year == 2016 & ssid == 4) ) # 2016 do an outlier for survey 4
+  data <- data %>% mutate(exclude = if_else(do_mlpl>8, 1, 0)) %>% 
+      filter(exclude != 1) %>% # added on july 24 after first round of models run...
+      filter(year > 2007) # 2007 DO data is flawed
+  
+    # scale predictors before filtering to ensure mean and SD are global
+  data <- data %>% mutate(raw_do = do_mlpl, do_mlpl = log(do_mlpl)) 
+  
+  do_data <- scale_predictors(data, predictors = c(quo(depth), quo(temp), quo(do_mlpl))) 
+       # c(quo(log_depth), quo(mixed), quo(muddy), quo(sandy), quo(rocky), quo(any_rock)))
+  
+  data <- do_data %>% mutate(depth = raw_depth) %>% #filter(year != 2016) %>%
+    filter(ssid %in% model_ssid) %>% 
+    filter(!is.na(depth_scaled)) %>% filter(!is.na(do_mlpl)) %>% filter(!is.na(temp)) 
+  
+  if (any(names(data) == "adult_density")) { 
+  data <- data %>% select(X, Y, X10, Y10,
+      adult_density, imm_density,
+      depth_scaled, depth_scaled2, depth_mean, depth_sd, 
+      do_mlpl_scaled, do_mlpl_scaled2,  do_mlpl_mean, do_mlpl_sd, 
+      temp_scaled, temp_scaled2, temp_mean, temp_sd, 
+      trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, 
+      depth, do_mlpl, raw_do, temp, temperature_c) 
+ } else {
+    data <- data %>% select(X, Y, X10, Y10,
+      density,
+      depth_scaled, depth_scaled2, depth_mean, depth_sd, 
+      do_mlpl_scaled, do_mlpl_scaled2,  do_mlpl_mean, do_mlpl_sd, 
+      temp_scaled, temp_scaled2, temp_mean, temp_sd, 
+      trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, 
+      depth, do_mlpl, raw_do, temp, temperature_c) 
+ }
+} else {
+  data <- scale_predictors(data, predictors = c(quo(depth), quo(temp))) 
+       # c(quo(log_depth), quo(mixed), quo(muddy), quo(sandy), quo(rocky), quo(any_rock)))
+  
+  data <- data %>% mutate(depth = raw_depth) %>% #filter(year != 2016) %>%
+    filter(ssid %in% model_ssid) %>% 
+    filter(!is.na(depth_scaled)) %>% filter(!is.na(temp)) 
+  
+if (any(names(data) == "adult_density")) { 
+  data <- data %>% select(X, Y, X10, Y10,
+      adult_density, imm_density,
+      depth_scaled, depth_scaled2, depth_mean, depth_sd, 
+      temp_scaled, temp_scaled2, temp_mean, temp_sd, 
+      trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, 
+      depth, temp, temperature_c) 
+ } else {
+    data <- data %>% select(X, Y, X10, Y10,
+      density,
+      depth_scaled, depth_scaled2, depth_mean, depth_sd, 
+      temp_scaled, temp_scaled2, temp_mean, temp_sd, 
+      trawled, any_rock, muddy, sandy, year, ssid, fishing_event_id, 
+      depth, temp, temperature_c) 
+ }
+}
+  
+# d <- data %>% filter(year==2011) #%>% filter(depth> 400) 
+# = plot((adult_density)~(depth), data=d)
+
+```
+
+
+```{r}
+  if (region == "Both odd year surveys") {
+    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 400)
+  }
+
+  if (region == "West Coast Vancouver Island") {
+    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 200)
+  }
+
+  if (region == "West Coast Haida Gwaii") {
+    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 200)
+  }
+
+  if (region == "All synoptic surveys") {
+    spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = knots)
+  }
+
+  sdmTMB::plot_spde(spde)
+```
+
+Run sdmTMB model
+```{r}
+tictoc::tic()
+  if (any(names(data) == "adult_density")) {
+    
+    if (model_w_do) {
+    adult_formula <- as.formula(paste(
+      "adult_density ~ 0 + as.factor(year) + do_mlpl_scaled + do_mlpl_scaled2 + temp_scaled + temp_scaled2 + depth_scaled + depth_scaled2", covariates, ""
+      ))
+    } else {
+      adult_formula <- as.formula(paste(
+      "adult_density ~ 0 + as.factor(year) + temp_scaled + temp_scaled2 + depth_scaled + depth_scaled2", covariates, ""
+      ))
+    }
+    
+    adult_biomass_d <- sdmTMB(data = data,
+      adult_formula,
+      #time_varying = ~ trawled, #0 + depth_scaled + depth_scaled2, 
+      time = "year", spde = spde,
+      family = tweedie(link = "log"),
+      ar1_fields = TRUE, 
+      include_spatial = FALSE, # default = TRUE
+      reml = TRUE,
+      enable_priors = priors,
+      #control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+      silent = FALSE
+    )
+
+    saveRDS(adult_biomass_d, 
+      file = paste0("data/", spp, 
+        "/mod-mat-biomass-", spp,"-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"
+        ))
+
+    if (model_w_do) {
+    imm_formula <- as.formula(paste(
+      "imm_density ~ 0 + as.factor(year) + do_mlpl_scaled + do_mlpl_scaled2 + temp_scaled + temp_scaled2 + depth_scaled + depth_scaled2", covariates, ""
+      ))
+    } else {
+         imm_formula <- as.formula(paste(
+      "imm_density ~ 0 + as.factor(year) + temp_scaled + temp_scaled2 + depth_scaled + depth_scaled2", covariates, ""
+      ))
+    }
+    
+    imm_biomass_d <- sdmTMB::sdmTMB(data = data, 
+      imm_formula,
+      #time_varying = ~ trawled, # 0 + depth_scaled + depth_scaled2, 
+      time = "year", spde = spde,
+      family = tweedie(link = "log"),
+      ar1_fields = TRUE,
+      include_spatial = FALSE, # default = TRUE
+      reml = TRUE,
+      enable_priors = priors,
+      #control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+      silent = FALSE
+    )
+
+    saveRDS(imm_biomass_d, 
+      file = paste0("data/", spp, 
+        "/mod-imm-biomass-", spp,"-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"
+        ))
+    
+  } else {
+
+    dens_formula <- as.formula(paste("density ~ 0 + as.factor(year) + do_mlpl_scaled + do_mlpl_scaled2 + temp_scaled + temp_scaled2", covariates, ""))
+    
+    total_biomass_d <- sdmTMB::sdmTMB(data = data,
+      dens_formula,
+      time_varying = ~ 0 + depth_scaled + depth_scaled2, 
+      time = "year", spde = spde,
+      family = tweedie(link = "log"),
+      #ar1_fields = TRUE,
+      include_spatial = FALSE, # default = TRUE
+      enable_priors = priors,
+      control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+      silent = FALSE
+    )
+
+    saveRDS(total_biomass_d, file = paste0("data/", spp, 
+      "/model-total-biomass-", spp, "-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"
+      ))
+  }
+tictoc::toc()
+```
+
