@@ -44,7 +44,11 @@ vocc_gradient_calc <- function(data,
     #  mnraster <-mnraster_brick[[raster::nlayers(mnraster_brick)]]
     #   } else {
     mnraster_brick <- raster::stackApply(rbrick, indices = indices, fun = mean)
-    mnraster <- mnraster_brick[[raster::nlayers(mnraster_brick)]]
+    # use first time period
+    mnraster <- mnraster_brick[[1]]
+    # to use last time period
+    # mnraster <- mnraster_brick[[raster::nlayers(mnraster_brick)]]
+    
   } else {
     # uses average spatial gradient
     mnraster <- raster::calc(rbrick, mean)
