@@ -105,19 +105,24 @@ time_varying_density <- function(m, predictor = "depth") {
      NULL
   }
   }
-   
-  r <- m$tmb_obj$report()
-  r$b_rw_t
-  b_j <- m$model$par
-  n_t <- nrow(r$b_rw_t)
+ 
+  #r <- m$tmb_obj$report()
+  
+  coefs <- as.data.frame(summary(m$sd_report))
+  coefs$name <- rownames(summary(m$sd_report))
+  b_j <- c(coefs[coefs$name == "b_j", 1 ])
+  b_rw_t <- c(coefs[coefs$name == "b_rw_t", 1 ])
+  #b_j <- m$model$par
+  #n_t <- nrow(r$b_rw_t)
   yrs <- sort(unique(m$data$year))
+  n_t <- length(yrs)
   ssid <- m$data$ssid
   
   pred_density <- purrr::map_df(seq_len(n_t), function(.t) {
     get_y_hat(
       b0 = b_j[.t],
-      b1 = r$b_rw_t[.t, 1],
-      b2 = r$b_rw_t[.t, 2],
+      b1 = b_rw_t[.t],
+      b2 = b_rw_t[n_t + .t],
       year = yrs[.t],
       sd_column = paste0(predictor, "_sd"),
       mean_column = paste0(predictor, "_mean"),
@@ -174,6 +179,7 @@ fixed_density <- function(m, predictor = "temp", fixed_params = 1, quadratics_on
       NULL
     }
     } else {
+     
     data.frame(
       # if depth, actually is log_depth so must exp(x) for raw depth
       x = (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]]), 
@@ -181,23 +187,29 @@ fixed_density <- function(m, predictor = "temp", fixed_params = 1, quadratics_on
       y_hat = exp(b0 + b1 * x_pred + b2 * x_pred^2), 
       year = year
     )
+    #  browser()  
+    }
+    
   }
-  }
-  
-  r <- m$tmb_obj$report()
-  b_j <- m$model$par
+
+  #r <- m$tmb_obj$report()
+  coefs <- as.data.frame(summary(m$sd_report))
+  coefs$name <- rownames(summary(m$sd_report))
+  b_j <- c(coefs[coefs$name == "b_j", 1 ])
   yrs <- sort(unique(m$data$year))
   n_t <- length(yrs)
   n <- 0
   if (fixed_params>1) {
     n <- (fixed_params-1)*2
   }
+  b1 <- b_j[n_t + 1 + n]
+  b2 <- b_j[n_t + 2 + n]
   
   pred_density <- purrr::map_df(seq_len(n_t), function(.t) {
     get_y_hat(
       b0 = b_j[.t],
-      b1 = b_j[n_t + 1 + n],
-      b2 = b_j[n_t + 2 + n],
+      b1 = b1,
+      b2 = b2,
       year = yrs[.t],
       sd_column = paste0(predictor, "_sd"),
       mean_column = paste0(predictor, "_mean"),
@@ -236,7 +248,11 @@ get_quadratic_roots <- function(m, predictor = "do_mlpl", fixed_param = 1, thres
   x_pred <- seq(min(m$data[[scaled]], na.rm = TRUE), 
     max(m$data[[scaled]], na.rm = TRUE), length.out = 300)
   
-  b_j <- m$model$par
+  #b_j <- m$model$par
+  coefs <- as.data.frame(summary(m$sd_report))
+  coefs$name <- rownames(summary(m$sd_report))
+  b_j <- c(coefs[coefs$name == "b_j", 1 ])
+  
   n <- 0
   if (fixed_param>1) {
     n <- (fixed_param-1)*2
