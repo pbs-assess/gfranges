@@ -4,11 +4,13 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
+    #species: "Pacific Cod" # 
     species: "Redbanded Rockfish"
     region: "All synoptic surveys"
     start_year: 2008
     bind_predictions: FALSE
-    covs: "-AR1-spatial" 
+    covs: "-all" 
+    # year_cutoff: 2012
     #covs: "-log-both-fixed-depth"
     #covs: "-log-both-noAR1" # covariate string used to name model rds 
 ---
@@ -35,6 +37,8 @@ covs <- params$covs
 priors <- FALSE
 
 
+
+paste("species =", species)
 paste("region =", region)
 paste("ssids modelled separately =", bind_predictions)
 paste("model label =", covs)
@@ -87,33 +91,122 @@ maturity <- readRDS(paste0(
 if (any(names(maturity) == "adult_density")) {
 #if (length(unique(fish$maturity_code)) > 2) {
   nd_all <- readRDS(paste0("data/predicted-DO-new.rds"))
+  
   adult_biomass <- readRDS(paste0("data/", spp, 
-        "/mod-mat-biomass-", spp,"-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"))
+        "/mod-mat-biomass-", spp,"-fixed", covs, "--", ssid_string, "-prior-", priors, ".rds"))
   #nd$year <- as.integer(nd$year)
+  
+  sort(unique(nd_all$year))
   nd <- nd_all %>%
     filter(ssid %in% model_ssid) %>%
     filter(year %in% unique(adult_biomass$data$year)) %>% 
     mutate(
       do_mlpl_scaled = (log_do - adult_biomass$data$do_mlpl_mean[1]) /(adult_biomass$data$do_mlpl_sd[1]*2), 
-      do_mlpl_scaled2 = do_mlpl_scaled^2)
+      do_mlpl_scaled2 = do_mlpl_scaled^2) %>% 
+    select(-est, -est_non_rf, - est_rf, -omega_s, -epsilon_st, -zeta_s)
   nd <- na.omit(nd)
-
+  sort(unique(nd$year))
+  
   adult_predictions_obj <- predict(adult_biomass, newdata = nd, return_tmb_object = TRUE)
   adult_predictions <- adult_predictions_obj$data
-  
-  adult_predictions$est_rw_i <- adult_predictions_obj$obj$report()$proj_rw_i
-  # test_eta <- adult_predictions_obj$obj$report()$proj_eta
-  # test_fe <- adult_predictions_obj$obj$report()$proj_fe
-  # 
-  # test_diff <- test_eta - test_fe
-  # range(adult_predictions$est_rw_i)
-  # report <- adult_predictions_obj$obj$report()
-  
-  saveRDS(adult_predictions, file = paste0("data/", spp,
-    "/predictions-", spp, covs, "-", ssid_string, "-mature-bioclimatic-prior-", priors, ".rds"))
 
+  nd_pre_2013 <- nd %>% filter(year < 2013)
+  ad_model_2013 <- readRDS(paste0("data/", spp, 
+        "/mod-mat-biomass-", spp,"-fixed-past-2013-", ssid_string, "-prior-", priors, ".rds"))
+  adult_pre_2013 <- predict(ad_model_2013, newdata = nd_pre_2013, return_tmb_object = TRUE)
+  
+  fake_2013 <- nd %>% 
+    mutate(year = year - 2) %>% 
+    filter(year > 2007) %>% filter(year < 2013 )
+  sort(unique(fake_2013$year))
+  sort(unique(nd_pre_2013$year))
+  adult_2013 <- predict(ad_model_2013, newdata = fake_2013, return_tmb_object = TRUE)
+  adult_2013$data$year <- adult_2013$data$year + 2 
+  
+  nd_pre_2015 <- nd %>% filter(year < 2015)
+  ad_model_2015 <- readRDS(paste0("data/", spp, 
+        "/mod-mat-biomass-", spp,"-fixed-past-2015-", ssid_string, "-prior-", priors, ".rds"))
+  adult_pre_2015 <- predict(ad_model_2015, newdata = nd_pre_2015, return_tmb_object = TRUE)
+  
+  fake_2015 <- nd %>% 
+    mutate(year = year - 2) %>% 
+    filter(year > 2007) %>% filter(year < 2015)
+  sort(unique(nd_pre_2015$year))
+  sort(unique(fake_2015$year))
+  adult_2015 <- predict(ad_model_2015, newdata = fake_2015, return_tmb_object = TRUE)
+  adult_2015$data$year <- adult_2015$data$year + 2 
+  
+  nd_pre_2017 <- nd %>% filter(year < 2017)
+  ad_model_2017 <- readRDS(paste0("data/", spp, 
+        "/mod-mat-biomass-", spp,"-fixed-past-2017-", ssid_string, "-prior-", priors, ".rds"))
+  adult_pre_2017 <- predict(ad_model_2017, newdata = nd_pre_2017, return_tmb_object = TRUE)
+  
+  fake_2017 <- nd %>% 
+    mutate(year = year - 2) %>% 
+    filter(year > 2007) #%>% filter(year < 2013 )
+  sort(unique(fake_2017$year))
+  sort(unique(nd_pre_2017$year))
+   
+  adult_2017 <- predict(ad_model_2017, newdata = fake_2017, return_tmb_object = TRUE)
+  adult_2017$data$year <- adult_2017$data$year + 2 
+
+  fake_2017_minus4 <- nd %>% 
+    mutate(year = year - 4) %>% 
+    filter(year > 2007)
+  sort(unique(fake_2017_minus4$year))
+  adult_2017_multi <- predict(ad_model_past, newdata = fake_2017_minus4, return_tmb_object = TRUE)
+  adult_2017_multi$data$year <- adult_2017_multi$data$year + 4
+  sort(unique(adult_2017_multi$data$year))
+   
+ past_predictions <- adult_pre_2015$data %>% 
+   mutate(past_est = est, blob_bioclim = est) %>% 
+   select(X, Y, year, past_est, blob_bioclim) 
+
+   bioclim_2013_start <- filter(adult_pre_2013$data, year >= 2011) %>% filter(year <= 2012) %>%
+    mutate(bioclim_2013 = est)
+  bioclim_2013_end <- filter(adult_2013$data, year >= 2013) %>% filter(year <= 2014) %>%
+    mutate(bioclim_2013 = est_non_rf + omega_s)
+  bioclim_2013 <- dplyr::bind_rows(bioclim_2013_start, bioclim_2013_end) 
+  
+  bioclim_2015_start <- filter(adult_past$data, year >= 2013) %>% filter(year <= 2014) %>%
+    mutate(bioclim_2015 = est) %>% select(X,Y, year, bioclim_2015)
+  bioclim_2013 <- left_join(bioclim_2013, bioclim_2015_start) %>% 
+    select(X,Y, year, bioclim_2013, bioclim_2015)
+  past_predictions <- left_join(past_predictions, bioclim_2013) 
+  
+  
+  bioclim_2015 <- filter(adult_2015$data, year >= 2015) %>% filter(year <= 2016) %>%
+    mutate(blob_bioclim = est_non_rf + omega_s, bioclim_2015 = est_non_rf + omega_s) 
+  
+  bioclim_2017_start <- filter(adult_2017$data, year >= 2015) %>% filter(year <= 2016) %>%
+    mutate(bioclim_2017 = est) %>% select(X,Y, year, bioclim_2017)
+  
+  bioclim_2015 <- left_join(bioclim_2015, bioclim_2017_start) 
+  
+  bioclim_2017_multi <- filter(adult_2017_multi$data, year >= 2017) %>% filter(year <= 2018) %>%
+    mutate(blob_bioclim = est_non_rf + omega_s) %>% 
+    select(X,Y, year, blob_bioclim)
+  
+  bioclim_2017 <- filter(adult_2017$data, year >= 2017) %>% filter(year <= 2018) %>%
+    mutate(bioclim_2017 = est_non_rf + omega_s)
+  bioclim_2017 <- left_join(bioclim_2017, bioclim_2017_multi) 
+  
+  adult_predictions <- adult_predictions_obj$data
+  adult_bioclim <- dplyr::bind_rows(past_predictions, bioclim_2015, bioclim_2017) %>% 
+    select(X, Y, year, past_est, blob_bioclim, bioclim_2013, bioclim_2015, bioclim_2017)
+
+  adult_predictions <- left_join(adult_predictions, adult_bioclim)
+
+  saveRDS(adult_predictions, file = paste0("data/", spp,
+    "/bioclimatic-predictions-", spp, covs,"-", ssid_string, "-mat-2015-cutoff.rds"))
+
+  
+  #################
+  #### Immature 
+  #################
+  
   imm_biomass <- readRDS(paste0("data/", spp, 
-        "/mod-imm-biomass-", spp,"-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"
+        "/mod-imm-biomass-", spp,"-fixed", covs, "--", ssid_string, "-prior-", priors, ".rds"
   ))
   
     nd <- nd_all %>%
@@ -121,33 +214,114 @@ if (any(names(maturity) == "adult_density")) {
     filter(year %in% unique(imm_biomass$data$year))%>% 
     mutate(do_mlpl_scaled = (log_do - imm_biomass$data$do_mlpl_mean[1]) /(imm_biomass$data$do_mlpl_sd[1]*2), do_mlpl_scaled2 = do_mlpl_scaled^2)
   nd <- na.omit(nd)
-  #nd$year <- as.numeric(nd$year)
-  
+
   imm_predictions_obj <- predict(imm_biomass, newdata = nd, return_tmb_object = TRUE)
   imm_predictions <- imm_predictions_obj$data
+ 
+  nd_pre_2013 <- nd %>% filter(year < 2013)
+  im_model_2013 <- readRDS(paste0("data/", spp, 
+        "/mod-imm-biomass-", spp,"-fixed-past-2013-", ssid_string, "-prior-", priors, ".rds"))
+  imm_pre_2013 <- predict(im_model_2013, newdata = nd_pre_2013, return_tmb_object = TRUE)
   
-  imm_predictions$est_rw_i <- imm_predictions_obj$obj$report()$proj_rw_i
+  fake_2013 <- nd %>% 
+    mutate(year = year - 2) %>% 
+    filter(year > 2007) %>% filter(year < 2013 )
+  sort(unique(fake_2013$year))
+  sort(unique(nd_pre_2013$year))
+  imm_2013 <- predict(im_model_2013, newdata = fake_2013, return_tmb_object = TRUE)
+  imm_2013$data$year <- imm_2013$data$year + 2 
   
+  nd_pre_2015 <- nd %>% filter(year < 2015)
+  im_model_2015 <- readRDS(paste0("data/", spp, 
+        "/mod-imm-biomass-", spp,"-fixed-past-2015-", ssid_string, "-prior-", priors, ".rds"))
+  imm_pre_2015 <- predict(im_model_2015, newdata = nd_pre_2015, return_tmb_object = TRUE)
   
-  saveRDS(imm_predictions, file = paste0("data/", spp,
-    "/predictions-", spp, covs, "-", ssid_string, "-imm-bioclimatic-prior-", priors, ".rds"))
+  fake_2015 <- nd %>% 
+    mutate(year = year - 2) %>% 
+    filter(year > 2007) %>% filter(year < 2015)
+  sort(unique(nd_pre_2015$year))
+  sort(unique(fake_2015$year))
+  imm_2015 <- predict(im_model_2015, newdata = fake_2015, return_tmb_object = TRUE)
+  imm_2015$data$year <- imm_2015$data$year + 2 
   
-} else {
+  nd_pre_2017 <- nd %>% filter(year < 2017)
+  im_model_2017 <- readRDS(paste0("data/", spp, 
+        "/mod-imm-biomass-", spp,"-fixed-past-2017-", ssid_string, "-prior-", priors, ".rds"))
+  imm_pre_2017 <- predict(im_model_2017, newdata = nd_pre_2017, return_tmb_object = TRUE)
   
-    total_biomass <- readRDS(paste0("data/", spp, 
-      "/model-total-biomass-", spp, "-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"))
-    
-    nd_all <- readRDS(paste0("data/predicted-DO-new.rds"))
-    nd <- nd_all %>% 
-      filter(ssid %in% model_ssid) %>%
-      filter(year %in% unique(total_biomass$data$year))%>% 
-    mutate(do_mlpl_scaled = (log_do - total_biomass$data$do_mlpl_mean) /(total_biomass$data$do_mlpl_sd*2), do_mlpl_scaled2 = do_mlpl_scaled^2)
-    nd <- na.omit(nd)
-    nd$year <- as.integer(nd$year)
+  fake_2017 <- nd %>% 
+    mutate(year = year - 2) %>% 
+    filter(year > 2007) #%>% filter(year < 2013 )
+  sort(unique(fake_2017$year))
+  sort(unique(nd_pre_2017$year))
+   
+  imm_2017 <- predict(im_model_2017, newdata = fake_2017, return_tmb_object = TRUE)
+  imm_2017$data$year <- imm_2017$data$year + 2 
 
-    predictions <- predict(total_biomass, newdata = nd)
-    saveRDS(predictions, file = paste0("data/", spp,
-      "/predictions-", spp, covs, "-", ssid_string, "-total-bioclimatic-prior-", priors, ".rds"))
+  fake_2017_minus4 <- nd %>% 
+    mutate(year = year - 4) %>% 
+    filter(year > 2007)
+  sort(unique(fake_2017_minus4$year))
+  imm_2017_multi <- predict(im_model_past, newdata = fake_2017_minus4, return_tmb_object = TRUE)
+  imm_2017_multi$data$year <- imm_2017_multi$data$year + 4
+  sort(unique(imm_2017_multi$data$year))
+   
+ past_predictions <- imm_pre_2015$data %>% 
+   mutate(past_est = est, blob_bioclim = est) %>% 
+   select(X, Y, year, past_est, blob_bioclim) 
+  
+  bioclim_2013_start <- filter(imm_pre_2013$data, year >= 2011) %>% filter(year <= 2012) %>%
+    mutate(bioclim_2013 = est)
+  bioclim_2013_end <- filter(imm_2013$data, year >= 2013) %>% filter(year <= 2014) %>%
+    mutate(bioclim_2013 = est_non_rf + omega_s)
+  bioclim_2013 <- dplyr::bind_rows(bioclim_2013_start, bioclim_2013_end) 
+  
+  bioclim_2015_start <- filter(imm_past$data, year >= 2013) %>% filter(year <= 2014) %>%
+    mutate(bioclim_2015 = est) %>% select(X,Y, year, bioclim_2015)
+  bioclim_2013 <- left_join(bioclim_2013, bioclim_2015_start) %>% 
+    select(X,Y, year, bioclim_2013, bioclim_2015)
+  past_predictions <- left_join(past_predictions, bioclim_2013) 
+  
+  bioclim_2015 <- filter(imm_2015$data, year >= 2015) %>% filter(year <= 2016) %>%
+    mutate(blob_bioclim = est_non_rf + omega_s, bioclim_2015 = est_non_rf + omega_s) 
+  bioclim_2017_start <- filter(imm_2017$data, year >= 2015) %>% filter(year <= 2016) %>%
+    mutate(bioclim_2017 = est) %>% select(X,Y, year, bioclim_2017)
+  
+  bioclim_2015 <- left_join(bioclim_2015, bioclim_2017_start) 
+  
+  bioclim_2017_multi <- filter(imm_2017_multi$data, year >= 2017) %>% filter(year <= 2018) %>%
+    mutate(blob_bioclim = est_non_rf + omega_s) %>% 
+    select(X,Y, year, blob_bioclim)
+  
+  
+  bioclim_2017 <- filter(imm_2017$data, year >= 2017) %>% filter(year <= 2018) %>%
+    mutate(bioclim_2017 = est_non_rf + omega_s)
+  bioclim_2017 <- left_join(bioclim_2017, bioclim_2017_multi) 
+  
+   imm_predictions <- imm_predictions_obj$data
+   imm_bioclim <- dplyr::bind_rows(past_predictions, bioclim_2015, bioclim_2017) %>% 
+    select(X, Y, year, past_est, blob_bioclim, bioclim_2013, bioclim_2015, bioclim_2017)
+
+  imm_predictions <- left_join(imm_predictions, imm_bioclim)
+
+  saveRDS(imm_predictions, file = paste0("data/", spp,
+    "/bioclimatic-predictions-", spp, covs,"-", ssid_string, "-imm-2015-cutoff.rds"))
+
+} else { # need to add non-split-by-age version
+    # total_biomass <- readRDS(paste0("data/", spp, 
+    #   "/model-total-biomass-", spp, "-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"))
+    # 
+    # nd_all <- readRDS(paste0("data/predicted-DO-new.rds"))
+    # nd <- nd_all %>% 
+    #   filter(ssid %in% model_ssid) %>%
+    #   filter(year %in% unique(total_biomass$data$year))%>% 
+    # mutate(do_mlpl_scaled = (log_do - total_biomass$data$do_mlpl_mean) /(total_biomass$data$do_mlpl_sd*2), do_mlpl_scaled2 = do_mlpl_scaled^2)
+    # nd <- na.omit(nd)
+    # nd$year <- as.integer(nd$year)
+    # 
+    # predictions <- predict(total_biomass, newdata = nd)
+    # saveRDS(predictions, file = paste0("data/", spp,
+    #   "/predictions-", spp, covs, "-", ssid_string, "-total-bioclimatic-prior-", priors, ".rds"))
 }
 ```
 
@@ -172,11 +346,11 @@ rm(pred4_all)
 rm(pred16_all)
 
 if (region != "All synoptic surveys") {
-  try(adult_predictions <- readRDS(paste0("data/", spp,
-    "/predictions-", spp, covs, "-1n3n4n16-mature-bioclimatic-prior-", priors, ".rds"
+  try(adult_predictions <- readRDS( paste0("data/", spp,
+    "/bioclimatic-predictions-", spp, covs,"-", ssid_string, "-mat-2015-cutoff.rds"
   )) %>% filter(ssid %in% model_ssid))
   try(imm_predictions <- readRDS(paste0("data/", spp,
-    "/predictions-", spp, covs, "-1n3n4n16-imm-bioclimatic-prior-", priors, ".rds"
+    "/bioclimatic-predictions-", spp, covs,"-", ssid_string, "-imm-2015-cutoff.rds"
   )) %>% filter(ssid %in% model_ssid))
 
   if (!exists("adult_predictions")) {
@@ -192,52 +366,12 @@ if (region != "All synoptic surveys") {
   }
 } else {
   
-  try({adult_predictions <- readRDS(paste0("data/", spp,
-    "/predictions-", spp, covs, "-", ssid_string, "-mature-bioclimatic-prior-", priors, ".rds"
-    ))
-  })
-  try({imm_predictions <- readRDS(paste0("data/", spp,
-    "/predictions-", spp, covs, "-", ssid_string, "-imm-bioclimatic-prior-", priors, ".rds"
-    ))
-  })
-  
-  # OR bind together predictions from different models
-  if (bind_predictions) {
-    try({pred1n3 <- readRDS(paste0("data/", spp,
-      "/predictions-", spp, covs, "-1n3-mature-bioclimatic-prior-", priors, ".rds"
-      ))
-    })
-    try({pred4 <- readRDS(paste0("data/", spp,
-      "/predictions-", spp, covs, "-4-mature-bioclimatic-prior-", priors, ".rds"
-      ))
-    })
-    try({pred16 <- readRDS(paste0("data/", spp,
-      "/predictions-", spp, covs, "-16-mature-bioclimatic-prior-", priors, ".rds"
-      ))
-    })
-
-    if (!exists("pred1n3")) pred1n3 <- NULL
-    if (!exists("pred16")) pred16 <- NULL
-    if (!exists("pred4")) pred4 <- NULL
-    adult_predictions <- rbind(pred1n3, pred4, pred16)
-
-    try({pred1n3_imm <- readRDS(paste0("data/", spp,
-      "/predictions-", spp, covs, "-1n3-imm-bioclimatic-prior-", priors, ".rds"
-      ))
-    })
-    try({pred4_imm <- readRDS(paste0("data/", spp,
-      "/predictions-", spp, covs, "-4-imm-bioclimatic-prior-", priors, ".rds"))
-    })
-    try({pred16_imm <- readRDS(paste0("data/", spp,
-        "/predictions-", spp, covs, "-16-imm-bioclimatic-prior-", priors, ".rds"))
-    })
-
-    if (!exists("pred1n3_imm")) pred1n3_imm <- NULL
-    if (!exists("pred16_imm")) pred16_imm <- NULL
-    if (!exists("pred4_imm")) pred4_imm <- NULL
-    imm_predictions <- rbind(pred1n3_imm, pred4_imm, pred16_imm)
-  }
-  }
+ try({adult_predictions <- readRDS( paste0("data/", spp,
+    "/bioclimatic-predictions-", spp, covs,"-", ssid_string, "-mat-2015-cutoff.rds"
+  )) %>% filter(ssid %in% model_ssid)})
+ try({imm_predictions <- readRDS(paste0("data/", spp,
+    "/bioclimatic-predictions-", spp, covs,"-", ssid_string, "-imm-2015-cutoff.rds"
+  )) %>% filter(ssid %in% model_ssid)})
 
   if (!exists("adult_predictions")) {
       paste("Maturity split biomass predictions are not available.")
@@ -246,23 +380,9 @@ if (region != "All synoptic surveys") {
         "/predictions-", spp, covs, "-", ssid_string, "-total-bioclimatic-prior-", priors, ".rds"))
       })
 
-      if (!exists("predictions")) {
-        try({pred1n3_all <- readRDS(paste0("data/", spp,
-          "/predictions-", spp, covs, "-1n3-total-bioclimatic-prior-", priors, ".rds"))
-        })
-        try({pred4_all <- readRDS(paste0("data/", spp,
-          "/predictions-", spp, covs, "-4-total-bioclimatic-prior-", priors, ".rds"))
-        })
-        try({pred16_all <- readRDS(paste0("data/", spp,
-          "/predictions-", spp, covs, "-16-total-bioclimatic-prior-", priors, ".rds"))
-        })
-        try({
-          predictions <- rbind(pred1n3_all, pred4_all, pred16_all)
-        })
-
         if (!exists("predictions")) paste("Total biomass predictions are not available.")
-      }
-    }
+  }
+}
 ```
 
 
@@ -276,13 +396,14 @@ if (exists("adult_predictions")) {
   # to convert from kg/m2 to kg/hectare multiply by 10000
   adult_predictions$est_exp <- exp(adult_predictions$est) * 10000
   imm_predictions$est_exp <- exp(imm_predictions$est) * 10000
-  adult_predictions$bioclimatic <- exp(adult_predictions$est - adult_predictions$epsilon_st) * 10000
-  imm_predictions$bioclimatic <- exp(imm_predictions$est - imm_predictions$epsilon_st) * 10000
- 
   adult_predictions$total_bio <- imm_predictions$est_exp + adult_predictions$est_exp
+  
+  # check that both dataframes are arranged similarly
+  if (adult_predictions[30000,6] == imm_predictions[30000,6]) {
   imm_predictions$prop_imm <- 
   imm_predictions$est_exp / (adult_predictions$est_exp + imm_predictions$est_exp)
-
+  }
+  
   saveRDS(adult_predictions, file = paste0(
     "data/", spp,
     "/all-predictions-", spp, covs, "-mat-bioclimatic-prior-", priors, ".rds"
@@ -304,8 +425,8 @@ if (exists("adult_predictions")) {
   
   predictions$est_exp <- exp(predictions$est) * 10000
   
-  predictions <- predictions %>% group_by(X,Y) %>% arrange(year) %>% mutate(lag_epsilon = lag(epsilon_st), bioclimatic = est - epsilon_st + lag_epsilon)
-  
+  # predictions <- predictions %>% group_by(X,Y) %>% arrange(year) %>% mutate(lag_epsilon = lag(epsilon_st), bioclimatic = est - epsilon_st + lag_epsilon)
+  # 
   predictions$total_bio <- exp(predictions$est) * 10000
   max_raster <- quantile(predictions$total_bio, .999)
   #max_bio <- round(max(predictions$total_bio))
@@ -797,7 +918,7 @@ if (exists("imm_predictions")) {
 Save trend plots
 ```{r results = "hide"}
 png(
-  file = paste0("figs/", spp, "/trends-", spp, covs, "-", ssid_string, "-priors-", priors, ".png"),
+  file = paste0("figs/", spp, "/trends-", spp, covs, "-", ssid_string, "-fixed-everything-noAR1.png"),
   res = 600,
   units = "in",
   width = 11,
@@ -818,7 +939,7 @@ if(exists("adult_predictions")) { biomass_plots <- c(p_adult, p_imm) } else {
 }
 
 png(
-  file = paste0("figs/", spp, "/bioclimatic-biomass-", spp, covs, "-", ssid_string, "-priors-", priors, ".png"),
+  file = paste0("figs/", spp, "/bioclimatic-biomass-", spp, covs, "-", ssid_string, "-fixed-everything-noAR1.png"),
   res = 600,
   units = "in",
   width = 16,
@@ -834,7 +955,7 @@ dev.off()
 Save plot medley
 ```{r results = "hide"}
 png(
-  file = paste0("figs/", spp, "/bioclimatic-exploratory-", spp, covs, "-", ssid_string, "-priors-", priors, ".png"),
+  file = paste0("figs/", spp, "/bioclimatic-exploratory-", spp, covs, "-", ssid_string, "-fixed-everything-noAR1.png"),
   res = 600,
   units = "in",
   width = 9.5,
@@ -965,7 +1086,7 @@ Save spatiotemporal residual plots
 # }
 
 png(
-  file = paste0("figs/", spp, "/bioclimatic-residuals-", spp, covs, "-", ssid_string, "-priors-", priors, ".png"),
+  file = paste0("figs/", spp, "/bioclimatic-residuals-", spp, covs, "-", ssid_string, "-fixed-everything-noAR1.png"),
   res = 600,
   units = "in",
   width = 16,

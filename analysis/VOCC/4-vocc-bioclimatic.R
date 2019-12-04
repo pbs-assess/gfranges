@@ -6,12 +6,18 @@ library("dplyr")
 library("ggplot2")
 
 species <- "Redbanded Rockfish"
+# species <- "Pacific Ocean Perch"
+# species <- "Pacific Cod"
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 # covs <- "-log-both-fixed-depth"
 # covs <- "-log-both-noAR1"
-covs <- "-AR1-spatial"
-all_years <- TRUE
+covs <- "-all"
+#covs <- "-tv-depth-all"
+average <- TRUE
+
+average <- FALSE
+start_year <- 2011
 
 #########################
 ### CHOOSE SPATIAL EXTENT
@@ -28,16 +34,13 @@ scale_fac <- 5 # means that the raster is reprojected to _ X original grid (2 km
 ### LOAD DATA
 #################
 
-d_all <- readRDS(paste0("data/", spp, "/all-predictions-", 
-  spp, covs, "-mat-bioclimatic-prior-FALSE.rds")) %>% 
+d_all <- readRDS(paste0("data/", spp, "/bioclimatic-predictions-", 
+  spp, covs, "-1n3n4n16-mat-2015-cutoff.rds")) %>% 
   filter(ssid %in% model_ssid)
-
-# d_all <- readRDS(paste0("data/", spp, "/all-predictions-", 
-#   spp, covs, "-imm-bioclimatic-prior-FALSE.rds")) %>% 
-#   filter(ssid %in% model_ssid)
+glimpse(d_all)
 
 # # # for climate independent biotic values...
-# covs <- "-trawled-ssid"
+# covs <- "-trawled-ssid-reml"
 # d_all <- readRDS(paste0("data/", spp, "/all-predictions-",
 #   spp, covs, "-mat-biomass-prior-FALSE.rds")) %>%
 #   filter(ssid %in% model_ssid)
@@ -46,13 +49,12 @@ d_all <- readRDS(paste0("data/", spp, "/all-predictions-",
 ### SET TIME FRAME
 #########################
 
-if (all_years){
+if (average){
  #unique(d_all$year)
  d <- d_all
  indices <- c(1, 1, 1, 2, 2)
  year_range <- 5
 } else{ 
-start_year <- 2011
 d <- d_all %>% filter(year > start_year-1) %>% filter(year < start_year+3)
 unique(d$year)
 indices <- c(1,2)
@@ -223,39 +225,43 @@ grad1
 ### Gradient-based BIOCLIMATIC VECTORS
 ######################################
 
-d <- d %>% group_by(X,Y) %>% arrange(year) %>% mutate(lag_epsilon = lag(epsilon_st), bioclimatic = NA)
+all_years <- unique(d$year)
+years <- all_years[which(indices == 1)]
+years2 <- all_years[which(indices == 2)]
 
-years <- unique(d$year)
 
-year_index <- as_tibble(cbind(years, indices))
+if (length(indices)==2) {
+  if (years2==2013) {
+    dmn <- mutate(d, bioclimatic = bioclim_2013)
+  }
+  if (years2==2015) {
+    dmn <- mutate(d, bioclimatic = bioclim_2015)
+  }
+  if (years2==2017) {
+    dmn <- mutate(d, bioclimatic = bioclim_2017)
+  }
+} else {
+  d1 <- d %>% filter(year %in% years) %>%
+      group_by(X, Y) %>%
+      summarise_all(mean)
+  d2 <- d %>%
+    group_by(X, Y) %>%
+    filter(year %in% years2) %>%
+    summarise_all(mean) 
 
-for (i in years) {
- index <- year_index[ year_index$years == i, ]$indices
- if (index == 1){
-   d[d$year == i, ]$bioclimatic <- d[d$year == i, ]$est
- } else {
-   d[d$year == i, ]$bioclimatic <- d[d$year == i, ]$est - d[d$year == i, ]$epsilon_st + d[d$year == i, ]$lag_epsilon
- }
- }
+  dmn <- rbind(d1, d2) %>% mutate(bioclimatic = blob_bioclim)
+}
 
-# glimpse(d)
-# d[d$year == min(d$year), ]$bioclimatic <- (d[d$year == min(d$year), ]$est)
-# d[d$year==max(d$year), ]$bioclimatic <- d[d$year==max(d$year), ]$est - 
-#   d[d$year==max(d$year), ]$epsilon_st + d[d$year==min(d$year), ]$epsilon_st
-# 
-# # with time-varying depth
-# d[d$year == max(d$year), ]$bioclimatic <- (d[d$year == max(d$year), ]$est_non_rf - d[d$year == max(d$year), ]$est_rw_i + d[d$year == min(d$year), ]$est_rw_i - d[d$year == max(d$year), ]$epsilon_st)
-
-gf2 <- vocc_gradient_calc(d, "bioclimatic",
+g2 <- vocc_gradient_calc(dmn, "bioclimatic",
   scale_fac = scale_fac,
   # all layers with min indice will be averaged for spatial gradient
   # if default (NULL) will use all years
-  indices = indices,
+  indices = c(1,2),
   divisor = year_range,
   quantile_cutoff = 0.025
 )
 
-gf2 <- gf2 %>%
+g2 <- g2 %>%
   mutate(
     trend_per_year = trend / year_range,
     trend_per_decade = trend_per_year * 10,
@@ -264,7 +270,7 @@ gf2 <- gf2 %>%
   dplyr::mutate(X = x, Y = y) %>%
   gfplot:::utm2ll(., utm_zone = 9)
 
-gf2 <- left_join(gf2, add_vars, by = c("x","y"))
+gf2 <- left_join(g2, add_vars, by = c("x","y"))
 
 gf2$est_diff <- exp(gf2$est_2) * 10000 - exp(gf2$est_1) * 10000
 gf2$est_exp_1 <- exp(gf2$est_1) * 10000
@@ -285,14 +291,14 @@ gf2t <- mutate(gf2t, velocity = if_else(gradient < grad_threshold,
 
 layer <- "est"
 
-gf3 <- vocc_gradient_calc(d, layer,
+g3 <- vocc_gradient_calc(dmn, layer,
   scale_fac = scale_fac,
   # indices = indices,
   divisor = year_range,
   quantile_cutoff = 0.025
 )
 
-gf3 <- gf3 %>%
+g3 <- g3 %>%
   mutate(
     trend_per_year = trend / year_range,
     trend_per_decade = trend_per_year * 10,
@@ -301,7 +307,7 @@ gf3 <- gf3 %>%
   dplyr::mutate(X = x, Y = y) %>%
   gfplot:::utm2ll(., utm_zone = 9)
 
-gf3 <- left_join(gf3, add_vars, by = c("x","y"))
+gf3 <- left_join(g3, add_vars, by = c("x","y"))
 
 gf3$est_diff <- exp(gf3$est_2) * 10000 - exp(gf3$est_1) * 10000
 gf3$est_exp_1 <- exp(gf3$est_1) * 10000
@@ -334,7 +340,7 @@ grad2 <- gfranges::plot_vocc(gf2t,
   fill_col = "velocity",
   fill_label = "gradient velocity",
   raster_alpha = 1,
-  #raster_limits = c(raster_min, raster_max),
+  raster_limits = c(raster_min, raster_max),
   na_colour = "black",
   # white_zero = TRUE,
   high_fill = "Steel Blue 4",
@@ -357,7 +363,7 @@ grad3 <- gfranges::plot_vocc(gf3t,
   fill_col = "velocity",
   fill_label = "gradient velocity",
   raster_alpha = 1,
-  #raster_limits = c(raster_min, raster_max),
+  raster_limits = c(raster_min, raster_max),
   na_colour = "black",
   # white_zero = TRUE,
   high_fill = "Steel Blue 4",
@@ -397,34 +403,37 @@ dev.off()
 #################################
 #################################
 
-max_dist_all_years <- 30 * year_range
-# Calculate means for each time period
-all_years <- unique(d$year)
+# max_dist_all_years <- 30 * year_range
+# # Calculate means for each time period
+# all_years <- unique(d$year)
+#
+# years <- all_years[which(indices == 1)]
+# years2 <- all_years[which(indices == 2)]
+# 
+# d1 <- d %>%
+#   filter(year %in% years) %>%
+#   mutate(bioclimatic = est) %>%
+#   group_by(X, Y) %>%
+#   summarise_all(mean) #%>%
+#   #mutate(est_rw_1 = est_rw_i)
+# 
+# d2 <- d %>%
+#   group_by(X, Y) %>% 
+#   arrange(year) %>% 
+#   #mutate(lag_epsilon = lag(epsilon_st)) %>% #, bioclimatic = est - epsilon_st + lag_epsilon
+#   filter(year %in% years2) %>% 
+#   summarise_all(mean) %>% 
+#   mutate(lag_mean_epsilon = lag(epsilon_st), 
+#     bioclimatic = est - epsilon_st + lag_mean_epsilon)
 
-years <- all_years[which(indices == 1)]
-years2 <- all_years[which(indices == 2)]
-
-d1 <- d %>%
-  filter(year %in% years) %>%
-  mutate(bioclimatic = est) %>%
-  group_by(X, Y) %>%
-  summarise_all(mean) #%>%
-  #mutate(est_rw_1 = est_rw_i)
-d2 <- d %>%
-  group_by(X, Y) %>% 
-  arrange(year) %>% 
-  mutate(lag_epsilon = lag(epsilon_st), bioclimatic = est - epsilon_st + lag_epsilon) %>% 
-  filter(year %in% years2) %>% 
-  summarise_all(mean) 
-  
 #d2$est_rw_1 <- d1$est_rw_1
 #d2 <- mutate(d2, bioclimatic = est_non_rf - epsilon_st)
 
 # # For time-varying 
 #d2 <- mutate(d2, bioclimatic = est_non_rf - est_rw_i + est_rw_1 - epsilon_st)
 
-dmn <- rbind(d1, d2)
-unique(dmn$year)
+# dmn <- rbind(d1, d2)
+# unique(dmn$year)
 
 
 ######################################
@@ -647,6 +656,8 @@ gvocc_dot
 ### BIOCLIMATIC DISTANCE-BASED VELOCITIES 
 ######################################
 
+
+-2015-cutoff
 variable_names <- c("bioclimatic")
 biomass_change <- c(0.1)
 # min_est <- quantile(d$bioclimatic, 0.01)
