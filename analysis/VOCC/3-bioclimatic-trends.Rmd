@@ -9,7 +9,7 @@ params:
     region: "All synoptic surveys"
     start_year: 2008
     bind_predictions: FALSE
-    covs: "-all" 
+    covs: "-fixed"  
     # year_cutoff: 2012
     #covs: "-log-both-fixed-depth"
     #covs: "-log-both-noAR1" # covariate string used to name model rds 
@@ -93,7 +93,7 @@ if (any(names(maturity) == "adult_density")) {
   nd_all <- readRDS(paste0("data/predicted-DO-new.rds"))
   
   adult_biomass <- readRDS(paste0("data/", spp, 
-        "/mod-mat-biomass-", spp,"-fixed", covs, "--", ssid_string, "-prior-", priors, ".rds"))
+        "/mod-mat-biomass-", spp, covs, "-all--", ssid_string, "-prior-", priors, ".rds"))
   #nd$year <- as.integer(nd$year)
   
   sort(unique(nd_all$year))
@@ -110,9 +110,24 @@ if (any(names(maturity) == "adult_density")) {
   adult_predictions_obj <- predict(adult_biomass, newdata = nd, return_tmb_object = TRUE)
   adult_predictions <- adult_predictions_obj$data
 
+  # nd_pre_2011 <- nd %>% filter(year < 2011)
+  # ad_model_2011 <- readRDS(paste0("data/", spp,
+  #       "/mod-mat-biomass-", spp, covs,"-past-2011-", ssid_string, "-prior-", priors, ".rds"))
+  # sort(unique(ad_model_2011$data$year))
+  # adult_pre_2011 <- predict(ad_model_2011, newdata = nd_pre_2011, return_tmb_object = TRUE)
+  # 
+  # fake_2011 <- nd %>%
+  #   mutate(year = year - 2) %>%
+  #   filter(year > 2007) %>% filter(year < 2011 )
+  # sort(unique(fake_2011$year))
+  # sort(unique(nd_pre_2011$year))
+  # adult_2011 <- predict(ad_model_2011, newdata = fake_2011, return_tmb_object = TRUE)
+  # adult_2011$data$year <- adult_2011$data$year + 2
+
+  
   nd_pre_2013 <- nd %>% filter(year < 2013)
   ad_model_2013 <- readRDS(paste0("data/", spp, 
-        "/mod-mat-biomass-", spp,"-fixed-past-2013-", ssid_string, "-prior-", priors, ".rds"))
+        "/mod-mat-biomass-", spp, covs,"-past-2013-", ssid_string, "-prior-", priors, ".rds"))
   adult_pre_2013 <- predict(ad_model_2013, newdata = nd_pre_2013, return_tmb_object = TRUE)
   
   fake_2013 <- nd %>% 
@@ -125,7 +140,7 @@ if (any(names(maturity) == "adult_density")) {
   
   nd_pre_2015 <- nd %>% filter(year < 2015)
   ad_model_2015 <- readRDS(paste0("data/", spp, 
-        "/mod-mat-biomass-", spp,"-fixed-past-2015-", ssid_string, "-prior-", priors, ".rds"))
+        "/mod-mat-biomass-", spp, covs,"-past-2015-", ssid_string, "-prior-", priors, ".rds"))
   adult_pre_2015 <- predict(ad_model_2015, newdata = nd_pre_2015, return_tmb_object = TRUE)
   
   fake_2015 <- nd %>% 
@@ -138,7 +153,7 @@ if (any(names(maturity) == "adult_density")) {
   
   nd_pre_2017 <- nd %>% filter(year < 2017)
   ad_model_2017 <- readRDS(paste0("data/", spp, 
-        "/mod-mat-biomass-", spp,"-fixed-past-2017-", ssid_string, "-prior-", priors, ".rds"))
+        "/mod-mat-biomass-", spp, covs,"-past-2017-", ssid_string, "-prior-", priors, ".rds"))
   adult_pre_2017 <- predict(ad_model_2017, newdata = nd_pre_2017, return_tmb_object = TRUE)
   
   fake_2017 <- nd %>% 
@@ -154,34 +169,50 @@ if (any(names(maturity) == "adult_density")) {
     mutate(year = year - 4) %>% 
     filter(year > 2007)
   sort(unique(fake_2017_minus4$year))
-  adult_2017_multi <- predict(ad_model_past, newdata = fake_2017_minus4, return_tmb_object = TRUE)
+  sort(unique(nd_pre_2015$year))
+  adult_2017_multi <- predict(ad_model_2015, newdata = fake_2017_minus4, return_tmb_object = TRUE)
   adult_2017_multi$data$year <- adult_2017_multi$data$year + 4
   sort(unique(adult_2017_multi$data$year))
    
- past_predictions <- adult_pre_2015$data %>% 
+  past_predictions <- adult_pre_2015$data %>% 
    mutate(past_est = est, blob_bioclim = est) %>% 
    select(X, Y, year, past_est, blob_bioclim) 
 
-   bioclim_2013_start <- filter(adult_pre_2013$data, year >= 2011) %>% filter(year <= 2012) %>%
-    mutate(bioclim_2013 = est)
+  # bioclim_2011_start <- filter(adult_pre_2011$data, year >= 2009) %>% filter(year <= 2010) %>%
+  #   mutate(bioclim_2011 = est)
+  # bioclim_2011_end <- filter(adult_2013$data, year >= 2011) %>% filter(year <= 2012) %>%
+  #   mutate(bioclim_2011 = est_non_rf + omega_s)
+  # bioclim_2011_all <- dplyr::bind_rows(bioclim_2011_start, bioclim_2011_end) 
+
+ 
+  bioclim_2013_start <- filter(adult_pre_2013$data, year >= 2011) %>% filter(year <= 2012) %>%
+    mutate(bioclim_2013 = est) #%>% select(X,Y, year, bioclim_2013)
+  # bioclim_2013_all <- left_join(bioclim_2011, bioclim_2013_start) %>% 
+  #   select(X,Y, year, bioclim_2011, bioclim_2013)
+  #past_predictions <- left_join(past_predictions, bioclim_2011_all) 
+
+  
   bioclim_2013_end <- filter(adult_2013$data, year >= 2013) %>% filter(year <= 2014) %>%
     mutate(bioclim_2013 = est_non_rf + omega_s)
-  bioclim_2013 <- dplyr::bind_rows(bioclim_2013_start, bioclim_2013_end) 
   
-  bioclim_2015_start <- filter(adult_past$data, year >= 2013) %>% filter(year <= 2014) %>%
-    mutate(bioclim_2015 = est) %>% select(X,Y, year, bioclim_2015)
-  bioclim_2013 <- left_join(bioclim_2013, bioclim_2015_start) %>% 
+  bioclim_2013_all <- dplyr::bind_rows(bioclim_2013_start, bioclim_2013_end) 
+  
+  bioclim_2015_start <- filter(adult_2015$data, year >= 2013) %>% filter(year <= 2014) %>%
+    mutate(bioclim_2015 = est) %>% 
+    select(X,Y, year, bioclim_2015)
+  
+  bioclim_2013_all <- left_join(bioclim_2013_all, bioclim_2015_start) %>% 
     select(X,Y, year, bioclim_2013, bioclim_2015)
-  past_predictions <- left_join(past_predictions, bioclim_2013) 
+  past_predictions <- left_join(past_predictions, bioclim_2013_all) 
   
   
-  bioclim_2015 <- filter(adult_2015$data, year >= 2015) %>% filter(year <= 2016) %>%
+  bioclim_2015_end <- filter(adult_2015$data, year >= 2015) %>% filter(year <= 2016) %>%
     mutate(blob_bioclim = est_non_rf + omega_s, bioclim_2015 = est_non_rf + omega_s) 
   
   bioclim_2017_start <- filter(adult_2017$data, year >= 2015) %>% filter(year <= 2016) %>%
     mutate(bioclim_2017 = est) %>% select(X,Y, year, bioclim_2017)
   
-  bioclim_2015 <- left_join(bioclim_2015, bioclim_2017_start) 
+  bioclim_2015 <- left_join(bioclim_2015_end, bioclim_2017_start) 
   
   bioclim_2017_multi <- filter(adult_2017_multi$data, year >= 2017) %>% filter(year <= 2018) %>%
     mutate(blob_bioclim = est_non_rf + omega_s) %>% 
