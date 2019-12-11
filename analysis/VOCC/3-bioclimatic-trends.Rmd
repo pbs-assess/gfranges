@@ -4,12 +4,14 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    #species: "Pacific Cod" # 
-    species: "Redbanded Rockfish"
+    # species: "Redbanded Rockfish"
+    # species: "Pacific Cod" 
+    species: "Pacific Ocean Perch" 
     region: "All synoptic surveys"
     start_year: 2008
     bind_predictions: FALSE
     covs: "-fixed"  
+    # covs: "-tv-depth"
     # year_cutoff: 2012
     #covs: "-log-both-fixed-depth"
     #covs: "-log-both-noAR1" # covariate string used to name model rds 
@@ -113,39 +115,36 @@ if (any(names(maturity) == "adult_density")) {
   sort(unique(nd$year))
 
   adult_predictions_obj <- predict(adult_biomass, newdata = nd, return_tmb_object = TRUE)
+
+  # multiyear bioclimatic calculation
+  model_pre_2015 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, covs, "-past-2015-", ssid_string, "-prior-", priors, ".rds"
+  ))
+
+  bioclim_blob <- bioclim_multi_year(2015, model_pre_2015, nd)
+  bioclim_blob <- rename(bioclim_blob, bioclim_blob = bioclim)
+  glimpse(bioclim_blob)
+  #View(bioclim_blob)
+
   adult_predictions <- adult_predictions_obj$data
+  adult_predictions <- left_join(adult_predictions, bioclim_blob)
+  
+  # saveRDS(adult_predictions, file = paste0(
+  #   "data/", spp,
+  #   "/bioclimatic-predictions-", spp, covs, "-", ssid_string, "-mat-2015-cutoff.rds"
+  # ))
+  # 
+  # add biennial bioclimatic calculation
+  model_pre_2011 <- readRDS(paste0(
+    "data/", spp,
+    "/mod-mat-biomass-", spp, covs, "-past-2011-", ssid_string, "-prior-", priors, ".rds"
+  ))
+  sort(unique(model_pre_2011$data$year))
 
-
-  # write as function
-  bioclim_by_year <- function(yr, model_for_prior_year, pred_grid) {
-    nd <- pred_grid
-
-    nd_trim <- nd %>% filter(year < yr)
-    fake_years <- nd %>%
-      mutate(year = year - 2) %>%
-      filter(year > 2007) %>%
-      filter(year < yr)
-
-    fake <- sort(unique(fake_years$year))
-    true <- sort(unique(nd$year))
-
-    if (!identical(fake, true)) "Something is wrong with the pred_grid years."
-
-    prior_years <- predict(model_for_prior_year, newdata = nd_trim, return_tmb_object = FALSE)
-    fake_est <- predict(model_for_prior_year, newdata = fake_years, return_tmb_object = FALSE)
-    fake_est$year <- fake_est$year + 2
-
-    bioclim_start <- filter(prior_years, year >= yr - 2) %>%
-      filter(year <= yr - 1) %>%
-      mutate(bioclim = est)
-    bioclim_end <- filter(fake_est, year >= yr) %>%
-      filter(year <= yr + 1) %>%
-      mutate(bioclim = est_non_rf + omega_s)
-    bioclim_all <- dplyr::bind_rows(bioclim_start, bioclim_end) %>%
-      select(X, Y, year, bioclim)
-
-    bioclim_all
-  }
+  bioclim_2011 <- bioclim_by_year(2011, model_pre_2011, nd)
+  bioclim_2011 <- rename(bioclim_2011, bioclim_2011 = bioclim)
+  glimpse(bioclim_2011)
 
   model_pre_2013 <- readRDS(paste0(
     "data/", spp,
@@ -177,102 +176,12 @@ if (any(names(maturity) == "adult_density")) {
   bioclim_2017 <- rename(bioclim_2017, bioclim_2017 = bioclim)
   glimpse(bioclim_2017)
 
-
-
-  # for multiyear bioclim
-  bioclim_multi_year <- function(yr, model_for_prior_year, pred_grid) {
-    nd <- pred_grid
-    period2_range <- max(nd$year) - yr + 1
-
-    nd_trim <- nd %>% filter(year < yr)
-    fake_years <- nd %>%
-      mutate(year = year - 2) %>%
-      filter(year > 2007) %>%
-      filter(year < yr)
-
-    fake <- sort(unique(fake_years$year))
-    true <- sort(unique(model_for_prior_year$data$year))
-
-    if (!identical(fake, true)) "Model years doesn't match filtered pred_grid years."
-
-    prior_years <- predict(model_for_prior_year, newdata = nd_trim, return_tmb_object = FALSE)
-
-    past_predictions <- prior_years %>%
-      mutate(past_est = est, bioclim = est) %>%
-      select(X, Y, year, past_est, bioclim)
-
-    fake_est <- predict(model_for_prior_year, newdata = fake_years, return_tmb_object = FALSE)
-    fake_est$year <- fake_est$year + 2
-
-    bioclim <- filter(fake_est, year >= yr + 2 - 2) %>%
-      filter(year <= yr + 2 - 1) %>%
-      mutate(bioclim = est_non_rf + omega_s)
-
-
-    if (period2_range >= 4) {
-      fake_minus4 <- nd %>%
-        mutate(year = year - 4) %>%
-        filter(year > 2007)
-
-      fake <- sort(unique(fake_minus4$year))
-      true <- sort(unique(nd_trim$year))
-
-      if (!identical(fake, true)) "Model years doesn't match filtered pred_grid years -4."
-
-      fake_est_minus4 <- predict(model_for_prior_year, newdata = fake_minus4, return_tmb_object = FALSE)
-      fake_est_minus4$year <- fake_est_minus4$year + 4
-      # sort(unique(fake_est_minus4$year))
-
-      bioclim_4 <- filter(fake_est_minus4, year >= yr + 4 - 2) %>%
-        filter(year <= yr + 4 - 1) %>%
-        mutate(bioclim = est_non_rf + omega_s)
-
-      bioclim <- dplyr::bind_rows(bioclim, bioclim_4)
-    }
-
-    if (period2_range >= 6) {
-      fake_minus6 <- nd %>%
-        mutate(year = year - 6) %>%
-        filter(year > 2007)
-      fake <- sort(unique(fake_minus6$year))
-      true <- sort(unique(nd_trim$year))
-
-      if (!identical(fake, true)) "Model years doesn't match filtered pred_grid years -6."
-
-      fake_est_minus6 <- predict(model_for_prior_year, newdata = fake_minus6, return_tmb_object = FALSE)
-      fake_est_minus6$year <- fake_est_minus6$year + 6
-
-      bioclim_6 <- filter(fake_est_minus6, year >= yr + 6 - 2) %>%
-        filter(year <= yr + 6 - 1) %>%
-        mutate(bioclim = est_non_rf + omega_s)
-
-      bioclim <- dplyr::bind_rows(bioclim, bioclim_6)
-    }
-
-    bioclim_all <- dplyr::bind_rows(past_predictions, bioclim) %>%
-      select(X, Y, year, past_est, bioclim)
-
-    bioclim_all
-  }
-
-
-  model_pre_2015 <- readRDS(paste0(
-    "data/", spp,
-    "/mod-mat-biomass-", spp, covs, "-past-2015-", ssid_string, "-prior-", priors, ".rds"
-  ))
-
-  bioclim_blob <- bioclim_multi_year(2015, model_pre_2015, nd)
-  bioclim_blob <- rename(bioclim_blob, bioclim_blob = bioclim)
-  glimpse(bioclim_blob)
-  #View(bioclim_blob)
-
-  adult_predictions <- left_join(adult_predictions, bioclim_blob)
+  adult_predictions <- left_join(adult_predictions, bioclim_2011)
   adult_predictions <- left_join(adult_predictions, bioclim_2013)
   adult_predictions <- left_join(adult_predictions, bioclim_2015)
   adult_predictions <- left_join(adult_predictions, bioclim_2017)
 
-
-  View(adult_predictions)
+#  View(adult_predictions)
 
   saveRDS(adult_predictions, file = paste0(
     "data/", spp,
@@ -347,6 +256,7 @@ if (any(names(maturity) == "adult_density")) {
     "data/", spp,
     "/bioclimatic-predictions-", spp, covs, "-", ssid_string, "-imm-2015-cutoff.rds"
   ))
+  
 } else { # need to add non-split-by-age version
   # total_biomass <- readRDS(paste0("data/", spp,
   #   "/model-total-biomass-", spp, "-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"))
@@ -1056,11 +966,11 @@ if (exists("adult_predictions")) {
 
   p_adult_st <- list()
   for (i in seq_len(length(model_ssid))) {
-    p_adult_st[[i]] <- plot_facet_map(ad_prediction_list[[i]], "epsilon_st",
-      white_zero = TRUE,
-      high_fill = "#66C2A5",
-      low_fill = "#5E4FA2"
-      # raster_limits = c(0, max_raster),
+    p_adult_st[[i]] <- plot_facet_map(ad_prediction_list[[i]], "do_est",
+      # white_zero = TRUE,
+      # high_fill = "#66C2A5",
+      # low_fill = "#5E4FA2"
+      # # raster_limits = c(0, max_raster),
       # legend_position = "none",
       # transform_col = fourth_root_power
     ) +
