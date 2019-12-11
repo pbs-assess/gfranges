@@ -4,11 +4,11 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Petrale Sole"
+    species: "Redbanded Rockfish"
     region: "All synoptic surveys"
     knots: 600
-    covariates: "+trawled+as.factor(ssid)" # additional fixed-effect covariates
-    covs: "-trawled-ssid" # covariate string used to name model rds 
+    covariates: "+trawled+as.factor(ssid) + trawled:as.factor(ssid)" # additional fixed-effect covariates
+    covs: "-trawled-ssid-reml" # covariate string used to name model rds 
     update_model: TRUE
 ---
 
@@ -126,15 +126,16 @@ if (any(names(data) == "adult_density")) {
     "adult_density ~ 0 + as.factor(year)", covariates, ""
   ))
 
-  adult_biomass <- sdmTMB::sdmTMB(data,
+  adult_biomass <- sdmTMB::sdmTMB(data=data,
     adult_formula,
     time_varying = ~ 0 + depth_scaled + depth_scaled2, #+ trawled
     time = "year", spde = spde,
     family = tweedie(link = "log"),
-    ar1_fields = TRUE,
+    #ar1_fields = TRUE,
     include_spatial = TRUE,
+    reml = TRUE,
     enable_priors = priors,
-    control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+    #control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
     silent = FALSE
   )
 
@@ -150,15 +151,16 @@ if (any(names(data) == "adult_density")) {
     "imm_density ~ 0 + as.factor(year)", covariates, ""
   ))
 
-  imm_biomass <- sdmTMB::sdmTMB(data,
+  imm_biomass <- sdmTMB::sdmTMB(data=data,
     imm_formula,
     time_varying = ~ 0 + depth_scaled + depth_scaled2, #+ trawled
     time = "year", spde = spde,
     family = tweedie(link = "log"),
-    ar1_fields = TRUE, # changed to TRUE on Oct 17 2019
+    #ar1_fields = TRUE, # changed to TRUE on Oct 17 2019
+    reml = TRUE,
     include_spatial = TRUE,
     enable_priors = priors,
-    control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+    #control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
     silent = FALSE
   )
 
@@ -173,7 +175,7 @@ if (any(names(data) == "adult_density")) {
   
   dens_formula <- as.formula(paste("density ~ 0 + as.factor(year)", covariates, ""))
 
-  total_biomass <- sdmTMB::sdmTMB(data,
+  total_biomass <- sdmTMB::sdmTMB(data=data,
     dens_formula,
     time_varying = ~ 0 + depth_scaled + depth_scaled2, # + trawled
     time = "year", spde = spde,

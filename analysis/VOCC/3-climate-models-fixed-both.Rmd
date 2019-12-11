@@ -4,15 +4,19 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Pacific Ocean Perch"
+    species: "Redbanded Rockfish"
     region: "All synoptic surveys"
     #region: "Both odd year surveys"
     log_temp: TRUE # should temperature be log()
     model_w_do: TRUE
     priors: FALSE
-    knots: 500
-    covariates: "+trawled" # additional non-climate variables
-    covs: "-log-both-trawled" # string describing model covariates
+    knots: 800
+    covariates: "+trawled" # additional non-climate variables #+as.factor(ssid)
+    # covs: "-tv-depth-past" #
+    # year_cutoff: 2013
+    covs: "-tv-depth-all" #"-log-both-fixed-depth" #"-log-both-noAR1" # string describing model covariates
+    year_cutoff: NULL
+    #covs: "-log-both-noAR1" #"-log-both-noAR1" # string describing model covariates
 ---
 
 ```{r global_options, include=FALSE}
@@ -37,6 +41,7 @@ log_temp <- params$log_temp
 model_w_do <- params$model_w_do
 priors <- params$priors
 knots <- params$knots
+year_cutoff <- params$year_cutoff
 
 paste("region =", region)
 paste("model covariates =", covariates)
@@ -45,6 +50,7 @@ paste("log(temperature) =", log_temp)
 paste("model_w_do =", model_w_do)
 paste("priors =", priors)
 paste("knots =", knots)
+paste("year cutoff <", year_cutoff)
 
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
@@ -166,6 +172,11 @@ if (any(names(data) == "adult_density")) {
       depth, temp, temperature_c) 
  }
 }
+  
+#   d <- data %>% filter(year==2011) #%>% filter(depth> 400) 
+# = plot((adult_density)~(depth), data=d)
+
+if (!is.null(year_cutoff)) data <- filter(data, year < year_cutoff)
 ```
 
 
@@ -204,21 +215,22 @@ tictoc::tic()
       ))
     }
     
-    adult_biomass_d <- sdmTMB::sdmTMB(data,
+    adult_biomass_d <- sdmTMB::sdmTMB(data = data,
       adult_formula,
       time_varying = ~ 0 + depth_scaled + depth_scaled2, 
       time = "year", spde = spde,
       family = tweedie(link = "log"),
-      ar1_fields = TRUE,
-      include_spatial = TRUE,
+      #ar1_fields = TRUE, 
+      #include_spatial = FALSE, # default = TRUE
+      reml = TRUE,
       enable_priors = priors,
-      control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+      #control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
       silent = FALSE
     )
 
     saveRDS(adult_biomass_d, 
       file = paste0("data/", spp, 
-        "/mod-mat-biomass-", spp,"-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"
+        "/mod-mat-biomass-", spp, covs, "-", year_cutoff, "-", ssid_string, "-prior-", priors, ".rds"
         ))
 
     if (model_w_do) {
@@ -231,43 +243,120 @@ tictoc::tic()
       ))
     }
     
-    imm_biomass_d <- sdmTMB::sdmTMB(data, 
+    imm_biomass_d <- sdmTMB::sdmTMB(data = data, 
       imm_formula,
       time_varying = ~ 0 + depth_scaled + depth_scaled2, 
       time = "year", spde = spde,
       family = tweedie(link = "log"),
-      ar1_fields = FALSE,
-      include_spatial = TRUE,
+      #ar1_fields = TRUE,
+      #include_spatial = FALSE, # default = TRUE
+      reml = TRUE,
       enable_priors = priors,
-      control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+      #control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
       silent = FALSE
     )
 
     saveRDS(imm_biomass_d, 
       file = paste0("data/", spp, 
-        "/mod-imm-biomass-", spp,"-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"
+        "/mod-imm-biomass-", spp, covs, "-", year_cutoff, "-", ssid_string, "-prior-", priors, ".rds"
         ))
     
   } else {
 
-    dens_formula <- as.formula(paste("density ~ 0 + as.factor(year) + do_mlpl_scaled + do_mlpl_scaled2 + temp_scaled + temp_scaled2", covariates, ""))
-    
-    total_biomass_d <- sdmTMB::sdmTMB(data,
-      dens_formula,
-      time_varying = ~ 0 + depth_scaled + depth_scaled2, 
-      time = "year", spde = spde,
-      family = tweedie(link = "log"),
-      ar1_fields = TRUE,
-      include_spatial = TRUE,
-      enable_priors = priors,
-      control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
-      silent = FALSE
-    )
-
-    saveRDS(total_biomass_d, file = paste0("data/", spp, 
-      "/model-total-biomass-", spp, "-fixed", covs, "-", ssid_string, "-prior-", priors, ".rds"
-      ))
+    # dens_formula <- as.formula(paste("density ~ 0 + as.factor(year) + do_mlpl_scaled + do_mlpl_scaled2 + temp_scaled + temp_scaled2", covariates, ""))
+    # 
+    # total_biomass_d <- sdmTMB::sdmTMB(data,
+    #   dens_formula,
+    #   time_varying = ~ 0 + depth_scaled + depth_scaled2, 
+    #   time = "year", spde = spde,
+    #   family = tweedie(link = "log"),
+    #   #ar1_fields = TRUE,
+    #   #include_spatial = FALSE, # default = TRUE
+    #   enable_priors = priors,
+    #   control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+    #   silent = FALSE
+    # )
+    # 
+    # saveRDS(total_biomass_d, file = paste0("data/", spp, 
+    #   "/model-total-biomass-", spp, covs, "-", year_cutoff, "-", ssid_string, "-prior-", priors, ".rds"
+    #   ))
   }
 tictoc::toc()
 ```
+
+
+Save predictions for full spatial grid
+
+```{r eval=FALSE}
+#fish <- readRDS(paste0("raw/bio-data-", spp, ""))
+
+rm(adult_predictions)
+rm(imm_predictions)
+rm(predictions)
+
+if (any(names(data) == "adult_density")) {
+#if (length(unique(fish$maturity_code)) > 2) {
+  nd_all <- readRDS(paste0("data/predicted-DO-new.rds"))
+  
+  adult_biomass <- readRDS(paste0("data/", spp, 
+        "/mod-mat-biomass-", spp, covs,"-", year_cutoff, "-", ssid_string, 
+        "-prior-", priors, ".rds"))
+
+  nd <- nd_all %>%
+    filter(ssid %in% model_ssid) %>%
+    filter(year %in% unique(adult_biomass$data$year)) %>% 
+    mutate(
+      do_mlpl_scaled = (log_do - adult_biomass$data$do_mlpl_mean[1]) /(adult_biomass$data$do_mlpl_sd[1]*2), 
+      do_mlpl_scaled2 = do_mlpl_scaled^2) %>% 
+    select(-est, -est_non_rf, - est_rf, -omega_s, -epsilon_st, -zeta_s)
+  nd <- na.omit(nd)
+  #nd$year <- as.integer(nd$year)
+
+
+  adult_predictions <- predict(adult_biomass, newdata = nd)
+  saveRDS(adult_predictions, file = paste0("data/", spp,
+    "/predictions-", spp, covs,"-", year_cutoff, "-", ssid_string, 
+        "-prior-", priors, ".rds"))
+
+  imm_biomass <- readRDS(paste0("data/", spp, 
+        "/mod-imm-biomass-", spp, covs,"-", year_cutoff, "-", ssid_string, 
+        "-prior-", priors, ".rds"))
+  
+    nd <- nd_all %>%
+    filter(ssid %in% model_ssid) %>%
+    filter(year %in% unique(imm_biomass$data$year)) %>% 
+    mutate(
+      do_mlpl_scaled = (log_do - adult_biomass$data$do_mlpl_mean[1]) /(adult_biomass$data$do_mlpl_sd[1]*2), 
+      do_mlpl_scaled2 = do_mlpl_scaled^2) %>% 
+    select(-est, -est_non_rf, - est_rf, -omega_s, -epsilon_st, -zeta_s)
+  nd <- na.omit(nd)
+  #nd$year <- as.integer(nd$year)
+  
+  imm_predictions <- predict(imm_biomass, newdata = nd)
+  saveRDS(imm_predictions, file = paste0("data/", spp,
+    "/predictions-", spp, covs,"-", year_cutoff, "-", ssid_string, 
+        "-prior-", priors, ".rds"))
+  
+} else {
+  
+    # total_biomass <- readRDS(paste0("data/", spp,
+    #   "/model-total-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+    # 
+    # nd_all <- readRDS(paste0("data/predicted-DO-new.rds"))
+    # nd <- nd_all %>% 
+    #   filter(ssid %in% model_ssid) %>%
+    #   filter(year %in% unique(total_biomass$data$year))%>% 
+    # mutate(
+    #   do_mlpl_scaled = (log_do - adult_biomass$data$do_mlpl_mean[1]) /(adult_biomass$data$do_mlpl_sd[1]*2), 
+    #   do_mlpl_scaled2 = do_mlpl_scaled^2) %>% 
+    # select(-est, -est_non_rf, - est_rf, -omega_s, -epsilon_st, -zeta_s)
+    # nd <- na.omit(nd)
+    # #nd$year <- as.integer(nd$year)
+    # 
+    # predictions <- predict(total_biomass, newdata = nd)
+    # saveRDS(predictions, file = paste0("data/", spp,
+    #   "/predictions-", spp, covs, "-", ssid_string, "-total-biomass-prior-", priors, ".rds"))
+}
+```
+
 
