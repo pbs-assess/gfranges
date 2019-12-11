@@ -4,12 +4,17 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Redbanded Rockfish"
+    species: "Flathead Sole" 
     priors: FALSE # call model that used priors?
     log_temp: TRUE # should temperature be log()
     model_w_do: TRUE
-    covs: "-log-both-trawled" # covariate string used to name model rds
-    cov_number: 2
+    fix_depth: TRUE
+    #covs: "-all-" #"-log-both-fixed-depth"
+    #covs: "-past-2017"
+    # fix_depth: FALSE #TRUE
+    # #covs: "-log-both-noAR1" #"-log-both-fixed-depth"
+    # covs: "-log-both-AR1"
+    cov_number: 2 #covs: "-log-both-noOMEGA" # covariate string used to name model rds
 ---
 
 ```{r global_options, include=FALSE}
@@ -31,11 +36,13 @@ covs <- params$covs
 log_temp <- params$log_temp
 num_params <- params$cov_number
 model_w_do <- params$model_w_do
+fix_depth <- params$fix_depth
 
 paste("priors =", priors)
 paste("model =", covs)
 paste("model_w_do =", model_w_do)
 paste("log(temperature) =", log_temp)
+paste("depth fixed =", fix_depth)
 
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 ```
@@ -62,9 +69,11 @@ try({
   try({adult <- readRDS(paste0("data/", spp,
     "/mod-mat-biomass-", spp, "-fixed", add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
+  adult<-sdmTMB:::update_model(adult) 
   imm <- readRDS(paste0("data/", spp,
     "/mod-imm-biomass-", spp, "-fixed", add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
+  imm <-sdmTMB:::update_model(imm) 
   })
   try({total <- readRDS(paste0("data/", spp,
     "/model-total-biomass-", spp, "-fixed", add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"))
@@ -177,12 +186,12 @@ for (i in seq_len(length(model_list))) {
    do_plots[[i]] <- 
      plot_mountains(do[[i]], variable_label = "Dissolved O2", xlimits = c(0.2, 8), x_breaks = c(1,2,3,4,5,6,7,8)) +
         ggtitle(paste(species, names(model_list[i]))) +
-        geom_vline(xintercept=(do[[i]]$optimal_do), size= 1.2, colour = "darkgrey") + 
-        geom_vline(xintercept=(do[[i]]$lower_do_50), linetype="longdash", alpha = 0.75) + 
+        geom_vline(xintercept=(do[[i]]$lower_do_50), linetype="longdash", alpha = 0.75) +
         #geom_vline(xintercept=(do[[i]]$upper_do_50), linetype="longdash", alpha = 0.75) +
-        geom_vline(xintercept=(do[[i]]$lower_do_75), linetype="dotted", alpha = 0.5) + 
+        geom_vline(xintercept=(do[[i]]$lower_do_75), linetype="dotted", alpha = 0.5) +
         #geom_vline(xintercept=(do[[i]]$upper_do_75), linetype="dotted", alpha = 0.5) +
-        geom_vline(xintercept=(do[[i]]$lower_do_25), linetype="dotted", alpha = 0.5) #+ 
+        geom_vline(xintercept=(do[[i]]$lower_do_25), linetype="dotted", alpha = 0.5) +
+        geom_vline(xintercept=(do[[i]]$optimal_do), size= 1.2, colour = "darkgrey") 
         #geom_vline(xintercept=(do[[i]]$upper_do_25), linetype="dotted", alpha = 0.5) 
    } else {
     do_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
@@ -250,15 +259,14 @@ for (i in seq_len(length(model_list))) {
    
    temp_plots[[i]] <- 
      plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(2, 12), x_breaks = c(3,4,5,6,7,8,9,10,11)) +
-        ggtitle(paste(species, names(model_list[i]))) +
-        geom_vline(xintercept=td[[i]]$optimal_t, size= 1.2, colour = "darkgrey") + 
-        #geom_vline(xintercept=td[[i]]$lower_t_50, linetype="longdash", alpha = 0.75) + 
+        ggtitle(paste(species, names(model_list[i]))) + 
+        geom_vline(xintercept=td[[i]]$lower_t_50, linetype="longdash", alpha = 0.75) +
         geom_vline(xintercept=td[[i]]$upper_t_50, linetype="longdash", alpha = 0.75) +
-        #geom_vline(xintercept=td[[i]]$lower_t_75, linetype="dotted", alpha = 0.5) + 
+        geom_vline(xintercept=td[[i]]$lower_t_75, linetype="dotted", alpha = 0.5) +
         geom_vline(xintercept=td[[i]]$upper_t_75, linetype="dotted", alpha = 0.5) +
-        #geom_vline(xintercept=td[[i]]$lower_t_25, linetype="dotted", alpha = 0.5) + 
-        geom_vline(xintercept=td[[i]]$upper_t_25, linetype="dotted", alpha = 0.5) 
-
+        geom_vline(xintercept=td[[i]]$lower_t_25, linetype="dotted", alpha = 0.5) +
+        geom_vline(xintercept=td[[i]]$upper_t_25, linetype="dotted", alpha = 0.5) +
+        geom_vline(xintercept=td[[i]]$optimal_t, size= 1.2, colour = "darkgrey") 
   } else {
     temp_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
   } 
@@ -315,12 +323,14 @@ if(depth_only) {
 
 try({  adult_biomass <- readRDS(paste0(
     "data/", spp,
-    "/mod-mat-biomass-", spp, "-trawled-ssid-1n3n4n16-prior-FALSE.rds"
+    "/mod-mat-biomass-", spp, "-trawled-ssid-reml-1n3n4n16-prior-FALSE.rds"
   ))
+adult_biomass<-sdmTMB:::update_model(adult_biomass) 
   imm_biomass <- readRDS(paste0(
     "data/", spp,
-    "/mod-imm-biomass-", spp, "-trawled-ssid-1n3n4n16-prior-FALSE.rds"
+    "/mod-imm-biomass-", spp, "-trawled-ssid-reml-1n3n4n16-prior-FALSE.rds"
   ))
+  imm_biomass<-sdmTMB:::update_model(imm_biomass) 
  # depth_model_list <- list(adult = adult_biomass, imm = imm_biomass)
 })  
 
@@ -328,7 +338,7 @@ try({  adult_biomass <- readRDS(paste0(
       try({
         total_biomass <- readRDS(paste0(
     "data/", spp,
-    "/mod-total-biomass-", spp, "-trawled-ssid-1n3n4n16-prior-FALSE.rds"
+    "/mod-total-biomass-", spp, "-trawled-ssid-reml-1n3n4n16-prior-FALSE.rds"
   ))
       })
     }
@@ -374,8 +384,14 @@ d <- list()
 depth_plots2 <- list()
 for (i in seq_len(length(depth_model_list))) {
  if(depth_model_list[[i]]$model$convergence==0){
-  d[[i]] <- time_varying_density(depth_model_list[[i]], predictor = "depth")
-
+  
+   if(fix_depth) {
+     d[[i]] <- fixed_density(model_list[[i]], predictor = "depth", 
+       quadratics_only = FALSE, fixed_params = 3)
+   } else {
+   d[[i]] <- time_varying_density(depth_model_list[[i]], predictor = "depth")
+   }
+   
   if (length(d[[i]]) == 0) {
     depth_plots2[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
   } else {
@@ -396,7 +412,8 @@ print(depth_plots2)
 if (model_w_do) {
 if(!is.null(data$adult_density)){
 odata <- data %>% filter(!is.na(do_mlpl)) %>% 
-  mutate(ad_density_class = ifelse(adult_density==0, 0, round(log10((adult_density*100000)+1))),
+  mutate(#do_mlpl = raw_do, 
+    ad_density_class = ifelse(adult_density==0, 0, round(log10((adult_density*100000)+1))),
     im_density_class = ifelse(imm_density==0, 0, round(log10((imm_density*10000000)+1)))) %>% 
   group_by(ad_density_class) %>% mutate(ad_mean_density = mean(adult_density, na.rm = TRUE)) %>% ungroup() %>%
   group_by(im_density_class) %>% mutate(im_mean_density = mean(imm_density, na.rm = TRUE)) %>% ungroup()
@@ -537,7 +554,6 @@ t_prop_ad <- ggplot(tdata, aes(x = temp, stat(count), fill = as.factor(ad_densit
 t_count_im <- ggplot(tdata, aes(x = temp, stat(count), fill = as.factor(im_density_class))) + 
   geom_density(position = "stack") +
   scale_fill_viridis_d(name = "Mean Density \n(kg/ha)", label=im_density_class_labs) + 
-  geom_vline( xintercept = tdat[tdat$model =="imm", ]$optimal_temp, color="black", size=1, na.rm = TRUE) +
   geom_vline( xintercept = tdat[tdat$age =="imm", ]$optimal_temp, color="black", linetype="dashed", size=0.5, na.rm = TRUE) +
   theme_pbs() +
   xlab("Temperature from CTD") +
@@ -598,7 +614,7 @@ Save DO plots
 ```{r eval=F}
 if(model_w_do) {
 png(
-  file = paste0("figs/", spp, "/do-both-log-", spp, x2016, covs, "-priors-", priors, ".png"),
+  file = paste0("figs/", spp, "/do-", spp, x2016, covs, "-priors-", priors, ".png"),
   res = 600,
   units = "in",
   width = 8.5,
@@ -616,7 +632,7 @@ dev.off()
 Save temperature plots
 ```{r eval=F}
 png(
-  file = paste0("figs/", spp, "/temp-both-log-", spp, x2016, covs, "-priors-", priors, ".png"),
+  file = paste0("figs/", spp, "/temp-", spp, x2016, covs, "-priors-", priors, ".png"),
   res = 600,
   units = "in",
   width = 8.5,
@@ -652,7 +668,7 @@ dev.off()
 png(
   file = paste0(
     "figs/", spp,
-    "/depth-", spp, x2016, covs, "-priors-", priors, ".png"
+    "/depth-", spp, x2016, covs, "-priors-", priors, "-revised.png"
   ),
   res = 600,
   units = "in",
@@ -670,6 +686,8 @@ dev.off()
 ## Save optimal values
 ```{r}
 other_params <- readRDS(paste0("data/root-values-by-species-by-age.rds"))
+# # If data far a particular species needs redoing
+# other_params <- subset(other_params, species!="Redbanded Rockfish")
 
 if(!is.null(odat)) {
   if(!is.null(tdat)) {
@@ -683,12 +701,13 @@ if(!is.null(odat)) {
 }
 
 all_params <- all_params %>% distinct()
-# # If data far a particular species needs redoing
-# all_params <- subset(other_params, species!="Longnose Skate")
 # # or certain rows need removal
 # all_params <- all_params[-c(#row number#), ] 
 saveRDS(all_params, file = "data/root-values-by-species-by-age.rds")
-#spp_params <- all_params[all_params$species==species,]
+
+# spp_params <- all_params[all_params$species==species,]
+# View(spp_params)
+
 glimpse(new_params)
 ```
 
