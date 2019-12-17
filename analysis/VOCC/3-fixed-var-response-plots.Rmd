@@ -4,17 +4,24 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Flathead Sole" 
+    #species: "Redbanded Rockfish"
+    #species: "Pacific Ocean Perch"
+    #species: "Pacific Cod"
+    #species: "Petrale Sole" 
+    species: "Arrowtooth Flounder" #"Curlfin Sole"
     priors: FALSE # call model that used priors?
     log_temp: TRUE # should temperature be log()
     model_w_do: TRUE
+    # covs is a covariate string used to name model
+    # if
+    #fix_depth: FALSE 
+    #covs: "-tv-depth-all-"
+    #covs: "-tv-depth-past-2015" 
+    # or if 
     fix_depth: TRUE
-    #covs: "-all-" #"-log-both-fixed-depth"
-    #covs: "-past-2017"
-    # fix_depth: FALSE #TRUE
-    # #covs: "-log-both-noAR1" #"-log-both-fixed-depth"
-    # covs: "-log-both-AR1"
-    cov_number: 2 #covs: "-log-both-noOMEGA" # covariate string used to name model rds
+    covs: "-fixed-all-" 
+    #covs: "-fixed-past-2017"
+    cov_number: 2 
 ---
 
 ```{r global_options, include=FALSE}
@@ -67,16 +74,16 @@ try({
   model_ssid <- c(1, 3, 4, 16)
   ssid_string <- paste0(model_ssid, collapse = "n")
   try({adult <- readRDS(paste0("data/", spp,
-    "/mod-mat-biomass-", spp, "-fixed", add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"
+    "/mod-mat-biomass-", spp, add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
   adult<-sdmTMB:::update_model(adult) 
   imm <- readRDS(paste0("data/", spp,
-    "/mod-imm-biomass-", spp, "-fixed", add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"
+    "/mod-imm-biomass-", spp, add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
   imm <-sdmTMB:::update_model(imm) 
   })
   try({total <- readRDS(paste0("data/", spp,
-    "/model-total-biomass-", spp, "-fixed", add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+    "/model-total-biomass-", spp, add2016, covs, "-", ssid_string, "-prior-", priors, ".rds"))
   })
 })
 if (!exists("adult")) adult <- NULL
@@ -88,14 +95,14 @@ try({
   model_ssid <- c(1, 3)
   ssid_string <- paste0(model_ssid, collapse = "n")
   try({adult_survey1 <- readRDS(paste0("data/", spp,
-    "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+    "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
   imm_survey1 <- readRDS(paste0("data/", spp,
-    "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+    "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
   })
   try({total1 <- readRDS(paste0("data/", spp,
-    "/model-total-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"))
+    "/model-total-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
   })
   })
 if (!exists("adult_survey1")) adult_survey1 <- NULL
@@ -107,14 +114,14 @@ try({
   model_ssid <- c(4)
   ssid_string <- paste0(model_ssid, collapse = "n")
   try({adult_survey4 <- readRDS(paste0("data/", spp,
-    "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+    "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
   imm_survey4 <- readRDS(paste0("data/", spp,
-    "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+    "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
   ))
   })
   try({total4 <- readRDS(paste0("data/", spp,
-    "/model-total-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"))
+    "/model-total-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
   })
 })
 if (!exists("adult_survey4")) adult_survey4 <- NULL
@@ -126,14 +133,14 @@ try({
   model_ssid <- c(16)
   ssid_string <- paste0(model_ssid, collapse = "n")
   try({adult_survey16 <- readRDS(paste0("data/", spp,
-    "/mod-mat-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+    "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
    ))
    imm_survey16 <- readRDS(paste0("data/", spp,
-    "/mod-imm-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"
+    "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
    ))
   })
   try({total16 <- readRDS(paste0("data/", spp,
-    "/model-total-biomass-", spp, "-fixed-do", covs, "-", ssid_string, "-prior-", priors, ".rds"))
+    "/model-total-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
   })
 })
 if (!exists("adult_survey16")) adult_survey16 <- NULL
@@ -184,7 +191,7 @@ for (i in seq_len(length(model_list))) {
    do[[i]]$upper_do_25 <- exp(roots25[["upper_threshold"]])
    do[[i]]$x <- exp(do[[i]]$x)
    do_plots[[i]] <- 
-     plot_mountains(do[[i]], variable_label = "Dissolved O2", xlimits = c(0.2, 8), x_breaks = c(1,2,3,4,5,6,7,8)) +
+     plot_mountains(do[[i]], variable_label = "Dissolved O2", xlimits = c(0.65, 6.25), x_breaks = c(1,2,3,4,5,6,7,8)) +
         ggtitle(paste(species, names(model_list[i]))) +
         geom_vline(xintercept=(do[[i]]$lower_do_50), linetype="longdash", alpha = 0.75) +
         #geom_vline(xintercept=(do[[i]]$upper_do_50), linetype="longdash", alpha = 0.75) +
@@ -258,7 +265,7 @@ for (i in seq_len(length(model_list))) {
    }
    
    temp_plots[[i]] <- 
-     plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(2, 12), x_breaks = c(3,4,5,6,7,8,9,10,11)) +
+     plot_mountains(td[[i]], variable_label = "Temperature", xlimits = c(4.68, 9.93), x_breaks = c(3,4,5,6,7,8,9,10,11)) +
         ggtitle(paste(species, names(model_list[i]))) + 
         geom_vline(xintercept=td[[i]]$lower_t_50, linetype="longdash", alpha = 0.75) +
         geom_vline(xintercept=td[[i]]$upper_t_50, linetype="longdash", alpha = 0.75) +
@@ -611,7 +618,7 @@ print(raw_t_plots)
 
 
 Save DO plots
-```{r eval=F}
+```{r eval=T}
 if(model_w_do) {
 png(
   file = paste0("figs/", spp, "/do-", spp, x2016, covs, "-priors-", priors, ".png"),
@@ -630,7 +637,7 @@ dev.off()
 ```
 
 Save temperature plots
-```{r eval=F}
+```{r eval=T}
 png(
   file = paste0("figs/", spp, "/temp-", spp, x2016, covs, "-priors-", priors, ".png"),
   res = 600,
