@@ -8,24 +8,24 @@ params:
     #species: "Pacific Cod"
     #species: "Pacific Ocean Perch"
     #species: "Arrowtooth Flounder" #all DO smiley
-    #species: "Petrale Sole" #adult DO almost quadratic...
+    species: "Petrale Sole" #adult DO almost quadratic...
     #species: "English Sole" #all DO smiley
     #species: "Dover Sole" #all DO smiley
-    species: "Flathead Sole"
+    #species: "Flathead Sole"
     region: "All synoptic surveys"
-    #region: "Both odd year surveys"
     log_temp: TRUE # should temperature be log()
     model_w_do: TRUE
     priors: FALSE
     knots: 600
-    # knots: 500
+    #knots: 500
     covariates: "+trawled" # additional non-climate variables #+as.factor(ssid)
     covs: "-past" # hardcoded "-fixed" makes covs = "-fixed-past"
-    year_cutoff: 2013
-    # covs: "-all" # hardcoded -fixed makes covs = "-fixed-all"
-    # year_cutoff: NULL
+    year_cutoff: 2015
+    #covs: "-all" # hardcoded -fixed makes covs = "-fixed-all"
+    #year_cutoff: NULL
     #"-log-both-fixed-depth" #"-log-both-noAR1" # string describing model covariates
 ---
+
 
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(fig.width=11, fig.height=8.5, 
@@ -179,6 +179,9 @@ if (any(names(data) == "adult_density")) {
 # d <- data %>% filter(year==2011) #%>% filter(depth> 400) 
 # = plot((adult_density)~(depth), data=d)
 if (covs == "-past") data <- filter(data, year < year_cutoff)
+
+ # saveRDS(data, file = paste0(spp, "-with-covariates-all-years.rds"))
+ # glimpse(data)
 ```
 
 
@@ -286,3 +289,43 @@ tictoc::tic()
 tictoc::toc()
 ```
 
+
+
+```{r}
+adult_biomass <- readRDS(paste0("data/", spp, 
+        "/mod-mat-biomass-", spp,"-fixed", covs, "-", year_cutoff, "-", ssid_string, "-prior-", priors, ".rds"
+        ))
+
+point_predictions <- predict(adult_biomass)
+point_predictions$residuals <- residuals(adult_biomass)
+
+
+saveRDS(point_predictions, file = paste0("data/", spp,
+    "/check-mod-mat-biomass-", spp, "-fixed", covs, year_cutoff, "-", ssid_string, "-prior-", priors, ".rds"))
+```
+
+```{r}
+all_fixed_predictions <- readRDS(paste0("data/", spp,
+    "/check-mod-mat-biomass-", spp, "-fixed", covs, year_cutoff, "-", ssid_string, "-prior-", priors, ".rds"))
+
+all_fixed_predictions <- filter(all_fixed_predictions, ssid %in% c(1,3))
+
+ggplot(all_fixed_predictions, aes(adult_density, residuals)) + 
+  geom_point() + scale_x_continuous(trans = 'log10') + facet_wrap(~year)
+```
+
+```{r}
+ggplot(all_fixed_predictions, aes(est, residuals, colour = adult_density)) + 
+  geom_point() + 
+  #scale_x_continuous(trans = 'log10') + 
+  facet_wrap(~year)
+```
+
+```{r}
+
+ggplot(all_fixed_predictions, aes(X, Y,  colour = residuals)) + 
+  geom_point() + 
+  scale_colour_gradient2() + 
+  scale_x_continuous(trans = 'log10') + 
+  facet_wrap(~year) 
+```

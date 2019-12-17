@@ -4,10 +4,14 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Redbanded Rockfish"
+    #species: "Redbanded Rockfish"
+    #species: "Pacific Ocean Perch"
+    species: "Pacific Cod"
+    #species: "Petrale Sole"
     region: "All synoptic surveys"
-    knots: 600
-    covariates: "+trawled+as.factor(ssid) + trawled:as.factor(ssid)" # additional fixed-effect covariates
+    knots: 800
+    covariates: "+trawled+as.factor(ssid) + trawled:as.factor(ssid)" 
+    # additional fixed-effect covariates
     covs: "-trawled-ssid-reml" # covariate string used to name model rds 
     update_model: TRUE
 ---
@@ -302,5 +306,43 @@ if (any(names(data) == "adult_density")) {
     saveRDS(predictions, file = paste0("data/", spp,
       "/predictions-", spp, covs, "-", ssid_string, "-total-biomass-prior-", priors, ".rds"))
 }
+```
+
+```{r}
+adult_biomass <- readRDS(paste0("data/", spp,
+    "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+
+point_predictions <- predict(adult_biomass)
+point_predictions$residuals <- residuals(adult_biomass)
+
+saveRDS(point_predictions, file = paste0("data/", spp,
+    "/check-mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+
+```
+
+```{r}
+depth_only_predictions <- readRDS(paste0("data/", spp,
+    "/check-mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+
+depth_only_predictions <- filter(depth_only_predictions, ssid %in% c(1,3)) %>% filter (year > 2007)
+
+ggplot(depth_only_predictions, aes(adult_density, residuals, colour = adult_density)) + 
+  geom_point() + scale_x_continuous(trans = 'log10') + facet_wrap(~year)
+```
+
+```{r}
+ggplot(depth_only_predictions, aes((est), residuals, colour = adult_density)) +
+  geom_point() + 
+  #scale_x_continuous(trans = 'log10') + 
+  facet_wrap(~year)
+```
+
+
+```{r}
+ggplot(depth_only_predictions, aes(X, Y, colour = (residuals))) + 
+  geom_point() + 
+  scale_colour_gradient2() + 
+  scale_x_continuous(trans = 'log10') + 
+  facet_wrap(~year) 
 ```
 
