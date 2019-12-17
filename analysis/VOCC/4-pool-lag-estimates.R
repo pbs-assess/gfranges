@@ -15,7 +15,11 @@ glimpse(fixed)
 
 fixed <- mutate(fixed, model = "fixed-depth")
 
-ggplot(filter(fixed, method == "gradient"), aes(bioclim_vel, biotic_vel, colour = start_year)) + 
+plot_data <- filter(fixed, method == "gradient")
+
+plot_data <- filter(fixed, method == "distance")
+
+ggplot(plot_data, aes(bioclim_vel, biotic_vel, colour = start_year)) +
   geom_abline(slope = 1, intercept = 0) +
   #geom_abline(slope = 0, intercept = 0) +
   geom_point(alpha = 0.25 ) + 
@@ -31,7 +35,7 @@ ggplot(filter(fixed, method == "gradient"), aes(bioclim_vel, biotic_vel, colour 
   # geom_hline(aes(yintercept = 0)) +
   theme_bw() + ylab("biotic velocity")+ xlab("bioclimtic velocity")
 
-ggplot(filter(fixed, method == "gradient")) + 
+ggplot(plot_data) + 
   geom_abline(slope = 1, intercept = 0) +
   #geom_abline(slope = 0, intercept = 0) +
   geom_point(aes(DO_vel, biotic_vel, colour = start_year), alpha = 0.25 ) + 
@@ -39,13 +43,13 @@ ggplot(filter(fixed, method == "gradient")) +
   #facet_grid(species~start_year, scales = "free") + 
   facet_grid(species~start_year) + 
   coord_fixed() +
-  scale_x_continuous(trans = sqrt, limits = c(-100,100)) + 
-  scale_y_continuous(trans = sqrt, limits = c(-100,100)) + 
-  # scale_x_continuous(trans = log10, limits = c(-200,200)) + 
-  # scale_y_continuous(trans = log10, limits = c(-200,200)) + 
+  scale_x_continuous(trans = sqrt, limits = c(-50,50)) + 
+  scale_y_continuous(trans = sqrt, limits = c(-50,50)) + 
+  # scale_x_continuous(trans = sqrt, limits = c(-100,100)) + 
+  # scale_y_continuous(trans = sqrt, limits = c(-100,100)) + 
   theme_bw() + ylab("biotic velocity")+ xlab("DO velocity")
 
-ggplot(filter(fixed, method == "gradient")) + 
+ggplot(plot_data) + 
   geom_abline(slope = 1, intercept = 0) +
   #geom_abline(slope = 0, intercept = 0) +
   geom_point(aes(temp_vel, biotic_vel, colour = start_year), alpha = 0.25 ) + 
@@ -53,10 +57,10 @@ ggplot(filter(fixed, method == "gradient")) +
   #facet_grid(species~start_year, scales = "free") + 
   facet_grid(species~start_year) + 
   coord_fixed() +
-  scale_x_continuous(trans = sqrt, limits = c(-100,100)) + 
-  scale_y_continuous(trans = sqrt, limits = c(-100,100)) + 
-  # scale_x_continuous(trans = log10, limits = c(-200,200)) + 
-  # scale_y_continuous(trans = log10, limits = c(-200,200)) + 
+  scale_x_continuous(trans = sqrt, limits = c(-50,50)) +
+  scale_y_continuous(trans = sqrt, limits = c(-50,50)) +
+  # scale_x_continuous(trans = sqrt) + 
+  # scale_y_continuous(trans = sqrt) + 
   theme_bw() + ylab("biotic velocity")+ xlab("temperature velocity")
 
 
@@ -65,8 +69,7 @@ year_list <- sort(unique(fixed$start_year))
 cor_dfs <- list()
 for (a in seq_len(length(year_list))) {
 fixed_multi <- filter(fixed, start_year == year_list[[a]])
-#
-fixed_multi <- filter(fixed, start_year == 2009)
+# fixed_multi <- filter(fixed, start_year == 2009)
 
 species_list <- levels(unique(fixed_multi$species))
 
@@ -76,16 +79,12 @@ spp_df <- filter(fixed_multi, species == species_list[[i]])
 x <- spp_df$temp_vel
 y <- spp_df$biotic_vel
 coords <- spp_df[ ,1:2]
-#temp_coef[i] <- SpatialPack::cor.spatial(x, y, coords)
+temp_coef[i] <- SpatialPack::cor.spatial(x, y, coords)
 temp_coef
 
-z <- SpatialPack::codisp (x , y , coords )
+#z <- SpatialPack::codisp (x , y , coords )
 #ccf (x , y , ylab = " cross - correlation " , max . lag = 20)
-
-
-
-plot ( z )
-
+#plot ( z )
 }
 
 do_coef <- list()
@@ -122,28 +121,33 @@ cor2
 glimpse(cor2)
 
 
-fixed2 <- fixed %>% select(-bioclim_trend, -biotic_trend, -bioclim_grad, -biotic_grad, -DO_trend, -temp_trend, -DO_grad, -temp_grad, -DO_vel, -temp_vel)
+fixed2 <- fixed %>% select( -bioclim_trend, -biotic_trend, 
+  -bioclim_grad, -biotic_grad, -DO_grad, -temp_grad)
 glimpse(fixed2)
 dist <- do.call(rbind, lapply(myfiles[1:20], read.csv)) %>% select(-X)
 glimpse(dist)
 dist <- mutate(dist, model = "fixed-depth")
+fixed2 <- mutate(fixed2, model = "fixed-depth")
 
 fixed <- rbind(fixed2, dist)
 
 ggplot(fixed) + 
-  geom_violin(aes(as.factor(start_year), lag, fill= start_year)) + 
+  geom_boxplot(aes(as.factor(start_year), lag, fill= start_year)) + 
+ # geom_violin(aes(as.factor(start_year), lag, fill= start_year)) + 
   facet_grid(species~method) + 
   scale_y_continuous(trans = sqrt, limits = c(-240,240)) + 
   theme_bw() + ylab("biotic - bioclimatic")
 
 ggplot(fixed) + 
-  geom_violin(aes(as.factor(start_year), biotic_vel, fill= start_year)) + 
+  geom_boxplot(aes(as.factor(start_year), biotic_vel, fill= start_year)) + 
+  #geom_violin(aes(as.factor(start_year), biotic_vel, fill= start_year)) + 
   facet_grid(species~method) + 
   scale_y_continuous(trans = sqrt, limits = c(-240,240)) + 
   theme_bw() + ylab("biotic velocity")
 
 ggplot(fixed) + 
-  geom_violin(aes(as.factor(start_year), bioclim_vel, fill= start_year)) + 
+  geom_boxplot(aes(as.factor(start_year), bioclim_vel, fill = start_year)) + 
+  #geom_violin(aes(as.factor(start_year), bioclim_vel, fill = start_year)) + 
   facet_grid(species~method) + 
   scale_y_continuous(trans = sqrt, limits = c(-240,240)) + 
   theme_bw() + ylab("bioclimatic velocity")

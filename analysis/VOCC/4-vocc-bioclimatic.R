@@ -47,7 +47,14 @@ scale_fac <- 5 # means that the raster is reprojected to _ X original grid (2 km
 d_all <- readRDS(paste0("data/", spp, "/bioclimatic-predictions-", 
   spp, covs, "-1n3n4n16-mat-2015-cutoff.rds")) %>% 
   filter(ssid %in% model_ssid)
-glimpse(d_all)
+#glimpse(d_all)
+
+d_only <-readRDS(paste0("data/", spp,
+  "/predictions-", spp, "-trawled-ssid-reml-1n3n4n16-mature-biomass-prior-FALSE.rds")) %>% filter(year > 2007) %>% 
+  filter(ssid %in% model_ssid) %>% select(X, Y, year, est, est_non_rf, omega_s, epsilon_st) %>% rename(depth_est = est, depth_non_rf = est_non_rf, depth_omega = omega_s, depth_epsilon = epsilon_st)
+#glimpse(d_only)
+
+d_all <- left_join(d_all, d_only) 
 
 # # # for climate independent biotic values...
 # covs <- "-trawled-ssid-reml"
@@ -104,8 +111,18 @@ add_vars <- data.frame(x = x, y = y, icell = icell,
   epsilon_1 = epsilon_1, epsilon_2 = epsilon_2, 
   est_1 = est_1, est_2 = est_2) 
 
-
 ###########################
+### TRIM environment to range sampled
+###########################
+
+#d <- d %>% filter(do_est > 0.23) %>% filter(do_est < 7.91) # full range
+d <- d %>% filter(do_est > 0.28) %>% filter(do_est < 7.06) # 0.005 and 0.995
+#d <- d %>% filter(temp > 2.61) %>% filter(temp < 14.31) # full range
+d <- d %>% filter(temp > 3.07) %>% filter(temp < 11.3) # 0.005 and 0.995
+
+
+
+###########################c
 ### CHOOSE BIOMASS THRESHOLD
 ###########################
 
@@ -330,6 +347,7 @@ gf2t <- mutate(gf2t, velocity = if_else(gradient < grad_threshold,
 ######################################
 
 layer <- "est"
+#layer <- "depth_est"
 
 g3 <- vocc_gradient_calc(dmn, layer,
   scale_fac = scale_fac,
@@ -416,6 +434,30 @@ grad3 <- gfranges::plot_vocc(gf3t,
 )
 grad3
 
+# gf4 <- dmn %>% filter(year == 2009) %>% mutate(x = X, y = Y, diff = exp(depth_est)*10000 - exp(est)*10000)
+# 
+# grad4 <- gfranges::plot_vocc(gf4,
+#   # theme = "black",
+#   coast = TRUE,
+#   vec_aes = NULL,
+#   #grad_vec_aes = "velocity",
+#   #vec_lwd_range = c(0.5, 0.5),
+#   NA_label = "NA",
+#   fill_col = "diff",
+#   fill_label = "depth only est \n- climate est (kg/ha)",
+#   raster_alpha = 1,
+#   #raster_limits = c(-0.5, 1.5),
+#   na_colour = "black",
+#   # white_zero = TRUE,
+#   high_fill = "Steel Blue 4",
+#   low_fill = "Red 3",
+#   axis_lables = FALSE,
+#   transform_col =   sqrt #no_trans # 
+# ) + labs(
+#   title = "comparison of biotic estimates from depth and climate models", #
+#   subtitle = paste0(min(gf4$year))
+# )
+# grad4
 
 ######################################
 ### SAVE Gradient-based PLOTS
@@ -424,7 +466,7 @@ grad3
 png(
   file = paste0("figs/", spp, "/biotic-velocities-g-", scale_fac, 
     "-", spp, covs, "-", ssid_string, "-", min(d$year), "-", max(d$year), 
-    ".png"),
+    "trim.png"),
   res = 600,
   units = "in",
   width = 8.5,

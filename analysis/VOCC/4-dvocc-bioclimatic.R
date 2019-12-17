@@ -5,20 +5,22 @@ library("gfranges")
 library("dplyr")
 library("ggplot2")
 
-# species <- "Redbanded Rockfish"
+#############
+species <- "Redbanded Rockfish"
+lower_change_t <- c(0.25)
+upper_change_t <- c(0.25)
+lower_thresholds_t <- c(3.6) # 50% values
+upper_thresholds_t <- c(6.2) # 50% values
+# lower_thresholds <- c(3.9) # 75% values
+# upper_thresholds <- c(5.6) # 75% values
 
-# lower_change_t <- c(0.25)
-# upper_change_t <- c(0.25)
-# lower_thresholds_t <- c(3.6) # 50% values
-# upper_thresholds_t <- c(6.2) # 50% values
-# # lower_thresholds <- c(3.9) # 75% values
-# # upper_thresholds <- c(5.6) # 75% values
-# 
-# lower_change_do <- c(0.25)
-# upper_change_do <- c(Inf)
-# lower_thresholds_do <- c(1.76) # optimal DO
-# upper_thresholds_do <- c(NA)
+lower_change_do <- c(0.25)
+upper_change_do <- c(Inf)
+lower_thresholds_do <- c(1.76) # optimal DO
+upper_thresholds_do <- c(NA)
 
+
+##############
 # species <- "Pacific Cod"
 # lower_change_t <- c(0.25)
 # upper_change_t <- c(0.25)
@@ -32,6 +34,8 @@ library("ggplot2")
 # lower_thresholds_do <- c(3.1) # optimal DO
 # upper_thresholds_do <- c(NA)
 
+
+##############
 # species <- "Pacific Ocean Perch"
 # lower_change_t <- c(0.25)
 # upper_change_t <- c(0.25)
@@ -47,20 +51,22 @@ library("ggplot2")
 # lower_thresholds_do <- c(1.58) # optimal DO
 # upper_thresholds_do <- c(NA)
 
-species <- "Petrale Sole"
-lower_change_t <- c(0.25)
-upper_change_t <- c(0.25)
-lower_thresholds_t <- c(4.77) # 50% values
-upper_thresholds_t <- c(8.47) # 50% values
 
-# $ lower_t_50   <dbl> 4.771915, 5.463951
-# $ upper_t_50   <dbl> 8.466562, 7.955737
-# $ lower_t_75   <dbl> 5.284308, 5.841591
-# $ upper_t_75   <dbl> 7.645602, 7.441424
-lower_change_do <- c(0.25)
-upper_change_do <- c(Inf)
-lower_thresholds_do <- c(2.52) # optimal DO
-upper_thresholds_do <- c(NA)
+##############
+# species <- "Petrale Sole"
+# lower_change_t <- c(0.25)
+# upper_change_t <- c(0.25)
+# lower_thresholds_t <- c(4.77) # 50% values
+# upper_thresholds_t <- c(8.47) # 50% values
+# 
+# # $ lower_t_50   <dbl> 4.771915, 5.463951
+# # $ upper_t_50   <dbl> 8.466562, 7.955737
+# # $ lower_t_75   <dbl> 5.284308, 5.841591
+# # $ upper_t_75   <dbl> 7.645602, 7.441424
+# lower_change_do <- c(0.25)
+# upper_change_do <- c(Inf)
+# lower_thresholds_do <- c(2.52) # optimal DO
+# upper_thresholds_do <- c(NA)
 
 
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
@@ -69,13 +75,13 @@ spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 covs <- "-fixed"
 # covs <- "-tv-depth"
 
- multiyear <- TRUE
+# multiyear <- TRUE
 
-# multiyear <- FALSE
+ multiyear <- FALSE
 # start_year <- 2009
 # start_year <- 2011
 # start_year <- 2013
-# start_year <- 2015
+ start_year <- 2015
 
 
 #########################
@@ -161,6 +167,16 @@ est_2 <- raster::getValues(rbrick_est[[2]])
 add_vars <- data.frame(x = x, y = y, icell = icell, 
   epsilon_1 = epsilon_1, epsilon_2 = epsilon_2, 
   est_1 = est_1, est_2 = est_2) 
+
+###########################
+### TRIM environment to range sampled
+###########################
+
+#d <- d %>% filter(do_est > 0.23) %>% filter(do_est < 7.91) # full range
+d <- d %>% filter(do_est > 0.28) %>% filter(do_est < 7.06) # 0.005 and 0.995
+#d <- d %>% filter(temp > 2.61) %>% filter(temp < 14.31) # full range
+d <- d %>% filter(temp > 3.07) %>% filter(temp < 11.3) # 0.005 and 0.995
+
 
 
 ###########################
@@ -613,7 +629,7 @@ gvocc3
 png(
   file = paste0("figs/", spp, "/biotic-velocities-d-", scale_fac, "-", 
     spp, covs, "-", ssid_string, "-", min(d$year), "-", max(d$year), 
-    "-symetrical-", biomass_change, ".png"),
+    "-symetrical-", biomass_change, "trim.png"),
   res = 600,
   units = "in",
   width = 8.5,
@@ -630,23 +646,36 @@ dev.off()
 ######################################
 ### Calculate distance-based biotic lags
 ######################################
-glimpse(df3t)
+# glimpse(df3t)
 
-biotic_values <- df3t %>% rename( #biotic_trend = trend_per_year, 
+biotic_values <- df3t %>% rename( biotic_trend = slope, 
   #biotic_grad = gradient, 
   #lat = Y, lon = X
   biotic_vel = velocity) %>% 
   select(x, y, #lat, lon, 
-    icell, biotic_vel, #biotic_trend, biotic_grad, 
+    icell, biotic_vel, #biotic_trend, #biotic_grad, 
     est_1, est_2, epsilon_1, epsilon_2) %>% mutate(start_year = !!start_year)
 
-bioclim_values <- df2t %>% rename( #bioclim_trend = trend_per_year, 
+bioclim_values <- df2t %>% rename( bioclim_trend = slope, 
   #bioclim_grad = gradient, 
   bioclim_vel = velocity) %>% 
-  select(x, y, icell, bioclim_vel#, bioclim_trend, bioclim_grad
+  select(x, y, icell, bioclim_vel, #bioclim_trend, #bioclim_grad
     )
 
+
+DO_values <- dot %>% rename( DO_vel = velocity, 
+  DO_trend = slope) %>% select(x, y, icell, DO_vel, DO_trend)
+
+temp_values <- df1t %>% rename( temp_vel = velocity, 
+  temp_trend = slope) %>% select(x, y, icell, temp_vel, temp_trend)
+
+
 lags <- left_join(bioclim_values, biotic_values)
+
+lags <- left_join(lags, DO_values) # add DO
+lags <- left_join(lags, temp_values) # add temp
+# lags <- mutate(lags, lag = biotic_vel - bioclim_vel, species = !!species, multiyear = !!multiyear, ssid_string = !!ssid_string, method = "gradient")
+
 lags <- mutate(lags, lag = biotic_vel - bioclim_vel, species = !!species, multiyear = !!multiyear, ssid_string = !!ssid_string, method = "distance")
 
 write.csv(lags, file = paste0(
