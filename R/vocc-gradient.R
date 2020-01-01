@@ -20,6 +20,7 @@ vocc_gradient_calc <- function(data,
                                indices = NULL,
                                divisor = 10,
                                latlon = FALSE,
+                               log_space = FALSE,
                                quantile_cutoff = 0.05) {
 
   # # devtools::install_github("seananderson/vocc")
@@ -31,7 +32,28 @@ vocc_gradient_calc <- function(data,
     scale_fac = scale_fac,
     time_step = time_step
   )
-
+  
+  if(log_space) {
+  data$est_exp <- exp(data[[layer]])
+  
+  rbrick_exp <- make_gradient_brick(data, "est_exp",
+    scale_fac = scale_fac,
+    time_step = time_step
+  )
+  sdraster <- raster::calc(rbrick_exp, sd)
+  cvraster <- raster::calc(rbrick, sd)
+  
+  } else {
+    
+  sdraster <- raster::calc(rbrick, sd)
+  cvraster <- raster::calc(rbrick, sd)
+  
+  }
+  
+  
+  
+  
+  
   # Then calculate the trend per pixel:
   slopedat <- vocc::calcslope(rbrick, divisor = divisor)
 
@@ -45,9 +67,9 @@ vocc_gradient_calc <- function(data,
     #   } else {
     mnraster_brick <- raster::stackApply(rbrick, indices = indices, fun = mean)
     # use first time period
-    mnraster <- mnraster_brick[[1]]
+    # mnraster <- mnraster_brick[[1]]
     # to use last time period
-    # mnraster <- mnraster_brick[[raster::nlayers(mnraster_brick)]]
+    mnraster <- mnraster_brick[[raster::nlayers(mnraster_brick)]]
     
   } else {
     # uses average spatial gradient
@@ -81,6 +103,10 @@ vocc_gradient_calc <- function(data,
     dplyr::rename(trend = layer)
   rmnvalues_df <- as.data.frame(raster::rasterToPoints(mnraster))
   names(rmnvalues_df)[3] <- "mean"
+  rsdvalues_df <- as.data.frame(raster::rasterToPoints(sdraster))
+  names(rsdvalues_df)[3] <- "sd"
+  rcvvalues_df <- as.data.frame(raster::rasterToPoints(cvraster))
+  names(rcvvalues_df)[3] <- "cv"
   rgradlat_df <- as.data.frame(raster::rasterToPoints(rgrad_lat)) %>%
     dplyr::rename(gradNS = layer)
   rgradlon_df <- as.data.frame(raster::rasterToPoints(rgrad_lon)) %>%
@@ -92,26 +118,31 @@ vocc_gradient_calc <- function(data,
 
   # create ggquiver plots. need dataframe of lon, lat, delta_lon, delta_lat, trend, velocity
   df <- dplyr::left_join(rtrend_df, rmnvalues_df, by = c("x", "y")) %>%
+    dplyr::left_join(rsdvalues_df, by = c("x", "y")) %>%
+    dplyr::left_join(rcvvalues_df, by = c("x", "y")) %>%
     dplyr::left_join(rgradlat_df, by = c("x", "y")) %>%
     dplyr::left_join(rgradlon_df, by = c("x", "y")) %>%
     dplyr::left_join(rvocc_df, by = c("x", "y")) %>%
     dplyr::left_join(rgrad_df, by = c("x", "y"))
-
+#browser()
   # spatial gradient plot
   df <- dplyr::mutate(df,
+    #CV = sd/mean,
     u_velo = trend / gradWE,
     v_velo = trend / gradNS,
-    ulow = quantile(u_velo, quantile_cutoff),
-    uhi = quantile(u_velo, 1 - quantile_cutoff),
-    vlow = quantile(v_velo, quantile_cutoff),
-    vhi = quantile(v_velo, 1 - quantile_cutoff),
+    ulow = quantile(u_velo, quantile_cutoff, na.rm = TRUE),
+    uhi = quantile(u_velo, 1 - quantile_cutoff, na.rm = TRUE),
+    vlow = quantile(v_velo, quantile_cutoff, na.rm = TRUE),
+    vhi = quantile(v_velo, 1 - quantile_cutoff, na.rm = TRUE),
     u_velo = ifelse(u_velo < ulow, ulow, u_velo),
     u_velo = ifelse(u_velo > uhi, uhi, u_velo),
     v_velo = ifelse(v_velo < vlow, vlow, v_velo),
     v_velo = ifelse(v_velo > vhi, vhi, v_velo)
   ) %>%
     dplyr::select(-ulow, -uhi, -vlow, -vhi)
-  df
+  
+  if(log_space) { df } else { df <- df %>% select(-cv) }
+  
 }
 
 #' Create a RasterBrick from gridded predictions
