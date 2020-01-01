@@ -126,8 +126,8 @@ d <- d %>% filter(temp > 3.07) %>% filter(temp < 11.3) # 0.005 and 0.995
 ### CHOOSE BIOMASS THRESHOLD
 ###########################
 
-bio5perc <- sum(exp(add_vars$est_1), na.rm = TRUE) * 0.05
-s <- sort(exp(add_vars$est_1))
+bio5perc <- sum(exp(add_vars$est_1)* 10000, na.rm = TRUE) * 0.05
+s <- sort(exp(add_vars$est_1)* 10000)
 bio_sum <- cumsum(s)
 lower_density_threshold <- s[which(bio_sum >= bio5perc)[1]]
 
