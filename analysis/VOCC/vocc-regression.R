@@ -18,12 +18,15 @@ stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 stats$genus <- tolower(stats$group)
 
 d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
-  filter(species != "Longspine Thornyhead")
+  filter(species != "Longspine Thornyhead") %>% 
+  filter(species != "Sand Sole")
 
-unique(d$species)
-unique(d$genus)
-
-vocc_regression <- function(y_i, X_ij, knots = 200) {
+select(d, genus, species) %>%
+  distinct() %>%
+  arrange(genus, species) %>% 
+  as.data.frame()
+  
+vocc_regression <- function(y_i, X_ij, knots = 250) {
 
   # y_i <- d$biotic_vel
   # X_ij <- model.matrix(~scale(temp_vel), data = d)
@@ -289,18 +292,28 @@ x <- model.matrix(~ scale(temp_vel), data = d)
 # hist(y, breaks = 100)
 # range(y)
 
-bio_temp <- vocc_regression(y, x, knots = 225)
+bio_temp <- vocc_regression(y, x, knots = 250)
 
 bio_temp2 <- add_colours(bio_temp$coefs)
 bio_temp3 <- plot_coefs(bio_temp2)
 bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC"))
 bio_temp_plot
 
+library(ggsidekick) # for fourth_root_power
+ggplot(bio_temp$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2(trans = "fourth_root_power") + 
+  facet_wrap(~species)
+
 ggplot(bio_temp$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
   scale_fill_gradient2() + 
   facet_wrap(~species)
 
-ggplot(bio_temp$data, aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
+bio_temp$data %>%
+  mutate(resid_upper = quantile(bio_temp$data$residual, probs = 0.975)) %>% # compress tails
+  mutate(resid_lower = quantile(bio_temp$data$residual, probs = 0.025)) %>%  # compress tails
+  mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>% 
+  mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
+  ggplot(aes(x, y, fill = residual)) + geom_tile(width = 5, height = 5) +
   scale_fill_gradient2() + 
   facet_wrap(~species)
 
