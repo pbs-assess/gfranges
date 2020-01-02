@@ -23,7 +23,7 @@
 split_catch_maturity <- function(survey_sets, fish, bath,
                                  survey = c("SYN HS", "SYN QCS"),
                                  years = NULL,
-                                 # year_re = TRUE,
+                                 year_re = TRUE,
                                  cutoff_quantile = 0.9995,
                                  plot = FALSE) {
 
@@ -94,9 +94,15 @@ split_catch_maturity <- function(survey_sets, fish, bath,
       f_fish$threshold <- m$mat_perc$f.p0.5
       m_fish$threshold <- m$mat_perc$m.p0.5
     } else {
+      if (year_re) {
       m <- fit_mat_ogive_re(fish, type = "length", sample_id_re = FALSE, year_re = TRUE)
       f_fish$threshold <- lapply(f_fish$year_f, function(x) m$mat_perc[[x]]$f.p0.5)
       m_fish$threshold <- lapply(m_fish$year_f, function(x) m$mat_perc[[x]]$m.p0.5)
+      } else {
+        m <- fit_mat_ogive_re(fish, type = "length", sample_id_re = TRUE, year_re = FALSE)
+        f_fish$threshold <- m$mat_perc$f.p0.5
+        m_fish$threshold <- m$mat_perc$m.p0.5
+      }
     }
 
     f_fish <- mutate(f_fish,
@@ -172,5 +178,5 @@ split_catch_maturity <- function(survey_sets, fish, bath,
     return(list(data = tidy_sets, maturity = NULL, mass_model = NULL))
   }
 
-  list(data = data, maturity = maturity_plot, mass_model = mass_plot)
+  list(data = data, maturity = maturity_plot, mass_model = mass_plot, model = m)
 }

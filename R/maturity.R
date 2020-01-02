@@ -527,6 +527,11 @@ extract_maturity_perc_re <- function(betas, random_intercepts) {
       f.p0.5 = f.p0.5, f.p0.95 = f.p0.95, f.p0.05 = f.p0.05
     )
   }
+  m.mean.p0.5 <- logit_perc(a = b[[1]], b = b[[2]], perc = 0.5)
+  f.mean.p0.5 <- logit_perc(a = b[[1]] + b[[3]],
+    b = b[[2]] + b[[4]], perc = 0.5)
+  #nrow(re) + 1
+  out[["mean"]] <- list(m.mean.p0.5 = m.mean.p0.5, f.mean.p0.5 = f.mean.p0.5)
   out
 }
 
