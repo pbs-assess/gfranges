@@ -143,7 +143,7 @@ vocc_regression <- function(y_i, X_ij, knots = 200) {
   b_re_genus <- as.data.frame(s[grep("^b_re_genus$", row.names(s)), , drop = FALSE])
   b_re_genus <- bind_cols(ids_genus, b_re_genus)
   
-  r <- bio_temp$obj$report()
+  r <- obj$report()
   nd <- d
   nd$omega_s <- r$omega_sk_A_vec
   nd$eta_i <- r$eta_i
