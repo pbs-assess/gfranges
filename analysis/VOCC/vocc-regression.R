@@ -16,32 +16,34 @@ d <- na.omit(d) %>% as_tibble()
 stats <- readRDS(paste0("data/life-history-stats.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 
-d <- left_join(d, stats)
+d <- left_join(d, stats) %>% filter(species!="Longspine Thornyhead")
 
+#unique(d$species)
 
 vocc_regression <- function(y_i, X_ij, knots = 150) {
 
-#  y_i <- d$biotic_vel
-#  X_ij <- model.matrix(~scale(temp_vel), data = d)
-#  
-# hist(X_ij[,2], breaks = 100)
-# range(X_ij[,2])
-# 
-# hist(y_i, breaks = 100)
-# range(y_i)
-#
-# ggplot(d, aes(x, y, colour = temp_vel)) + geom_point() +
-#   facet_wrap(~species) +
-#   scale_color_viridis_c()
-# 
-# ggplot(d, aes(x, y, colour = biotic_vel)) + geom_point() +
-#   facet_wrap(~species) #+ scale_color_viridis_c()
-#
+ # y_i <- d$biotic_vel
+ # X_ij <- model.matrix(~scale(temp_vel), data = d)
+ #  
+ # hist(X_ij[,2], breaks = 100)
+ # range(X_ij[,2])
+ # 
+ # hist(y_i, breaks = 100)
+ # range(y_i)
+ #
+ # ggplot(d, aes(x, y, colour = temp_vel)) + geom_point() +
+ #   facet_wrap(~species) +
+ #   scale_color_viridis_c()
+ # 
+ # ggplot(d, aes(x, y, colour = biotic_vel)) + geom_point() +
+ #   facet_wrap(~species) #+ scale_color_viridis_c()
+ #
 # -----------------------------
 
 d$species_id <- as.integer(as.factor(d$species))
 
 spde <- sdmTMB::make_spde(d$x, d$y, n_knots = knots)
+# spde <- sdmTMB::make_spde(d$x, d$y, n_knots = 100)
 # map <- sdmTMB::plot_spde(spde)
 
 n_s <- nrow(spde$mesh$loc)
@@ -111,7 +113,7 @@ model <- list(obj = obj, sdr = sdr, coefs = b_re)
 add_colours <- function(coefs, species_data = stats, add_spp_data = TRUE, manual_colours = TRUE) {
 
   if (add_spp_data) {
-    coefs <- left_join(bio_temp1, species_data)
+    coefs <- left_join(coefs, species_data)
     }
   
 if (manual_colours) {
@@ -247,7 +249,7 @@ x <- model.matrix(~scale(temp_vel), data = d)
 # hist(y, breaks = 100)
 # range(y)
 
-bio_temp <- vocc_regression(y, x, knots = 200)
+bio_temp <- vocc_regression(y, x, knots = 100)
 
 bio_temp2 <- add_colours(bio_temp$coefs)
 bio_temp3 <- plot_coefs(bio_temp2) 
@@ -267,21 +269,34 @@ bio_temp_plot
 # bio_temp_plot
 
 
+# ## Ordered by increasing depth and split by rockfish or not
+# bio_temp3 <- plot_coefs(bio_temp2, order_by = "large_depth")
+# bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC in order of mean depth")) + facet_wrap(~rockfish, scales = "free_y")
+# bio_temp_plot
+
+
 y <- d$biotic_vel
 x <- model.matrix(~scale(DO_vel), data = d)
 
-bio_do <- vocc_regression(y, x, knots = 300)
+bio_do <- vocc_regression(y, x, knots = 100)
 bio_do2 <- add_colours(bio_do$coefs)
 bio_do3 <- plot_coefs(bio_do2) 
 bio_do_plot <- bio_do3 + ggtitle(paste("Biotic velocity by DO VOCC"))
 bio_do_plot
+
+# ## Ordered by increasing depth and split by rockfish or not
+# bio_do3 <- plot_coefs(bio_do2, order_by = "large_depth")
+# bio_do_plot <- bio_do3 + ggtitle(paste("Biotic velocity by DO VOCC in order of mean depth")) + facet_wrap(~rockfish, scales = "free_y")
+# bio_do_plot
+
+
 
 ### Local biomass trend from 2007-2018
 
 y <- d$biotic_trend
 x <- model.matrix(~scale(temp_vel), data = d)
 
-trend_temp <- vocc_regression(y, x, knots = 300)
+trend_temp <- vocc_regression(y, x, knots = 100)
 trend_temp2 <- add_colours(trend_temp$coefs)
 trend_temp3 <- plot_coefs(trend_temp2) 
 trend_temp_plot <- trend_temp3 + ggtitle(paste("Biotic trend by thermal VOCC"))
@@ -291,7 +306,7 @@ trend_temp_plot
 y <- d$biotic_trend
 x <- model.matrix(~scale(DO_vel), data = d)
 
-trend_do <- vocc_regression(y, x, knots = 300)
+trend_do <- vocc_regression(y, x, knots = 100)
 trend_do2 <- add_colours(trend_do$coefs)
 trend_do3 <- plot_coefs(trend_do2) 
 trend_do_plot <- trend_do3 + ggtitle(paste("Biotic trend by DO VOCC"))
@@ -302,7 +317,7 @@ trend_do_plot
 y <- d$biotic_CV
 x <- model.matrix(~scale(temp_vel), data = d)
 
-CV_temp <- vocc_regression(y, x, knots = 300)
+CV_temp <- vocc_regression(y, x, knots = 100)
 CV_temp2 <- add_colours(CV_temp$coefs)
 CV_temp3 <- plot_coefs(CV_temp2) 
 CV_temp_plot <- CV_temp3 + ggtitle(paste("Biotic CV by thermal VOCC"))
@@ -312,13 +327,13 @@ CV_temp_plot
 y <- d$biotic_CV
 x <- model.matrix(~scale(DO_vel), data = d)
 
-CV_do <- vocc_regression(y, x, knots = 300)
+CV_do <- vocc_regression(y, x, knots = 100)
 CV_do2 <- add_colours(CV_do$coefs)
 CV_do3 <- plot_coefs(CV_do2) 
 CV_do_plot <- CV_do3 + ggtitle(paste("Biotic CV by DO VOCC"))
-CV_do_plot
+#CV_do_plot <- NULL
 
-png(file = paste0("figs/", model, ".png"),
+png(file = paste0("figs/", model, "100-knots-29-spp.png"),
       res = 600,
       units = "in",
       width = 8.5,
@@ -331,8 +346,9 @@ png(file = paste0("figs/", model, ".png"),
           trend_temp_plot,
           trend_do_plot,
           CV_temp_plot, 
-          CV_do_plot)),
+          CV_do_plot
+        )),
       nrow = 3,
-      top = grid::textGrob(paste(model), " knots = 300")
+      top = grid::textGrob(paste(model, " knots = 100"))
     )
 dev.off()
