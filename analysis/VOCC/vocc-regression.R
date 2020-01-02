@@ -6,36 +6,43 @@ setwd(here::here("analysis", "VOCC"))
 compile("vocc_regression.cpp")
 dyn.load(dynlib("vocc_regression"))
 
-model <- "multi-spp-biotic-vocc"
+#model <- "multi-spp-biotic-vocc"
 model <- "multi-spp-biotic-vocc-mature"
 #model <- "multi-spp-biotic-vocc-immature"
 
 d <- readRDS(paste0("data/", model, ".rds"))
 d <- na.omit(d) %>% as_tibble()
 
+stats <- readRDS(paste0("data/life-history-stats.rds"))
+stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 
-vocc_regression <- function(y_i, X_ij) {
-
-hist(X_ij[,2], breaks = 100)
-range(X_ij[,2])
+d <- left_join(d, stats)
 
 
-hist(y_i, breaks = 100)
-range(y_i)
+vocc_regression <- function(y_i, X_ij, knots = 150) {
 
+#  y_i <- d$biotic_vel
+#  X_ij <- model.matrix(~scale(temp_vel), data = d)
+#  
+# hist(X_ij[,2], breaks = 100)
+# range(X_ij[,2])
+# 
+# hist(y_i, breaks = 100)
+# range(y_i)
+#
 # ggplot(d, aes(x, y, colour = temp_vel)) + geom_point() +
 #   facet_wrap(~species) +
 #   scale_color_viridis_c()
 # 
 # ggplot(d, aes(x, y, colour = biotic_vel)) + geom_point() +
 #   facet_wrap(~species) #+ scale_color_viridis_c()
-
+#
 # -----------------------------
 
 d$species_id <- as.integer(as.factor(d$species))
 
-spde <- sdmTMB::make_spde(d$x, d$y, n_knots = 150)
-# sdmTMB::plot_spde(spde)
+spde <- sdmTMB::make_spde(d$x, d$y, n_knots = knots)
+# map <- sdmTMB::plot_spde(spde)
 
 n_s <- nrow(spde$mesh$loc)
 n_k <- length(unique(d$species))
@@ -101,9 +108,17 @@ b_re <- bind_cols(ids, b_re)
 model <- list(obj = obj, sdr = sdr, coefs = b_re)
 }
 
-add_colours <- function(coefs, manual_colours = TRUE) {
+add_colours <- function(coefs, species_data = stats, add_spp_data = TRUE, manual_colours = TRUE) {
 
+  if (add_spp_data) {
+    coefs <- left_join(bio_temp1, species_data)
+    }
+  
 if (manual_colours) {
+
+# sort(unique(d$species))
+# sort(unique(coefs$species))
+  
 species <- c(
   "Arrowtooth Flounder", 
   "Canary Rockfish",
@@ -151,7 +166,7 @@ species <- c(
      "#3288BD", #"English Sole",
      "#3288BD", #"Flathead Sole",
      "#9E0142", # "Greenstriped Rockfish",
-     "#F46D43", #""Lingcod",
+     "#66C2A5", #""Lingcod",
      "#D53E4F", #"Longspine Thornyhead",
      "#FDAE61", #"North Pacific Spiny Dogfish",
      "#ABDDA4", #""Pacific Cod",
@@ -198,12 +213,16 @@ species <- c(
   out
 }
   
-plot_coefs  <- function (coloured_coefs) {
+plot_coefs  <- function (coloured_coefs, order_by = "Estimate") {
+  
+  # coloured_coefs <- out
   coloured_coefs <- filter(coloured_coefs, coefficient != "(Intercept)")
+  coloured_coefs$order_by <- coloured_coefs[[order_by]]
   colour_list <- coloured_coefs$colours #c(unique(b_re$colours))
   
+  
   p <- ggplot(coloured_coefs, aes(
-    forcats::fct_reorder(species, -Estimate), 
+    forcats::fct_reorder(species, -order_by), #-Estimate), 
     Estimate,
     colour = species,
     ymin = Estimate - 2 * `Std. Error`,
@@ -212,6 +231,7 @@ plot_coefs  <- function (coloured_coefs) {
     geom_hline(yintercept = 0, colour = "darkgray") +
     scale_colour_manual(values = colour_list) + 
     geom_pointrange() + coord_flip() + xlab("") +
+    #facet_wrap(~group) +
     theme(legend.position = "none")
   p
 } 
@@ -222,16 +242,35 @@ plot_coefs  <- function (coloured_coefs) {
 y <- d$biotic_vel
 x <- model.matrix(~scale(temp_vel), data = d)
 
-bio_temp <- vocc_regression(y, x)
+# hist(x[,2], breaks = 100)
+# range(x[,2])
+# hist(y, breaks = 100)
+# range(y)
+
+bio_temp <- vocc_regression(y, x, knots = 200)
+
 bio_temp2 <- add_colours(bio_temp$coefs)
 bio_temp3 <- plot_coefs(bio_temp2) 
-bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC"))
+bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC")) 
 bio_temp_plot
+
+## Ordered by increasing max weight and split by rockfish or not
+# bio_temp3 <- plot_coefs(bio_temp2, order_by = "max_weight")
+# bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC ordered by increasing max weight")) +
+#   facet_wrap(~rockfish, scales="free_y")
+# bio_temp_plot
+
+## Ordered by increasing max age and split by rockfish or not
+# bio_temp_age <- na.omit(bio_temp2)
+# bio_temp3 <- plot_coefs(bio_temp_age, order_by = "max_age") 
+# bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC in order of max age")) + facet_wrap(~rockfish, scales = "free_y")
+# bio_temp_plot
+
 
 y <- d$biotic_vel
 x <- model.matrix(~scale(DO_vel), data = d)
 
-bio_do <- vocc_regression(y, x)
+bio_do <- vocc_regression(y, x, knots = 300)
 bio_do2 <- add_colours(bio_do$coefs)
 bio_do3 <- plot_coefs(bio_do2) 
 bio_do_plot <- bio_do3 + ggtitle(paste("Biotic velocity by DO VOCC"))
@@ -242,7 +281,7 @@ bio_do_plot
 y <- d$biotic_trend
 x <- model.matrix(~scale(temp_vel), data = d)
 
-trend_temp <- vocc_regression(y, x)
+trend_temp <- vocc_regression(y, x, knots = 300)
 trend_temp2 <- add_colours(trend_temp$coefs)
 trend_temp3 <- plot_coefs(trend_temp2) 
 trend_temp_plot <- trend_temp3 + ggtitle(paste("Biotic trend by thermal VOCC"))
@@ -252,7 +291,7 @@ trend_temp_plot
 y <- d$biotic_trend
 x <- model.matrix(~scale(DO_vel), data = d)
 
-trend_do <- vocc_regression(y, x)
+trend_do <- vocc_regression(y, x, knots = 300)
 trend_do2 <- add_colours(trend_do$coefs)
 trend_do3 <- plot_coefs(trend_do2) 
 trend_do_plot <- trend_do3 + ggtitle(paste("Biotic trend by DO VOCC"))
@@ -263,7 +302,7 @@ trend_do_plot
 y <- d$biotic_CV
 x <- model.matrix(~scale(temp_vel), data = d)
 
-CV_temp <- vocc_regression(y, x)
+CV_temp <- vocc_regression(y, x, knots = 300)
 CV_temp2 <- add_colours(CV_temp$coefs)
 CV_temp3 <- plot_coefs(CV_temp2) 
 CV_temp_plot <- CV_temp3 + ggtitle(paste("Biotic CV by thermal VOCC"))
@@ -273,7 +312,7 @@ CV_temp_plot
 y <- d$biotic_CV
 x <- model.matrix(~scale(DO_vel), data = d)
 
-CV_do <- vocc_regression(y, x)
+CV_do <- vocc_regression(y, x, knots = 300)
 CV_do2 <- add_colours(CV_do$coefs)
 CV_do3 <- plot_coefs(CV_do2) 
 CV_do_plot <- CV_do3 + ggtitle(paste("Biotic CV by DO VOCC"))
@@ -294,6 +333,6 @@ png(file = paste0("figs/", model, ".png"),
           CV_temp_plot, 
           CV_do_plot)),
       nrow = 3,
-      top = grid::textGrob(paste(model))
+      top = grid::textGrob(paste(model), " knots = 300")
     )
 dev.off()
