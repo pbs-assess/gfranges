@@ -41,6 +41,7 @@ Type objective_function<Type>::operator()()
   DATA_INTEGER(n_k);   // number of species
   
   DATA_SCALAR(nu);   // dt(df = nu)
+  DATA_INTEGER(student_t);   // vs. normal
   
   // ------------------ Parameters ---------------------------------------------
   
@@ -110,10 +111,12 @@ Type objective_function<Type>::operator()()
       nll_gamma -= dnorm(b_re(k,j), Type(0), exp(log_gamma(j)), true);
     }
   }
+
   for (int m = 0; m < b_re_genus.rows(); m++) {
     for (int j = 0; j < (b_re_genus.cols()); j++) {
       nll_gamma -= dnorm(b_re_genus(m,j), Type(0), exp(log_gamma_genus(j)), true);
     }
+    
   }
   
   // Spatial random effects:
@@ -125,8 +128,11 @@ Type objective_function<Type>::operator()()
   
   for (int i = 0; i < n_i; i++) {
     if (!isNA(y_i(i))) {
-      // nll_data -= dnorm(y_i(i), eta_i(i), exp(ln_phi), true);
-      nll_data -= dstudent(y_i(i), eta_i(i), exp(ln_phi), nu /*df*/, true);
+      if (student_t) {
+        nll_data -= dstudent(y_i(i), eta_i(i), exp(ln_phi), nu /*df*/, true);
+      } else {
+        nll_data -= dnorm(y_i(i), eta_i(i), exp(ln_phi), true);
+      }
     }
   }
   // ------------------ Predictions on new data --------------------------------
