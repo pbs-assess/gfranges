@@ -37,6 +37,7 @@ Type objective_function<Type>::operator()()
   DATA_STRUCT(spde, spde_t); // SPDE objects from R-INLA
   
   DATA_IVECTOR(k_i); // species index
+  DATA_IVECTOR(m_i); // genus index
   DATA_INTEGER(n_k);   // number of species
   
   DATA_SCALAR(nu);   // dt(df = nu)
@@ -47,13 +48,16 @@ Type objective_function<Type>::operator()()
   // Fixed effects
   PARAMETER_VECTOR(b_j);  // fixed effect parameters
   PARAMETER_VECTOR(log_gamma);  // re parameter sigmas
-  PARAMETER(ln_tau_O);    // spatio-temporal process
-  PARAMETER(ln_kappa);    // Matern parameter
-  PARAMETER(ln_phi);           // sigma / dispersion / etc.
+  PARAMETER_VECTOR(log_gamma_genus);  // re parameter sigmas
+  // PARAMETER_VECTOR(ln_tau_O);   // spatial process
+  PARAMETER(ln_tau_O);   // spatial process
+  PARAMETER(ln_kappa);          // Matern parameter
+  PARAMETER(ln_phi);            // sigma / dispersion / etc.
   
   // Random effects
   PARAMETER_ARRAY(omega_sk);  // spatio-temporal effects; n_s by n_k matrix
   PARAMETER_ARRAY(b_re);  // re parameters
+  PARAMETER_ARRAY(b_re_genus);  // re parameters
   
   // ------------------ End of parameters --------------------------------------
   
@@ -92,6 +96,9 @@ Type objective_function<Type>::operator()()
     for (int j = 0; j < (b_re.cols()); j++) {
       eta_i(i) += X_ij(i, j) * b_re(k_i(i), j);
     }
+    for (int m = 0; m < (b_re_genus.cols()); m++) {
+      eta_i(i) += X_ij(i, m) * b_re_genus(m_i(i), m);
+    }
     omega_sk_A_vec(i) = omega_sk_A(A_spatial_index(i), k_i(i)); // record it
     eta_i(i) += omega_sk_A_vec(i);  // spatial
   }
@@ -101,6 +108,11 @@ Type objective_function<Type>::operator()()
   for (int k = 0; k < b_re.rows(); k++) {
     for (int j = 0; j < (b_re.cols()); j++) {
       nll_gamma -= dnorm(b_re(k,j), Type(0), exp(log_gamma(j)), true);
+    }
+  }
+  for (int m = 0; m < b_re_genus.rows(); m++) {
+    for (int j = 0; j < (b_re_genus.cols()); j++) {
+      nll_gamma -= dnorm(b_re_genus(m,j), Type(0), exp(log_gamma_genus(j)), true);
     }
   }
   
@@ -122,6 +134,7 @@ Type objective_function<Type>::operator()()
   // ------------------ Reporting ----------------------------------------------
   
   REPORT(omega_sk_A_vec);   // spatio-temporal effects; vector
+  REPORT(eta_i);        // expectations
   REPORT(range);        // ~ Matern approximate distance at 10% correlation
   ADREPORT(range);      // ~ Matern approximate distance at 10% correlation
   REPORT(sigma_O);

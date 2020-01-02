@@ -15,12 +15,15 @@ d <- na.omit(d) %>% as_tibble()
 
 stats <- readRDS(paste0("data/life-history-stats.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
+stats$genus <- tolower(stats$group)
 
-d <- left_join(d, stats) %>% filter(species != "Longspine Thornyhead")
+d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
+  filter(species != "Longspine Thornyhead")
 
-# unique(d$species)
+unique(d$species)
+unique(d$genus)
 
-vocc_regression <- function(y_i, X_ij, knots = 150) {
+vocc_regression <- function(y_i, X_ij, knots = 200) {
 
   # y_i <- d$biotic_vel
   # X_ij <- model.matrix(~scale(temp_vel), data = d)
@@ -41,13 +44,14 @@ vocc_regression <- function(y_i, X_ij, knots = 150) {
   # -----------------------------
 
   d$species_id <- as.integer(as.factor(d$species))
+  d$genus_id <- as.integer(as.factor(d$genus))
 
   spde <- sdmTMB::make_spde(d$x, d$y, n_knots = knots)
-  # spde <- sdmTMB::make_spde(d$x, d$y, n_knots = 100)
   # map <- sdmTMB::plot_spde(spde)
 
   n_s <- nrow(spde$mesh$loc)
   n_k <- length(unique(d$species))
+  n_m <- length(unique(d$genus))
 
   data <- d
   data$sdm_orig_id <- seq(1, nrow(data))
@@ -71,6 +75,7 @@ vocc_regression <- function(y_i, X_ij, knots = 150) {
     A_spatial_index = data$sdm_spatial_id - 1L,
     spde = spde$spde$param.inla[c("M0", "M1", "M2")],
     k_i = d$species_id - 1L,
+    m_i = d$genus_id - 1L,
     n_k = n_k,
     nu = 7 # Student-t DF
   )
@@ -78,25 +83,48 @@ vocc_regression <- function(y_i, X_ij, knots = 150) {
   tmb_param <- list(
     b_j = rep(0, ncol(X_ij)),
     log_gamma = rep(-1, ncol(X_ij)),
-    ln_tau_O = 1,
+    log_gamma_genus = rep(-1, ncol(X_ij)),
+    ln_tau_O = rep(1, 1L),
     ln_kappa = -2,
     ln_phi = -1,
     omega_sk = matrix(0, nrow = n_s, ncol = n_k),
-    b_re = matrix(0, nrow = n_k, ncol = ncol(X_ij))
+    b_re = matrix(0, nrow = n_k, ncol = ncol(X_ij)),
+    b_re_genus = matrix(0, nrow = n_m, ncol = ncol(X_ij))
   )
 
-  obj <- MakeADFun(tmb_data, tmb_param, DLL = "vocc_regression", random = c("b_j", "omega_sk", "b_re"))
+  message("Fitting fixed effects only...")
+  tmb_map <- list(
+    log_gamma = as.factor(rep(NA, ncol(X_ij))),
+    log_gamma_genus = as.factor(rep(NA, ncol(X_ij))),
+    ln_tau_O = as.factor(rep(NA, 1L)),
+    ln_kappa = factor(NA),
+    omega_sk = as.factor(matrix(NA, nrow = n_s, ncol = n_k)),
+    b_re = as.factor(matrix(NA, nrow = n_k, ncol = ncol(X_ij))),
+    b_re_genus = as.factor(matrix(NA, nrow = n_m, ncol = ncol(X_ij)))
+  )
+  obj_fe <- TMB::MakeADFun(
+    data = tmb_data, parameters = tmb_param, map = tmb_map,
+    random = NULL, DLL = "vocc_regression"
+  )
+  opt_fe <- nlminb(obj_fe$par, obj_fe$fn, obj_fe$gr)
+  set_par_value <- function(opt, par) as.numeric(opt$par[par == names(opt$par)])
+  tmb_param$b_j <- set_par_value(opt_fe, "b_j")
+  tmb_param$ln_phi <- set_par_value(opt_fe, "ln_phi")
+
+  message("Fitting fixed and random effects...")
+  obj <- MakeADFun(tmb_data, tmb_param, DLL = "vocc_regression", 
+    random = c("b_j", "omega_sk", "b_re", "b_re_genus"))
   opt <- nlminb(obj$par, obj$fn, obj$gr, control = list(eval.max = 1e4, iter.max = 1e4))
   sdr <- sdreport(obj)
   sdr
 
   s <- summary(sdr)
 
-  mutate(as.data.frame(s[row.names(s) == "b_j", ]), coefficient = colnames(X_ij)) %>%
-    select(coefficient, Estimate, `Std. Error`)
-
-  s[grep("ln|log", row.names(s)), ]
-  s[grep("sigma", row.names(s)), , drop = FALSE]
+  # mutate(as.data.frame(s[row.names(s) == "b_j", ]), coefficient = colnames(X_ij)) %>%
+  #   select(coefficient, Estimate, `Std. Error`)
+  #
+  # s[grep("ln|log", row.names(s)), ]
+  # s[grep("sigma", row.names(s)), , drop = FALSE]
 
   ids <- distinct(select(d, species, species_id)) %>% arrange(species_id)
   n_spp <- nrow(ids)
@@ -104,10 +132,24 @@ vocc_regression <- function(y_i, X_ij, knots = 150) {
   ids <- do.call("rbind", replicate(n_coefs, ids, simplify = FALSE))
   ids[["coefficient"]] <- rep(colnames(X_ij), each = n_spp)
 
-  b_re <- as.data.frame(s[grep("b_re", row.names(s)), , drop = FALSE])
+  ids_genus <- distinct(select(d, genus, genus_id)) %>% arrange(genus_id)
+  n_genus <- nrow(ids_genus)
+  ids_genus <- do.call("rbind", replicate(n_coefs, ids_genus, simplify = FALSE))
+  ids_genus[["coefficient"]] <- rep(colnames(X_ij), each = n_genus)
+
+  b_re <- as.data.frame(s[grep("^b_re$", row.names(s)), , drop = FALSE])
   b_re <- bind_cols(ids, b_re)
 
-  model <- list(obj = obj, sdr = sdr, coefs = b_re)
+  b_re_genus <- as.data.frame(s[grep("^b_re_genus$", row.names(s)), , drop = FALSE])
+  b_re_genus <- bind_cols(ids_genus, b_re_genus)
+  
+  r <- bio_temp$obj$report()
+  nd <- d
+  nd$omega_s <- r$omega_sk_A_vec
+  nd$eta_i <- r$eta_i
+  nd$residual <- nd$biotic_vel - r$eta_i
+
+  list(obj = obj, opt = opt, sdr = sdr, coefs = b_re, coefs_genus = b_re_genus, data = nd)
 }
 
 add_colours <- function(coefs, species_data = stats, add_spp_data = TRUE, manual_colours = TRUE) {
@@ -247,12 +289,20 @@ x <- model.matrix(~ scale(temp_vel), data = d)
 # hist(y, breaks = 100)
 # range(y)
 
-bio_temp <- vocc_regression(y, x, knots = 100)
+bio_temp <- vocc_regression(y, x, knots = 225)
 
 bio_temp2 <- add_colours(bio_temp$coefs)
 bio_temp3 <- plot_coefs(bio_temp2)
 bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC"))
 bio_temp_plot
+
+ggplot(bio_temp$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2() + 
+  facet_wrap(~species)
+
+ggplot(bio_temp$data, aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2() + 
+  facet_wrap(~species)
 
 ## Ordered by increasing max weight and split by rockfish or not
 # bio_temp3 <- plot_coefs(bio_temp2, order_by = "max_weight")
