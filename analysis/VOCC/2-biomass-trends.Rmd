@@ -4,11 +4,13 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Petrale Sole"
+    species: "Pacific Ocean Perch" 
+    #species: "Redbanded Rockfish"
     region: "All synoptic surveys"
     start_year: 2008
     bind_predictions: FALSE
-    covs: "-trawled-ssid" # covariate string used to name model rds 
+    covs: "-trawled-ssid-reml"
+    #covs: "-log-both-noAR1" #"-trawled-ssid" # covariate string used to name model rds 
 ---
 
 ```{r global_options, include=FALSE}
@@ -753,4 +755,71 @@ gridExtra::grid.arrange(
 dev.off()
 ```
 
+
+```{r}
+plot_map_raster <- function(dat, column = "est") {
+    ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    coord_fixed()+
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+}
+
+ # plot_map_raster(adult_predictions, "epsilon_st") +
+ #  ggtitle("Spatiotemporal random effects only") +
+ #  facet_wrap(~year) +
+ #  scale_fill_gradient2( high = "Steel Blue 4",
+ #  low = "Red 3") + coord_fixed()
+
+ if (exists("adult_predictions")) {
+  p_st <- list()
+  for (i in seq_len(length(model_ssid))) {
+    p_st[[i]] <- plot_map_raster(ad_prediction_list[[i]], "epsilon_st") +
+      ggtitle("Spatiotemporal random effects only") +
+      facet_wrap(~year) +
+      scale_fill_gradient2(high = "#66C2A5", #mid = "black", 
+        low = "#5E4FA2"#, trans = fourth_root_power
+      )
+    p_st[[i]]
+   }
+  print(p_st)
+ 
+  # p_adult_st <- plot_facet_map(adult_predictions, "epsilon_st",
+  #   white_zero = TRUE
+  #   #raster_limits = c(0, max_raster),
+  #   #legend_position = "none",
+  #   #transform_col = fourth_root_power
+  # ) +
+  #   #labs(fill = "kg/ha") +
+  #   ggtitle(paste0("", species, "mature spatiotemporal variation"))
+  # print(p_adult_st)
+} else {
+  # p_adult_st <- plot_facet_map(predictions, "epsilon_st",
+  #   transform_col = fourth_root_power
+  # ) +
+  #   #labs(fill = "kg/ha") +
+  #   ggtitle(paste0("", species, "total spatiotemporal variation"))
+  # 
+  # print(p_adult_st)
+}
+```
+
+Save spatiotemporal residual plots
+```{r results = "hide"}
+# if(exists("adult_predictions")) { resid_plots <- c(p_st, p_imm) } else {
+#   biomass_plots <- c(p_adult)
+# }
+
+png(
+  file = paste0("figs/", spp, "/biotic-residuals-", spp, covs, "-", ssid_string, "-priors-", priors, ".png"),
+  res = 600,
+  units = "in",
+  width = 16,
+  height = 8.5
+)
+gridExtra::grid.arrange(
+  grobs = p_st,
+  nrow = 2
+)
+dev.off()
+```
 

@@ -6,7 +6,8 @@ output: html_document
 params: 
     # species: "Redbanded Rockfish"
     # species: "Pacific Cod" 
-    species: "Pacific Ocean Perch" 
+    # species: "Pacific Ocean Perch" 
+    species: "Petrale Sole"
     region: "All synoptic surveys"
     start_year: 2008
     bind_predictions: FALSE

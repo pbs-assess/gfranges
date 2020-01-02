@@ -2,13 +2,13 @@ getwd()
 setwd(here::here("/analysis/VOCC/data"))
 library("dplyr")
 
-#covs <- "-fixed"
+# covs <- "-fixed"
 # mydir = paste0( "biotic_test1")
-mydir = paste0( "biotic_mature")
-#mydir = paste0( "biotic_immature")
+mydir <- paste0("biotic_mature")
+# mydir = paste0( "biotic_immature")
 
 
-myfiles = list.files(path=mydir, pattern="*.csv", full.names=TRUE)
+myfiles <- list.files(path = mydir, pattern = "*.csv", full.names = TRUE)
 myfiles
 biotic <- do.call(rbind, lapply(myfiles, read.csv)) %>% select(-X, -start_year)
 glimpse(biotic)
@@ -16,7 +16,7 @@ glimpse(biotic)
 # saveRDS(biotic, file = paste0(
 #   "multi-spp-biotic-vocc.rds"
 # ))
-# 
+#
 saveRDS(biotic, file = paste0(
   "multi-spp-biotic-vocc-mature.rds"
 ))
