@@ -9,7 +9,7 @@ params:
     #species: "Pacific Ocean Perch"
     region: "All synoptic surveys"
     # region: "Both odd year surveys"
-    split: TRUE
+    split: FALSE
 ---
 
 ```{r global_options, include=FALSE}
@@ -32,6 +32,7 @@ library(gfranges)
 
 
 ```{r}
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 paste("region =", region)
 
 # folder to hold figs for this species
@@ -82,6 +83,7 @@ if (!exists("biomass")) {
   fish <- readRDS(paste0("raw/bio-data-", spp, ""))
   bath <- readRDS("data/bathymetry-data")
   
+   
   # for POP: exclude sample with unusually large fish 
   # sizes are impossible given recorded catch weight
   # fish <- fish[fish$fishing_event_id!=1506954,]
@@ -112,23 +114,30 @@ if (!exists("biomass")) {
   
   if (split) {
   maturity$data <- filter(maturity$data, ssid == model_ssid) 
-  # %>% select(-adult_density, -imm_density) # if maturity model is deemed unuseful
+
   if (!is.null(maturity$maturity)) {
   saveRDS(maturity$model, file = paste0("data/", spp, 
     "/maturity-ogive-", spp, "-", ssid_string, ".rds"
     ))
   }
   } else {
-    
+  if (is.null(maturity$maturity)) {
+    maturity$data <- filter(maturity$data, ssid == model_ssid) 
+  } else { # if maturity model is deemed unuseful
   maturity$data <- filter(maturity$data, ssid == model_ssid) %>% 
-    select(-adult_density, -imm_density) # if maturity model is deemed unuseful
-
+    select(-adult_density, -imm_density) 
+  }
   }
   
   saveRDS(maturity$data, file = paste0("data/", spp, 
     "/data-by-maturity-", spp, "-", ssid_string, ".rds"
     ))
 }
+
+positive_sets <- filter(survey_sets, density_kgpm2 != 0)
+prop_pos <- round(nrow(positive_sets)/nrow(survey_sets), digits = 3)
+
+paste("proportion of positive sets =", prop_pos)
 ```
 
 #### Save length~weight plots
@@ -146,17 +155,20 @@ if (exists("maturity")) {
 
 #### Save length at maturity plot 
 ```{r}
-if (exists("maturity")) {
   png(
-    file = paste0("figs/", spp, "/", spp, "-maturity-", ssid_string, ".png"), 
+    file = paste0("figs/_maturity_ogives/maturity-", prop_pos,"-", spp, "-", ssid_string, ".png"), 
     res = 600,
     units = "in",
     width = 8, 
     height = 6
   )
+  if (exists("maturity")) {
   print(maturity$maturity)
+  } else {
+  ggplot(fish, aes(length)) + geom_histogram(bins=50) + facet_grid(~sex)  
+    }
+
   dev.off()
-}
 
 try(print(maturity$maturity))
 ```
