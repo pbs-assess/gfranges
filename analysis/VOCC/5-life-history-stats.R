@@ -50,6 +50,8 @@ species <- c(
 )
 
 # species <- c("Spotted Ratfish")
+
+# species <- c("Bocaccio")
 # species <- c("Shortraker Rockfish")
 # spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
@@ -67,6 +69,7 @@ life_history <- purrr::map_dfr(species, function(x) {
   bath <- readRDS("data/bathymetry-data")
   depth <- bath$data %>% select(fishing_event_id, depth)
   fish <- left_join(fish, depth)
+   plot(length~depth, data=fish)
   
   rm(maturity)
   try({
@@ -106,8 +109,12 @@ life_history <- purrr::map_dfr(species, function(x) {
   }
   
   ## FOR EXPLORING SPECIAL CASES
-  # fish_f <- filter(fish, sex == 2)
-  # fish_m <- filter(fish, sex == 1)
+  fish_f <- filter(fish, sex == 2)
+  fish_m <- filter(fish, sex == 1)
+  hist(fish_m$length, breaks = 50)
+  hist(fish_f$length, breaks = 50)
+  hist(fish$weight, breaks = 50)
+  plot(weight~length, data=fish)
   # mid <- filter(fish, length > 40)#%>% filter(length<40)#small_threshold)
   # dep <- mean(mid$depth, na.rm =TRUE)
   # dep
