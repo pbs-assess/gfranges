@@ -37,22 +37,84 @@ source("vocc-regression-functions.R")
 
 ### Local biomass velocity from 2007-2018
 
-y <- d$biotic_vel
-x <- model.matrix(~ scale(temp_vel), data = d)
+# y <- d$biotic_vel
+# d$temp_vel_squashed <-  collapse_outliers(d$temp_vel, c(0.005, 0.995))
+# x <- model.matrix(~ scale(temp_vel_squashed) + I(scale(temp_vel_squashed)^2), data = d)
 # 
-# hist(x[,2], breaks = 100)
-# range(x[,2])
+# y <- collapse_outliers(y, c(0.005, 0.995))
 # hist(y, breaks = 100)
-# range(y)
+# hist(x[,2], breaks = 100)
+# hist(x[,3], breaks = 100)
+#
+# .d <- d
+# .d$y_i <- y
+# .d$x_scaled <- x[,2]
+# .d$x_scaled_sq <- x[,3]
+# ggplot(.d, aes(x_scaled, y_i)) + facet_wrap(~species) + geom_point()
+# ggplot(.d, aes(x_scaled_sq, y_i)) + facet_wrap(~species) + geom_point()
+#
+# cube_root <- function(x) sign(x) * abs(x)^(1/3)
+# fourth_root <- function(x) sign(x) * abs(x)^(1/4)
+# hist(cube_root(y), breaks = 100)
+# hist(cube_root(d$temp_vel), breaks = 100)
+#
+# hist(fourth_root(y), breaks = 100)
+# hist(fourth_root(d$temp_vel), breaks = 100)
+#
+# ggplot(.d, aes(fourth_root(temp_vel), fourth_root(y_i))) +
+#   facet_wrap(~species) + geom_point(alpha = 0.1)
+#
+# y <- fourth_root(d$biotic_vel)
+# x <- model.matrix(~ fourth_root(temp_vel), data = d)
+# plot(x[,2], y, col = "#00000005")
 
-bio_temp <- vocc_regression(y, x, knots = 200, group_by_genus = FALSE)
-bio_temp_genus <- vocc_regression(y, x, knots = 200, group_by_genus = TRUE)
+# y <- d$biotic_grad
+# hist(log(collapse_outliers(y, c(0, 1))), breaks = 100)
+#
+# hist(collapse_outliers(x[,2], c(0.001, 0.999)), breaks = 100)
+# hist(collapse_outliers(y, c(0.01, 0.99)), breaks = 100);abline(v = 0)
+#
+# # fourth <- function(x) ifelse(x > 0, x^0.25, -(-x)^0.25)
+# # hist(fourth(collapse_outliers(y, c(0.01, 0.99))), breaks = 100);abline(v = 0)
+#
+# y <- d$biotic_trend
+# x <- model.matrix(~ scale(temp_vel), data = d)
+# bio_temp <- vocc_regression(log(y), x, offset = log(d$biotic_grad),
+#   knots = 200, group_by_genus = FALSE, student_t = FALSE)
 
-get_aic(bio_temp)
-get_aic(bio_temp_genus)
+# y <- d$biotic_vel
+# .y <- y
+# hist(y, xlim = c(-10, 10), breaks = 2000)
+# lims <- c(-2, 2)
+# y[.y > lims[2]] <- 1L
+# y[.y < lims[1]] <- 0L
+# y[.y <= lims[2] & .y >= lims[1]] <- NA
+# sum(.y <= lims[2] & .y >= lims[1])/length(y)
+# table(y)
+#
+# d2 <- d[!is.na(y), , drop = FALSE]
+# y <- as.numeric(na.omit(y))
+# x <- model.matrix(~ temp_vel, data = d2)
 
-sdmTMB:::get_convergence_diagnostics(bio_temp)
-sdmTMB:::get_convergence_diagnostics(bio_temp_genus)
+y <- collapse_outliers(d$biotic_vel, c(0.005, 0.995))
+d$temp_vel_squashed <-  collapse_outliers(d$temp_vel, c(0.005, 0.995))
+x <- model.matrix(~ scale(temp_vel_squashed), data = d)
+
+hist(y)
+hist(x[,2])
+bio_temp <- vocc_regression(d, y, x,
+  knots = 200, group_by_genus = FALSE, student_t = TRUE, nu = 5)
+
+bio_temp_genus <- vocc_regression(d, y, x, knots = 200,
+  group_by_genus = TRUE, student_t = TRUE, nu = 5)
+
+bio_temp$sdr
+bio_temp_genus$sdr
+
+get_aic(bio_temp_genus) - get_aic(bio_temp)
+
+# sdmTMB:::get_convergence_diagnostics(bio_temp)
+# sdmTMB:::get_convergence_diagnostics(bio_temp_genus)
 
 bio_temp2 <- add_colours(bio_temp$coefs)
 bio_temp3 <- plot_coefs(bio_temp2)
@@ -65,9 +127,9 @@ bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC"))
 bio_temp_plot
 
 library(ggsidekick) # for fourth_root_power
-ggplot(bio_temp$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2(trans = "fourth_root_power") + 
-  facet_wrap(~species)
+# ggplot(bio_temp$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
+#   scale_fill_gradient2(trans = "fourth_root_power") +
+#   facet_wrap(~species)
 
 ggplot(bio_temp$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
   scale_fill_gradient2() + 
@@ -82,14 +144,19 @@ bio_temp$data %>%
   scale_fill_gradient2() + 
   facet_wrap(~species)
 
-# norm_resids <- qres_student(bio_temp)
-# norm_resids <- norm_resids[is.finite(norm_resids)]
+norm_resids <- qres_student(bio_temp)
+norm_resids <- norm_resids[is.finite(norm_resids)]
 # qqnorm(norm_resids)
+hist(norm_resids)
 
+norm_resids <- qres_student(bio_temp_genus)
+norm_resids <- norm_resids[is.finite(norm_resids)]
+# qqnorm(norm_resids)
+hist(norm_resids)
 
-
-
-
+#
+# qqnorm(bio_temp$data$residual)
+# qqline(bio_temp$data$residual)
 
 
 ## Ordered by increasing max weight and split by rockfish or not
