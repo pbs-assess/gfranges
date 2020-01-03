@@ -40,6 +40,7 @@ Type objective_function<Type>::operator()()
   DATA_IVECTOR(k_i); // species index
   DATA_IVECTOR(m_i); // genus index
   DATA_INTEGER(n_k);   // number of species
+  DATA_IVECTOR(genus_index_k); // genus index for random effect calculations
   
   DATA_SCALAR(nu);   // dt(df = nu)
   DATA_INTEGER(student_t);   // vs. normal
@@ -118,7 +119,6 @@ Type objective_function<Type>::operator()()
     for (int j = 0; j < (b_re_genus.cols()); j++) {
       nll_gamma -= dnorm(b_re_genus(m,j), Type(0), exp(log_gamma_genus(j)), true);
     }
-    
   }
   
   // Spatial random effects:
@@ -139,8 +139,17 @@ Type objective_function<Type>::operator()()
       }
     }
   }
-  // ------------------ Predictions on new data --------------------------------
-  // ------------------ Derived quantities ---------------------------------
+  
+  // ------------------ Derived quantities -------------------------------------
+  
+  array<Type> combined_re(b_re.rows(), b_re.cols());
+  combined_re.setZero();
+  for (int k = 0; k < b_re.rows(); k++) {
+    for (int j = 0; j < (b_re.cols()); j++) {
+      combined_re(k, j) = b_j(j) + b_re_genus(genus_index_k(k), j) + b_re(k, j) ;
+    }
+  }
+  
   // ------------------ Reporting ----------------------------------------------
   
   REPORT(omega_sk_A_vec);   // spatio-temporal effects; vector
@@ -149,6 +158,8 @@ Type objective_function<Type>::operator()()
   ADREPORT(range);      // ~ Matern approximate distance at 10% correlation
   REPORT(sigma_O);
   ADREPORT(sigma_O);
+  REPORT(combined_re);
+  ADREPORT(combined_re);
   
   // ------------------ Joint negative log likelihood --------------------------
   

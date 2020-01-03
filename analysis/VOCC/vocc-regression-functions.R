@@ -51,6 +51,9 @@ vocc_regression <- function(dat, y_i, X_ij, offset = rep(0, length(y_i)),
     loc = as.matrix(fake_data[, c("sdm_x", "sdm_y"), drop = FALSE])
   )
 
+  genus_index_k_df <- data.frame(species_id = dat$species_id, genus_id = dat$genus_id) %>% 
+    dplyr::distinct()
+  
   tmb_data <- list(
     y_i = y_i,
     X_ij = X_ij,
@@ -63,7 +66,8 @@ vocc_regression <- function(dat, y_i, X_ij, offset = rep(0, length(y_i)),
     nu = nu, # Student-t DF
     student_t = as.integer(student_t),
     binomial = as.integer(binomial),
-    offset_i = offset
+    offset_i = offset,
+    genus_index_k = genus_index_k_df$genus_id - 1L
   )
 
   tmb_param <- list(
@@ -138,7 +142,10 @@ vocc_regression <- function(dat, y_i, X_ij, offset = rep(0, length(y_i)),
   ids_genus <- do.call("rbind", replicate(n_coefs, ids_genus, simplify = FALSE))
   ids_genus[["coefficient"]] <- rep(colnames(X_ij), each = n_genus)
 
-  b_re <- as.data.frame(s[grep("^b_re$", row.names(s)), , drop = FALSE])
+  b_re_species <- as.data.frame(s[grep("^b_re$", row.names(s)), , drop = FALSE])
+  b_re_species <- bind_cols(ids, b_re_species)
+  
+  b_re <- as.data.frame(s[grep("^combined_re$", row.names(s)), , drop = FALSE])
   b_re <- bind_cols(ids, b_re)
 
   if (group_by_genus) {
@@ -155,7 +162,7 @@ vocc_regression <- function(dat, y_i, X_ij, offset = rep(0, length(y_i)),
   nd$residual <- nd$biotic_vel - r$eta_i
 
   list(obj = obj, opt = opt, sdr = sdr, coefs = b_re, coefs_genus = b_re_genus, data = nd,
-    group_by_genus = group_by_genus, nu = nu, y_i = y_i, X_ij = X_ij)
+    group_by_genus = group_by_genus, nu = nu, y_i = y_i, X_ij = X_ij, b_re_species = b_re_species)
 }
 
 add_colours <- function(coefs, species_data = stats, add_spp_data = TRUE, manual_colours = TRUE) {
