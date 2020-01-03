@@ -296,7 +296,7 @@ get_aic <- function(x, k = 2) {
 
 # https://en.wikipedia.org/wiki/Location%E2%80%93scale_family
 pt_ls <- function(q, df, mu, sigma) stats::pt((q - mu)/sigma, df)
-qres_student <- function(object, y = "biotic_vel") {
+qres_student <- function(object) {
   dispersion <- exp(object$opt$par[["ln_phi"]])
   y <- object$y_i
   mu <- object$data$eta_i
