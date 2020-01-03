@@ -30,6 +30,7 @@ Type objective_function<Type>::operator()()
   // Vectors of real data
   DATA_VECTOR(y_i);      // response
   DATA_MATRIX(X_ij);     // model matrix
+  DATA_VECTOR(offset_i);      // offset
   
   DATA_SPARSE_MATRIX(A_sk); // INLA 'A' projection matrix for unique stations
   DATA_IVECTOR(A_spatial_index); // Vector of stations to match up A_sk output
@@ -42,6 +43,7 @@ Type objective_function<Type>::operator()()
   
   DATA_SCALAR(nu);   // dt(df = nu)
   DATA_INTEGER(student_t);   // vs. normal
+  DATA_INTEGER(binomial);
   
   // ------------------ Parameters ---------------------------------------------
   
@@ -93,7 +95,7 @@ Type objective_function<Type>::operator()()
   vector<Type> eta_fixed_i = X_ij * b_j;
   vector<Type> eta_i(n_i);
   for (int i = 0; i < n_i; i++) {
-    eta_i(i) = eta_fixed_i(i);
+    eta_i(i) = eta_fixed_i(i) + offset_i(i);
     for (int j = 0; j < (b_re.cols()); j++) {
       eta_i(i) += X_ij(i, j) * b_re(k_i(i), j);
     }
@@ -130,6 +132,8 @@ Type objective_function<Type>::operator()()
     if (!isNA(y_i(i))) {
       if (student_t) {
         nll_data -= dstudent(y_i(i), eta_i(i), exp(ln_phi), nu /*df*/, true);
+      } else if (binomial) {
+        nll_data -= dbinom_robust(y_i(i), Type(1.0) /*size*/, eta_i(i), true);
       } else {
         nll_data -= dnorm(y_i(i), eta_i(i), exp(ln_phi), true);
       }
