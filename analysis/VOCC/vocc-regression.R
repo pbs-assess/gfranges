@@ -19,7 +19,9 @@ stats$genus <- tolower(stats$group)
 
 d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
   filter(species != "Longspine Thornyhead") %>% 
-  filter(species != "Sand Sole")
+  #filter(species != "Sand Sole") %>% 
+  filter(species != "Bocaccio") %>% 
+filter(species != "Curlfin Sole") 
 
 select(d, genus, species) %>%
   distinct() %>%
@@ -98,7 +100,10 @@ source("vocc-regression-functions.R")
 
 y <- collapse_outliers(d$biotic_vel, c(0.005, 0.995))
 d$temp_vel_squashed <-  collapse_outliers(d$temp_vel, c(0.005, 0.995))
-x <- model.matrix(~ scale(temp_vel_squashed), data = d)
+d$do_vel_squashed <-  collapse_outliers(d$DO_vel, c(0.005, 0.995))
+plot(scale(do_vel_squashed)~scale(temp_vel_squashed), data=d, col = "#00000010")
+
+x <- model.matrix(~ scale(temp_vel_squashed) + scale(do_vel_squashed) + scale(do_vel_squashed):scale(temp_vel_squashed), data = d)
 
 hist(y)
 hist(x[,2])
@@ -113,17 +118,20 @@ bio_temp_genus$sdr
 
 get_aic(bio_temp_genus) - get_aic(bio_temp)
 
+# saveRDS(bio_temp, file = "data/bio_temp_mature.rds")
+# saveRDS(bio_temp_genus, file = "data/bio_temp_genus_mature.rds")
+
 # sdmTMB:::get_convergence_diagnostics(bio_temp)
 # sdmTMB:::get_convergence_diagnostics(bio_temp_genus)
 
 bio_temp2 <- add_colours(bio_temp$coefs)
 bio_temp3 <- plot_coefs(bio_temp2)
-bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC"))
+bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC")) + facet_wrap(~coefficient, scales = "free_x") #
 bio_temp_plot
 
 bio_temp2 <- add_colours(bio_temp_genus$coefs)
 bio_temp3 <- plot_coefs(bio_temp2)
-bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC"))
+bio_temp_plot <- bio_temp3 + ggtitle(paste("Immature biotic velocity by thermal VOCC with genus re")) #+ facet_wrap(~genus)
 bio_temp_plot
 
 library(ggsidekick) # for fourth_root_power
@@ -177,6 +185,20 @@ hist(norm_resids)
 # bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC in order of mean depth")) + facet_wrap(~rockfish, scales = "free_y")
 # bio_temp_plot
 
+x <- model.matrix(~ scale(temp_vel_squashed), data = d)
+
+hist(y)
+hist(x[,2])
+bio_temp <- vocc_regression(d, y, x,
+  knots = 200, group_by_genus = FALSE, student_t = TRUE, nu = 5)
+
+bio_temp_genus <- vocc_regression(d, y, x, knots = 200,
+  group_by_genus = TRUE, student_t = TRUE, nu = 5)
+
+bio_temp$sdr
+bio_temp_genus$sdr
+
+get_aic(bio_temp_genus) - get_aic(bio_temp)
 
 y <- d$biotic_vel
 x <- model.matrix(~ scale(DO_vel), data = d)

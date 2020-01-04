@@ -205,7 +205,12 @@ add_colours <- function(coefs, species_data = stats, add_spp_data = TRUE, manual
       "Widow Rockfish",
       "Yelloweye Rockfish",
       "Yellowmouth Rockfish",
-      "Yellowtail Rockfish"
+      "Yellowtail Rockfish",
+      "Big Skate",
+      "Bocaccio",
+      "Redstripe Rockfish",
+      "Longnose Skate",
+      "Spotted Ratfish"
     )
 
     #   ## To choose specific colours for specific species
@@ -243,7 +248,12 @@ add_colours <- function(coefs, species_data = stats, add_spp_data = TRUE, manual
       "#9E0142", # "Widow Rockfish",
       "#9E0142", # "Yelloweye Rockfish",
       "#9E0142", # "Yellowmouth Rockfish",
-      "#9E0142" # "Yellowtail Rockfish"
+      "#9E0142", # "Yellowtail Rockfish"
+      "#FDAE61", # "Big Skate",
+      "#9E0142", # "Bocaccio",
+      "#9E0142", # "Redstripe Rockfish",
+      "#FDAE61", # "Longnose Skate",
+      "#FDAE61" # "Spotted Ratfish"
     )
 
     colour_key <- as_tibble(cbind(species, colours))
@@ -279,7 +289,7 @@ plot_coefs <- function(coloured_coefs, order_by = "Estimate") {
   p <- ggplot(coloured_coefs, aes(
     forcats::fct_reorder(species, -order_by), #-Estimate),
     Estimate,
-    colour = species,
+    #colour = species, 
     ymin = Estimate + qnorm(0.025) * `Std. Error`,
     ymax = Estimate + qnorm(0.975) * `Std. Error`
   )) +
