@@ -249,14 +249,14 @@ gf3 <- gf3 %>%
     CV_formula = sqrt(exp(cv^2) - 1),
     CV = sd / exp(mean),
     mean_biomass = exp(mean) * 10000,
-    trend_per_year = exp(trend),
-    trend_per_decade = trend_per_year * 10,
+    #trend_per_year = exp(trend),
+    #trend_per_decade = trend_per_year * 10,
     velocity = velocity
   ) %>%
   dplyr::mutate(X = x, Y = y)
 
 
-bio5perc <- sum(gf3$mean_biomass, na.rm = TRUE) * 0.0001
+bio5perc <- sum(gf3$mean_biomass, na.rm = TRUE) * 0.05
 s <- sort(gf3$mean_biomass)
 
 bio_sum <- cumsum(s)
@@ -325,7 +325,7 @@ grad5 <- gfranges::plot_vocc(gf3t,
   # grad_vec_aes = "velocity",
   # vec_lwd_range = c(0.5, 0.5),
   NA_label = "NA",
-  fill_col = "trend_per_year",
+  fill_col = "trend",
   fill_label = "biomass trend",
   raster_alpha = 1,
   # raster_limits = c(0, 10),
@@ -400,7 +400,7 @@ grad7
 biotic_values <- gf3t %>%
   rename(
     biotic_vel = velocity,
-    biotic_trend = trend_per_year,
+    biotic_trend = trend,
     biotic_CV = CV,
     sd_est = cv,
     biotic_grad = gradient
@@ -416,24 +416,26 @@ DO_values <- gf0 %>%
   rename(
     DO_vel = velocity,
     DO_trend = trend_per_year,
-    DO_grad = gradient
+    DO_grad = gradient,
+    mean_DO = mean
   ) %>%
-  select(x, y, DO_vel, DO_trend, DO_grad)
+  select(x, y, DO_vel, DO_trend, DO_grad, mean_DO)
 
 temp_values <- gf2 %>%
   rename(
     temp_vel = velocity,
     temp_trend = trend_per_year,
-    temp_grad = gradient
+    temp_grad = gradient,
+    mean_temp = mean
   ) %>%
-  select(x, y, temp_vel, temp_trend, temp_grad)
+  select(x, y, temp_vel, temp_trend, temp_grad, mean_temp)
 
 vocc <- left_join(biotic_values, DO_values) # add DO
 vocc <- left_join(vocc, temp_values) # add temp
 vocc <- mutate(vocc, species = !!species, method = "gradient")
 
 write.csv(vocc, file = paste0(
-  "data/biotic_test/biotic-vocc-", spp, "-", age, covs, "-", ssid_string, "-", min(d$year), "-", max(d$year), ".csv"
+  "data/_new_biotic/", age,  "-biotic-vocc-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), ".csv"
 ))
 ```
 

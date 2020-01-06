@@ -4,10 +4,9 @@ env <- new.env() #parent = baseenv()
 
 # SPECIES with maturity
 list_species <- c(
-  "Bocaccio",
   "Redstripe Rockfish",
   "Rougheye/Blackspotted Rockfish Complex",
-  "Shortraker Rockfish",
+  #"Shortraker Rockfish", # too few imm so ogive unreliable
   "Walleye Pollock",
   "Pacific Cod",
   "Sablefish",
@@ -18,21 +17,20 @@ list_species <- c(
   "Redstripe Rockfish",
   "Yellowmouth Rockfish",
   # "Harlequin Rockfish"
-  "Bocaccio", # winter-birthing, overfished
   "Canary Rockfish", # schooling, winter-birthing
   "Darkblotched Rockfish",
   "Greenstriped Rockfish",
   "Pacific Ocean Perch", # schooling
-  "Quillback Rockfish",
+  #"Quillback Rockfish",
   "Redbanded Rockfish",
   "Rougheye/Blackspotted Rockfish Complex",
   "Sharpchin Rockfish",
   "Shortbelly Rockfish", # small sample
   "Silvergray Rockfish",
   "Splitnose Rockfish",
-  "Widow Rockfish", # schooling
+  #"Widow Rockfish", # schooling
   "Yellowtail Rockfish", # schooling
-  "Yelloweye Rockfish", # summer-birthing, overfished,
+  #"Yelloweye Rockfish", # summer-birthing, overfished,
   "Longspine Thornyhead",
   "Shortspine Thornyhead",
   "Arrowtooth Flounder",
@@ -49,16 +47,25 @@ list_species <- c(
 )
 
 
-# # SPECIES WITHOUT maturity
+# # SPECIES to try setting maturity threshold to 0.05
 # list_species <- c(
-#   "North Pacific Spiny Dogfish",
+#   "Widow Rockfish",
+#   "Quillback Rockfish",
+#   "Bocaccio",
+#   "Shortraker Rockfish",   
+#   "Yelloweye Rockfish"
+# )
+
+# # # SPECIES WITHOUT maturity
+# list_species <- c(
 #   "Big Skate",
 #   "Longnose Skate",
 #   "Spotted Ratfish",
 #   "Pacific Halibut"
 # )
 
-
+## NEEDS SPECIAL SETTINGS
+list_species <- c("North Pacific Spiny Dogfish","Longspine Thornyhead","Sand Sole")
 
 list_regions <- c("All synoptic surveys")
 # list_regions <- c(
@@ -76,9 +83,10 @@ for (r_h in seq_along(list_regions)) {
           params = list(
             species = list_species[spp_i],
             region = list_regions[r_h],
+            threshold = 0.5,
             split = TRUE
           ),
-          output_file = paste0("html/maturity/maturity-", spp, ".html"),
+          output_file = paste0("html/maturity/maturity-", spp, "0.05.html"),
           envir = env
         )
       })

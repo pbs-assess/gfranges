@@ -50,7 +50,8 @@ species <- c(
 )
 
 # species <- c("Spotted Ratfish")
-
+# species <- "Quillback Rockfish"
+species <- "North Pacific Spiny Dogfish"
 # species <- c("Bocaccio")
 # species <- c("Shortraker Rockfish")
 # spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
@@ -69,16 +70,15 @@ life_history <- purrr::map_dfr(species, function(x) {
   bath <- readRDS("data/bathymetry-data")
   depth <- bath$data %>% select(fishing_event_id, depth)
   fish <- left_join(fish, depth)
-   plot(length~depth, data=fish)
   
   rm(maturity)
   try({
     maturity <- readRDS(paste0("data/", spp, 
     "/maturity-ogive-", spp, "-1n3n4n16.rds"))
   })
-  
+  print(spp)
   if(exists("maturity")) {
-    
+ 
     if(maturity$year_re) {
     length_50_mat_m <- maturity$mat_perc$mean$m.mean.p0.5
     length_50_mat_f <- maturity$mat_perc$mean$f.mean.p0.5
@@ -97,7 +97,8 @@ life_history <- purrr::map_dfr(species, function(x) {
   small <- rbind(imm_m, imm_f)
   large_threshold <- NA
   small_threshold <- NA
-  
+#  })
+    
   } else {
     
   length_50_mat_m <- NA
@@ -108,17 +109,19 @@ life_history <- purrr::map_dfr(species, function(x) {
   small <- filter(fish, length < 20)#small_threshold)
   }
   
-  ## FOR EXPLORING SPECIAL CASES
-  fish_f <- filter(fish, sex == 2)
-  fish_m <- filter(fish, sex == 1)
-  hist(fish_m$length, breaks = 50)
-  hist(fish_f$length, breaks = 50)
-  hist(fish$weight, breaks = 50)
-  plot(weight~length, data=fish)
+  # ## FOR EXPLORING SPECIAL CASES
+  # #x <- species
+  # plot(length~depth, data = fish, main = x)
+  # fish_f <- filter(fish, sex == 2)
+  # fish_m <- filter(fish, sex == 1)
+  # hist(fish_m$length, breaks = 50, main = x)
+  # hist(fish_f$length, breaks = 50, main = x)
+  # hist(fish$weight, breaks = 50, main = x)
+  # plot(weight~length, data=fish, main = x)
   # mid <- filter(fish, length > 40)#%>% filter(length<40)#small_threshold)
   # dep <- mean(mid$depth, na.rm =TRUE)
   # dep
-  
+  # 
   large_depth <- mean(large$depth, na.rm = TRUE)
   small_depth <- mean(small$depth, na.rm = TRUE)
   
@@ -127,6 +130,12 @@ life_history <- purrr::map_dfr(species, function(x) {
   positive_sets <- filter(survey_sets, density_kgpm2 != 0)
   prop_pos <- round(nrow(positive_sets)/nrow(survey_sets), digits = 3)
   })
+  
+  biomass <- readRDS(paste0("data/", spp, "/data-by-maturity-", 
+    spp, "-1n3n4n16.rds"))
+  
+  if(nrow(biomass)<5000) { rerun <- TRUE} else { rerun <- FALSE}
+  
   
   list(
     species = x, group = group[1],
@@ -143,11 +152,13 @@ life_history <- purrr::map_dfr(species, function(x) {
     long_length = round(quantile(fish$length, 0.9999, na.rm = TRUE)),
     large_threshold = large_threshold[[1]],
     small_threshold = small_threshold[[1]],
-    prop_pos_sets = prop_pos
+    prop_pos_sets = prop_pos,
+    rerun = rerun
   )
 })
 
 View(life_history)
 life_history$group[is.na(life_history$group)] <- "SKATE"
+life_history$group[life_history$species=="Spotted Ratfish"] <- "RATFISH"
 
 saveRDS(life_history, file = "data/life-history-stats.rds")
