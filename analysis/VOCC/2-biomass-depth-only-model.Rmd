@@ -8,7 +8,8 @@ params:
     #species: "Pacific Ocean Perch"
     #species: "Pacific Cod"
     #species: "Petrale Sole"
-    species: "Pacific Halibut"
+    #species: "Widow Rockfish"
+    species: "Bocaccio"
     region: "All synoptic surveys"
     knots: 500
     covariates: "" # +as.factor(ssid)
@@ -17,6 +18,8 @@ params:
     covs: "-tv-depth-only"
     #covs: "-trawled-ssid"
     update_model: FALSE
+    update_predictions: FALSE
+    update_model_check: FALSE
 ---
 
 ```{r global_options, include=FALSE}
@@ -90,6 +93,9 @@ Load and filter data
 biomass <- readRDS(paste0(
   "data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds"
 ))
+
+if(nrow(biomass)<4000) {stop("Need to recalculate split by maturity!")}
+
 covars <- readRDS("data/event-covariates.rds")
 data <- dplyr::left_join(biomass, covars)
 
@@ -141,7 +147,7 @@ if (params$update_model) {
       time_varying = ~ 0 + depth_scaled + depth_scaled2, #+ trawled
       time = "year", spde = spde,
       family = tweedie(link = "log"),
-      # ar1_fields = TRUE,
+      #ar1_fields = TRUE,
       include_spatial = TRUE,
       # reml = TRUE,
       enable_priors = priors,
@@ -157,7 +163,7 @@ if (params$update_model) {
     )
 
 
-    imm_formula <- as.formula(paste(
+   try({ imm_formula <- as.formula(paste(
       "imm_density ~ 0 + as.factor(year)", covariates, ""
     ))
 
@@ -167,8 +173,8 @@ if (params$update_model) {
       time_varying = ~ 0 + depth_scaled + depth_scaled2, #+ trawled
       time = "year", spde = spde,
       family = tweedie(link = "log"),
-      # ar1_fields = TRUE, # changed to TRUE on Oct 17 2019
-      reml = TRUE,
+      ar1_fields = TRUE, # changed to TRUE on Oct 17 2019
+      # reml = TRUE,
       include_spatial = TRUE,
       enable_priors = priors,
       # control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
@@ -176,11 +182,10 @@ if (params$update_model) {
     )
 
     saveRDS(imm_biomass,
-      file = paste0(
-        "data/", spp,
-        "/mod-imm-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
-      )
-    )
+      file = paste0("data/", spp, "/mod-imm-biomass-", 
+        spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+   })
+    
   } else {
     dens_formula <- as.formula(paste("density ~ 0 + as.factor(year)", covariates, ""))
 
@@ -257,14 +262,13 @@ if (!exists("nd_all")) {
 ```
 
 Save predictions for full spatial grid
-
 ```{r}
 # fish <- readRDS(paste0("raw/bio-data-", spp, ""))
 
 rm(adult_predictions)
 rm(imm_predictions)
 rm(predictions)
-
+if(params$update_predictions) {
 if (any(names(data) == "adult_density")) {
   # if (length(unique(fish$maturity_code)) > 2) {
   nd_all <- readRDS(paste0("data/nd_all_synoptic.rds"))
@@ -326,9 +330,12 @@ if (any(names(data) == "adult_density")) {
     "/predictions-", spp, covs, "-", ssid_string, "-total-biomass-prior-", priors, ".rds"
   ))
 }
+}
 ```
 
 ```{r}
+
+if(params$update_model_check) {
 try({
   biomass <- readRDS(paste0(
     "data/", spp,
@@ -350,6 +357,7 @@ saveRDS(point_predictions, file = paste0(
   "data/", spp,
   "/check-mod-predictions-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
 ))
+}
 ```
 
 ```{r}
@@ -410,7 +418,8 @@ rm(depth_model_list)
 rm(adult_biomass)
 rm(imm_biomass)
 rm(total_biomass)
-
+rm(depth_plots)
+#max_depth_found <- 800
 
 try({
   adult_biomass <- readRDS(paste0(
@@ -450,7 +459,7 @@ depth_model_list <- depth_model_list[!sapply(depth_model_list, is.null)]
 d <- list()
 depth_plots <- list()
 for (i in seq_len(length(depth_model_list))) {
-  if (depth_model_list[[i]]$model$convergence == 0) {
+  #if (depth_model_list[[i]]$model$convergence == 0) {
     d[[i]] <- time_varying_density(depth_model_list[[i]], predictor = "depth")
 
     if (length(d[[i]]) == 0) {
@@ -460,9 +469,9 @@ for (i in seq_len(length(depth_model_list))) {
       depth_plots[[i]] <- plot_mountains(d[[i]], variable_label = "Depth (without environmental variables)", xlimits = c(0, max_depth_found)) +
         ggtitle(paste(species, names(depth_model_list[i])))
     }
-  } else {
-    depth_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
-  }
+  # } else {
+  #   depth_plots[[i]] <- grid::grid.rect(gp = grid::gpar(col = "white"))
+  # }
 }
 print(depth_plots)
 ```
@@ -488,5 +497,9 @@ dev.off()
 
 ```{r}
 depth_model_list
+```
+
+```{r}
+sdmTMB:::get_convergence_diagnostics(depth_model_list[[1]])
 ```
 
