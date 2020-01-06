@@ -5,6 +5,7 @@
 #' @param survey List of survey abbreviations.
 #' @param years List of years. Default 'NULL' includes all years.
 #' @param cutoff_quantile Set max cutoff for mass modeled from lengths.
+#' @param p_threshold Probability of maturity to split at. Default = 0.5. Alternatives are 0.05 or 0.95. 
 #' @param plot Logical for whether to produce plots
 #'    (length-weight and length-at-maturity relationships).
 #'
@@ -25,6 +26,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
                                  years = NULL,
                                  year_re = TRUE,
                                  cutoff_quantile = 0.9995,
+                                 p_threshold = 0.5,
                                  plot = FALSE) {
 
   if (is.null(years)) years <- unique(survey_sets[["year"]])
@@ -91,17 +93,47 @@ split_catch_maturity <- function(survey_sets, fish, bath,
 
     if (min(levels_per_year) < 3) {
       m <- fit_mat_ogive_re(fish, type = "length", sample_id_re = TRUE, year_re = FALSE)
+      if(p_threshold == 0.5) {
       f_fish$threshold <- m$mat_perc$f.p0.5
       m_fish$threshold <- m$mat_perc$m.p0.5
+      }
+      if(p_threshold == 0.05) {
+        f_fish$threshold <- m$mat_perc$f.p0.05
+        m_fish$threshold <- m$mat_perc$m.p0.05
+      }
+      if(p_threshold == 0.95) {
+        f_fish$threshold <- m$mat_perc$f.p0.95
+        m_fish$threshold <- m$mat_perc$m.p0.95
+      }
     } else {
       if (year_re) {
       m <- fit_mat_ogive_re(fish, type = "length", sample_id_re = FALSE, year_re = TRUE)
+      if(p_threshold == 0.5) {
       f_fish$threshold <- lapply(f_fish$year_f, function(x) m$mat_perc[[x]]$f.p0.5)
       m_fish$threshold <- lapply(m_fish$year_f, function(x) m$mat_perc[[x]]$m.p0.5)
+      }
+      if(p_threshold == 0.05) {
+        f_fish$threshold <- lapply(f_fish$year_f, function(x) m$mat_perc[[x]]$f.p0.05)
+        m_fish$threshold <- lapply(m_fish$year_f, function(x) m$mat_perc[[x]]$m.p0.05)
+      }
+      if(p_threshold == 0.95) {
+        f_fish$threshold <- lapply(f_fish$year_f, function(x) m$mat_perc[[x]]$f.p0.95)
+        m_fish$threshold <- lapply(m_fish$year_f, function(x) m$mat_perc[[x]]$m.p0.95)
+      }
       } else {
         m <- fit_mat_ogive_re(fish, type = "length", sample_id_re = TRUE, year_re = FALSE)
+        if(p_threshold == 0.5) {
         f_fish$threshold <- m$mat_perc$f.p0.5
         m_fish$threshold <- m$mat_perc$m.p0.5
+        }
+        if(p_threshold == 0.05) {
+          f_fish$threshold <- m$mat_perc$f.p0.05
+          m_fish$threshold <- m$mat_perc$m.p0.05
+        }
+        if(p_threshold == 0.95) {
+          f_fish$threshold <- m$mat_perc$f.p0.95
+          m_fish$threshold <- m$mat_perc$m.p0.95
+        }
       }
     }
 
