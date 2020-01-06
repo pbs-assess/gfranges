@@ -165,17 +165,15 @@ vocc_regression <- function(dat, y_i, X_ij, offset = rep(0, length(y_i)),
     group_by_genus = group_by_genus, nu = nu, y_i = y_i, X_ij = X_ij, b_re_species = b_re_species)
 }
 
-add_colours <- function(coefs, species_data = stats, add_spp_data = TRUE, manual_colours = TRUE) {
+add_colours <- function(coefs, col_var = "group", species_data = stats, 
+  add_spp_data = TRUE, manual_colours = FALSE, last_used = FALSE) {
   if (add_spp_data) {
     coefs <- left_join(coefs, species_data)
   }
-
+  coefs$col_var <- coefs[[col_var]]
+  
   if (manual_colours) {
-
-    # sort(unique(d$species))
-    # sort(unique(coefs$species))
-
-    species <- c(
+    col_var <- c(
       "Arrowtooth Flounder",
       "Canary Rockfish",
       "Curlfin Sole",
@@ -256,40 +254,61 @@ add_colours <- function(coefs, species_data = stats, add_spp_data = TRUE, manual
       "#FDAE61" # "Spotted Ratfish"
     )
 
-    colour_key <- as_tibble(cbind(species, colours))
-    colour_key$species <- as.factor(colour_key$species)
+    colour_key <- as_tibble(cbind(col_var, colours))
+    colour_key$col_var <- as.factor(colour_key$col_var)
 
-    out <- left_join(coefs, colour_key, by = "species")
-    missing_colours <- out$species[is.na(out$colours)]
+    out <- left_join(coefs, colour_key, by = "col_var")
+    missing_colours <- out$col_var[is.na(out$colours)]
 
     if (length(missing_colours) > 0) {
       stop(paste(missing_colours, "need a colour assigned."))
     }
+    
   } else {
-    N <- length(unique(coefs$species))
-    # species <- unique(coefs$species)
-    species <- levels(coefs$species)
-    colours <- gfutilities::rich.colors(n = N, alpha = 1)
-    colour_key <- as_tibble(cbind(species, colours))
-    colour_key$species <- as.factor(colour_key$species)
-    out <- left_join(coefs, colour_key, by = "species")
+    if (last_used) {
+    col_var <- unique(bio_temp2[[col_var]])
+    colours <- unique(bio_temp2$colours)
+    } else {
+   
+    if (add_spp_data) {
+      coefs <- left_join(coefs, species_data)
+    }
+    
+    coefs$col_var <- coefs[[col_var]]
+    
+    N <- length(unique(coefs$col_var))
+    col_var <- sort(unique(coefs$col_var), decreasing = TRUE)
+    
+   # colours <- gfutilities::rich.colors(n = N, alpha = 1)
+    colours <- RColorBrewer::brewer.pal(n = N, name = 'Spectral')
+    }
+    
+    colour_key <- as_tibble(cbind(col_var, colours))
+    colour_key$col_var<- as.factor(colour_key$col_var)
+    out <- left_join(coefs, colour_key)
   }
-  out <- arrange(out, species)
+  out <- arrange(out, col_var)
   out
 }
 
-plot_coefs <- function(coloured_coefs, order_by = "Estimate") {
-
+plot_coefs <- function(coloured_coefs, order_by = "scale(do_vel_squashed)") {
+  # browser()
   # coloured_coefs <- out
   coloured_coefs <- filter(coloured_coefs, coefficient != "(Intercept)")
-  coloured_coefs$order_by <- coloured_coefs[[order_by]]
-  colour_list <- coloured_coefs$colours # c(unique(b_re$colours))
+  order_values <- filter(coloured_coefs, coefficient == !!order_by) %>% 
+    select(species, Estimate) %>% rename(order = Estimate)
+  coloured_coefs <- left_join(coloured_coefs, order_values)
+    
+  #  coloured_coefs$order_by  coloured_coefs[[order_by]]
+  
+  coloured_coefs <- coloured_coefs %>% arrange(col_var)
+  colour_list <- unique(coloured_coefs$colours) # c(unique(b_re$colours))
 
 
   p <- ggplot(coloured_coefs, aes(
-    forcats::fct_reorder(species, -order_by), #-Estimate),
+    forcats::fct_reorder(species, -order), #-Estimate),
     Estimate,
-    #colour = species, 
+    colour = col_var, 
     ymin = Estimate + qnorm(0.025) * `Std. Error`,
     ymax = Estimate + qnorm(0.975) * `Std. Error`
   )) +
@@ -297,7 +316,7 @@ plot_coefs <- function(coloured_coefs, order_by = "Estimate") {
     scale_colour_manual(values = colour_list) +
     geom_pointrange() + coord_flip() + xlab("") +
     # facet_wrap(~group) +
-    theme(legend.position = "none")
+    gfplot:::theme_pbs()
   p
 }
 

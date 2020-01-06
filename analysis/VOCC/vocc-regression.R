@@ -8,7 +8,7 @@ dyn.load(dynlib("vocc_regression"))
 
 # model <- "multi-spp-biotic-vocc"
 model <- "multi-spp-biotic-vocc-mature"
-# model <- "multi-spp-biotic-vocc-immature"
+model <- "multi-spp-biotic-vocc-immature"
 
 d <- readRDS(paste0("data/", model, ".rds"))
 d <- na.omit(d) %>% as_tibble()
@@ -18,10 +18,11 @@ stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 stats$genus <- tolower(stats$group)
 
 d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
-  filter(species != "Longspine Thornyhead") %>% 
-  #filter(species != "Sand Sole") %>% 
-  filter(species != "Bocaccio") %>% 
-filter(species != "Curlfin Sole") 
+  # filter(species != "Bocaccio") %>% 
+  # filter(species != "Sand Sole") %>% 
+  filter(species != "Curlfin Sole") %>% 
+  filter(species != "Longspine Thornyhead") 
+
 
 select(d, genus, species) %>%
   distinct() %>%
@@ -101,7 +102,9 @@ source("vocc-regression-functions.R")
 y <- collapse_outliers(d$biotic_vel, c(0.005, 0.995))
 d$temp_vel_squashed <-  collapse_outliers(d$temp_vel, c(0.005, 0.995))
 d$do_vel_squashed <-  collapse_outliers(d$DO_vel, c(0.005, 0.995))
-plot(scale(do_vel_squashed)~scale(temp_vel_squashed), data=d, col = "#00000010")
+plot((do_vel_squashed)~(temp_vel_squashed), data=d, col = "#00000010")
+
+# x <- model.matrix(~ (temp_vel_squashed) + (do_vel_squashed) + (do_vel_squashed):(temp_vel_squashed), data = d)
 
 x <- model.matrix(~ scale(temp_vel_squashed) + scale(do_vel_squashed) + scale(do_vel_squashed):scale(temp_vel_squashed), data = d)
 
@@ -109,30 +112,54 @@ hist(y)
 hist(x[,2])
 bio_temp <- vocc_regression(d, y, x,
   knots = 200, group_by_genus = FALSE, student_t = TRUE, nu = 5)
-
-bio_temp_genus <- vocc_regression(d, y, x, knots = 200,
-  group_by_genus = TRUE, student_t = TRUE, nu = 5)
-
 bio_temp$sdr
-bio_temp_genus$sdr
 
-get_aic(bio_temp_genus) - get_aic(bio_temp)
+# bio_temp_genus <- vocc_regression(d, y, x, knots = 200,
+#   group_by_genus = TRUE, student_t = TRUE, nu = 5)
+# bio_temp_genus$sdr
+# get_aic(bio_temp_genus) - get_aic(bio_temp)
 
-# saveRDS(bio_temp, file = "data/bio_temp_mature.rds")
-# saveRDS(bio_temp_genus, file = "data/bio_temp_genus_mature.rds")
+# saveRDS(bio_temp, file = "data/bio_temp_mature_01-04.rds")
+# saveRDS(bio_temp_genus, file = "data/bio_temp_genus_mature_01-04.rds")
+# saveRDS(bio_temp, file = "data/bio_temp_immature_01-04.rds")
+# saveRDS(bio_temp_genus, file = "data/bio_temp_genus_immature_01-04.rds")
 
-# sdmTMB:::get_convergence_diagnostics(bio_temp)
-# sdmTMB:::get_convergence_diagnostics(bio_temp_genus)
+
+bio_temp <- readRDS(file = "data/bio_temp_mature_01-04.rds")
+coef_names <- sort(unique(bio_temp$coefs$coefficient)) 
+coef_names 
 
 bio_temp2 <- add_colours(bio_temp$coefs)
-bio_temp3 <- plot_coefs(bio_temp2)
-bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by thermal VOCC")) + facet_wrap(~coefficient, scales = "free_x") #
-bio_temp_plot
+bio_temp3 <- plot_coefs(bio_temp2, order_by = "scale(do_vel_squashed)")
+#bio_temp3 <- plot_coefs(bio_temp2, order_by = "temp_vel_squashed:do_vel_squashed")
+bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by VOCC")) + facet_wrap(~coefficient, scales = "free_x") #
+bio_temp_plot 
+
+bio_temp3 <- plot_coefs(bio_temp2, order_by = "scale(temp_vel_squashed)")
+#bio_temp3 <- plot_coefs(bio_temp2, order_by = "temp_vel_squashed")
+bio_temp_plot <- bio_temp3 + ggtitle(paste("Biotic velocity by VOCC")) + facet_wrap(~coefficient, scales = "free_x") #
+bio_temp_plot 
+
+print(sdmTMB:::get_convergence_diagnostics(bio_temp))
+# print(sdmTMB:::get_convergence_diagnostics(bio_temp_genus))
+
+
+bio_temp <- readRDS(file = "data/bio_temp_immature_01-04.rds")
+
+bio_temp2 <- add_colours(bio_temp$coefs, last_used = TRUE )
+bio_temp3 <- plot_coefs(bio_temp2, order_by = "scale(do_vel_squashed)")
+bio_temp_plot <- bio_temp3 + ggtitle(paste("Immature Biotic velocity by VOCC")) + facet_wrap(~coefficient, scales = "free_x") #
+bio_temp_plot 
+
+bio_temp3 <- plot_coefs(bio_temp2, order_by = "scale(temp_vel_squashed)")
+bio_temp_plot <- bio_temp3 + ggtitle(paste("Immature Biotic velocity by VOCC")) + facet_wrap(~coefficient, scales = "free_x") #
+bio_temp_plot 
+
 
 bio_temp2 <- add_colours(bio_temp_genus$coefs)
 bio_temp3 <- plot_coefs(bio_temp2)
-bio_temp_plot <- bio_temp3 + ggtitle(paste("Immature biotic velocity by thermal VOCC with genus re")) #+ facet_wrap(~genus)
-bio_temp_plot
+bio_temp_plot_g <- bio_temp3 + ggtitle(paste("Mature biotic velocity by VOCC with genus re")) + facet_wrap(~coefficient, scales = "free_x")
+bio_temp_plot_g
 
 library(ggsidekick) # for fourth_root_power
 # ggplot(bio_temp$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
