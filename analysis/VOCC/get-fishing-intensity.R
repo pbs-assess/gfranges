@@ -21,10 +21,9 @@ d <- filter(d, longitude > -150)
 d$X <- d$longitude
 d$Y <- d$latitude
 d2 <- filter(d, !is.na(X), !is.na(Y))
-d2 <- gfplot:::ll2utm(d2, utm_zone = 9)
-
-d2$X <- d2$X/10
-d2$Y <- d2$Y/10
+d <- gfplot:::ll2utm(d, utm_zone = 9)
+d$X <- d$X
+d$Y <- d$Y
 
 grid <- readRDS("prediction-grids/overall-grid.rds")
 
@@ -32,4 +31,3 @@ grid$X_lower <- grid$X - 1
 grid$Y_lower <- grid$Y - 1
 
 # max 6/9 hours?
-
