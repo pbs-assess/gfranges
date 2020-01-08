@@ -20,7 +20,7 @@ d <- filter(d, longitude > -150)
 
 d$X <- d$longitude
 d$Y <- d$latitude
-d2 <- filter(d, !is.na(X), !is.na(Y))
+d <- filter(d, !is.na(X), !is.na(Y))
 d <- gfplot:::ll2utm(d, utm_zone = 9)
 d$X <- d$X
 d$Y <- d$Y
