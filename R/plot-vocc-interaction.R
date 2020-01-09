@@ -9,6 +9,7 @@
 #' @export
 plot_interaction <- function(model, species = NULL, 
   variables = c("temp_vel_squashed", "do_vel_squashed"), 
+  choose_x = NULL,
   scaled = TRUE  
   ){
 
@@ -38,9 +39,11 @@ all_species <- purrr::map_df(species, function(spp) {
   sp_coef <- filter (coefs, species == !!spp)
   sp_coef
   
+  spp_d <- filter(d, species == !!spp)
+  
   if (scaled) {
-    x1_range <- range(scale(d[[var_1]]))
-    x2_range <- range(scale(d[[var_2]]))
+    x1_range <- range(scale(spp_d[[var_1]]))
+    x2_range <- range(scale(spp_d[[var_2]]))
     
     b2 <- filter (sp_coef, coefficient == !!paste0("scale(", var_1, ")"))
     b3 <- filter (sp_coef, coefficient == !!paste0("scale(", var_2, ")"))
@@ -51,8 +54,8 @@ all_species <- purrr::map_df(species, function(spp) {
       b4 <- filter (sp_coef, coefficient == !!interaction_name) 
     }
   } else {
-    x1_range <- range(d[[var_1]])
-    x2_range <- range(d[[var_2]])
+    x1_range <- range(spp_d[[var_1]])
+    x2_range <- range(spp_d[[var_2]])
     
     b2 <- filter (sp_coef, coefficient == !!var_1)
     b3 <- filter (sp_coef, coefficient == !!var_1)
@@ -82,13 +85,38 @@ all_species <- purrr::map_df(species, function(spp) {
  y_hat_df
 })
 
+if (is.null(choose_x)) {
+  p <- ggplot(all_species, aes(x, y_hat, colour = effect)) + geom_line() + 
+    facet_wrap(~species) +
+    xlab(paste0("Climate variable (scaled)")) +
+    scale_colour_manual(values = c( "#D53E4F", "#3288BD", "#5E4FA2", "#FDAE61")) +
+    gfplot::theme_pbs() 
+} else {
+  
+if (choose_x == 1)  { all_species <- filter(all_species, x_var == !!variables[1]) %>% 
+  mutate(effect = gsub(paste(var_1, "at"), "", effect))
+}
+if (choose_x == 2)  { all_species <- filter(all_species, x_var == !!variables[2]) %>% 
+  mutate(effect = gsub(paste(var_2, "at"), "", effect)) 
+}
+
+label_x <- all_species$x_var[1]
 p <- ggplot(all_species, aes(x, y_hat, colour = effect)) + geom_line() + 
-  scale_colour_manual(values = c( "#D53E4F", "#3288BD","#5E4FA2", "#FDAE61")) +
   facet_wrap(~species) +
+  xlab(paste0(label_x)) + 
+  scale_colour_manual(values = c( "#D53E4F", "#3288BD")) +
   #facet_grid(x_effect~species) + 
   gfplot::theme_pbs() 
-p 
 }
+p +  theme(legend.position = "top",
+  legend.title = element_blank(),
+  legend.text = element_text(size=10),
+  legend.direction = "vertical") +
+  guides(colour = guide_legend(nrow= 2, ncol= 2)) 
+p
+}
+
+
 
 # p <- plot_interaction (model= bio_temp, #species = "North Pacific Spiny Dogfish",
 #   variables = c("temp_vel_squashed", "do_vel_squashed"),
