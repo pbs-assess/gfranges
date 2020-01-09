@@ -51,7 +51,7 @@ species <- c(
 
 # species <- c("Spotted Ratfish")
 # species <- "Quillback Rockfish"
-species <- "North Pacific Spiny Dogfish"
+# species <- "North Pacific Spiny Dogfish"
 # species <- c("Bocaccio")
 # species <- c("Shortraker Rockfish")
 # spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
@@ -139,17 +139,17 @@ life_history <- purrr::map_dfr(species, function(x) {
   
   list(
     species = x, group = group[1],
+    depth = round(large_depth),
+    depth_imm = round(small_depth),
+    depth_diff = round(small_depth - large_depth),
+    age_max = round(quantile(fish$age, 0.999999, na.rm = TRUE)),
+    length_max = max(fish$length, na.rm = TRUE),
+    length_99th = round(quantile(fish$length, 0.9999, na.rm = TRUE)),
     length_50_mat_m = round(length_50_mat_m),
     length_50_mat_f = round(length_50_mat_f),
-    mat_depth = round(large_depth),
-    imm_depth = round(small_depth),
-    depth_diff = round(small_depth - large_depth),
-    max_weight = max(fish$weight, na.rm = TRUE) / 1000,
-    large_weight = round(quantile(fish$weight, 0.9999, na.rm = TRUE)) / 1000,
+    weight_max = max(fish$weight, na.rm = TRUE) / 1000,
+    weight_99th = round(quantile(fish$weight, 0.9999, na.rm = TRUE)) / 1000,
     # max_age = max(fish$age, na.rm = TRUE),
-    max_age = round(quantile(fish$age, 0.999999, na.rm = TRUE)),
-    max_length = max(fish$length, na.rm = TRUE),
-    long_length = round(quantile(fish$length, 0.9999, na.rm = TRUE)),
     large_threshold = large_threshold[[1]],
     small_threshold = small_threshold[[1]],
     prop_pos_sets = prop_pos,
