@@ -5,7 +5,8 @@
 \title{Split catch densities by mass ratio of maturity classes}
 \usage{
 split_catch_maturity(survey_sets, fish, bath, survey = c("SYN HS",
-  "SYN QCS"), years = NULL, cutoff_quantile = 0.9995, plot = FALSE)
+  "SYN QCS"), years = NULL, year_re = TRUE, cutoff_quantile = 0.9995,
+  p_threshold = 0.5, plot = FALSE)
 }
 \arguments{
 \item{survey_sets}{Data from get_survey_sets.}
@@ -17,6 +18,8 @@ split_catch_maturity(survey_sets, fish, bath, survey = c("SYN HS",
 \item{years}{List of years. Default 'NULL' includes all years.}
 
 \item{cutoff_quantile}{Set max cutoff for mass modeled from lengths.}
+
+\item{p_threshold}{Probability of maturity to split at. Default = 0.5. Alternatives are 0.05 or 0.95.}
 
 \item{plot}{Logical for whether to produce plots
 (length-weight and length-at-maturity relationships).}

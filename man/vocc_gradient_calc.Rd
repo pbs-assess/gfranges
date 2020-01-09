@@ -5,7 +5,7 @@
 \title{Velocity of climate change}
 \usage{
 vocc_gradient_calc(data, layer, scale_fac = 1, time_step = "year",
-  indices = NULL, divisor = 10, latlon = FALSE,
+  indices = NULL, divisor = 10, latlon = FALSE, log_space = FALSE,
   quantile_cutoff = 0.05)
 }
 \arguments{
