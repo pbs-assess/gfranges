@@ -291,32 +291,62 @@ add_colours <- function(coefs, col_var = "group", species_data = stats,
   out
 }
 
-plot_coefs <- function(coloured_coefs, order_by = "scale(do_vel_squashed)") {
+shortener <- function(string) {
+  out <- gsub("\\(", "", gsub("scale", "", string)) #coef_names[1:length()]
+  out <- gsub("\\)", "", out)
+  out <- gsub("squashed_", "", out)
+  out <- gsub("mean_", "", out)
+  out
+}
+
+#' Plot coefficients from vocc_regression
+#'
+#' @param coloured_coefs Coefficient dataframe with colours column. 
+#' @param order_by Coefficient by which to order species in plot.
+#' @param manipulate Logical to allow manipulation in R studio. 
+#'
+#' @export
+plot_coefs <- function(coloured_coefs, 
+  order_by_trait = FALSE,
+  order_by = "scale(do_vel_squashed)",
+  fixed_scales = TRUE
+  ) {
   # browser()
   # coloured_coefs <- out
-  coloured_coefs <- filter(coloured_coefs, coefficient != "(Intercept)")
+  coloured_coefs <- filter(coloured_coefs, coefficient != "(Intercept)") %>% 
+    mutate(coefficient = shortener(coefficient))
+
+
+ if (order_by_trait) {
+    order_values <- coloured_coefs %>% rename(order = !!order_by) %>% select(species, order)
+    coloured_coefs <- inner_join(coloured_coefs, order_values)
+    coloured_coefs <- filter(coloured_coefs, order != "NA")
+  } else {
+  order_by <- shortener(order_by)
   order_values <- filter(coloured_coefs, coefficient == !!order_by) %>% 
     select(species, Estimate) %>% rename(order = Estimate)
   coloured_coefs <- left_join(coloured_coefs, order_values)
-    
-  #  coloured_coefs$order_by  coloured_coefs[[order_by]]
-  
+  }
   coloured_coefs <- coloured_coefs %>% arrange(col_var)
-  colour_list <- unique(coloured_coefs$colours) # c(unique(b_re$colours))
-
-
+  colour_list <- unique(coloured_coefs$colours)
   p <- ggplot(coloured_coefs, aes(
-    forcats::fct_reorder(species, -order), #-Estimate),
-    Estimate,
-    colour = col_var, 
-    ymin = Estimate + qnorm(0.025) * `Std. Error`,
-    ymax = Estimate + qnorm(0.975) * `Std. Error`
-  )) +
-    geom_hline(yintercept = 0, colour = "darkgray") +
-    scale_colour_manual(values = colour_list) +
-    geom_pointrange() + coord_flip() + xlab("") +
-    # facet_wrap(~group) +
-    gfplot:::theme_pbs()
+       forcats::fct_reorder(species, -order), #-Estimate),
+       #forcats::fct_reorder(species, -coloured_coefs[coloured_coefs$coefficient == "do_vel", ]$Estimate),
+       Estimate,
+       colour = col_var, 
+       ymin = Estimate + qnorm(0.025) * `Std. Error`,
+       ymax = Estimate + qnorm(0.975) * `Std. Error`
+     )) + 
+       geom_hline(yintercept = 0, colour = "darkgray") +
+       scale_colour_manual(values = colour_list) +
+       geom_pointrange() + 
+       coord_flip() + xlab("") +
+       gfplot:::theme_pbs()
+  if (fixed_scales) {
+    p <- p + facet_wrap(~coefficient, scales = "fixed") 
+  } else {
+  p <- p + facet_wrap(~coefficient, scales = "free_x") 
+  }
   p
 }
 
