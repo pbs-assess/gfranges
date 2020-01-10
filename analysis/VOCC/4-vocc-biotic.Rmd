@@ -96,10 +96,14 @@ if (immature) {
 }
 
 nd_all <- readRDS(paste0("data/predicted-DO-new.rds")) %>% select(X, Y, year, temp, do_est)
+fishing <- readRDS("data/fishing-effort-grid.rds")
 
 d_all <- left_join(d_all, nd_all, by = c("X", "Y", "year"))
+d_all <- left_join(d_all, fishing, by = c("X", "Y", "year"))
+d_all$log_effort[is.na(d_all$log_effort)] <- -2.3
 
 glimpse(d_all)
+#hist(d_all$log_effort)
 ```
 
 #### SET TIME FRAME
@@ -139,6 +143,76 @@ d <- d %>%
 d <- d %>%
   filter(temp > 3.07) %>%
   filter(temp < 11.3) # 0.005 and 0.995
+```
+
+Calculate mean and trend in log fishing pressure
+```{r }
+gf <- vocc_gradient_calc(d, "log_effort",
+  scale_fac = scale_fac,
+  # all layers with max indice will be averaged for spatial gradient
+  # if default (NULL) will use all years
+  # indices = indices,
+  divisor = 1,
+  quantile_cutoff = 0.05
+)
+
+gf <- gf %>%
+  mutate(
+    fishing_trend = trend,
+    mean_effort = exp(mean)
+  ) %>%
+  dplyr::mutate(X = x, Y = y) %>%
+  gfplot:::utm2ll(., utm_zone = 9)
+
+effort <- plot_vocc(gf,
+  # theme_black = TRUE,
+  coast = TRUE,
+  vec_aes = NULL,
+  # grad_vec_aes = "velocity",
+  # vec_lwd_range = c(0.5, 0.5),
+  #NA_label = "NA",
+  fill_col = "mean_effort",
+  fill_label = "mean effort",
+  raster_alpha = 1,
+  # raster_limits = c(raster_min, raster_max),
+   na_colour = "white",
+  # high_fill = "Steel Blue 4",
+  # low_fill = "Red 3",
+  # white_zero = TRUE,
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = fourth_root_power#
+) + labs(
+  title = "Fishing presssure",
+  subtitle = paste0(min(d$year), "-", max(d$year))
+)
+
+effort
+
+fish_t <- plot_vocc(gf,
+  # theme_black = TRUE,
+  coast = TRUE,
+  vec_aes = NULL,
+  # grad_vec_aes = "velocity",
+  # vec_lwd_range = c(0.5, 0.5),
+  #NA_label = "NA",
+  fill_col = "fishing_trend",
+  fill_label = "trend in fishing effort",
+  raster_alpha = 1,
+  # raster_limits = c(raster_min, raster_max),
+ 
+  # high_fill = "Steel Blue 4",
+  # low_fill = "Red 3",
+  # white_zero = TRUE,
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = sqrt # no_trans #
+) + labs(
+  title = "Fishing presssure",
+  subtitle = paste0(min(d$year), "-", max(d$year))
+)
+
+fish_t
 ```
 
 
@@ -256,7 +330,7 @@ gf3 <- gf3 %>%
   dplyr::mutate(X = x, Y = y)
 
 
-bio5perc <- sum(gf3$mean_biomass, na.rm = TRUE) * 0.05
+bio5perc <- sum(gf3$mean_biomass, na.rm = TRUE) * 0.1
 s <- sort(gf3$mean_biomass)
 
 bio_sum <- cumsum(s)
@@ -412,6 +486,10 @@ biotic_values <- gf3t %>%
   select(x, y, biotic_vel, biotic_trend, biotic_grad, biotic_CV, sd_est, sd_biomass, mean_biomass) %>%
   mutate(start_year = !!start_year)
 
+
+fished <- gf %>%
+  select(x, y, fishing_trend, mean_effort) 
+
 DO_values <- gf0 %>%
   rename(
     DO_vel = velocity,
@@ -430,12 +508,13 @@ temp_values <- gf2 %>%
   ) %>%
   select(x, y, temp_vel, temp_trend, temp_grad, mean_temp)
 
-vocc <- left_join(biotic_values, DO_values) # add DO
+vocc <- left_join(biotic_values, fished) # add fishing effort
+vocc <- left_join(vocc, DO_values) # add DO
 vocc <- left_join(vocc, temp_values) # add temp
 vocc <- mutate(vocc, species = !!species, method = "gradient")
 
 write.csv(vocc, file = paste0(
-  "data/_new_biotic/", age,  "-biotic-vocc-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), ".csv"
+  "data/_new_biotic/", age,  "-biotic-vocc-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), "-trim10.csv"
 ))
 ```
 

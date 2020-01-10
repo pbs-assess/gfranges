@@ -62,10 +62,10 @@ list_species <- c(
 
  
  list_species <- c(
-   # "Redstripe Rockfish",
-   # "Rougheye/Blackspotted Rockfish Complex",
-   # "Widow Rockfish",
-   # "Quillback Rockfish",
+   "Redstripe Rockfish",
+   "Rougheye/Blackspotted Rockfish Complex",
+   "Widow Rockfish",
+   "Quillback Rockfish",
    "Bocaccio",
    "Shortraker Rockfish",
    "Yelloweye Rockfish"
@@ -145,17 +145,14 @@ list_species <- c(
   "Southern Rock Sole",
   "Flathead Sole",
   "Curlfin Sole",
-  "Sand Sole",
+  # "Sand Sole",
   # "Slender Sole",
   # "Pacific Sanddab",
-  "Pacific Halibut"
-)
-
-list_species <- c(
-  # "Redstripe Rockfish",
-  # "Rougheye/Blackspotted Rockfish Complex",
-  # "Widow Rockfish",
-  # "Quillback Rockfish",
+  "Pacific Halibut",
+  "Redstripe Rockfish",
+  "Rougheye/Blackspotted Rockfish Complex",
+  "Widow Rockfish",
+  "Quillback Rockfish",
   "Bocaccio",
   "Shortraker Rockfish",
   "Yelloweye Rockfish"
@@ -186,7 +183,7 @@ for (r_h in seq_along(list_regions)) {
         output_file = paste0(
           "html/VOCC-plots/biotic-gradients-", spp,
           # "-imm",
-          covs, "-", reg, "-trim5.html"
+          covs, "-", reg, "-trim10.html"
         ),
         envir = env
       )
