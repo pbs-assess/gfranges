@@ -159,7 +159,7 @@ vocc_regression <- function(dat, y_i, X_ij, offset = rep(0, length(y_i)),
   nd <- dat
   nd$omega_s <- r$omega_sk_A_vec
   nd$eta_i <- r$eta_i
-  nd$residual <- nd$biotic_vel - r$eta_i
+  nd$residual <- y_i - r$eta_i
 
   list(obj = obj, opt = opt, sdr = sdr, coefs = b_re, coefs_genus = b_re_genus, data = nd,
     group_by_genus = group_by_genus, nu = nu, y_i = y_i, X_ij = X_ij, b_re_species = b_re_species)

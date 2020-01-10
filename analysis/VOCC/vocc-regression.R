@@ -258,8 +258,8 @@ ggplot(model$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4)
 # ggsave("figs/vel-model-omega.png", width = 12, height = 12, dpi = 300)
 # ggsave("figs/trend-model-omega.png", width = 12, height = 12, dpi = 300)
 
-# r <- model$obj$report()
-#model$data$residual <- model$y_i - r$eta_i
+r <- model$obj$report()
+model$data$residual <- model$y_i - r$eta_i
 
 model$data %>%
   mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
