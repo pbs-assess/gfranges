@@ -150,7 +150,7 @@ plot_vocc <- function(df,
         geom_tile(aes(fill = fill), alpha = raster_alpha) +
         scale_fill_viridis_c(
           direction = viridis_dir,
-          option = viridis_option, na.value = "red",
+          option = viridis_option, na.value = na_colour,
           trans = transform_col, breaks = breaks, labels = labels,
           limits = raster_limits
         ) +
