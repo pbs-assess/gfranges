@@ -1,6 +1,7 @@
 library(TMB)
 library(dplyr)
 library(ggplot2)
+library(gfranges)
 
 setwd(here::here("analysis", "VOCC"))
 compile("vocc_regression.cpp")
@@ -14,27 +15,38 @@ stats$genus <- tolower(stats$group)
 
 # model <- "multi-spp-biotic-vocc"
 model_age <- "multi-spp-biotic-vocc-mature"
-d <- readRDS(paste0("data/", model_age, ".rds"))
+d <- readRDS(paste0("data/", model_age, "-with-fished.rds"))
+d <- na.omit(d) %>% as_tibble()
+
+model_age <- "scrambled-vocc-mature"
+model_age <- "scrambled2-vocc-mature"
+model_age <- "scrambled3-vocc-mature"
+d <- readRDS(paste0("data/", model_age, "-with-fished.rds"))
 d <- na.omit(d) %>% as_tibble()
 
 d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
   filter(species != "Bocaccio") %>%
   filter(species != "Sand Sole") %>%
-  filter(species != "Longspine Thornyhead") 
+  filter(species != "Longspine Thornyhead") %>%
+  filter(species != "Shortbelly Rockfish") 
 
 
 # model_age <- "multi-spp-biotic-vocc-immature"
-# d <- readRDS(paste0("data/", model_age, ".rds"))
+# d <- readRDS(paste0("data/", model_age, "with-fished.rds"))
 # d <- na.omit(d) %>% as_tibble()
 # 
 # d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
 #   filter(species != "Curlfin Sole") %>%
 #   filter(species != "Longspine Thornyhead")
 
+
 select(d, genus, species) %>%
   distinct() %>%
   arrange(genus, species) %>% 
   as.data.frame()
+
+hist(log(d$mean_effort))
+hist(d$fishing_trend)
 
 y <- collapse_outliers(d$biotic_vel, c(0.005, 0.995))
 d$squashed_do_vel <-  collapse_outliers(d$DO_vel, c(0.005, 0.995))
@@ -43,6 +55,10 @@ d$squashed_temp_vel <-  collapse_outliers(d$temp_vel, c(0.005, 0.995))
 d$do_vel_squashed <-  collapse_outliers(d$DO_vel, c(0.005, 0.995))
 d$temp_vel_squashed <-  collapse_outliers(d$temp_vel, c(0.005, 0.995))
 plot((do_vel_squashed)~(temp_vel_squashed), data=d, col = "#00000010")
+
+d$squashed_biomass <- (collapse_outliers(d$mean_biomass, c(0.005, 0.995)))
+d$log_effort <- log(d$mean_effort)
+
 
 # ggplot(d, aes(x, y, colour = temp_vel_squashed)) + 
 #   geom_point() +
@@ -53,16 +69,21 @@ plot((do_vel_squashed)~(temp_vel_squashed), data=d, col = "#00000010")
 #   geom_point(size=0.25) +
 #   facet_wrap(~species) + scale_color_viridis_c()
 
-x <- model.matrix(~scale(mean_DO) + scale(mean_temp) + scale(mean_biomass) +
-   scale(mean_temp):scale(mean_DO) + 
+x <- model.matrix(~scale(mean_DO) + scale(mean_temp) + 
+    scale(mean_biomass) + 
+    sqrt(mean_effort) + 
+    #scale(fishing_trend) +
+    #sqrt(mean_effort):scale(fishing_trend) +
+    scale(mean_temp):scale(mean_DO) + 
     # scale(squashed_temp_vel):scale(squashed_do_vel) +
     scale(squashed_do_vel) + scale(squashed_do_vel):scale(mean_DO) + 
     scale(squashed_temp_vel) + scale(squashed_temp_vel):scale(mean_temp), 
   data = d)
 
 hist(y)
+hist(x[,2])
+hist(x[,3])
 hist(x[,4])
-hist(x[,5])
 
 vel_reg <- vocc_regression(d, y, x,
   knots = 200, group_by_genus = FALSE, student_t = TRUE, nu = 5)
@@ -79,7 +100,13 @@ get_aic(vel_reg) - get_aic(model)
 # saveRDS(vel_reg, file = "data/interacting_only_with_means_mature_01-06.rds")
 # saveRDS(vel_reg, file = "data/vel_interacting_with_means_mature_01-07.rds")
 # saveRDS(vel_reg_genus, file = "data/vel_interacting_with_means_mature_genus_01-07.rds")
+# saveRDS(vel_reg, file = "data/vel_with_fishing_interaction_01-10.rds")
+# saveRDS(vel_reg, file = "data/vel_with_fishing_trend_01-10.rds")
+saveRDS(vel_reg, file = "data/vel_with_fishing_sqrt_effort_only_01-10.rds")
 
+saveRDS(vel_reg, file = "data/scrambled_vel_interacting_01-10.rds")
+saveRDS(vel_reg, file = "data/scrambled_vel_interacting_and_effort_01-10.rds")
+saveRDS(vel_reg, file = "data/scrambled2_vel_interacting_and_effort_01-10.rds")
 # saveRDS(vel_reg, file = "data/vel_interacting_with_means_immature_01-08.rds")
 
 # ### TRY FOR SD OF LOG BIOMASS
@@ -96,10 +123,13 @@ get_aic(vel_reg) - get_aic(model)
 
 # ### BIOTIC TRENDS AS RESPONSE INSTEAD OF VELOCITY
 hist((d$biotic_trend))
-hist(d$DO_trend)
+hist(scale(d$DO_trend))
 length(d$biotic_trend)
 y <- d$biotic_trend
 d$do_trend <- d$DO_trend
+hist(scale(d$fishing_trend))
+hist(scale(d$log_effort))
+hist(sqrt(d$mean_effort))
 
 # plot((DO_trend)~(temp_trend), data=d, col = "#00000010")
 # cor(d$DO_trend, d$temp_trend)
@@ -110,7 +140,12 @@ d$do_trend <- d$DO_trend
 # plot(do_vel_squashed ~ do_trend, data=d, col = "#00000010")
 # cor(d$do_vel_squashed, d$do_trend)
 
-x <- model.matrix(~scale(mean_temp) + scale(mean_DO) + scale(mean_biomass) +
+x <- model.matrix(~scale(mean_temp) + scale(mean_DO) + 
+    scale(mean_biomass) +
+    sqrt(mean_effort) + 
+    #scale(log_effort) + 
+    scale(fishing_trend) +
+    #scale(log_effort):scale(fishing_trend) +
     scale(mean_temp):scale(mean_DO) + 
     scale(do_trend) + scale(mean_DO):scale(do_trend) +
     scale(temp_trend) + scale(mean_temp):scale(temp_trend)
@@ -123,6 +158,10 @@ trend_reg$sdr
 # saveRDS(trend_reg, file = "data/trend_w_means_mature_01-06.rds")
 # saveRDS(trend_reg, file = "data/trend_interacting_with_means_mature_01-08.rds")
 # saveRDS(trend_reg, file = "data/trend_by_vel_mature_simplified_01-09.rds")
+
+# saveRDS(trend_reg, file = "data/trend_with_fishing_vars_01-10.rds")
+saveRDS(trend_reg, file = "data/trend_with_fishing_sqrt_effort_01-10.rds")
+saveRDS(trend_reg, file = "data/trend_by_vel_with_fishing_sqrt_effort_01-10.rds")
 
 
 # saveRDS(trend_reg, file = "data/trend_interacting_with_means_immature_01-08.rds")
@@ -148,6 +187,21 @@ model <- readRDS(file = "data/trend_interacting_with_means_mature_01-08.rds")
 model <- readRDS(file = "data/trend_interacting_with_means_immature_01-08.rds")
 # model <- readRDS(file = "data/trend_by_vel_mature_01-08.rds")
 # model <- readRDS(file = "data/trend_by_vel_mature_simplified_01-09.rds")
+model <- readRDS("data/vel_with_fishing_interaction_01-10.rds")
+model <- readRDS("data/vel_with_fishing_trend_01-10.rds")
+model <- readRDS("data/vel_with_fishing_effort_01-10.rds")
+model <- readRDS("data/vel_with_fishing_effort_no_biomass_01-10.rds")
+model <- readRDS("data/vel_with_fishing_sqrt_effort_only_01-10.rds")
+
+
+# model <- readRDS( "data/trend_with_fishing_vars_01-10.rds")
+model <- readRDS( "data/trend_with_fishing_sqrt_effort_01-10.rds")
+model <- readRDS( "data/trend_by_vel_with_fishing_sqrt_effort_01-10.rds")
+
+
+model <- readRDS("data/scrambled_vel_interacting_01-10.rds")
+model <- readRDS("data/scrambled_vel_interacting_and_effort_01-10.rds")
+model <- readRDS("data/scrambled2_vel_interacting_and_effort_01-10.rds")
 
 model <- vel_reg
 # model <- sd_reg
@@ -166,13 +220,14 @@ model2 <- add_colours(model$coefs)
 
 model2a <- model2 %>% filter(coefficient != "scale(mean_temp)") %>% 
   filter(coefficient != "scale(mean_DO)") %>% 
-  filter(coefficient != "scale(mean_biomass)")
+  filter(coefficient != "scale(mean_biomass)") %>% 
+  filter(coefficient != "scale(mean_temp):scale(mean_DO)") 
  
-manipulate::manipulate({plot_coefs(model2a,  fixed_scales = F,order_by = order_by)}, 
+manipulate::manipulate({plot_coefs(model2a, fixed_scales = F, order_by = order_by)}, 
   order_by = manipulate::picker(as.list(sort(unique(shortener(model2a$coefficient))))))
 
 model2b <- model2 %>% filter(coefficient %in% 
-      c("scale(mean_temp)","scale(mean_DO)", "scale(mean_biomass)"))
+      c("scale(mean_temp)", "scale(mean_DO)", "scale(mean_biomass)", "scale(mean_temp):scale(mean_DO)"))
 manipulate::manipulate({plot_coefs(model2b, order_by = order_by)}, 
   order_by = manipulate::picker(as.list(sort(unique(shortener(model2b$coefficient))))))
 
