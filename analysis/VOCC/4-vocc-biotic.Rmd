@@ -7,8 +7,10 @@ params:
     species: "Arrowtooth Flounder" 
     immature: FALSE
     region: "both odd year surveys"
+    #region: "West Coast Haida Gwaii"
     #region: "West Coast Vancouver Island"
     covs: "-tv-depth-only"
+    scrambled_years: FALSE
 ---
 
 ```{r global_options, include=FALSE}
@@ -35,12 +37,14 @@ species <- params$species
 region <- params$region
 covs <- params$covs
 immature <- params$immature
+scrambled_years <- params$scrambled_years
 
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 paste("species =", species)
 paste("region =", region)
 paste("covs =", covs)
+paste("scrambled =", scrambled_years) 
 ```
 
 
@@ -94,15 +98,6 @@ if (immature) {
     )) %>% filter(year > 2007)
   })
 }
-
-nd_all <- readRDS(paste0("data/predicted-DO-new.rds")) %>% select(X, Y, year, temp, do_est)
-fishing <- readRDS("data/fishing-effort-grid.rds")
-
-d_all <- left_join(d_all, nd_all, by = c("X", "Y", "year"))
-d_all <- left_join(d_all, fishing, by = c("X", "Y", "year"))
-d_all$log_effort[is.na(d_all$log_effort)] <- -2.3
-
-glimpse(d_all)
 #hist(d_all$log_effort)
 ```
 
@@ -131,10 +126,41 @@ if (multiyear) {
 skip_time <- NULL
 delta_t_step <- year_range
 delta_t_total <- year_range
+
+glimpse (d)
+if (scrambled_years) {
+  d2 <- list()
+  
+  set.seed(9999) 
+  # set.seed(12345)
+  # set.seed(98765) 
+  original_years <- unique(d$year)
+  new_years <- sample(original_years)
+  convert <- cbind(original_years,new_years)
+  convert
+  for (i in seq_len(length(original_years))) {
+    old_year <- as.integer(convert[[i,1]])
+    fake_year <- as.integer(convert[[i,2]])
+    d2[[i]] <- filter(d, year == old_year) %>% 
+      mutate(year = fake_year )
+     # browser()
+  }
+  d <- do.call(rbind, d2)
+}
 ```
 
 #### TRIM environment to range sampled
 ```{r}
+nd_all <- readRDS(paste0("data/predicted-DO-new.rds")) %>% select(X, Y, year, temp, do_est)
+fishing <- readRDS("data/fishing-effort-grid.rds")
+#fishing <- readRDS("data/fishing-effort-grid-6hr.rds")
+
+d <- left_join(d, nd_all, by = c("X", "Y", "year"))
+d <- left_join(d, fishing, by = c("X", "Y", "year"))
+d$log_effort[is.na(d$log_effort)] <- -2.3
+
+glimpse(d)
+
 # d <- d %>% filter(do_est > 0.23) %>% filter(do_est < 7.91) # full range
 d <- d %>%
   filter(do_est > 0.28) %>%
@@ -213,6 +239,10 @@ fish_t <- plot_vocc(gf,
 )
 
 fish_t
+
+# fished <- gf %>%
+#   select(x, y, fishing_trend, mean_effort) 
+# saveRDS(fished, file = paste0("data/fishing-effort-trend-6hr-", ssid_string, ".rds"))
 ```
 
 
@@ -514,7 +544,7 @@ vocc <- left_join(vocc, temp_values) # add temp
 vocc <- mutate(vocc, species = !!species, method = "gradient")
 
 write.csv(vocc, file = paste0(
-  "data/_new_biotic/", age,  "-biotic-vocc-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), "-trim10.csv"
+  "data/_scrambled3/", age,  "-biotic-vocc-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), "-trim10.csv"
 ))
 ```
 
