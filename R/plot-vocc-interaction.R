@@ -129,3 +129,90 @@ plot_interaction <- function(model, species = NULL,
 #   guides(colour = guide_legend(nrow= 2, ncol= 2)) +
 #   ggtitle("Interation plots for immature abundance")
 
+
+#' Make prediction dataframe for chopsticks
+#'
+#' @param model TMB model for raw data and model.matrix
+#' @param species If NULL, loops through all species in raw data. 
+#' @param x_variable Which variable to plot sticks on.
+#' @param split_variable Which variable to plot sticks at the min and max of. 
+#' @param use_quantiles If TRUE, plots lines for 25th and 75th quantile of splitting 
+#'    varible values occupied by each species. If FALSE, use min and max values occupied by each species. 
+#'
+#' @export
+interaction_df <- function(model,
+  species = NULL,
+  x_variable = "squashed_temp_vel",
+  split_variable = "mean_temp",
+  use_quantiles = TRUE
+) {
+  if (is.null(species)) {
+    species <- unique(model$data$species)
+  }
+  
+  nd_by_species <- purrr::map_df(species, function(spp) {
+    spp_d <- filter(model$data, species == !!spp)
+    
+    vars_list <- dimnames(model$X_ij)[[2]]
+    n_vars <- length(vars_list) - 1
+    
+    out <- gsub("\\(", "", gsub("scale", "", vars_list))
+    out <- gsub("sqrt", "", out)
+    out <- gsub("\\)", "", out)
+    
+    out <- out[!grepl(":", out)]
+    
+    n_vars <- length(out)
+    vars_list <- out[2:n_vars]
+    
+    nd <- data.frame(matrix(0, nrow = 200, ncol = length(vars_list)))
+    colnames(nd) <- vars_list
+    
+    for (i in seq_along(vars_list)) {
+      var <- vars_list[[i]]
+      nd[[var]] <- mean(spp_d[[var]], na.rm = T)
+    }
+    
+    x_range <- range((spp_d[[x_variable]]), na.rm = T)
+    
+    if(use_quantiles){
+      split_low <- quantile(spp_d[[split_variable]], 0.25, na.rm = T)
+      split_high <- quantile(spp_d[[split_variable]], 0.75, na.rm = T)
+      
+      nd$chopstick <- c(
+        rep(paste0("low", gsub("mean_"," ", split_variable), ""), length.out = 100),
+        rep(paste0("high",  gsub("mean_"," ", split_variable), ""), length.out = 100)
+      )
+      
+    } else {
+      split_range <- range((spp_d[[split_variable]]), na.rm = T)
+      split_low <- split_range[1]
+      split_high <- split_range[2]
+      
+      nd$chopstick <- c(
+        rep(paste0("min", gsub("mean_"," ", split_variable), ""), length.out = 100),
+        rep(paste0("max", gsub("mean_"," ", split_variable), ""), length.out = 100)
+      )
+      
+    }
+    
+    
+    nd[[x_variable]] <- c(
+      seq(x_range[1], x_range[2], length.out = 100),
+      seq(x_range[1], x_range[2], length.out = 100)
+    )
+    
+    nd[[split_variable]] <- c(
+      rep(split_low, length.out = 100),
+      rep(split_high, length.out = 100)
+    )
+    
+    
+    nd$species <- spp
+    nd$genus <- spp_d$genus[1]
+    nd
+  })
+  
+  nd_by_species
+}
+
