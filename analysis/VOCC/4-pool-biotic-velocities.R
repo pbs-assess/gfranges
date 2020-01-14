@@ -6,17 +6,24 @@ library("dplyr")
 # mydir = paste0( "biotic_test1")
 mydir <- paste0("_new_biotic/mat")
 mydir = paste0( "_new_biotic/imm")
-
-
+mydir = paste0( "_scrambled1")
+mydir = paste0( "_scrambled2")
+mydir = paste0( "_scrambled3")
+####################
 myfiles <- list.files(path = mydir, pattern = "*.csv", full.names = TRUE)
 myfiles
 biotic <- do.call(rbind, lapply(myfiles, read.csv)) %>% select(-X, -start_year)
 glimpse(biotic)
 
+#####################
 saveRDS(biotic, file = paste0(
   "multi-spp-biotic-vocc-mature-with-fished.rds"
 ))
 
 saveRDS(biotic, file = paste0(
   "multi-spp-biotic-vocc-immature-with-fished.rds"
+))
+
+saveRDS(biotic, file = paste0(
+  "scrambled3-vocc-mature-with-fished.rds"
 ))

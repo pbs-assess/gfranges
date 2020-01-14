@@ -7,6 +7,9 @@
 #' @param scaled Logical for whether variables are scaled.
 #'
 #' @export
+#' 
+#' 
+
 plot_interaction <- function(model, species = NULL,
                              variables = c("temp_vel_squashed", "do_vel_squashed"),
                              choose_x = NULL,
@@ -116,18 +119,6 @@ plot_interaction <- function(model, species = NULL,
     guides(colour = guide_legend(nrow = 2, ncol = 2))
   p
 }
-
-
-
-# p <- plot_interaction (model= bio_temp, #species = "North Pacific Spiny Dogfish",
-#   variables = c("temp_vel_squashed", "do_vel_squashed"),
-#   scaled = TRUE)
-# p + theme(legend.position = "top",
-#           legend.title = element_blank(),
-#           legend.text = element_text(size=10),
-#           legend.direction = "vertical") +
-#   guides(colour = guide_legend(nrow= 2, ncol= 2)) +
-#   ggtitle("Interation plots for immature abundance")
 
 
 #' Make prediction dataframe for chopsticks

@@ -51,12 +51,9 @@ vocc_gradient_calc <- function(data,
   }
   
   
-  
-  
-  
   # Then calculate the trend per pixel:
   slopedat <- vocc::calcslope(rbrick, divisor = divisor)
-
+  
   # Then get the mean values for a time period
   if (!is.null(indices)) {
     # if (indices = "all") {

@@ -12,15 +12,11 @@ stats <- readRDS(paste0("data/life-history-stats.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 stats$genus <- tolower(stats$group)
 
-
 # model <- "multi-spp-biotic-vocc"
 model_age <- "multi-spp-biotic-vocc-mature"
-d <- readRDS(paste0("data/", model_age, "-with-fished.rds"))
-d <- na.omit(d) %>% as_tibble()
-
-model_age <- "scrambled-vocc-mature"
-model_age <- "scrambled2-vocc-mature"
-model_age <- "scrambled3-vocc-mature"
+# model_age <- "scrambled-vocc-mature"
+# model_age <- "scrambled2-vocc-mature"
+# model_age <- "scrambled3-vocc-mature"
 d <- readRDS(paste0("data/", model_age, "-with-fished.rds"))
 d <- na.omit(d) %>% as_tibble()
 
@@ -30,7 +26,6 @@ d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
   filter(species != "Longspine Thornyhead") %>%
   filter(species != "Shortbelly Rockfish") 
 
-
 # model_age <- "multi-spp-biotic-vocc-immature"
 # d <- readRDS(paste0("data/", model_age, "with-fished.rds"))
 # d <- na.omit(d) %>% as_tibble()
@@ -38,7 +33,6 @@ d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
 # d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
 #   filter(species != "Curlfin Sole") %>%
 #   filter(species != "Longspine Thornyhead")
-
 
 select(d, genus, species) %>%
   distinct() %>%
@@ -68,6 +62,7 @@ d$log_effort <- log(d$mean_effort)
 # ggplot(d, aes(x, y, colour = collapse_outliers(d$biotic_vel, c(0.005, 0.995)))) + 
 #   geom_point(size=0.25) +
 #   facet_wrap(~species) + scale_color_viridis_c()
+
 
 x <- model.matrix(~scale(mean_DO) + scale(mean_temp) + 
     scale(mean_biomass) + 
@@ -107,6 +102,7 @@ saveRDS(vel_reg, file = "data/vel_with_fishing_sqrt_effort_only_01-10.rds")
 saveRDS(vel_reg, file = "data/scrambled_vel_interacting_01-10.rds")
 saveRDS(vel_reg, file = "data/scrambled_vel_interacting_and_effort_01-10.rds")
 saveRDS(vel_reg, file = "data/scrambled2_vel_interacting_and_effort_01-10.rds")
+saveRDS(vel_reg, file = "data/scrambled3_vel_interacting_and_effort_01-10.rds")
 # saveRDS(vel_reg, file = "data/vel_interacting_with_means_immature_01-08.rds")
 
 # ### TRY FOR SD OF LOG BIOMASS
@@ -202,6 +198,7 @@ model <- readRDS( "data/trend_by_vel_with_fishing_sqrt_effort_01-10.rds")
 model <- readRDS("data/scrambled_vel_interacting_01-10.rds")
 model <- readRDS("data/scrambled_vel_interacting_and_effort_01-10.rds")
 model <- readRDS("data/scrambled2_vel_interacting_and_effort_01-10.rds")
+model <- readRDS("data/scrambled3_vel_interacting_and_effort_01-10.rds")
 
 model <- vel_reg
 # model <- sd_reg

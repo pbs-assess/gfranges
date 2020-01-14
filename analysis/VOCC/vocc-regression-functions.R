@@ -92,7 +92,7 @@ vocc_regression <- function(dat, y_i, X_ij, offset = rep(0, length(y_i)),
     b_re = as.factor(matrix(NA, nrow = n_k, ncol = ncol(X_ij))),
     b_re_genus = as.factor(matrix(NA, nrow = n_m, ncol = ncol(X_ij)))
   )
-
+  
   if (binomial) tmb_map <- c(tmb_map, list(ln_phi = factor(NA)))
   obj_fe <- TMB::MakeADFun(
     data = tmb_data, parameters = tmb_param, map = tmb_map,

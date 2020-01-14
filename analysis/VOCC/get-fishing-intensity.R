@@ -73,6 +73,7 @@ hist(dat$effort)
 data <- dat %>% group_by(X, Y) %>% mutate(effort = sum(effort)) %>% select(-fishing_event_id) %>% distinct() %>% filter(year < 2019) %>% mutate(log_effort = log(effort))
 
 saveRDS(data, file = "analysis/VOCC/data/fishing-effort-grid.rds")
+# saveRDS(data, file = "analysis/VOCC/data/fishing-effort-grid-6hr.rds")
 
 hist(data$log_effort)
 

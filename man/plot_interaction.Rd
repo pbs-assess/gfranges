@@ -9,7 +9,7 @@ plot_interaction(model, species = NULL,
   choose_x = NULL, scaled = TRUE)
 }
 \arguments{
-\item{model}{Model from vocc_regression function. 
+\item{model}{Model from vocc_regression function.
 Requires named data element and coefs table.}
 
 \item{species}{Species effect to be plotted.}
