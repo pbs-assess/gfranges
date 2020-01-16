@@ -8,6 +8,8 @@ collapse_outliers <- function(.x, outliers) {
 
 #' @param y_i Response vector
 #' @param X_ij Covariate matrix
+#' @param X_pj Covariate prediction matrix
+#' @param pred_dat Prediction data frame
 #' @param offset Optional offset vector
 #' @param knots Number of SPDE knots
 #' @param nu Student-t degrees of freedom parameter (fixed)
@@ -15,7 +17,9 @@ collapse_outliers <- function(.x, outliers) {
 #'   normal distribution observation model is used.
 #' @param group_by_genus Logical. If `TRUE`, a hierarchical random effect
 #'   structure is used.
-vocc_regression <- function(dat, y_i, X_ij, offset = rep(0, length(y_i)),
+vocc_regression <- function(dat, y_i, X_ij, 
+  X_pj, pred_dat,
+  offset = rep(0, length(y_i)),
   knots = 200, nu = 7, student_t = TRUE,
   group_by_genus = FALSE, binomial = FALSE) {
 
@@ -23,6 +27,11 @@ vocc_regression <- function(dat, y_i, X_ij, offset = rep(0, length(y_i)),
 
   dat$species_id <- as.integer(as.factor(dat$species))
   dat$genus_id <- as.integer(as.factor(dat$genus))
+  
+  pred_dat <- left_join(pred_dat, 
+    distinct(select(dat, species, species_id)), by = "species")
+  pred_dat <- left_join(pred_dat, 
+    distinct(select(dat, genus, genus_id)), by = "genus")
 
   # if (outliers[1] > 0 || outliers[2] < 1) {
   #   y_i <- collapse_outliers(y_i, outliers = outliers)
@@ -57,11 +66,14 @@ vocc_regression <- function(dat, y_i, X_ij, offset = rep(0, length(y_i)),
   tmb_data <- list(
     y_i = y_i,
     X_ij = X_ij,
+    X_pj = X_pj,
     A_sk = A_sk,
     A_spatial_index = data$sdm_spatial_id - 1L,
     spde = spde$spde$param.inla[c("M0", "M1", "M2")],
     k_i = dat$species_id - 1L,
+    k_p = pred_dat$species_id - 1L,
     m_i = dat$genus_id - 1L,
+    m_p = pred_dat$genus_id - 1L,
     n_k = n_k,
     nu = nu, # Student-t DF
     student_t = as.integer(student_t),

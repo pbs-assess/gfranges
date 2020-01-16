@@ -79,24 +79,39 @@ hist(log(d$mean_effort))
 hist(sqrt(d$mean_effort))
 hist(d$fishing_trend)
 
+d$mean_temp_scaled <- scale(d$mean_temp)
+d$mean_biomass_scaled <- scale(d$mean_biomass)
+d$mean_DO_scaled <- scale(d$mean_DO)
+d$squashed_do_vel_scaled <- scale(d$squashed_do_vel, center = FALSE)
+d$squashed_temp_vel_scaled <- scale(d$squashed_temp_vel, center = FALSE)
 
-x <- model.matrix(~scale(mean_DO) + scale(mean_temp) + 
-    scale(mean_biomass) + 
-    #scale(sqrt_effort, center = F) + 
-    #scale(fishing_trend, center = F) +
-    #sqrt(mean_effort):scale(fishing_trend) +
-    scale(mean_temp):scale(mean_DO) + 
-    # scale(squashed_temp_vel):scale(squashed_do_vel) +
-    scale(squashed_do_vel, center = F) + scale(squashed_do_vel, center = F):scale(mean_DO) + 
-    scale(squashed_temp_vel, center = F) + scale(squashed_temp_vel, center = F):scale(mean_temp), 
-  data = d)
+formula <- ~mean_DO_scaled + mean_temp_scaled +
+  mean_biomass_scaled + 
+  #scale(sqrt_effort, center = F) + 
+  #scale(fishing_trend, center = F) +
+  #sqrt(mean_effort):scale(fishing_trend) +
+  mean_temp_scaled:mean_DO_scaled + 
+  # scale(squashed_temp_vel):scale(squashed_do_vel) +
+  squashed_do_vel_scaled + squashed_do_vel_scaled:mean_DO_scaled + 
+  squashed_do_vel_scaled + squashed_temp_vel_scaled:mean_temp_scaled
 
+x <- model.matrix(formula, data = d)
+
+d_pj1 <- interaction_df(d, formula = formula,
+  x_variable = "squashed_temp_vel_scaled",
+  split_variable = "mean_temp_scaled")
+d_pj2 <- interaction_df(d, formula = formula,
+  x_variable = "squashed_do_vel_scaled",
+  split_variable = "mean_DO_scaled")
+X_pj <- as.matrix(bind_rows(select(d_pj1, -species, -genus), 
+  select(d_pj2, -species, -genus)))
+d_pj <- bind_rows(d_pj1, d_pj2)
 
 head(x)
 hist(x[,2])
 hist(x[,7])
 hist(x[,8])
-trend_by_vel <- vocc_regression(d, y, x,
+trend_by_vel <- vocc_regression(d, y, X_ij = x, X_pj = X_pj, pred_dat = d_pj,
   knots = 200, group_by_genus = FALSE, student_t = FALSE)
 trend_by_vel$sdr
 
