@@ -46,6 +46,10 @@ Type objective_function<Type>::operator()()
   DATA_INTEGER(student_t);   // vs. normal
   DATA_INTEGER(binomial);
   
+  DATA_MATRIX(X_pj);     // model matrix
+  DATA_IVECTOR(k_p); // species index
+  DATA_IVECTOR(m_p); // genus index
+  
   // ------------------ Parameters ---------------------------------------------
   
   // Parameters
@@ -149,6 +153,22 @@ Type objective_function<Type>::operator()()
       combined_re(k, j) = b_j(j) + b_re_genus(genus_index_k(k), j) + b_re(k, j) ;
     }
   }
+  
+  // Chopstick predictions:
+  int n_p = X_pj.rows();
+  vector<Type> eta_p(n_p);
+  vector<Type> eta_fixed_p = X_pj * b_j;
+  for (int p = 0; p < n_p; p++) {
+    eta_p(p) = eta_fixed_p(p);
+    for (int j = 0; j < (b_re.cols()); j++) {
+      eta_p(p) += X_pj(p, j) * b_re(k_p(p), j);
+    }
+    for (int m = 0; m < (b_re_genus.cols()); m++) {
+      eta_p(p) += X_pj(p, m) * b_re_genus(m_p(p), m);
+    }
+  }
+  REPORT(eta_p);
+  ADREPORT(eta_p);
   
   // ------------------ Reporting ----------------------------------------------
   
