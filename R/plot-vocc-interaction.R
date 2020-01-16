@@ -48,11 +48,20 @@ plot_interaction <- function(model, species = NULL,
       x2_range <- range(scale(spp_d[[var_2]]))
 
       b2 <- filter(sp_coef, coefficient == !!paste0("scale(", var_1, ")"))
+      if (nrow(b2)==0) {
+        b2 <- filter(sp_coef, coefficient == !!paste0("scale(", var_1, ", center = F)"))
+        interaction_name <- paste0("scale(", var_1, ", center = F):scale(", var_2, ")")
+        }
       b3 <- filter(sp_coef, coefficient == !!paste0("scale(", var_2, ")"))
       interaction_name <- paste0("scale(", var_1, "):scale(", var_2, ")")
+      if (nrow(b3)==0) {
+        b3 <- filter(sp_coef, coefficient == !!paste0("scale(", var_2, ", center = F)"))
+        interaction_name <- paste0("scale(", var_1, "):scale(", var_2, ", center = F)")
+        }
+      #browser()
       b4 <- filter(sp_coef, coefficient == !!interaction_name)
       if (nrow(b4) == 0) {
-        interaction_name <- paste0("scale(", var_2, "):scale(", var_1, ")")
+        interaction_name <- paste0("scale(", var_2, ", center = F):scale(", var_1, ")")
         b4 <- filter(sp_coef, coefficient == !!interaction_name)
       }
     } else {
@@ -148,7 +157,8 @@ interaction_df <- function(model,
     n_vars <- length(vars_list) - 1
     
     out <- gsub("\\(", "", gsub("scale", "", vars_list))
-    out <- gsub("sqrt", "", out)
+    # out <- gsub("sqrt", "", out)
+    out <- gsub("\\, center = F)", "", out)
     out <- gsub("\\)", "", out)
     
     out <- out[!grepl(":", out)]

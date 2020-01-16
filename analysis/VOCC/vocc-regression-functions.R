@@ -293,6 +293,7 @@ add_colours <- function(coefs, col_var = "group", species_data = stats,
 
 shortener <- function(string) {
   out <- gsub("\\(", "", gsub("scale", "", string)) #coef_names[1:length()]
+  out <- gsub("\\, center = F)", "", out)
   out <- gsub("\\)", "", out)
   out <- gsub("squashed_", "", out)
   out <- gsub("mean_", "", out)
