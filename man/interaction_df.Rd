@@ -11,7 +11,7 @@ interaction_df(
   x_variable = "squashed_temp_vel",
   split_variable = "mean_temp",
   use_quantiles = TRUE,
-  N = 50
+  N = 10
 )
 }
 \arguments{

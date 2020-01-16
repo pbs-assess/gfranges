@@ -149,7 +149,7 @@ interaction_df <- function(
   x_variable = "squashed_temp_vel",
   split_variable = "mean_temp",
   use_quantiles = TRUE,
-  N = 50
+  N = 10
 ) {
   if (is.null(species)) {
     species <- unique(data$species)
