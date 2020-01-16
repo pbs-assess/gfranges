@@ -4,17 +4,36 @@
 \alias{plot_vocc}
 \title{Plot climate change vectors}
 \usage{
-plot_vocc(df, fill_col = NULL, fill_label = NULL, raster_alpha = 1,
-  vec_aes = "distance", grad_vec_aes = NULL, arrowhead_size = 0.005,
-  vec_lwd_range = c(0.7, 0.8), vec_alpha = 1,
-  max_vec_plotted = max(df$distance), min_vec_plotted = 4,
-  NA_label = "NA", white_zero = min(fill, na.rm = TRUE) < 0,
-  low_fill = "Steel Blue 4", mid_fill = "white", high_fill = "Red 3",
-  na_colour = "red", vec_col = "grey37", coast = TRUE,
-  contours = TRUE, axis_lables = FALSE, viridis_option = "D",
-  viridis_dir = 1, transform_col = no_trans, raster_limits = NULL,
-  raster_cell_size = 2, legend_position = c(0.15, 0.25),
-  theme_black = FALSE)
+plot_vocc(
+  df,
+  fill_col = NULL,
+  fill_label = NULL,
+  raster_alpha = 1,
+  vec_aes = "distance",
+  grad_vec_aes = NULL,
+  arrowhead_size = 0.005,
+  vec_lwd_range = c(0.7, 0.8),
+  vec_alpha = 1,
+  max_vec_plotted = max(df$distance),
+  min_vec_plotted = 4,
+  NA_label = "NA",
+  white_zero = min(fill, na.rm = TRUE) < 0,
+  low_fill = "Steel Blue 4",
+  mid_fill = "white",
+  high_fill = "Red 3",
+  na_colour = "red",
+  vec_col = "grey37",
+  coast = TRUE,
+  contours = TRUE,
+  axis_lables = FALSE,
+  viridis_option = "D",
+  viridis_dir = 1,
+  transform_col = no_trans,
+  raster_limits = NULL,
+  raster_cell_size = 2,
+  legend_position = c(0.15, 0.25),
+  theme_black = FALSE
+)
 }
 \arguments{
 \item{df}{Dataframe produced by dist_based_vocc function.}

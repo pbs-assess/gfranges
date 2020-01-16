@@ -4,10 +4,20 @@
 \alias{make_trend_data}
 \title{Make trend data from sdmTMB output predict funciton}
 \usage{
-make_trend_data(data, ssid = NULL, start_time = NULL,
-  end_time = NULL, skip_time = NULL, input_cell_size = 2,
-  scale_fac = 1, time_var = "year", delta_t_total = 10,
-  delta_t_step = 2, indices = c(1, 2), variable_names = "est")
+make_trend_data(
+  data,
+  ssid = NULL,
+  start_time = NULL,
+  end_time = NULL,
+  skip_time = NULL,
+  input_cell_size = 2,
+  scale_fac = 1,
+  time_var = "year",
+  delta_t_total = 10,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  variable_names = "est"
+)
 }
 \arguments{
 \item{data}{List of dataframes each containing output from predict.}

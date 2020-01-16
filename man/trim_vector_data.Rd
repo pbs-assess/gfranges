@@ -4,10 +4,18 @@
 \alias{trim_vector_data}
 \title{Trim VOCC output to only include vectors for cells with specific end conditions}
 \usage{
-trim_vector_data(data, variable_names, lower_change, upper_change,
-  lower_thresholds = NULL, upper_thresholds = NULL, cell_size = 2,
-  dist_intercept = cell_size, max_dist = max(data$distance, na.rm =
-  TRUE), min_dist = cell_size/2)
+trim_vector_data(
+  data,
+  variable_names,
+  lower_change,
+  upper_change,
+  lower_thresholds = NULL,
+  upper_thresholds = NULL,
+  cell_size = 2,
+  dist_intercept = cell_size,
+  max_dist = max(data$distance, na.rm = TRUE),
+  min_dist = cell_size/2
+)
 }
 \arguments{
 \item{data}{Dataframe created by make-vector-data function}

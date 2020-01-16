@@ -4,8 +4,13 @@
 \alias{spatiotemporal_grid}
 \title{Create prediction grid for each year}
 \usage{
-spatiotemporal_grid(data, ssid = NULL, survey_abbrev = NULL,
-  dummy_year, cell_width = 2)
+spatiotemporal_grid(
+  data,
+  ssid = NULL,
+  survey_abbrev = NULL,
+  dummy_year,
+  cell_width = 2
+)
 }
 \arguments{
 \item{data}{Original dataframe of spatiotemporal data.}

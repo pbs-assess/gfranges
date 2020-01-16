@@ -4,8 +4,14 @@
 \alias{get_quadratic_roots}
 \title{Find roots of quadratic fixed effect curves}
 \usage{
-get_quadratic_roots(m, predictor = "do_mlpl", fixed_param = 1,
-  threshold, plot = FALSE, quadratic_only = TRUE)
+get_quadratic_roots(
+  m,
+  predictor = "do_mlpl",
+  fixed_param = 1,
+  threshold,
+  plot = FALSE,
+  quadratic_only = TRUE
+)
 }
 \arguments{
 \item{m}{Output of sdmTMB model}

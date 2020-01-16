@@ -4,11 +4,20 @@
 \alias{plot_gradient_vocc}
 \title{Plot gradient vocc with vectors coloured by variable}
 \usage{
-plot_gradient_vocc(df, vec_col = "C_per_decade",
-  col_label = "Local\\nclimate trend\\n(°C/decade)", vecsize = 1,
-  lwd = 1, low_col = scales::muted("blue"),
-  high_col = scales::muted("red"), mid_col = "white", raster = NULL,
-  fill_label = raster, coast = NULL, isobath = NULL)
+plot_gradient_vocc(
+  df,
+  vec_col = "C_per_decade",
+  col_label = "Local\\nclimate trend\\n(°C/decade)",
+  vecsize = 1,
+  lwd = 1,
+  low_col = scales::muted("blue"),
+  high_col = scales::muted("red"),
+  mid_col = "white",
+  raster = NULL,
+  fill_label = raster,
+  coast = NULL,
+  isobath = NULL
+)
 }
 \description{
 Plot gradient vocc with vectors coloured by variable

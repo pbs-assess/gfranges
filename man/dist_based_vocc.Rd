@@ -4,12 +4,24 @@
 \alias{dist_based_vocc}
 \title{Velocity of climate change based on distance}
 \usage{
-dist_based_vocc(start_data, end_data, x = "x", y = "y",
-  variable_names = c("var.1", "var.2"), round_fact = NULL,
-  min_thresholds = NULL, max_thresholds = NULL, plus_minus = c(0.5,
-  0.5), match_logic = NULL, cell_size = 2, max_dist = NULL,
-  min_dist = cell_size/2, delta_t = 10, raster = FALSE,
-  kNN = FALSE)
+dist_based_vocc(
+  start_data,
+  end_data,
+  x = "x",
+  y = "y",
+  variable_names = c("var.1", "var.2"),
+  round_fact = NULL,
+  min_thresholds = NULL,
+  max_thresholds = NULL,
+  plus_minus = c(0.5, 0.5),
+  match_logic = NULL,
+  cell_size = 2,
+  max_dist = NULL,
+  min_dist = cell_size/2,
+  delta_t = 10,
+  raster = FALSE,
+  kNN = FALSE
+)
 }
 \arguments{
 \item{start_data}{Named list containing starting climate data.}

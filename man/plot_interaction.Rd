@@ -4,12 +4,16 @@
 \alias{plot_interaction}
 \title{Plot interaction for vocc regression models}
 \usage{
-plot_interaction(model, species = NULL,
+plot_interaction(
+  model,
+  species = NULL,
   variables = c("temp_vel_squashed", "do_vel_squashed"),
-  choose_x = NULL, scaled = TRUE)
+  choose_x = NULL,
+  scaled = TRUE
+)
 }
 \arguments{
-\item{model}{Model from vocc_regression function. 
+\item{model}{Model from vocc_regression function.
 Requires named data element and coefs table.}
 
 \item{species}{Species effect to be plotted.}

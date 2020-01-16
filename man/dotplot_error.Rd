@@ -4,11 +4,26 @@
 \alias{dotplot_error}
 \title{Unordered dotplot}
 \usage{
-dotplot_error(x, se.val = NULL, labels = NULL, groups = NULL,
-  gdata = NULL, cex = par("cex"), pch = 21, gpch = 21,
-  bg = "black", color = par("fg"), gcolor = par("fg"),
-  lcolor = "gray", xlim = NULL, main = NULL, xlab = NULL,
-  ylab = NULL, lwd = 1, ...)
+dotplot_error(
+  x,
+  se.val = NULL,
+  labels = NULL,
+  groups = NULL,
+  gdata = NULL,
+  cex = par("cex"),
+  pch = 21,
+  gpch = 21,
+  bg = "black",
+  color = par("fg"),
+  gcolor = par("fg"),
+  lcolor = "gray",
+  xlim = NULL,
+  main = NULL,
+  xlab = NULL,
+  ylab = NULL,
+  lwd = 1,
+  ...
+)
 }
 \description{
 Unordered dotplot

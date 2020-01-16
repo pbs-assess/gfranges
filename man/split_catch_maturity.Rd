@@ -4,9 +4,17 @@
 \alias{split_catch_maturity}
 \title{Split catch densities by mass ratio of maturity classes}
 \usage{
-split_catch_maturity(survey_sets, fish, bath, survey = c("SYN HS",
-  "SYN QCS"), years = NULL, year_re = TRUE, cutoff_quantile = 0.9995,
-  p_threshold = 0.5, plot = FALSE)
+split_catch_maturity(
+  survey_sets,
+  fish,
+  bath,
+  survey = c("SYN HS", "SYN QCS"),
+  years = NULL,
+  year_re = TRUE,
+  cutoff_quantile = 0.9995,
+  p_threshold = 0.5,
+  plot = FALSE
+)
 }
 \arguments{
 \item{survey_sets}{Data from get_survey_sets.}
