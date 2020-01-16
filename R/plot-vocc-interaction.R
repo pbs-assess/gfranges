@@ -133,7 +133,6 @@ plot_interaction <- function(model, species = NULL,
 #' Make prediction dataframe for chopsticks
 #'
 #' @param data The data going into the TMB model.
-#' @param data The data going into the TMB model.
 #' @param model_matrix The input model matrix to the TMB model.
 #' @param species If NULL, loops through all species in raw data. 
 #' @param x_variable Which variable to plot sticks on.

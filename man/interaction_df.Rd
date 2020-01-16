@@ -4,13 +4,6 @@
 \alias{interaction_df}
 \title{Make prediction dataframe for chopsticks}
 \usage{
-<<<<<<< HEAD
-interaction_df(model, species = NULL, x_variable = "squashed_temp_vel",
-  split_variable = "mean_temp", use_quantiles = TRUE)
-}
-\arguments{
-\item{model}{TMB model for raw data and model.matrix}
-=======
 interaction_df(
   data,
   model_matrix,
@@ -24,7 +17,6 @@ interaction_df(
 \item{data}{The data going into the TMB model.}
 
 \item{model_matrix}{The input model matrix to the TMB model.}
->>>>>>> ed5f04ff95fec1ab852731896232d9ad29090c56
 
 \item{species}{If NULL, loops through all species in raw data.}
 
