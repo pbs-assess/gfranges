@@ -85,7 +85,7 @@ d$mean_DO_scaled <- scale(d$mean_DO)
 d$squashed_do_vel_scaled <- scale(d$squashed_do_vel, center = FALSE)
 d$squashed_temp_vel_scaled <- scale(d$squashed_temp_vel, center = FALSE)
 
-formula <- ~mean_DO_scaled + mean_temp_scaled +
+formula <- ~ mean_DO_scaled + mean_temp_scaled +
   mean_biomass_scaled + 
   #scale(sqrt_effort, center = F) + 
   #scale(fishing_trend, center = F) +
@@ -93,30 +93,42 @@ formula <- ~mean_DO_scaled + mean_temp_scaled +
   mean_temp_scaled:mean_DO_scaled + 
   # scale(squashed_temp_vel):scale(squashed_do_vel) +
   squashed_do_vel_scaled + squashed_do_vel_scaled:mean_DO_scaled + 
-  squashed_do_vel_scaled + squashed_temp_vel_scaled:mean_temp_scaled
+  squashed_temp_vel_scaled + squashed_temp_vel_scaled:mean_temp_scaled
 
 x <- model.matrix(formula, data = d)
 
 d_pj1 <- interaction_df(d, formula = formula,
   x_variable = "squashed_temp_vel_scaled",
-  split_variable = "mean_temp_scaled")
+  split_variable = "mean_temp_scaled", N = 8)
+d_pj1$`(Intercept)` <- 0 # don't include intercept
 d_pj2 <- interaction_df(d, formula = formula,
   x_variable = "squashed_do_vel_scaled",
-  split_variable = "mean_DO_scaled")
+  split_variable = "mean_DO_scaled", N = 8)
+d_pj2$`(Intercept)` <- 0 # don't include intercept
 X_pj <- as.matrix(bind_rows(select(d_pj1, -species, -genus), 
   select(d_pj2, -species, -genus)))
-d_pj <- bind_rows(d_pj1, d_pj2)
+pred_dat <- bind_rows(mutate(d_pj1, type = "velocity"), mutate(d_pj2, type = "do"))
 
 head(x)
 hist(x[,2])
 hist(x[,7])
 hist(x[,8])
-trend_by_vel <- vocc_regression(d, y, X_ij = x, X_pj = X_pj, pred_dat = d_pj,
+trend_by_vel <- vocc_regression(d, y, X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
   knots = 200, group_by_genus = FALSE, student_t = FALSE)
 trend_by_vel$sdr
-
 saveRDS(trend_by_vel, file = paste0("data/trend_by_vel_01-16-", model_age, ".rds"))
 
+# example plot:
+par_est <- as.list(trend_by_vel$sdr, "Estimate", report = TRUE)
+par_sd <- as.list(trend_by_vel$sdr, "Std. Error", report = TRUE)
+pred_dat$est_p <- par_est$eta_p
+pred_dat$sd_p <- par_sd$eta_p
+filter(pred_dat, type == "do") %>%
+  ggplot(aes(squashed_do_vel_scaled, est_p)) +
+  geom_line(aes(colour = chopstick)) +
+  geom_ribbon(aes(fill = chopstick, 
+    ymin = est_p - 1.96 * sd_p, ymax = est_p + 1.96 * sd_p), alpha = 0.3) +
+  facet_wrap(vars(species))
 
 
 # ### TRY FOR SD OF LOG BIOMASS

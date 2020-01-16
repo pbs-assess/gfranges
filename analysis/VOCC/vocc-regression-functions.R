@@ -60,7 +60,8 @@ vocc_regression <- function(dat, y_i, X_ij,
     loc = as.matrix(fake_data[, c("sdm_x", "sdm_y"), drop = FALSE])
   )
 
-  genus_index_k_df <- data.frame(species_id = dat$species_id, genus_id = dat$genus_id) %>% 
+  genus_index_k_df <- data.frame(species_id = dat$species_id, 
+    genus_id = dat$genus_id) %>% 
     dplyr::distinct()
   
   tmb_data <- list(
@@ -122,26 +123,20 @@ vocc_regression <- function(dat, y_i, X_ij,
 
   if (group_by_genus) {
     obj <- MakeADFun(tmb_data, tmb_param, DLL = "vocc_regression",
-      random = c("b_j", "omega_sk", "b_re", "b_re_genus"), map = tmb_map)
+      random = c("omega_sk", "b_re", "b_re_genus"), map = tmb_map)
   } else {
     tmb_map <- c(tmb_map, list(
       log_gamma_genus = as.factor(rep(NA, ncol(X_ij))),
       b_re_genus = as.factor(matrix(NA, nrow = n_m, ncol = ncol(X_ij)))
     ))
     obj <- MakeADFun(tmb_data, tmb_param, DLL = "vocc_regression",
-      random = c("b_j", "omega_sk", "b_re"), map = tmb_map)
+      random = c("omega_sk", "b_re"), map = tmb_map)
   }
-  opt <- nlminb(obj$par, obj$fn, obj$gr, control = list(eval.max = 1e4, iter.max = 1e4))
+  opt <- nlminb(obj$par, obj$fn, obj$gr, 
+    control = list(eval.max = 1e4, iter.max = 1e4))
   sdr <- sdreport(obj)
-  sdr
 
   s <- summary(sdr)
-
-  # mutate(as.data.frame(s[row.names(s) == "b_j", ]), coefficient = colnames(X_ij)) %>%
-  #   select(coefficient, Estimate, `Std. Error`)
-  #
-  # s[grep("ln|log", row.names(s)), ]
-  # s[grep("sigma", row.names(s)), , drop = FALSE]
 
   ids <- distinct(select(dat, species, species_id)) %>% arrange(species_id)
   n_spp <- nrow(ids)
@@ -173,8 +168,11 @@ vocc_regression <- function(dat, y_i, X_ij,
   nd$eta_i <- r$eta_i
   nd$residual <- y_i - r$eta_i
 
-  list(obj = obj, opt = opt, sdr = sdr, coefs = b_re, coefs_genus = b_re_genus, data = nd,
-    group_by_genus = group_by_genus, nu = nu, y_i = y_i, X_ij = X_ij, b_re_species = b_re_species)
+  list(obj = obj, opt = opt, sdr = sdr, coefs = b_re, 
+    coefs_genus = b_re_genus, data = nd,
+    group_by_genus = group_by_genus, nu = nu, y_i = y_i, X_ij = X_ij,
+    X_pj = X_pj, pred_dat = pred_dat,
+    b_re_species = b_re_species)
 }
 
 add_colours <- function(coefs, col_var = "group", species_data = stats, 

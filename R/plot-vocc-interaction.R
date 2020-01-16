@@ -202,6 +202,7 @@ interaction_df <- function(
     mm <- as.data.frame(model.matrix(formula, nd))
     mm$genus <- spp_d$genus[1]
     mm$species <- spp_d$species[1]
+    mm$chopstick <- nd$chopstick
     mm
   })
   
