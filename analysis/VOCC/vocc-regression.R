@@ -105,8 +105,8 @@ d_pj2 <- interaction_df(d, formula = formula,
   x_variable = "squashed_do_vel_scaled",
   split_variable = "mean_DO_scaled", N = 8)
 d_pj2$`(Intercept)` <- 0 # don't include intercept
-X_pj <- as.matrix(bind_rows(select(d_pj1, -species, -genus), 
-  select(d_pj2, -species, -genus)))
+X_pj <- as.matrix(bind_rows(select(d_pj1, -chopstick, -species, -genus), 
+  select(d_pj2, -chopstick, -species, -genus)))
 pred_dat <- bind_rows(mutate(d_pj1, type = "velocity"), mutate(d_pj2, type = "do"))
 
 head(x)
