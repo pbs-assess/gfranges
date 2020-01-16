@@ -6,17 +6,18 @@
 \usage{
 interaction_df(
   data,
-  model_matrix,
+  formula,
   species = NULL,
   x_variable = "squashed_temp_vel",
   split_variable = "mean_temp",
-  use_quantiles = TRUE
+  use_quantiles = TRUE,
+  N = 50
 )
 }
 \arguments{
-\item{data}{The data going into the TMB model.}
+\item{data}{The data frame used to make the model matrix.}
 
-\item{model_matrix}{The input model matrix to the TMB model.}
+\item{formula}{The formula used to make the model matrix.}
 
 \item{species}{If NULL, loops through all species in raw data.}
 
@@ -26,6 +27,8 @@ interaction_df(
 
 \item{use_quantiles}{If TRUE, plots lines for 25th and 75th quantile of splitting 
 varible values occupied by each species. If FALSE, use min and max values occupied by each species.}
+
+\item{N}{Number of increments}
 }
 \description{
 Make prediction dataframe for chopsticks
