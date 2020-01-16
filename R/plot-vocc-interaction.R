@@ -132,7 +132,9 @@ plot_interaction <- function(model, species = NULL,
 
 #' Make prediction dataframe for chopsticks
 #'
-#' @param model TMB model for raw data and model.matrix
+#' @param data The data going into the TMB model.
+#' @param data The data going into the TMB model.
+#' @param model_matrix The input model matrix to the TMB model.
 #' @param species If NULL, loops through all species in raw data. 
 #' @param x_variable Which variable to plot sticks on.
 #' @param split_variable Which variable to plot sticks at the min and max of. 
@@ -140,20 +142,22 @@ plot_interaction <- function(model, species = NULL,
 #'    varible values occupied by each species. If FALSE, use min and max values occupied by each species. 
 #'
 #' @export
-interaction_df <- function(model,
+interaction_df <- function(
+  data,
+  model_matrix,
   species = NULL,
   x_variable = "squashed_temp_vel",
   split_variable = "mean_temp",
   use_quantiles = TRUE
 ) {
   if (is.null(species)) {
-    species <- unique(model$data$species)
+    species <- unique(data$species)
   }
   
   nd_by_species <- purrr::map_df(species, function(spp) {
-    spp_d <- filter(model$data, species == !!spp)
+    spp_d <- filter(data, species == !!spp)
     
-    vars_list <- dimnames(model$X_ij)[[2]]
+    vars_list <- dimnames(model_matrix)[[2]]
     n_vars <- length(vars_list) - 1
     
     out <- gsub("\\(", "", gsub("scale", "", vars_list))

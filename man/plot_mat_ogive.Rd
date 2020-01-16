@@ -5,15 +5,25 @@
 \alias{plot_mat_ogive}
 \title{Fit and plot maturity ogives}
 \usage{
-fit_mat_ogive_re(dat, type = c("age", "length"), sample_id_re = FALSE,
-  year_re = FALSE, months = seq(1, 12), ageing_method_codes = NULL,
-  usability_codes = c(0, 1, 2, 6))
+fit_mat_ogive_re(
+  dat,
+  type = c("age", "length"),
+  sample_id_re = FALSE,
+  year_re = FALSE,
+  months = seq(1, 12),
+  ageing_method_codes = NULL,
+  usability_codes = c(0, 1, 2, 6)
+)
 
-plot_mat_ogive(object, xlab = if (object$type[[1]] == "age")
-  "Age (years)" else "Length (cm)", title = if (object$type[[1]] ==
-  "age") "Age at maturity" else "Length at maturity", rug = TRUE,
-  rug_n = 1500, x_max = 1.75, prediction_type = c("all", "male",
-  "female", "none"))
+plot_mat_ogive(
+  object,
+  xlab = if (object$type[[1]] == "age") "Age (years)" else "Length (cm)",
+  title = if (object$type[[1]] == "age") "Age at maturity" else "Length at maturity",
+  rug = TRUE,
+  rug_n = 1500,
+  x_max = 1.75,
+  prediction_type = c("all", "male", "female", "none")
+)
 }
 \arguments{
 \item{dat}{Data from [get_survey_samples()].}

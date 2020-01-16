@@ -4,10 +4,19 @@
 \alias{plot_parametric}
 \title{Visualization of group estimates.}
 \usage{
-plot_parametric(x, pred, cond = list(), parametricOnly = FALSE,
-  rm.ranef = NULL, col = "black", se = 1.96,
-  print.summary = getOption("itsadug_print"), main = NULL,
-  xlab = NULL, ...)
+plot_parametric(
+  x,
+  pred,
+  cond = list(),
+  parametricOnly = FALSE,
+  rm.ranef = NULL,
+  col = "black",
+  se = 1.96,
+  print.summary = getOption("itsadug_print"),
+  main = NULL,
+  xlab = NULL,
+  ...
+)
 }
 \description{
 Visualization of group estimates.

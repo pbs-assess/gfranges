@@ -4,8 +4,7 @@
 \alias{make_raster_brick}
 \title{Make raster brick from dataframe of predicted values through time}
 \usage{
-make_raster_brick(data, parameter = "est", scale_fac = 1,
-  time_var = "year")
+make_raster_brick(data, parameter = "est", scale_fac = 1, time_var = "year")
 }
 \arguments{
 \item{data}{Dataframe of spatial grid for multiple time slices.}

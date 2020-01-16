@@ -4,8 +4,7 @@
 \alias{fixed_density}
 \title{Calculate density curve for non-time-varying, scaled, quadratic parameters}
 \usage{
-fixed_density(m, predictor = "temp", fixed_params = 1,
-  quadratics_only = TRUE)
+fixed_density(m, predictor = "temp", fixed_params = 1, quadratics_only = TRUE)
 }
 \arguments{
 \item{m}{Output of sdmTMB model}

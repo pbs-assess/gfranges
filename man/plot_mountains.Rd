@@ -4,8 +4,13 @@
 \alias{plot_mountains}
 \title{Predicted curves for parameters in sdmTMB models}
 \usage{
-plot_mountains(dat, time_varying = TRUE, variable_label = "Depth",
-  xlimits = c(0, max(dat$x)), x_breaks = waiver())
+plot_mountains(
+  dat,
+  time_varying = TRUE,
+  variable_label = "Depth",
+  xlimits = c(0, max(dat$x)),
+  x_breaks = waiver()
+)
 }
 \arguments{
 \item{dat}{Dataframe of density estimates containing x, y_hat, and year}
