@@ -105,143 +105,116 @@ d_pj2 <- interaction_df(d, formula = formula,
   x_variable = "squashed_do_vel_scaled",
   split_variable = "mean_DO_scaled", N = 8)
 d_pj2$`(Intercept)` <- 0 # don't include intercept
+
+d_pj3 <- interaction_df(d, formula = formula,
+  x_variable = "mean_temp_scaled",
+  split_variable = "mean_DO_scaled", 
+  #use_quantiles = FALSE,
+  N = 8)
+d_pj3$`(Intercept)` <- 0 # don't include intercept
+d_pj4 <- interaction_df(d, formula = formula,
+  x_variable = "squashed_do_vel_scaled",
+  split_variable = "mean_DO_scaled", 
+  use_quantiles = FALSE,
+  N = 8)
+d_pj4$`(Intercept)` <- 0 # don't include intercept
+
 X_pj <- as.matrix(bind_rows(select(d_pj1, -chopstick, -species, -genus), 
-  select(d_pj2, -chopstick, -species, -genus)))
-pred_dat <- bind_rows(mutate(d_pj1, type = "velocity"), mutate(d_pj2, type = "do"))
+  select(d_pj2, -chopstick, -species, -genus), select(d_pj3, -chopstick, -species, -genus), select(d_pj4, -chopstick, -species, -genus)))
+
+# X_pj <- as.matrix(bind_rows(select(d_pj1, -chopstick, -species, -genus), 
+#   select(d_pj2, -chopstick, -species, -genus)))
+pred_dat <- bind_rows(mutate(d_pj1, type = "temp"), mutate(d_pj2, type = "do"))
+pred_dat2 <- bind_rows(mutate(d_pj3, type = "means"), mutate(d_pj4, type = "do_extremes"))
+pred_dat <- bind_rows(pred_dat, pred_dat2)
 
 head(x)
 hist(x[,2])
 hist(x[,7])
 hist(x[,8])
+
+
 trend_by_vel <- vocc_regression(d, y, X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
   knots = 200, group_by_genus = FALSE, student_t = FALSE)
 trend_by_vel$sdr
-saveRDS(trend_by_vel, file = paste0("data/trend_by_vel_01-16-", model_age, ".rds"))
+saveRDS(trend_by_vel, file = paste0("data/trend_by_vel_01-16-", model_age, "-chopsticks3.rds"))
 
 # example plot:
 par_est <- as.list(trend_by_vel$sdr, "Estimate", report = TRUE)
 par_sd <- as.list(trend_by_vel$sdr, "Std. Error", report = TRUE)
 pred_dat$est_p <- par_est$eta_p
 pred_dat$sd_p <- par_sd$eta_p
+
+filter(pred_dat, type == "do_extremes") %>%
+  ggplot(aes(squashed_do_vel_scaled, est_p)) +
+  geom_line(aes(colour = chopstick)) +
+  geom_ribbon(aes(fill = chopstick, 
+    ymin = est_p - 1.96 * sd_p, ymax = est_p + 1.96 * sd_p), alpha = 0.3) +
+  facet_wrap(vars(species)) + 
+  scale_colour_manual(values = c("#5E4FA2", "#FDAE61")) +
+  scale_fill_manual(values = c("#5E4FA2", "#FDAE61")) +
+  gfplot::theme_pbs() + 
+  theme(
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 10),
+    legend.direction = "vertical"
+  ) +
+  guides(colour = guide_legend(nrow = 1, ncol = 2)) + 
+  ylab("Predicted biomass trend") +
+  ggtitle("Interation plots for mature abundance")
+
+
 filter(pred_dat, type == "do") %>%
   ggplot(aes(squashed_do_vel_scaled, est_p)) +
   geom_line(aes(colour = chopstick)) +
   geom_ribbon(aes(fill = chopstick, 
     ymin = est_p - 1.96 * sd_p, ymax = est_p + 1.96 * sd_p), alpha = 0.3) +
-  facet_wrap(vars(species))
+  facet_wrap(vars(species)) + 
+  scale_colour_manual(values = c("#5E4FA2", "#FDAE61")) +
+  scale_fill_manual(values = c("#5E4FA2", "#FDAE61")) +
+  gfplot::theme_pbs() + 
+  theme(
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 10),
+    legend.direction = "vertical"
+  ) +
+  guides(colour = guide_legend(nrow = 1, ncol = 2)) + 
+  ylab("Predicted biomass trend") +
+  ggtitle("Interation plots for mature abundance")
 
 
-# ### TRY FOR SD OF LOG BIOMASS
+filter(pred_dat, type == "temp") %>%
+  ggplot(aes(squashed_temp_vel_scaled, est_p)) +
+  geom_line(aes(colour = chopstick)) +
+  geom_ribbon(aes(fill = chopstick, 
+    ymin = est_p - 1.96 * sd_p, ymax = est_p + 1.96 * sd_p), alpha = 0.3) +
+  facet_wrap(vars(species)) +
+  scale_colour_manual(values = c("#D53E4F", "#3288BD")) +
+  scale_fill_manual(values = c("#D53E4F", "#3288BD")) +
+  
+  gfplot::theme_pbs() + 
+  theme(
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 10),
+    legend.direction = "vertical"
+  ) +
+  guides(colour = guide_legend(nrow = 1, ncol = 2)) + 
+  ylab("Predicted biomass trend") +
+  ggtitle("Interation plots for mature abundance")
+
+
 # hist(log(d$sd_est))
 # hist(log(d$biotic_CV))
 # y <- log(d$sd_est)
 # y <- log(d$biotic_CV))
-# sd_reg <- vocc_regression(d, y, x,
-#   knots = 200, group_by_genus = FALSE, student_t = TRUE, nu = 5)
-# sd_reg$sdr
-# 
-# saveRDS(sd_reg, file = "data/sd_with_mean_biomass_mature_01-07.rds")
 
 
-# ### BIOTIC TRENDS AS RESPONSE INSTEAD OF VELOCITY
-
-d$do_trend <- d$DO_trend
-# hist(scale(d$fishing_trend))
-# hist(scale(d$log_effort))
-# hist(sqrt(d$mean_effort))
-
-
-x <- model.matrix(~scale(mean_temp) + scale(mean_DO) + 
-    scale(mean_biomass) +
-    sqrt(mean_effort) + 
-    #scale(log_effort) + 
-    scale(fishing_trend) +
-    #scale(log_effort):scale(fishing_trend) +
-    scale(mean_temp):scale(mean_DO) + 
-    scale(do_trend) + scale(mean_DO):scale(do_trend) +
-    scale(temp_trend) + scale(mean_temp):scale(temp_trend)
-, data = d)
-
-trend_reg <- vocc_regression(d, y, x,
-  knots = 200, group_by_genus = FALSE, student_t = FALSE)
-trend_reg$sdr
-
-saveRDS(trend_reg, file = "data/trend_with_fishing_sqrt_effort_01-10.rds")
-# saveRDS(trend_reg, file = "data/trend_interacting_with_means_immature_01-08.rds")
-
-# trend_reg_genus <- vocc_regression(d, y, x,
-#   knots = 200, group_by_genus = TRUE, student_t = FALSE)
-# trend_reg_genus$sdr
-# get_aic(trend_reg_genus) - get_aic(trend_reg)
-
-# saveRDS(trend_reg_genus, file = "data/trend_reg_genus_mature_01-06.rds")
-
-############################
-# 
-# y <- collapse_outliers(d$biotic_vel, c(0.005, 0.995))
-# hist(y)
-# 
-# vel_reg <- vocc_regression(d, y, x,
-#   knots = 200, group_by_genus = FALSE, student_t = TRUE, nu = 5)
-# vel_reg$sdr
-# 
-# vel_reg_genus <- vocc_regression(d, y, x,
-#   knots = 200, group_by_genus = TRUE, student_t = TRUE, nu = 5)
-# vel_reg_genus$sdr
-# 
-# get_aic(vel_reg_genus) - get_aic(vel_reg)
-# get_aic(vel_reg) - get_aic(model)
-
-# saveRDS(vel_reg, file = "data/interacting_vel_with_means_mature_01-06.rds")
-# saveRDS(vel_reg, file = "data/interacting_only_with_means_mature_01-06.rds")
-# saveRDS(vel_reg, file = "data/vel_interacting_with_means_mature_01-07.rds")
-# saveRDS(vel_reg_genus, file = "data/vel_interacting_with_means_mature_genus_01-07.rds")
-# saveRDS(vel_reg, file = "data/vel_with_fishing_interaction_01-10.rds")
-# saveRDS(vel_reg, file = "data/vel_with_fishing_trend_01-10.rds")
-# saveRDS(vel_reg, file = "data/vel_with_fishing_sqrt_effort_only_01-10.rds")
-# 
-# saveRDS(vel_reg, file = "data/scrambled_vel_interacting_01-10.rds")
-# saveRDS(vel_reg, file = "data/scrambled_vel_interacting_and_effort_01-10.rds")
-# saveRDS(vel_reg, file = "data/scrambled2_vel_interacting_and_effort_01-10.rds")
-# saveRDS(vel_reg, file = "data/scrambled3_vel_interacting_and_effort_01-10.rds")
-# saveRDS(vel_reg, file = "data/vel_interacting_with_means_immature_01-08.rds")
-
-############################
-
-# model <- readRDS(file = "data/interacting_vel_with_means_mature_01-06.rds") #164942.4
-# model <- readRDS(file = "data/interacting_only_with_means_mature_01-06.rds") #164943.1
-# model <- readRDS(file = "data/interacting_with_means_mature_01-06.rds") #164816.8
-# model <- readRDS(file =  "data/vel_interacting_with_means_mature_01-07.rds")
-# model <- readRDS(file = "data/vel_interacting_with_means_immature_01-08.rds")
-# model <- readRDS("data/vel_with_fishing_interaction_01-10.rds")
-# model <- readRDS("data/vel_with_fishing_trend_01-10.rds")
-# model <- readRDS("data/vel_with_fishing_effort_01-10.rds")
-# model <- readRDS("data/vel_with_fishing_effort_no_biomass_01-10.rds")
-# model <- readRDS("data/vel_with_fishing_sqrt_effort_only_01-10.rds")
-# model <- readRDS("data/scrambled_vel_interacting_01-10.rds")
-# model <- readRDS("data/scrambled_vel_interacting_and_effort_01-10.rds")
-# model <- readRDS("data/scrambled2_vel_interacting_and_effort_01-10.rds")
-# model <- readRDS("data/scrambled3_vel_interacting_and_effort_01-10.rds")
-
-model <- readRDS(file = "data/trend_interacting_with_means_mature_01-08.rds")
-model <- readRDS(file = "data/trend_interacting_with_means_immature_01-08.rds")
-# model <- readRDS(file = "data/trend_by_vel_mature_01-08.rds")
-# model <- readRDS(file = "data/trend_by_vel_mature_simplified_01-09.rds")
-
-model <- readRDS( "data/trend_with_fishing_vars_01-10.rds")
-model <- readRDS( "data/trend_with_fishing_sqrt_effort_01-10.rds")
-model <- readRDS( "data/trend_by_vel_with_fishing_sqrt_effort_01-10.rds")
-
-model <- readRDS("data/trend_by_vel_with_fishing_01-15.rds")
-model <- readRDS("data/trend_by_vel_with_fishing_01-15-scrambled3-vocc-mature.rds")
-model <- readRDS("data/trend_by_vel_with_fishing_01-15_mature.rds")
-#saveRDS(model, file = paste0("data/trend_by_vel_with_fishing_01-15.rds"))
+# ### BIOTIC TRENDS AS RESPONSE TO CLIMATE VELOCITY
 
 model <- trend_by_vel
-# model <- sd_reg
-# model <- trend_reg
-# get_aic(vel_reg)
-# get_aic(trend_reg)
 get_aic(model)
 
 coef_names <- shortener(unique(model$coefs$coefficient))
@@ -263,11 +236,11 @@ model2 <- add_colours(model$coefs)
 # ### IF IMMATURE CAN RUN THIS TO MAKE COLOURS MATCH
 # model2 <- add_colours(model$coefs, last_used = TRUE ) 
 
-model2a <- model2 %>% filter(coefficient != "scale(mean_temp)") %>% 
-  filter(coefficient != "scale(mean_DO)") %>% 
-  filter(coefficient != "scale(mean_biomass)") %>% 
-  filter(coefficient != "scale(mean_temp):scale(mean_DO)") %>%
-  filter(coefficient != "scale(mean_DO):scale(mean_temp)") 
+model2a <- model2 # %>% filter(coefficient != "mean_temp_scaled") %>% 
+#   filter(coefficient != "mean_DO_scaled") %>% 
+#   filter(coefficient != "mean_biomass_scaled") %>% 
+#   filter(coefficient != "mean_temp_scaled:mean_DO_scaled") %>%
+#   filter(coefficient != "mean_DO_scaled:mean_temp_scaled") 
  
 manipulate::manipulate({plot_coefs(model2a, fixed_scales = F, order_by = order_by)}, 
   order_by = manipulate::picker(as.list(sort(unique(shortener(model2a$coefficient))))))
@@ -289,25 +262,18 @@ p <- plot_interaction (model = model,
   variables = c("mean_DO", "squashed_do_vel"), choose_x = 2) + 
   scale_colour_manual(values = c("#5E4FA2", "#FDAE61"))
 
-p <- plot_interaction (model = model, 
-  variables = c("mean_DO", "mean_temp"), choose_x = 1) 
-
-p <- plot_interaction (model = model, 
-  variables = c("mean_DO", "mean_temp"), choose_x = 2) + 
-  scale_colour_manual(values = c("#5E4FA2", "#FDAE61"))
-
-p + ylab("Predicted biotic velocity") +
+p + ylab("Predicted biotic trend") +
   # ylab("Predicted biotic variability") +
   # ylim(-12, 15) +
   # xlim(-5, 6.8) +
   ggtitle("Interation plots for mature abundance")
 
-ggsave("figs/interation-plot-trend-by-temp-vel.png", width = 10, height = 10, dpi = 300)
-ggsave("figs/interation-plot-trend-by-do-vel.png", width = 10, height = 10, dpi = 300)
-ggsave("figs/interation-plot-trend-by-mean-do.png", width = 10, height = 10, dpi = 300)
-ggsave("figs/interation-plot-trend-by-mean-temp.png", width = 10, height = 10, dpi = 300)
+# ggsave("figs/interation-plot-trend-by-temp-vel.png", width = 10, height = 10, dpi = 300)
+# ggsave("figs/interation-plot-trend-by-do-vel.png", width = 10, height = 10, dpi = 300)
+# ggsave("figs/interation-plot-trend-by-mean-do.png", width = 10, height = 10, dpi = 300)
+# ggsave("figs/interation-plot-trend-by-mean-temp.png", width = 10, height = 10, dpi = 300)
 
-# p + ylab("Predicted biotic velocity") +
+# p + ylab("Predicted biotic trend") +
 #   ggtitle("Interation plots for immature abundance")
 # 
 # ggsave("figs/interation-plot-imm-trend-by-temp-vel.png", width = 10, height = 10, dpi = 300)
@@ -315,38 +281,6 @@ ggsave("figs/interation-plot-trend-by-mean-temp.png", width = 10, height = 10, d
 # ggsave("figs/interation-plot-imm-trend-by-mean-do.png", width = 10, height = 10, dpi = 300)
 # ggsave("figs/interation-plot-imm-trend-by-mean-temp.png", width = 10, height = 10, dpi = 300)
 # 
-# p <- plot_interaction (model = model, 
-#   variables = c("mean_temp", "temp_trend"), choose_x = 2
-# )
-
-p <- plot_interaction (model = model, variables = c("mean_DO", "do_trend")
-  , choose_x = 2
-) + scale_colour_manual(values = c("#5E4FA2", "#FDAE61")
-)
-p +
-  ylab("Predicted biotic trend") +
-  ggtitle("Interation plots for mature abundance")
-
-ggsave("figs/interation-plot-trend-by-temp.png", width = 10, height = 10, dpi = 300)
-ggsave("figs/interation-plot-trend-by-do.png", width = 10, height = 10, dpi = 300)
-ggsave("figs/interation-plot-trend-by-mean-temp.png", width = 10, height = 10, dpi = 300)
-ggsave("figs/interation-plot-trend-by-mean-do.png", width = 10, height = 10, dpi = 300)
-
-ggsave("figs/interation-plot-trend-by-temp_vel.png", width = 10, height = 10, dpi = 300)
-ggsave("figs/interation-plot-trend-by-do-vel.png", width = 10, height = 10, dpi = 300)
-
-# p +
-#   ylab("Predicted biotic trend") +
-#   ggtitle("Interation plots for immature abundance")
-
-# ggsave("figs/interation-plot-imm-trend-by-temp.png", width = 10, height = 10, dpi = 300)
-# ggsave("figs/interation-plot-imm-trend-by-do.png", width = 10, height = 10, dpi = 300)
-# ggsave("figs/interation-plot-imm-trend-by-mean-temp.png", width = 10, height = 10, dpi = 300)
-# ggsave("figs/interation-plot-imm-trend-by-mean-do.png", width = 10, height = 10, dpi = 300)
-
-
-# print(sdmTMB:::get_convergence_diagnostics(model))
-# print(sdmTMB:::get_convergence_diagnostics(model_genus))
 
 
 library(ggsidekick) # for fourth_root_power

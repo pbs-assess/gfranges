@@ -301,14 +301,6 @@ add_colours <- function(coefs, col_var = "group", species_data = stats,
   out
 }
 
-shortener <- function(string) {
-  out <- gsub("\\(", "", gsub("scale", "", string)) #coef_names[1:length()]
-  out <- gsub("\\, center = F)", "", out)
-  out <- gsub("\\)", "", out)
-  out <- gsub("squashed_", "", out)
-  out <- gsub("mean_", "", out)
-  out
-}
 
 #' Plot coefficients from vocc_regression
 #'
@@ -380,3 +372,16 @@ qres_student <- function(object) {
   u <- pt_ls(q = y, df = object$nu, mu = mu, sigma = dispersion)
   stats::qnorm(u)
 }
+
+shortener <- function(string) {
+  out <- gsub("\\(", "", string) #coef_names[1:length()]
+  out <- gsub("\\, center = F)", "", out)
+  out <- gsub("_scaled", "", out)
+  out <- gsub("scale", "", out)
+  out <- gsub("\\)", "", out)
+  out <- gsub("squashed_", "", out)
+  out <- gsub("mean_", "", out)
+  #out <- gsub("_", "", out)
+  out
+}
+
