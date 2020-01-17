@@ -164,8 +164,8 @@ interaction_df <- function(
     nd$genus <- spp_d$genus[1]
     
     if(use_quantiles){
-      split_low <- quantile(spp_d[[split_variable]], 0.25, na.rm = TRUE)
-      split_high <- quantile(spp_d[[split_variable]], 0.75, na.rm = TRUE)
+      split_low <- quantile(spp_d[[split_variable]], 0.025, na.rm = TRUE)
+      split_high <- quantile(spp_d[[split_variable]], 0.975, na.rm = TRUE)
       
       nd$chopstick <- c(
         rep(paste0("low ", shortener(split_variable), 
