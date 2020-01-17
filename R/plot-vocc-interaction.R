@@ -160,16 +160,18 @@ interaction_df <- function(
 
     x_range <- range((spp_d[[x_variable]]), na.rm = TRUE)
     
+    nd <- data.frame(species = rep(unique(spp_d$species), N * 2))
+    nd$genus <- spp_d$genus[1]
+    
     if(use_quantiles){
       split_low <- quantile(spp_d[[split_variable]], 0.25, na.rm = TRUE)
       split_high <- quantile(spp_d[[split_variable]], 0.75, na.rm = TRUE)
       
-      nd <- data.frame(species = rep(unique(spp_d$species), N * 2))
-      nd$genus <- spp_d$genus[1]
-      
       nd$chopstick <- c(
-        rep(paste0("low", gsub("mean_"," ", split_variable), ""), length.out = N),
-        rep(paste0("high",  gsub("mean_"," ", split_variable), ""), length.out = N)
+        rep(paste0("low ", shortener(split_variable), 
+          ""), length.out = N),
+        rep(paste0("high ", shortener(split_variable), 
+          ""), length.out = N)
       )
       
     } else {
@@ -178,8 +180,10 @@ interaction_df <- function(
       split_high <- split_range[2]
       
       nd$chopstick <- c(
-        rep(paste0("min", gsub("mean_"," ", split_variable), ""), length.out = N),
-        rep(paste0("max", gsub("mean_"," ", split_variable), ""), length.out = N)
+        rep(paste0("min ", shortener(split_variable), 
+          ""), length.out = N),
+        rep(paste0("max ", shortener(split_variable), 
+          ""), length.out = N)
       )
     }
     
