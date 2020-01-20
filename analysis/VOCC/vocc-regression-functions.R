@@ -276,8 +276,8 @@ add_colours <- function(coefs, col_var = "group", species_data = stats,
     
   } else {
     if (last_used) {
-    col_var <- unique(bio_temp2[[col_var]])
-    colours <- unique(bio_temp2$colours)
+    col_var <- unique(model2[[col_var]])
+    colours <- unique(model2$colours)
     } else {
    
     if (add_spp_data) {
