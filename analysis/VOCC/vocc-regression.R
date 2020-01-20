@@ -12,27 +12,27 @@ stats <- readRDS(paste0("data/life-history-stats.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 stats$genus <- tolower(stats$group)
 
-# model <- "multi-spp-biotic-vocc"
-model_age <- "multi-spp-biotic-vocc-mature"
-# model_age <- "scrambled-vocc-mature"
-# model_age <- "scrambled2-vocc-mature"
-# model_age <- "scrambled3-vocc-mature"
+# # model <- "multi-spp-biotic-vocc"
+# # model_age <- "multi-spp-biotic-vocc-mature"
+# # model_age <- "scrambled-vocc-mature"
+# # model_age <- "scrambled2-vocc-mature"
+# # model_age <- "scrambled3-vocc-mature"
+# d <- readRDS(paste0("data/", model_age, "-with-fished.rds"))
+# d <- na.omit(d) %>% as_tibble()
+# 
+# d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
+#   filter(species != "Bocaccio") %>%
+#   filter(species != "Sand Sole") %>%
+#   filter(species != "Longspine Thornyhead") %>%
+#   filter(species != "Shortbelly Rockfish")
+
+model_age <- "multi-spp-biotic-vocc-immature"
 d <- readRDS(paste0("data/", model_age, "-with-fished.rds"))
 d <- na.omit(d) %>% as_tibble()
 
 d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
-  filter(species != "Bocaccio") %>%
-  filter(species != "Sand Sole") %>%
-  filter(species != "Longspine Thornyhead") %>%
-  filter(species != "Shortbelly Rockfish")
-
-# model_age <- "multi-spp-biotic-vocc-immature"
-# d <- readRDS(paste0("data/", model_age, "with-fished.rds"))
-# d <- na.omit(d) %>% as_tibble()
-#
-# d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
-#   filter(species != "Curlfin Sole") %>%
-#   filter(species != "Longspine Thornyhead")
+  filter(species != "Curlfin Sole") %>%
+  filter(species != "Longspine Thornyhead")
 
 select(d, genus, species) %>%
   distinct() %>%
@@ -87,8 +87,6 @@ hist(d$fishing_trend)
 hist(d$temp_trend)
 hist(d$DO_trend)
 hist(d$DO_grad)
-plot(d$squashed_temp_vel_scaled ~ d$temp_trend)
-plot(d$squashed_temp_vel_scaled ~ d$temp_grad)
 
 d$mean_temp_scaled <- scale(d$mean_temp)
 d$mean_biomass_scaled <- scale(d$mean_biomass)
@@ -100,6 +98,10 @@ d$DO_trend_scaled <- scale(d$DO_trend, center = FALSE)
 d$temp_grad_scaled <- scale(d$temp_grad)
 d$DO_grad_scaled <- scale(d$DO_grad)
 
+plot(d$squashed_temp_vel_scaled ~ d$temp_trend)
+plot(d$squashed_temp_vel_scaled ~ d$temp_grad)
+
+############################
 #### TREND-BASED VARIABLES
 formula <- ~ mean_DO_scaled + mean_temp_scaled +
   mean_biomass_scaled +
@@ -126,27 +128,27 @@ d_pj2 <- interaction_df(d,
 ############################
 
 
-
-#### VELOCITY VARIABLES
-formula <- ~ mean_DO_scaled + mean_temp_scaled +
-  mean_biomass_scaled +
-  mean_temp_scaled:mean_DO_scaled +
-  squashed_do_vel_scaled + squashed_do_vel_scaled:mean_DO_scaled +
-  squashed_temp_vel_scaled + squashed_temp_vel_scaled:mean_temp_scaled
-
-x <- model.matrix(formula, data = d)
-
-d_pj1 <- interaction_df(d, formula,
-  x_variable = "squashed_temp_vel_scaled",
-  split_variable = "mean_temp_scaled",
-  N = 5
-)
-d_pj2 <- interaction_df(d,
-  formula = formula,
-  x_variable = "squashed_do_vel_scaled",
-  split_variable = "mean_DO_scaled",
-  N = 5
-)
+############################
+# #### VELOCITY VARIABLES
+# formula <- ~ mean_DO_scaled + mean_temp_scaled +
+#   mean_biomass_scaled +
+#   mean_temp_scaled:mean_DO_scaled +
+#   squashed_do_vel_scaled + squashed_do_vel_scaled:mean_DO_scaled +
+#   squashed_temp_vel_scaled + squashed_temp_vel_scaled:mean_temp_scaled
+# 
+# x <- model.matrix(formula, data = d)
+# 
+# d_pj1 <- interaction_df(d, formula,
+#   x_variable = "squashed_temp_vel_scaled",
+#   split_variable = "mean_temp_scaled",
+#   N = 5
+# )
+# d_pj2 <- interaction_df(d,
+#   formula = formula,
+#   x_variable = "squashed_do_vel_scaled",
+#   split_variable = "mean_DO_scaled",
+#   N = 5
+# )
 ############################
 
 
@@ -191,12 +193,16 @@ trend_reg <- vocc_regression(d, y,
 
 #### SAVE WITH APPROPRIATE NAME
 
-saveRDS(trend_reg, file = paste0("data/trend_by_trend_only_01-17-", model_age, ".rds"))
+saveRDS(trend_reg, file = paste0("data/trend_by_trend_only_01-20-", model_age, ".rds"))
+
+
+##############################
+##############################
 
 
 #### CALL VELOCITY MODELS ####
-
-model <- readRDS("data/trend_by_vel_01-16-multi-spp-biotic-vocc-mature-chopsticks3.rds")
+# model <- readRDS("data/trend_by_vel_01-16-multi-spp-biotic-vocc-mature-chopsticks3.rds")
+model <- readRDS(paste0("data/trend_by_trend_only_01-20-", model_age, ".rds"))
 
 plot_fuzzy_chopsticks(model,
   x_variable = "squashed_temp_vel_scaled", type = "temp",
@@ -216,7 +222,7 @@ plot_fuzzy_chopsticks(model,
 #### CALL TREND MODELS ####
 
 # model <- readRDS("data/trend_by_trend_01-16-multi-spp-biotic-vocc-mature.rds")
-model <- readRDS("data/trend_by_trend_01-17-multi-spp-biotic-vocc-mature.rds")
+# model <- readRDS("data/trend_by_trend_01-17-multi-spp-biotic-vocc-mature.rds")
 model <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
 
 plot_fuzzy_chopsticks(model,
