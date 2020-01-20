@@ -49,6 +49,7 @@
 plot_clusters <- function(model, data = NULL, 
                           colour_vector = NULL,
                           text_label = NULL,
+                          shape_by_group = FALSE,
                           colour_label = "model", ...) {
   if (!class(model)[[1]] %in% c("pam", "kmeans")) {
     stop("Model must be of class pam or kmeans.")
@@ -60,6 +61,8 @@ plot_clusters <- function(model, data = NULL,
     ...
   )
   gdat <- ggplot2::ggplot_build(g)$data
+
+  gdat[[1]]$group <- as.factor(gdat[[1]]$group) 
 
   if (!is.null(colour_vector)) {
     gdat[[1]] <- data.frame(gdat[[1]], colour_vector = colour_vector)
@@ -77,20 +80,29 @@ plot_clusters <- function(model, data = NULL,
   if (is.null(text_label)) {
    text_label <- label_data[["label"]]
   }
-  
-  gg <- ggplot(gdat[[1]], aes_string("x", "y")) +
-    geom_point(aes_string(colour = "colour_vector"), size = 2.5) +
-    geom_polygon(
-      data = gdat[[2]], aes_string(x = "x", y = "y", group = "group"),
+
+  gg <- ggplot(gdat[[2]], aes_string("x", "y")) +
+    geom_polygon(aes_string(x = "x", y = "y", group = "group"),
       fill = NA, colour = "grey50"
     ) +
     ggplot2::theme_minimal() +
     ggrepel::geom_text_repel(
       data = label_data,
       aes(x, y, label = text_label)
-    ) +
+    ) 
+  
+  if(shape_by_group) {
+  gg <- gg + geom_point(data = gdat[[1]], 
+        aes_string(colour = "colour_vector", shape = "group"), size = 3) +
+    scale_shape_discrete(solid = T) +
+    guides(shape=F)+
     labs(x = g$labels$x, y = g$labels$y, colour = colour_label) +
     ggplot2::scale_color_viridis_d()
-
+  } else {
+  gg <- gg + geom_point(data = gdat[[1]], 
+    aes_string(colour = "colour_vector"), size = 3) +
+    labs(x = g$labels$x, y = g$labels$y, colour = colour_label) +
+    ggplot2::scale_color_viridis_d()
+  }
   gg
 }
