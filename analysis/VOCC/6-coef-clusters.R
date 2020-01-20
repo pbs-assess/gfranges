@@ -51,23 +51,35 @@ do_coefs <- select(coefs, `(Intercept)`,
 
 glimpse(do_coefs) 
 
+factoextra::fviz_nbclust(all_coefs, kmeans, method = "silhouette",
+  k.max = 10)
+
 factoextra::fviz_nbclust(all_coefs, cluster::pam, method = "silhouette",
-  k.max = 7)
+  k.max = 10)
+
+
+factoextra::fviz_nbclust(temp_coefs, kmeans, method = "silhouette",
+  k.max = 10)
 
 factoextra::fviz_nbclust(temp_coefs, cluster::pam, method = "silhouette",
-  k.max = 7)
+  k.max = 10)
+
+
+factoextra::fviz_nbclust(do_coefs, kmeans, method = "silhouette",
+  k.max = 10)
 
 factoextra::fviz_nbclust(do_coefs, cluster::pam, method = "silhouette",
-  k.max = 7)
+  k.max = 10)
 
 
-
+m_kmeans <- kmeans(all_coefs, 4)
 m_pam <- cluster::pam(all_coefs, k = 5L)
 m_pam_manhattan <- cluster::pam(all_coefs, k = 5L, metric = "manhattan")
 
 plot_clusters(
-  m_pam,
-  #m_pam_manhattan, 
+  m_kmeans,
+#  m_pam,
+#  m_pam_manhattan, 
   data = all_coefs, 
   colour_vector = -(coefs$depth),
   text_label = coefs$species,
@@ -76,12 +88,14 @@ plot_clusters(
 
 
 
+m_kmeans <- kmeans(temp_coefs, 2)
 m_pam <- cluster::pam(temp_coefs, k = 2L)
 m_pam_manhattan <- cluster::pam(temp_coefs, k = 2L, metric = "manhattan")
 
 plot_clusters(
-  m_pam,
-  #m_pam_manhattan, 
+  m_kmeans,
+  # m_pam,
+  # m_pam_manhattan, 
   data = temp_coefs,
   colour_vector = -(coefs$depth),
   text_label = coefs$species,
@@ -89,13 +103,14 @@ plot_clusters(
 ) + scale_color_viridis_c() 
 
 
-
+m_kmeans <- kmeans(do_coefs, 2)
 m_pam <- cluster::pam(do_coefs, k = 4)
 m_pam_manhattan <- cluster::pam(do_coefs, k = 4, metric = "manhattan")
 
 plot_clusters(
-  m_pam, 
-  #m_pam_manhattan, 
+  m_kmeans,
+#  m_pam, 
+#  m_pam_manhattan, 
   data = do_coefs,
   colour_vector = -(coefs$depth),
   text_label = coefs$species,
