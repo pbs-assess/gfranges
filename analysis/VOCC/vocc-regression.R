@@ -12,7 +12,6 @@ stats <- readRDS(paste0("data/life-history-stats.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 stats$genus <- tolower(stats$group)
 
-# # model <- "multi-spp-biotic-vocc"
 # # model_age <- "multi-spp-biotic-vocc-mature"
 # # model_age <- "scrambled-vocc-mature"
 # # model_age <- "scrambled2-vocc-mature"
@@ -202,7 +201,6 @@ saveRDS(trend_reg, file = paste0("data/trend_by_trend_only_01-20-", model_age, "
 
 #### CALL VELOCITY MODELS ####
 # model <- readRDS("data/trend_by_vel_01-16-multi-spp-biotic-vocc-mature-chopsticks3.rds")
-model <- readRDS(paste0("data/trend_by_trend_only_01-20-", model_age, ".rds"))
 
 plot_fuzzy_chopsticks(model,
   x_variable = "squashed_temp_vel_scaled", type = "temp",
@@ -224,6 +222,8 @@ plot_fuzzy_chopsticks(model,
 # model <- readRDS("data/trend_by_trend_01-16-multi-spp-biotic-vocc-mature.rds")
 # model <- readRDS("data/trend_by_trend_01-17-multi-spp-biotic-vocc-mature.rds")
 model <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
+model <- readRDS("data/trend_by_trend_only_01-20-multi-spp-biotic-vocc-immature.rds")
+model <- readRDS(paste0("data/trend_by_trend_only_01-20-", model_age, ".rds"))
 
 plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
@@ -263,12 +263,12 @@ get_aic(model)
 
 model2 <- add_colours(model$coefs)
 # ### IF IMMATURE CAN RUN THIS TO MAKE COLOURS MATCH
-# model2 <- add_colours(model$coefs, last_used = TRUE )
+model2 <- add_colours(model$coefs, last_used = TRUE )
 
 manipulate::manipulate({
   plot_coefs(model2, fixed_scales = F, order_by = order_by)
 },
-order_by = manipulate::picker(as.list(sort(unique(shortener(model2a$coefficient)))))
+order_by = manipulate::picker(as.list(sort(unique(shortener(model2$coefficient)))))
 )
 
 manipulate::manipulate({
