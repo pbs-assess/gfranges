@@ -1,3 +1,6 @@
+getwd()
+setwd(here::here("analysis", "VOCC"))
+
 library(tidyverse)
 library(clusterthat)
 library(gfranges)
@@ -5,6 +8,8 @@ source("vocc-regression-functions.R")
 source("plot-clusters.R")
 
 model <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
+model <- readRDS("data/trend_by_vel_01-16-multi-spp-biotic-vocc-mature.rds")
+
 stats <- readRDS(paste0("data/life-history-stats.rds"))
 
 model2 <- add_colours(model$coefs, species_data = stats)
@@ -17,11 +22,11 @@ manipulate::manipulate({
   order_by = manipulate::picker(as.list(sort(unique(shortener(model2$coefficient)))))
 )
 
-glimpse(model2) 
 
-coefs <- model2 %>% 
-  select(species, group, depth, age_max, length_99th, weight_99th, coefficient, Estimate) %>% 
-  pivot_wider(names_from = coefficient, values_from = Estimate) %>% mutate(status = if_else(`(Intercept)`< 0, "negative", "stable"))
+coefs <- model2 %>% select(species, group, depth, age_max, 
+    length_99th, weight_99th, coefficient, Estimate) %>% 
+  pivot_wider(names_from = coefficient, values_from = Estimate) %>% 
+  mutate(status = if_else(`(Intercept)`< 0, "negative", "stable"))
 
 glimpse(coefs) 
 
@@ -29,20 +34,33 @@ glimpse(coefs)
 # coefs <- filter(coefs, status == "negative")
 
 coefs <- coefs[ order(row.names(coefs)), ]
+names(coefs)
+
 
 all_coefs <- select(coefs,
   `(Intercept)`, 
-  #mean_DO_scaled, 
-  DO_trend_scaled, 
+  mean_DO_scaled, DO_trend_scaled, 
   `mean_DO_scaled:DO_trend_scaled`, 
- # mean_temp_scaled, 
-  temp_trend_scaled, 
-  #`mean_DO_scaled:mean_temp_scaled`, 
+  mean_temp_scaled, temp_trend_scaled, 
+  `mean_DO_scaled:mean_temp_scaled`, 
   `mean_temp_scaled:temp_trend_scaled`) %>% scale()
+
+
+# all_coefs <- select(coefs,
+#   `(Intercept)`, 
+#   # mean_DO_scaled, 
+#   `scale(squashed_do_vel, center = F)`, 
+#   `scale(mean_DO):scale(squashed_do_vel, center = F)`, 
+#   # mean_temp_scaled, 
+#   `scale(squashed_temp_vel, center = F)`, 
+#   #`mean_DO_scaled:mean_temp_scaled`, 
+#   `scale(mean_temp):scale(squashed_temp_vel, center = F)`) %>% scale()
+
 
 temp_coefs <- select(coefs, `(Intercept)`, 
   mean_temp_scaled, temp_trend_scaled, 
   `mean_temp_scaled:temp_trend_scaled`) %>% scale()
+
 
 do_coefs <- select(coefs, `(Intercept)`, 
   mean_DO_scaled, DO_trend_scaled, 
@@ -72,35 +90,42 @@ factoextra::fviz_nbclust(do_coefs, cluster::pam, method = "silhouette",
   k.max = 10)
 
 
-m_kmeans <- kmeans(all_coefs, 4)
-m_pam <- cluster::pam(all_coefs, k = 5L)
-m_pam_manhattan <- cluster::pam(all_coefs, k = 5L, metric = "manhattan")
+m_kmeans <- kmeans(all_coefs, 6)
+m_pam <- cluster::pam(all_coefs, k = 7)
+m_pam_manhattan <- cluster::pam(all_coefs, k = 7, metric = "manhattan")
 
 plot_clusters(
-  m_kmeans,
-#  m_pam,
+#  m_kmeans,
+  m_pam,
 #  m_pam_manhattan, 
   data = all_coefs, 
-  colour_vector = -(coefs$depth),
-  text_label = coefs$species,
+  colour_vector = (coefs$depth),
+  text_label = coefs$species, shape_by_group = T,
   colour_label = "Depth"
-) + scale_color_viridis_c() 
-
-
+) + scale_color_viridis_c(direction = -1, trans = log10) 
 
 m_kmeans <- kmeans(temp_coefs, 2)
-m_pam <- cluster::pam(temp_coefs, k = 2L)
+m_kmeans <- kmeans(temp_coefs, 3)
+m_kmeans <- kmeans(temp_coefs, 4)
+m_kmeans <- kmeans(temp_coefs, 5)
+
+plot_clusters(m_kmeans, data = temp_coefs,
+  colour_vector = (coefs$depth), text_label = coefs$species,
+  colour_label = "Depth") + 
+  scale_color_viridis_c(direction = -1, trans = log10) 
+
+m_pam <- cluster::pam(temp_coefs, k = 3L)
 m_pam_manhattan <- cluster::pam(temp_coefs, k = 2L, metric = "manhattan")
 
 plot_clusters(
-  m_kmeans,
-  # m_pam,
+  #m_kmeans,
+  m_pam,
   # m_pam_manhattan, 
   data = temp_coefs,
-  colour_vector = -(coefs$depth),
+  colour_vector = (coefs$depth),
   text_label = coefs$species,
   colour_label = "Depth"
-) + scale_color_viridis_c() 
+) + scale_color_viridis_c(direction = -1, trans = log10) 
 
 
 m_kmeans <- kmeans(do_coefs, 2)
@@ -112,10 +137,11 @@ plot_clusters(
 #  m_pam, 
 #  m_pam_manhattan, 
   data = do_coefs,
-  colour_vector = -(coefs$depth),
+  colour_vector = (coefs$depth),
   text_label = coefs$species,
   colour_label = "Depth"
-) + scale_color_viridis_c() 
+) + scale_color_viridis_c(direction = -1, trans = log10) 
+
 
 
 
