@@ -12,31 +12,33 @@ stats <- readRDS(paste0("data/life-history-stats.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 stats$genus <- tolower(stats$group)
 
-# # model_age <- "multi-spp-biotic-vocc-mature"
-# # model_age <- "scrambled-vocc-mature"
-# # model_age <- "scrambled2-vocc-mature"
-# # model_age <- "scrambled3-vocc-mature"
-# d <- readRDS(paste0("data/", model_age, "-with-fished.rds"))
-# d <- na.omit(d) %>% as_tibble()
-# 
-# d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
-#   filter(species != "Bocaccio") %>%
-#   filter(species != "Sand Sole") %>%
-#   filter(species != "Longspine Thornyhead") %>%
-#   filter(species != "Shortbelly Rockfish")
-
-model_age <- "multi-spp-biotic-vocc-immature"
+#### LOAD MATURE VOCC DATA 
+model_age <- "multi-spp-biotic-vocc-mature"
+# model_age <- "scrambled-vocc-mature"
+# model_age <- "scrambled2-vocc-mature"
+# model_age <- "scrambled3-vocc-mature"
 d <- readRDS(paste0("data/", model_age, "-with-fished.rds"))
 d <- na.omit(d) %>% as_tibble()
 
 d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
-  filter(species != "Curlfin Sole") %>%
-  filter(species != "Longspine Thornyhead")
+  filter(species != "Bocaccio") %>%
+  filter(species != "Sand Sole") %>%
+  filter(species != "Longspine Thornyhead") %>%
+  filter(species != "Shortbelly Rockfish")
 
-select(d, genus, species) %>%
-  distinct() %>%
-  arrange(genus, species) %>%
-  as.data.frame()
+#### LOAD IMMATURE VOCC DATA 
+# model_age <- "multi-spp-biotic-vocc-immature"
+# d <- readRDS(paste0("data/", model_age, "-with-fished.rds"))
+# d <- na.omit(d) %>% as_tibble()
+# 
+# d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
+#   filter(species != "Curlfin Sole") %>%
+#   filter(species != "Longspine Thornyhead")
+# 
+# select(d, genus, species) %>%
+#   distinct() %>%
+#   arrange(genus, species) %>%
+#   as.data.frame()
 
 
 d$squashed_do_vel <- collapse_outliers(d$DO_vel, c(0.005, 0.995))
@@ -47,33 +49,6 @@ d$temp_vel_squashed <- collapse_outliers(d$temp_vel, c(0.005, 0.995))
 plot((do_vel_squashed) ~ (temp_vel_squashed), data = d, col = "#00000010")
 
 d$squashed_biomass <- (collapse_outliers(d$mean_biomass, c(0.005, 0.995)))
-# plot((DO_trend)~(temp_trend), data=d, col = "#00000010")
-# cor(d$DO_trend, d$temp_trend)
-#
-# plot((temp_vel_squashed)~(temp_trend), data=d, col = "#00000010")
-# cor(d$temp_vel_squashed, d$temp_trend)
-#
-# plot(do_vel_squashed ~ do_trend, data=d, col = "#00000010")
-# cor(d$do_vel_squashed, d$do_trend)
-
-# ggplot(d, aes(x, y, colour = temp_vel_squashed)) +
-#   geom_point() +
-#   facet_wrap(~species) +
-#   scale_color_viridis_c(trans = sqrt)
-#
-# ggplot(d, aes(x, y, colour = collapse_outliers(d$biotic_vel, c(0.005, 0.995)))) +
-#   geom_point(size=0.25) +
-#   facet_wrap(~species) + scale_color_viridis_c()
-
-# hist((d$sd_est))
-# hist(log(d$sd_est))
-# hist(log(d$biotic_CV))
-y <- log(d$sd_est)
-# y <- log(d$biotic_CV))
-
-hist((d$biotic_trend))
-y <- d$biotic_trend
-hist(y)
 
 mean((d$squashed_do_vel))
 hist(scale(d$squashed_do_vel))
@@ -99,6 +74,22 @@ d$DO_grad_scaled <- scale(d$DO_grad)
 
 plot(d$squashed_temp_vel_scaled ~ d$temp_trend)
 plot(d$squashed_temp_vel_scaled ~ d$temp_grad)
+
+########################
+#### CHOOSE Y 
+########################
+
+# hist((d$sd_est))
+# hist(log(d$sd_est))
+# hist(log(d$biotic_CV))
+y <- log(d$sd_est)
+# y <- log(d$biotic_CV))
+
+hist((d$biotic_trend))
+y <- d$biotic_trend
+hist(y)
+
+
 
 ############################
 #### TREND-BASED VARIABLES
@@ -195,35 +186,49 @@ trend_reg <- vocc_regression(d, y,
 saveRDS(trend_reg, file = paste0("data/trend_by_trend_only_01-20-", model_age, ".rds"))
 
 
-##############################
-##############################
 
 
-#### CALL VELOCITY MODELS ####
+##############################
+#### LOAD VELOCITY MODELS ####
 # model <- readRDS("data/trend_by_vel_01-16-multi-spp-biotic-vocc-mature-chopsticks3.rds")
+# 
+#### VELOCITY MODEL CHOPSTICKS  
+# plot_fuzzy_chopsticks(model,
+#   x_variable = "squashed_temp_vel_scaled", type = "temp",
+#   y_label = "Predicted biomass trend"
+# ) +
+#   ggtitle("Interation plots for mature abundance")
+# # ggtitle("Interation plots for immature abundance")
+# 
+# plot_fuzzy_chopsticks(model,
+#   x_variable = "squashed_do_vel_scaled", type = "do",
+#   y_label = "Predicted biomass trend"
+# ) +
+#   ggtitle("Interation plots for mature abundance")
+# # ggtitle("Interation plots for immature abundance")
+# 
 
-plot_fuzzy_chopsticks(model,
-  x_variable = "squashed_temp_vel_scaled", type = "temp",
-  y_label = "Predicted biomass trend"
-) +
-  ggtitle("Interation plots for mature abundance")
-# ggtitle("Interation plots for immature abundance")
 
-plot_fuzzy_chopsticks(model,
-  x_variable = "squashed_do_vel_scaled", type = "do",
-  y_label = "Predicted biomass trend"
-) +
-  ggtitle("Interation plots for mature abundance")
-# ggtitle("Interation plots for immature abundance")
+##############################
+#### LOAD TREND MODELS ####
 
+#### ONE JUST BUILT
+model <- trend_reg 
 
-#### CALL TREND MODELS ####
-
+#### SAVED MODEL
 # model <- readRDS("data/trend_by_trend_01-16-multi-spp-biotic-vocc-mature.rds")
 # model <- readRDS("data/trend_by_trend_01-17-multi-spp-biotic-vocc-mature.rds")
 model <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
-model <- readRDS("data/trend_by_trend_only_01-20-multi-spp-biotic-vocc-immature.rds")
-model <- readRDS(paste0("data/trend_by_trend_only_01-20-", model_age, ".rds"))
+#model <- readRDS("data/trend_by_trend_only_01-20-multi-spp-biotic-vocc-immature.rds")
+
+### A SCRAMBLE MODEL 
+# scramble <- "scrambled-vocc-mature"
+# scramble <- "scrambled2-vocc-mature"
+# scramble <- "scrambled3-vocc-mature"
+# model <- readRDS(paste0("data/trend_by_trend_only_01-20-", scramble, ".rds"))
+
+##############################
+#### TREND MODEL CHOPSTICKS  
 
 plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
@@ -249,6 +254,7 @@ plot_fuzzy_chopsticks(model,
 # ggsave("figs/interation-plot-imm-trend-by-mean-temp.png", width = 10, height = 10, dpi = 300)
 
 
+##############################
 #### STATISTICS AND PLOTS FOR ALL MODEL TYPES ####
 
 coef_names <- shortener(unique(model$coefs$coefficient))
@@ -262,8 +268,11 @@ overall_betas
 get_aic(model)
 
 model2 <- add_colours(model$coefs)
+
 # ### IF IMMATURE CAN RUN THIS TO MAKE COLOURS MATCH
-model2 <- add_colours(model$coefs, last_used = TRUE )
+# mature <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
+# model2 <- add_colours(mmature$coefs) # must be saved as model2 for use in function below
+# model2 <- add_colours(model$coefs, last_used = TRUE)
 
 manipulate::manipulate({
   plot_coefs(model2, fixed_scales = F, order_by = order_by)
@@ -294,7 +303,7 @@ order_by = manipulate::picker(as.list(sort(names(model2[, 6:15]))))
 # manipulate::manipulate({plot_coefs(model2b, order_by = order_by)},
 #   order_by = manipulate::picker(as.list(sort(unique(shortener(model2b$coefficient))))))
 
-library(ggsidekick) # for fourth_root_power
+# library(ggsidekick) # for fourth_root_power
 ggplot(model$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
   scale_fill_gradient2(trans = fourth_root_power) +
   facet_wrap(~species)
