@@ -92,12 +92,49 @@ hist(y)
 
 
 ############################
-#### TREND-BASED VARIABLES
-formula <- ~ mean_DO_scaled + mean_temp_scaled +
-  mean_biomass_scaled +
+#### TEMPERATURE ONLY
+# formula <- ~ mean_biomass_scaled + 
+#   mean_temp_scaled +
+#   temp_trend_scaled + temp_trend_scaled:mean_temp_scaled 
+# 
+# x <- model.matrix(formula, data = d)
+# 
+# d_pj1 <- interaction_df(d, formula,
+#   x_variable = "temp_trend_scaled",
+#   split_variable = "mean_temp_scaled",
+#   N = 5
+# )
+# 
+# X_pj <- as.matrix(
+#   select(d_pj1, -chopstick, -species, -genus)
+# )
+# 
+# pred_dat <- mutate(d_pj1, type = "temp")
+# 
+# 
+# trend_reg <- vocc_regression(d, y,
+#   X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+#   knots = 200, group_by_genus = FALSE, student_t = FALSE
+# )
+# 
+# saveRDS(trend_reg, file = paste0("data/trend_by_temp_only_01-20-", model_age, ".rds"))
+#
+# trend_reg_genus <- vocc_regression(d, y,
+#   X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+#   knots = 200, group_by_genus = T, student_t = F
+# )
+# 
+# saveRDS(trend_reg_genus, file = paste0("data/trend_by_temp_only_01-20-", model_age, "-genus.rds"))
+
+############################
+#### ALL TREND-BASED COVARIATES
+
+formula <- ~ mean_biomass_scaled + 
+  mean_temp_scaled +
+  mean_DO_scaled + 
   mean_temp_scaled:mean_DO_scaled +
-  temp_trend_scaled + temp_trend_scaled:mean_temp_scaled +
-  DO_trend_scaled + DO_trend_scaled:mean_DO_scaled #+
+  DO_trend_scaled + DO_trend_scaled:mean_DO_scaled +
+  temp_trend_scaled + temp_trend_scaled:mean_temp_scaled #+
 # temp_grad_scaled + temp_grad_scaled:temp_trend_scaled +
 # DO_grad_scaled + DO_grad_scaled:DO_trend_scaled
 
@@ -115,34 +152,7 @@ d_pj2 <- interaction_df(d,
   split_variable = "mean_DO_scaled",
   N = 5
 )
-############################
 
-
-############################
-# #### VELOCITY VARIABLES
-# formula <- ~ mean_DO_scaled + mean_temp_scaled +
-#   mean_biomass_scaled +
-#   mean_temp_scaled:mean_DO_scaled +
-#   squashed_do_vel_scaled + squashed_do_vel_scaled:mean_DO_scaled +
-#   squashed_temp_vel_scaled + squashed_temp_vel_scaled:mean_temp_scaled
-# 
-# x <- model.matrix(formula, data = d)
-# 
-# d_pj1 <- interaction_df(d, formula,
-#   x_variable = "squashed_temp_vel_scaled",
-#   split_variable = "mean_temp_scaled",
-#   N = 5
-# )
-# d_pj2 <- interaction_df(d,
-#   formula = formula,
-#   x_variable = "squashed_do_vel_scaled",
-#   split_variable = "mean_DO_scaled",
-#   N = 5
-# )
-############################
-
-
-##### FOR BOTH RUN FROM HERE ON
 d_pj3 <- interaction_df(d, formula,
   x_variable = "mean_temp_scaled",
   split_variable = "mean_DO_scaled",
@@ -170,22 +180,63 @@ pred_dat <- bind_rows(
   mutate(d_pj4, type = "mean_do")
 )
 
-head(x)
-hist(x[, 2])
-hist(x[, 7])
-hist(x[, 8])
-
 trend_reg <- vocc_regression(d, y,
   X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
   knots = 200, group_by_genus = FALSE, student_t = FALSE
 )
-# trend_reg$sdr
 
-#### SAVE WITH APPROPRIATE NAME
+# saveRDS(trend_reg, file = paste0("data/trend_by_trend_only_01-20-", model_age, ".rds"))
 
-saveRDS(trend_reg, file = paste0("data/trend_by_trend_only_01-20-", model_age, ".rds"))
+trend_reg_genus <- vocc_regression(d, y,
+  X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+  knots = 200, group_by_genus = T, student_t = F
+)
 
+saveRDS(trend_reg_genus, file = paste0("data/trend_by_trend_only_01-20-", model_age, "-genus.rds"))
 
+############################
+# #### VELOCITY VARIABLES
+# formula <- ~ mean_DO_scaled + mean_temp_scaled +
+#   mean_biomass_scaled +
+#   mean_temp_scaled:mean_DO_scaled +
+#   squashed_do_vel_scaled + squashed_do_vel_scaled:mean_DO_scaled +
+#   squashed_temp_vel_scaled + squashed_temp_vel_scaled:mean_temp_scaled
+# 
+# x <- model.matrix(formula, data = d)
+# 
+# d_pj1 <- interaction_df(d, formula,
+#   x_variable = "squashed_temp_vel_scaled",
+#   split_variable = "mean_temp_scaled",
+#   N = 5
+# )
+# d_pj2 <- interaction_df(d,
+#   formula = formula,
+#   x_variable = "squashed_do_vel_scaled",
+#   split_variable = "mean_DO_scaled",
+#   N = 5
+# )
+# 
+# X_pj <- as.matrix(bind_rows(
+#   select(d_pj1, -chopstick, -species, -genus),
+#   select(d_pj2, -chopstick, -species, -genus),
+#   select(d_pj3, -chopstick, -species, -genus),
+#   select(d_pj4, -chopstick, -species, -genus)
+# ))
+# 
+# pred_dat <- bind_rows(
+#   mutate(d_pj1, type = "temp"),
+#   mutate(d_pj2, type = "do"),
+#   mutate(d_pj3, type = "mean_temp"),
+#   mutate(d_pj4, type = "mean_do")
+# )
+# 
+# trend_reg <- vocc_regression(d, y,
+#   X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+#   knots = 200, group_by_genus = FALSE, student_t = FALSE
+# )
+#
+# saveRDS(trend_reg, file = paste0("data/trend_by_vel_01-??-", model_age, ".rds"))
+############################
 
 
 ##############################
@@ -206,7 +257,6 @@ saveRDS(trend_reg, file = paste0("data/trend_by_trend_only_01-20-", model_age, "
 # ) +
 #   ggtitle("Interation plots for mature abundance")
 # # ggtitle("Interation plots for immature abundance")
-# 
 
 
 ##############################
@@ -214,12 +264,19 @@ saveRDS(trend_reg, file = paste0("data/trend_by_trend_only_01-20-", model_age, "
 
 #### ONE JUST BUILT
 model <- trend_reg 
+model <- trend_reg_genus 
 
 #### SAVED MODEL
 # model <- readRDS("data/trend_by_trend_01-16-multi-spp-biotic-vocc-mature.rds")
+
 # model <- readRDS("data/trend_by_trend_01-17-multi-spp-biotic-vocc-mature.rds")
-model <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
-#model <- readRDS("data/trend_by_trend_only_01-20-multi-spp-biotic-vocc-immature.rds")
+model <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds") # -89803.39
+# model <- readRDS("data/trend_by_trend_only_01-20-multi-spp-biotic-vocc-mature-genus.rds") # -89774.59
+
+# model <- readRDS("data/trend_by_temp_only_01-20-multi-spp-biotic-vocc-mature.rds") # -88007.48
+# model <- readRDS("data/trend_by_temp_only_01-20-multi-spp-biotic-vocc-mature-genus.rds") # -87992.27
+
+# model <- readRDS("data/trend_by_trend_only_01-20-multi-spp-biotic-vocc-immature.rds")
 
 ### A SCRAMBLE MODEL 
 # scramble <- "scrambled-vocc-mature"
@@ -287,8 +344,6 @@ order_by = manipulate::picker(as.list(sort(names(model2[, 6:15]))))
 )
 
 # model2a <- model2 %>%
-#   #filter(coefficient != "squashed_temp_vel_scaled") %>%
-#   #filter(coefficient != "mean_temp_scaled:squashed_temp_vel_scaled")
 #   filter(coefficient != "mean_temp_scaled") %>%
 #   filter(coefficient != "mean_DO_scaled") %>%
 #   filter(coefficient != "mean_biomass_scaled") %>%
@@ -303,7 +358,7 @@ order_by = manipulate::picker(as.list(sort(names(model2[, 6:15]))))
 # manipulate::manipulate({plot_coefs(model2b, order_by = order_by)},
 #   order_by = manipulate::picker(as.list(sort(unique(shortener(model2b$coefficient))))))
 
-# library(ggsidekick) # for fourth_root_power
+# library(ggsidekick) # for fourth_root_power if gfranges not loaded
 ggplot(model$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
   scale_fill_gradient2(trans = fourth_root_power) +
   facet_wrap(~species)
