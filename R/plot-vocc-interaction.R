@@ -120,7 +120,11 @@ plot_fuzzy_chopsticks <- function(model,
     if (type == "do") {
       colours <- c("#5E4FA2", "#FDAE61")
     } else {
-      colours <- c("#D53E4F", "#3288BD")
+      if (type == "mean_temp") {
+        colours <- c("#5E4FA2", "#FDAE61")
+      } else {
+        colours <- c("#D53E4F", "#3288BD")
+      }
     }
   }
 
