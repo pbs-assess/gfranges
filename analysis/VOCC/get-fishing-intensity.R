@@ -3,7 +3,7 @@ library(ggplot2)
 getwd()
 setwd(here::here())
 
-d <- gfdata::get_cpue_index("bottom trawl", min_cpue_year = 2008)
+d <- gfdata::get_cpue_index("bottom trawl", min_cpue_year = 2004)
 saveRDS(d, file = "analysis/VOCC/data/fishing-effort.rds") # 2008:2018
 d <- readRDS("analysis/VOCC/data/fishing-effort.rds")
 
