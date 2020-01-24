@@ -6,9 +6,9 @@ output: html_document
 params: 
     species: "Arrowtooth Flounder" 
     immature: FALSE
-    region: "both odd year surveys"
+    #region: "both odd year surveys"
     #region: "West Coast Haida Gwaii"
-    #region: "West Coast Vancouver Island"
+    region: "West Coast Vancouver Island"
     covs: "-tv-depth-only"
     scrambled_years: FALSE
 ---
@@ -130,13 +130,12 @@ delta_t_total <- year_range
 glimpse (d)
 if (scrambled_years) {
   d2 <- list()
-  
-  set.seed(9999) 
+  # set.seed(9999) 
   # set.seed(12345)
   # set.seed(98765) 
   original_years <- unique(d$year)
-  new_years <- sample(original_years)
-  convert <- cbind(original_years,new_years)
+  new_years <- sample(original_years, replace=F)
+  convert <- cbind(original_years, new_years)
   convert
   for (i in seq_len(length(original_years))) {
     old_year <- as.integer(convert[[i,1]])
@@ -147,6 +146,8 @@ if (scrambled_years) {
   }
   d <- do.call(rbind, d2)
 }
+
+convert
 ```
 
 #### TRIM environment to range sampled
@@ -274,8 +275,8 @@ grad0 <- plot_vocc(gf0,
   # grad_vec_aes = "velocity",
   # vec_lwd_range = c(0.5, 0.5),
   NA_label = "NA",
-  fill_col = "velocity",
-  fill_label = "gradient velocity",
+  fill_col = "trend",
+  fill_label = "trend",
   raster_alpha = 1,
   # raster_limits = c(raster_min, raster_max),
   na_colour = "black",
@@ -284,7 +285,7 @@ grad0 <- plot_vocc(gf0,
   white_zero = TRUE,
   vec_alpha = 0.35,
   axis_lables = FALSE,
-  transform_col = sqrt # no_trans #
+  transform_col = no_trans #
 ) + labs(
   title = "do velocity",
   subtitle = paste0(min(d$year), "-", max(d$year))
@@ -319,15 +320,15 @@ grad2 <- plot_vocc(gf2,
   # grad_vec_aes = "velocity",
   # vec_lwd_range = c(0.5, 0.5),
   NA_label = "NA",
-  fill_col = "velocity",
-  fill_label = "gradient velocity",
+  fill_col = "trend",
+  fill_label = "trend",
   raster_alpha = 1,
   # raster_limits = c(raster_min, raster_max),
   na_colour = "white",
   white_zero = TRUE,
   vec_alpha = 0.35,
   axis_lables = FALSE,
-  transform_col = sqrt # no_trans # log10 # fourth_root_power # sqrt #
+  transform_col = no_trans # log10 # fourth_root_power # sqrt #
 ) + labs(
   title = "temp velocity",
   subtitle = paste0(min(d$year), "-", max(d$year))
@@ -544,7 +545,7 @@ vocc <- left_join(vocc, temp_values) # add temp
 vocc <- mutate(vocc, species = !!species, method = "gradient")
 
 write.csv(vocc, file = paste0(
-  "data/_scrambled3/", age,  "-biotic-vocc-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), "-trim10.csv"
+  "data/_scrambled5/", age,  "-biotic-vocc-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), "-trim10.csv"
 ))
 ```
 
