@@ -66,11 +66,12 @@ vocc_gradient_calc <- function(data,
     # use first time period
     # mnraster <- mnraster_brick[[1]]
     # to use last time period
-    mnraster <- mnraster_brick[[raster::nlayers(mnraster_brick)]]
-    
+    gradraster <- mnraster_brick[[raster::nlayers(mnraster_brick)]]
+    mnraster <- raster::calc(rbrick, mean)
   } else {
     # uses average spatial gradient
     mnraster <- raster::calc(rbrick, mean)
+    gradraster <- mnraster
   }
   # # library(rgdal)
   # # library(raster)
@@ -78,10 +79,10 @@ vocc_gradient_calc <- function(data,
 
   # Calculate the spatial gradient for chosen time period:
   if (latlon) {
-    spatx <- vocc::spatialgrad(mnraster)
+    spatx <- vocc::spatialgrad(gradraster)
   } else {
     # must use y_dist = res(rx) if data is in UTMs or other true distance grid
-    spatx <- vocc::spatialgrad(mnraster, y_dist = raster::res(mnraster), y_diff = NA)
+    spatx <- vocc::spatialgrad(gradraster, y_dist = raster::res(gradraster), y_diff = NA)
   }
 
   # Now we can calculate the VoCC:
