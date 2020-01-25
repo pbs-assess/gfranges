@@ -1,32 +1,32 @@
 # library(TMB)
 library(dplyr)
 library(ggplot2)
-
-setwd(here::here("analysis", "VOCC"))
-stats <- readRDS(paste0("data/life-history-stats.rds"))
-stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
-stats$genus <- tolower(stats$group)
-
-# model <- "multi-spp-biotic-vocc"
-model_age <- "multi-spp-biotic-vocc-mature"
-# model_age <- "scrambled-vocc-mature"
-# model_age <- "scrambled2-vocc-mature"
-# model_age <- "scrambled3-vocc-mature"
-d <- readRDS(paste0("data/", model_age, "-with-fished.rds"))
-d <- na.omit(d) %>% as_tibble()
-
-d <- suppressWarnings(left_join(d, stats, by = "species"))
-
-.x <- filter(d, species == "Arrowtooth Flounder")
-.x <- filter(d, species == "Canary Rockfish")
-
 library(sdmTMB)
 
+setwd(here::here("analysis", "VOCC"))
+
+d <- readRDS("data/mature-all-temp-untrimmed.rds")
+d <- na.omit(d) %>% as_tibble()
+
+all_species <- unique(d$species)
+
+with_nulls <- list()
+for (i in seq_along(all_species)) {
+ 
+.x <- filter(d, species == all_species[[i]])
+bio5perc <- sum(.x$mean_biomass, na.rm = TRUE) * 0.01
+s <- sort(.x$mean_biomass)
+bio_sum <- cumsum(s)
+lower_density_threshold <- s[which(bio_sum >= bio5perc)[1]]
+.x <- filter(.x, mean_biomass > lower_density_threshold)
+
+# unique(.x$species)
 nrow(.x)
 ggplot(.x, aes(x, y, fill = biotic_trend)) + geom_tile(width = 4, height = 4) +
   scale_fill_gradient2()
-spde <- make_spde(x = .x$x, y = .x$y, n_knots = 80)
+spde <- make_spde(x = .x$x, y = .x$y, n_knots = 200)
 plot_spde(spde)
+# browser()
 m <- sdmTMB(biotic_trend ~ 1, data = .x, spatial_only = TRUE, spde = spde, silent = TRUE)
 # m
 
@@ -68,18 +68,58 @@ omega_s <- omega_s - mean(omega_s)
 # observed <- rnorm(length(omega_s), omega_s + m$model$par[["b_j"]], exp(m$model$par[["ln_phi"]]))
 # observed <- rnorm(length(omega_s), omega_s + mean(.x$biotic_trend), exp(m$model$par[["ln_phi"]]))
 observed <- rnorm(length(omega_s), omega_s + mean(.x$biotic_trend), 0.001)
-s <- data.frame(x = .x$x, y = .x$y, observed = observed)
+
+s <- data.frame(x = .x$x, y = .x$y, fake_trend = observed)
 
 o <- ggplot(.x, aes(x, y, fill = biotic_trend)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2(limits = range(c(.x$biotic_trend, s$observed))) +
+  scale_fill_gradient2(limits = range(c(.x$biotic_trend, s$fake_trend))) +
   coord_fixed()
 
-n <- ggplot(s, aes(x, y, fill = observed)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2(limits = range(c(.x$biotic_trend, s$observed))) +
+n <- ggplot(s, aes(x, y, fill = fake_trend)) + geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2(limits = range(c(.x$biotic_trend, s$fake_trend))) +
   coord_fixed()
 
-cowplot::plot_grid(o, n)
+print(cowplot::plot_grid(o, n))
 
+.s <- left_join(.x, s)
+with_nulls[[i]] <- .s
+}
+
+newdata <- do.call(rbind, with_nulls)
+
+
+
+trimmed.dat <- list()
+for (i in seq_along(all_species)) {
+  .x <- filter(newdata, species == all_species[[i]])
+  bio5perc <- sum(.x$mean_biomass, na.rm = TRUE) * 0.10
+  s <- sort(.x$mean_biomass)
+  bio_sum <- cumsum(s)
+  lower_density_threshold <- s[which(bio_sum >= bio5perc)[1]]
+  trimmed.dat[[i]] <- filter(.x, mean_biomass > lower_density_threshold)
+}
+data <- do.call(rbind, trimmed.dat)
+
+saveRDS(data, file = paste0("data/mature-all-temp-with-null.rds"))
+
+plots <- list()
+for (i in seq_along(all_species)) {
+.x <- filter(data, species == all_species[[i]])
+
+o <- ggplot(.x, aes(x, y, fill = biotic_trend)) + geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2(limits = range(c(.x$biotic_trend, .x$fake_trend))) + xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
+  coord_fixed() + ggtitle(paste(all_species[[i]]))
+
+n <- ggplot(.x, aes(x, y, fill = fake_trend)) + geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2(limits = range(c(.x$biotic_trend, .x$fake_trend))) + xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
+  coord_fixed() + ggtitle(paste(" "))
+
+plots[[i]] <- cowplot::plot_grid(o, n) 
+}
+
+
+plots 
+plots_90 <- plots
 # sd(.x$biotic_trend)
 # sd(s$observed)
 #
