@@ -190,3 +190,29 @@ for (r_h in seq_along(list_regions)) {
     })
   }
 }
+
+## ALL YEARS WITH TEMP ONLY
+
+for (r_h in seq_along(list_regions)) {
+  for (spp_i in seq_along(list_species)) {
+    spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+    covs <- "-tv-depth-only" # string describing model
+    reg <- gsub(" ", "-", gsub("\\/", "-", tolower(list_regions[r_h])))
+    try({
+      rmarkdown::render("4-vocc-temp.Rmd",
+        params = list(
+          species = list_species[spp_i],
+          # immature = TRUE,
+          region = list_regions[r_h],
+          covs = covs
+        ),
+        output_file = paste0(
+          "html/biotic-vocc/temp-only-", spp,
+          # "-imm",
+          covs, "-", reg, "-untrimmed.html"
+        ),
+        envir = env
+      )
+    })
+  }
+}

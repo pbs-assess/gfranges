@@ -4,13 +4,14 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document 
 params: 
-    species: "Arrowtooth Flounder" 
+    #species: "Arrowtooth Flounder" 
+    species: "Yelloweye Rockfish"
     immature: FALSE
-    #region: "both odd year surveys"
+    region: "both odd year surveys"
     #region: "West Coast Haida Gwaii"
-    region: "West Coast Vancouver Island"
+    #region: "West Coast Vancouver Island"
     covs: "-tv-depth-only"
-    scrambled_years: FALSE
+    #scrambled_years: FALSE
 ---
 
 ```{r global_options, include=FALSE}
@@ -110,7 +111,7 @@ multiyear <- TRUE
 
 if (multiyear) {
   # unique(d_all$year)
-  d <- d_all %>% filter(ssid %in% model_ssid)
+  d <- d_all %>% filter(ssid %in% model_ssid) %>% filter(year >= start_year)
   length(unique(d$year))
   years_sampled <- length(unique(d$year))
   year_range <- (years_sampled - 1) * 2
@@ -131,25 +132,26 @@ delta_t_step <- year_range
 delta_t_total <- year_range
 
 glimpse (d)
-if (scrambled_years) {
-  d2 <- list()
-  # set.seed(9999) 
-  # set.seed(12345)
-  # set.seed(98765) 
-  original_years <- unique(d$year)
-  new_years <- sample(original_years, replace=F)
-  convert <- cbind(original_years, new_years)
-  convert
-  for (i in seq_len(length(original_years))) {
-    old_year <- as.integer(convert[[i,1]])
-    fake_year <- as.integer(convert[[i,2]])
-    d2[[i]] <- filter(d, year == old_year) %>% 
-      mutate(year = fake_year )
-     # browser()
-  }
-  d <- do.call(rbind, d2)
-  convert
-}
+# 
+# if (scrambled_years) {
+#   d2 <- list()
+#   # set.seed(9999) 
+#   # set.seed(12345)
+#   # set.seed(98765) 
+#   original_years <- unique(d$year)
+#   new_years <- sample(original_years, replace=F)
+#   convert <- cbind(original_years, new_years)
+#   convert
+#   for (i in seq_len(length(original_years))) {
+#     old_year <- as.integer(convert[[i,1]])
+#     fake_year <- as.integer(convert[[i,2]])
+#     d2[[i]] <- filter(d, year == old_year) %>% 
+#       mutate(year = fake_year )
+#      # browser()
+#   }
+#   d <- do.call(rbind, d2)
+#   convert
+# }
 ```
 
 #### TRIM environment to range sampled
@@ -161,8 +163,8 @@ fishing <- readRDS("data/fishing-effort-grid.rds")
 
 d <- left_join(d, nd_all, by = c("X", "Y", "year"))
 d <- left_join(d, fishing, by = c("X", "Y", "year"))
-d$log_effort[is.na(d$log_effort)] <- -2.3
 d$effort[is.na(d$effort)] <- 0
+d$log_effort[is.na(d$log_effort)] <- -2.3
 
 glimpse(d)
 
@@ -190,11 +192,13 @@ gf <- vocc_gradient_calc(d, "log_effort",
 gf <- gf %>%
   mutate(
     fishing_trend = trend,
-    mean_effort = exp(mean)
+    mean_effort = exp(mean) # gives geometric mean
   ) %>%
   dplyr::mutate(X = x, Y = y) %>%
   gfplot:::utm2ll(., utm_zone = 9)
+```
 
+```{r eval = FALSE }
 effort <- plot_vocc(gf,
   # theme_black = TRUE,
   coast = TRUE,
@@ -346,7 +350,11 @@ gf2 <- left_join(gf2, gf2_indices)
 
 gf2$gradient_diff <- gf2$gradient - gf2$grad_all
 range(gf2$gradient_diff)
+```
 
+
+
+```{r eval = FALSE}
 grad2 <- plot_vocc(gf2,
   # theme = "black",
   coast = TRUE,
@@ -443,7 +451,10 @@ gf3 <- gf3 %>%
     velocity = velocity
   ) %>%
   dplyr::mutate(X = x, Y = y)
+```
 
+
+```{r eval = FALSE}
 
 bio5perc <- sum(gf3$mean_biomass, na.rm = TRUE) * 0.1
 s <- sort(gf3$mean_biomass)
@@ -478,8 +489,7 @@ grad3 <- gfranges::plot_vocc(gf3t,
 grad3
 ```
 
-```{r}
-
+```{r eval = FALSE}
 grad4 <- gfranges::plot_vocc(gf3t,
   # theme = "black",
   coast = TRUE,
@@ -504,9 +514,7 @@ grad4 <- gfranges::plot_vocc(gf3t,
 grad4
 ```
 
-
-
-```{r}
+```{r eval = FALSE}
 grad5 <- gfranges::plot_vocc(gf3t,
   # theme = "black",
   coast = TRUE,
@@ -531,7 +539,7 @@ grad5 <- gfranges::plot_vocc(gf3t,
 grad5
 ```
 
-```{r}
+```{r eval = FALSE}
 grad6 <- gfranges::plot_vocc(gf3t,
   # theme = "black",
   coast = TRUE,
@@ -556,7 +564,7 @@ grad6 <- gfranges::plot_vocc(gf3t,
 grad6
 ```
 
-```{r}
+```{r eval = FALSE}
 raster_max <- quantile(gf3t$CV, 0.90, na.rm = TRUE)
 grad7 <- gfranges::plot_vocc(gf3t,
   # theme = "black",
@@ -585,8 +593,7 @@ grad7
 
 ### Save gradient-based VOCCs
 ```{r}
-
-biotic_values <- gf3t %>%
+biotic_values <- gf3 %>%
   rename(
     biotic_vel = velocity,
     biotic_trend = trend,
@@ -600,7 +607,6 @@ biotic_values <- gf3t %>%
   ) %>%
   select(x, y, biotic_vel, biotic_trend, biotic_grad, biotic_CV, sd_est, sd_biomass, mean_biomass) %>%
   mutate(start_year = !!start_year)
-
 
 fished <- gf %>%
   select(x, y, fishing_trend, mean_effort) 
@@ -629,9 +635,17 @@ vocc <- left_join(biotic_values, fished) # add fishing effort
 # vocc <- left_join(vocc, DO_values) # add DO
 vocc <- left_join(vocc, temp_values) # add temp
 vocc <- mutate(vocc, species = !!species, method = "gradient")
+vocc$ssid <- ssid_string
+```
 
+```{r}
+# glimpse(vocc)
+```
+
+
+```{r}
 write.csv(vocc, file = paste0(
-  "data/_all_temp/", age,  "-all-temp-vocc-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), "-trim10.csv"
+  "data/_new_null/", age,  "-all-temp-nulls-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), ".csv"
 ))
 ```
 
