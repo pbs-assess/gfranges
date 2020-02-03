@@ -127,7 +127,7 @@ Type objective_function<Type>::operator()()
   
   // Spatial random effects:
   for (int k = 0; k < n_k; k++) {
-    nll_omega += SCALE(GMRF(Q, true), 1. / exp(ln_tau_O))(omega_sk.col(k));
+    nll_omega += SCALE(GMRF(Q, true), 1. / exp(ln_tau_O(k)))(omega_sk.col(k));
   }
   
   // ------------------ Probability of data given random effects ---------------
