@@ -57,8 +57,8 @@ Type objective_function<Type>::operator()()
   PARAMETER_VECTOR(b_j);  // fixed effect parameters
   PARAMETER_VECTOR(log_gamma);  // re parameter sigmas
   PARAMETER_VECTOR(log_gamma_genus);  // re parameter sigmas
-  // PARAMETER_VECTOR(ln_tau_O);   // spatial process
-  PARAMETER(ln_tau_O);   // spatial process
+  PARAMETER_VECTOR(ln_tau_O);   // spatial process
+  // PARAMETER(ln_tau_O);   // spatial process
   PARAMETER(ln_kappa);          // Matern parameter
   PARAMETER(ln_phi);            // sigma / dispersion / etc.
   
@@ -80,7 +80,7 @@ Type objective_function<Type>::operator()()
   Type range = sqrt(Type(8.0)) / exp(ln_kappa);
   vector<Type> sigma_O(n_k);
   for(int k = 0; k < n_k; k++) {
-    sigma_O(k) = 1 / sqrt(Type(4.0) * M_PI * exp(Type(2.0) * ln_tau_O) *
+    sigma_O(k) = 1 / sqrt(Type(4.0) * M_PI * exp(Type(2.0) * ln_tau_O(k)) *
       exp(Type(2.0) * ln_kappa));
   }
   Eigen::SparseMatrix<Type> Q; // Precision matrix
