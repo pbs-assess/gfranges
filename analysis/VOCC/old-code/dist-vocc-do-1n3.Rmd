@@ -1,0 +1,361 @@
+---
+title: "Distanced-based VOCC analysis for DO in Hecate and QCS"
+author: "Philina English"
+date: '2019-07-11'
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(sdmTMB)
+library(gfranges)
+```
+
+
+Load predicted values
+```{r}
+pred_temp_do <- readRDS(here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds"))
+```
+
+Define subset of the spatial range 
+```{r eval=FALSE}
+predicted <- pred_temp_do %>% 
+  filter(ssid!=4) %>% 
+  filter(ssid!=16) 
+
+#glimpse(predicted)
+
+do <-plot_facet_map(predicted, "do_est", transform_col = no_trans) + 
+  labs(fill="ml/L") +
+  ggtitle("Bottom DO")
+print(do)
+```
+
+
+Biannual changes starting 2005 and ending 2017
+```{r}
+out1 <- make_vector_data(predicted,
+  variable_names = "do_est", 
+  ssid = c(1,3),
+  start_time = 2009,
+  end_time = 2011,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(1) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc1 <- plot_vocc(out1,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2011",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "C",
+  viridis_dir = -1,
+  transform_col = no_trans#,
+  #raster_limits = c(5, 13)
+)
+#gvocc1 <- gvocc1 + ggtitle("VOCC vectors for <1°C change in bottom DO")
+gvocc1
+```
+
+```{r}
+out2 <- make_vector_data(predicted,
+   variable_names = "do_est", 
+  ssid = c(1,3),
+  start_time = 2011,
+  end_time = 2013,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(1) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc2 <- plot_vocc(out2,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2013",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "C",
+  viridis_dir = -1,
+  transform_col = no_trans#,
+  #raster_limits = c(5, 13)
+)
+
+#gvocc2 <- gvocc2 + ggtitle(" ")
+gvocc2
+```
+
+```{r}
+out3 <- make_vector_data(predicted,
+   variable_names = "do_est", 
+  ssid = c(1,3),
+  start_time = 2013,
+  end_time = 2015,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(1) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc3 <- plot_vocc(out3,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2015",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "C",
+  viridis_dir = -1,
+  transform_col = no_trans#,
+  #raster_limits = c(5, 13)
+)
+#gvocc3 <- gvocc3 + ggtitle(" ")
+gvocc3
+```
+
+```{r}
+out4 <- make_vector_data(predicted,
+   variable_names = "do_est", 
+  ssid = c(1,3),
+  start_time = 2015,
+  end_time = 2017,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(1) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc4 <- plot_vocc(out4,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2017",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "C",
+  viridis_dir = -1,
+  transform_col = no_trans#,
+  #raster_limits = c(5, 13)
+)
+#gvocc4 <- gvocc4 + ggtitle(" ")
+gvocc4
+```
+
+SPARE for now
+```{r eval=FALSE}
+out5 <- make_vector_data(predicted,
+   variable_names = "do_est", 
+  ssid = c(1,3),
+  start_time = 2013,
+  end_time = 2015,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(1) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc5 <- plot_vocc(out5,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2015",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "C",
+  viridis_dir = -1,
+  transform_col = no_trans#,
+  #raster_limits = c(5, 13)
+)
+#gvocc5 <- gvocc5 + ggtitle(" ")
+gvocc5
+```
+
+```{r eval=FALSE}
+out6 <- make_vector_data(predicted,
+   variable_names = "do_est", 
+  ssid = c(1,3),
+  start_time = 2015,
+  end_time = 2017,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 2,
+  delta_t_step = 2,
+  indices = c(1, 2),
+  thresholds = c(1) # vector of plus/minus threshold(s) to define climate match.
+)
+gvocc6 <- plot_vocc(out6,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 50,
+  NA_label = ".",
+  fill_col = "var_1_e",
+  fill_label = "2017",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "C",
+  viridis_dir = -1,
+  transform_col = no_trans#,
+  #raster_limits = c(5, 13)
+)
+#gvocc6 <- gvocc6 + ggtitle(" ")
+gvocc6
+```
+
+```{r}
+png(file = "biannual_do_change.png",   # The directory you want to save the file in
+res = 600,
+units = 'in',
+width = 8, # The width of the plot in inches
+height = 10) # The height of the plot in inches
+
+gridExtra::grid.arrange(gvocc1, gvocc2, gvocc3, gvocc4, nrow = 2, top = grid::textGrob("VOCC vectors for <1 ml/L biannual changes in bottom DO"))#,gp=gpar(fontsize=20,font=3)) 
+dev.off()
+```
+
+Cumulative change between last two decades 
+VOCC for 0.5 ml/L change and 1 degree change
+```{r}
+out0.5d <- make_vector_data(predicted,
+   variable_names = "do_est", 
+  ssid = c(1,3),
+  start_time = 2009,
+  #skip_time = 2011,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 5,
+  delta_t_step = 2,
+  indices = c(1, 1, 1, 2, 2),
+  thresholds = c(0.5) # vector of plus/minus threshold(s) to define climate match.
+)
+```
+
+```{r}
+gvocc <- plot_vocc(out0.5d,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 100,
+  fill_col = "var_1_e",
+  fill_label = "2015-2017",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "C",
+  viridis_dir = -1,
+  transform_col = no_trans#,
+  )
+gvocc <- gvocc + ggtitle("VOCC vectors for <0.5 ml/L change")
+gvocc
+```
+
+```{r}
+out1d <- make_vector_data(predicted,
+   variable_names = "do_est", 
+  ssid = c(1,3),
+  start_time = 2009,
+  #skip_time = 2011,
+  input_cell_size = 2,
+  scale_fac = 1,
+  delta_t_total = 5,
+  delta_t_step = 2,
+  indices = c(1, 1, 1, 2, 2),
+  thresholds = c(1) # vector of plus/minus threshold(s) to define climate match.
+)
+```
+
+```{r}
+gvocc1d <- plot_vocc(out1d,
+  low_col = "white",
+  mid_col = "white",
+  high_col = "grey87",
+  vec_aes = "distance",
+  vec_lwd_range = c(0.2, 0.5),
+  max_vec_plotted = 100,
+  fill_col = "var_1_e",
+  fill_label = "2015-2017",
+  raster_alpha = 1,
+  vec_alpha = 0.25,
+  axis_lables = FALSE,
+  viridis_option = "C",
+  viridis_dir = -1,
+  transform_col = no_trans
+)
+gvocc1d <- gvocc1d + ggtitle("VOCC vectors for <1 ml/L change")
+gvocc1d
+```
+
+```{r}
+gtrend <- plot_vocc(out1d,
+  fill_col = "units_per_decade",
+  fill_label = "ml/L per decade",
+  raster_alpha = 1,
+  vec_aes = NULL,
+  transform_col = no_trans
+)
+gtrend <- gtrend + ggtitle("Bottom DO trend 2009-2017")
+gtrend
+```
+
+```{r}
+png(file = "do-2009-2017-1n3.png",   # The directory you want to save the file in
+res = 600,
+units = 'in',
+width = 10, # The width of the plot in inches
+height = 7) # The height of the plot in inches
+
+gridExtra::grid.arrange(gtrend, gvocc, gvocc1d, nrow = 1)
+dev.off()
+```
+
+
+
+
+

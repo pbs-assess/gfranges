@@ -1,0 +1,203 @@
+---
+title: "dist-vocc-temp"
+author: "Philina English"
+date: '2019-05-14'
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+# install.packages("yaImpute") # install package for k-nearest neighbour (kNN) search
+# install.packages("raster") # required for calcslope + all raster functions
+# install.package(gfplot) # required for some plotting and data functions
+
+library(dplyr)
+library(ggplot2)
+library(sdmTMB)
+```
+
+Retrieve raw data
+```{r}
+all_depth <- readRDS("analysis/tmb-sensor-explore/data/dat-sensor-trawl-all-depth.rds")
+
+# add and scale predictors after filtering for survey(s) of interest
+data <- all_depth$data %>%
+  filter(depth_max>10) %>% # removes data if sensor stayed too near surface
+# dplyr::filter(year > 2003) %>% 
+  # filter(ssid != 1) %>%
+  # filter(ssid != 3) %>%
+  # filter(ssid != 4) %>%
+  # filter(ssid != 16) %>%
+  gfplot:::scale_survey_predictors()
+
+data <- data[data$fishing_event_id != 481861, ]
+# add any new predictors
+# data <- data %>%
+#   dplyr::mutate(
+#   DOY = lubridate::yday(date),
+#   shallow = ifelse(depth > 35, 0, 1)
+# )
+```
+
+
+Create prediction grids for each survey area so that only years with data are included
+```{r}
+# choose base year(s) to create grid from
+dummy_year <- c(2004, 2005)
+
+# create grids for each ssid separately 
+ssid <- 1
+survey_abbrev <- "SYN QCS"
+nd_1 <- spatiotemporal_grid(data, ssid, survey_abbrev, dummy_year)
+unique(nd_1$year)
+
+ssid <- 3
+survey_abbrev <- "SYN HS"
+nd_3 <- spatiotemporal_grid(data, ssid, survey_abbrev, dummy_year)
+unique(nd_3$year)
+
+ssid <- 4
+survey_abbrev <- "SYN WCVI"
+nd_4 <- spatiotemporal_grid(data, ssid, survey_abbrev, dummy_year)
+unique(nd_4$year)
+
+ssid <- 16
+survey_abbrev <- "SYN WCHG"
+nd_16 <- spatiotemporal_grid(data, ssid, survey_abbrev, dummy_year = 2006)
+unique(nd_16$year)
+
+nd <- rbind(nd_1, nd_3, nd_4, nd_16)
+# nd <- nd_4 # for faster test option
+nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))
+
+```
+
+Run sdmTMB model (if not done previously).
+```{r eval=FALSE}
+# # choose the spatial range to model
+dat <- data # %>% filter(ssid == 4)
+nd <- nd # %>% filter(ssid == 4)
+ 
+spde <- sdmTMB::make_spde(dat$X, dat$Y, n_knots = 500)
+sdmTMB::plot_spde(spde)
+
+m_temp <- sdmTMB::sdmTMB(dat,
+  temperature_c ~ 0 + as.factor(year),
+  time_varying = ~ 0 + depth_scaled + depth_scaled2,
+  time = "year", spde = spde,
+  family = gaussian(link = "identity"),
+  ar1_fields = TRUE, # maybe TRUE is better for all areas combined?
+  include_spatial = TRUE,
+  silent = FALSE
+)
+
+# stopifnot(m_temp$model$convergence == 0L)
+# m_temp
+# # Warning messages:
+# #   1: In doTryCatch(return(expr), name, parentenv, handler) :
+# #   restarting interrupted promise evaluation
+# 
+saveRDS(m_temp, file = "data/m_temp_allyears.rds")
+```
+
+Calculate predicted values
+```{r}
+m_temp <- readRDS("analysis/data/m_temp_allpost2003.rds")
+
+predictions <- predict(m_temp, newdata = nd)
+
+plot_map <- function(dat, column = "est") {
+  ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    facet_wrap(~year) +
+    coord_fixed()
+}
+
+p <- plot_map(predictions , "est") +
+  scale_fill_viridis_c(trans = "sqrt", option = "C") +
+  ggtitle("Prediction (fixed effects + all random effects)")
+print(p)
+```
+
+
+```{r}
+# choose the spatial range to build raster on
+predicted1 <- predictions %>% filter(ssid == 1) 
+predicted3 <- predictions %>% filter(ssid == 3) 
+predicted4 <- predictions %>% filter(ssid == 4) 
+predicted16 <- predictions %>% filter(ssid == 16) 
+
+# scale_fac = 2 means that the raster is reprojected to 2 X original grid (2 km)
+rbrick <- make_raster_brick(predicted3, scale_fac = 2)
+saveRDS(rbrick, file = "analysis/data/rbrick-temp-hs.rds")
+
+# scale_fac = 2 means that the raster is reprojected to 2 X original grid (2 km)
+rbrick <- make_raster_brick(predicted1, scale_fac = 2)
+saveRDS(rbrick, file = "analysis/data/rbrick-temp-qcs.rds")
+
+# scale_fac = 2 means that the raster is reprojected to 2 X original grid (2 km)
+rbrick <- make_raster_brick(predicted4, scale_fac = 2)
+saveRDS(rbrick, file = "analysis/data/rbrick-temp-wcvi.rds")
+
+# scale_fac = 2 means that the raster is reprojected to 2 X original grid (2 km)
+rbrick <- make_raster_brick(predicted16, scale_fac = 2)
+saveRDS(rbrick, file = "analysis/data/rbrick-temp-wchg.rds")
+```
+
+
+```{r}
+
+predicted <- predictions %>% filter(ssid == 1) 
+
+vector_data <- function(climate_data,
+  input_cell_size = 2, 
+  scale_fac = 2,
+  indices = c(1, 1, 1, 2, 2, 3, 3, 3),
+  thresholds = c(0.75),
+  delta_t = 10,
+  
+  
+) {
+
+
+rbrick <- make_raster_brick(climate_data, scale_fac = scale_fac)
+
+slopedat <-  calcslope(temp_rbrick_qcs) # vocc::calcslope for comparison
+mnraster_brick <- raster::stackApply(rbrick, indices = indices, fun = mean)
+start_raster <- mnraster_brick[[1]]
+end_raster <- mnraster_brick[[3]]
+
+
+# make sparate named lists containing climate rasters or dataframes
+# element names should describe which variable they contain
+# the variable_names vector will contain what the column or layer within each element is called
+
+# data with just one climate variable
+start_data <- list(var_1 = start_raster)
+end_data <- list(var_1 = end_raster)
+
+
+  out <- dist_based_vocc(
+  start_data = start_data,
+  end_data = end_data,
+  x = "x",
+  y = "y",
+  variable_names = c("index_1"),
+  thresholds = thresholds,
+  cell_size =  input_cell_size*scal_fac,
+  delta_t = delta_t,
+  raster = TRUE
+  )
+
+
+out1_qcs <- left_join(out1_qcs, slopedat_qcs, by = c("x", "y")) %>% select(-icell)
+out1_qcs$C_per_decade <- out1_qcs$slope 
+out1_qcs$km_per_decade <- out1_qcs$distance * 10 / 10 # dived by delta_t
+head(out1_qcs)
+#saveRDS(out1, file = "analysis/data/simple-dist-vocc-qcs1.rds")
+
+
+
+}
+```
+
