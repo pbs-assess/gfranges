@@ -5,9 +5,13 @@
 #' @param scale_fac Controls how the original 2-km projection is aggregated
 #'    (e.g. a value of 5 means that the raster would be reprojected to 10km grid).
 #' @param time_step Time variable.
-#' @param grad_time_steps Define time periods.
-#'    If NULL will use spatial gradient in last time period.
+#' @param indices If null, gradient will be based on mean across all times. 
+#'    If integer vector of same length as number of unique time steps, 
+#'    gradient will be based on final time steps given largest index value. 
+#' @param divisor Default of 10 gives trends and velocities per decade.
 #' @param latlon Default is TRUE. False for UTMs or other true distance grid.
+#' @param log_space Logical for layer being in log space. 
+#'    If TRUE will save 'cv' in log space and true 'sd'.
 #' @param quantile_cutoff Used for plotting to set min and max angles of vectors.
 #'    Defaults to 0.05.
 #'
@@ -171,3 +175,16 @@ make_gradient_brick <- function(data,
   rbrick
 }
 
+#' Collapse outliers produced by velocity calculations
+#' 
+#' @param .x Vector to be collapsed
+#' @param outliers Vector of quantile thresholds used in collapse
+#'
+#' @export
+collapse_outliers <- function(.x, outliers) {
+  .x_max <- quantile(.x, outliers[2], na.rm = T)
+  .x_min <- quantile(.x, outliers[1], na.rm = T)
+  .x[.x > .x_max] <- .x_max
+  .x[.x < .x_min] <- .x_min
+  .x
+}
