@@ -46,7 +46,8 @@ species <- c(
   "Bocaccio",
   "Redstripe Rockfish",
   "Rougheye/Blackspotted Rockfish Complex",
-  "Shortraker Rockfish"
+  "Shortraker Rockfish",
+  "Shortbelly Rockfish"
 )
 
 # species <- c("Spotted Ratfish")
