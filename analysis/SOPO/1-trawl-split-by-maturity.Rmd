@@ -1,0 +1,185 @@
+---
+title: "Split `r paste(params$species)` biomass by maturity class"
+author: "Philina English"
+date: "`r Sys.Date()`"
+output: html_document
+params: 
+    #species: "Bocaccio"
+    #species: "Widow Rockfish"
+    #species: "Quillback Rockfish"
+    #species: "Yelloweye Rockfish"
+    #species: "Shortraker Rockfish"
+    species: "Pacific Ocean Perch"
+    region: "All synoptic surveys"
+    # region: "Both odd year surveys"
+    threshold: 0.5
+    split: TRUE
+---
+
+```{r global_options, include=FALSE}
+species <- params$species
+region <- params$region
+split <- params$split
+threshold <- params$threshold
+
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+
+knitr::opts_chunk$set(fig.width=11, fig.height=8.5, 
+                      fig.path=paste0("figs/", spp, "/"),
+                      echo=FALSE, warning=FALSE, message=FALSE)
+library(dplyr)
+library(ggplot2)
+library(gfplot)
+library(gfdata)
+library(sdmTMB)
+library(gfranges)
+```
+
+
+```{r}
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+paste("region =", region)
+paste("threshold =", threshold)
+paste("split =", split)
+
+# folder to hold figs for this species
+dir.create(file.path("figs", spp))
+dir.create(file.path("data", spp))
+
+if (region == "Both odd year surveys") {
+  survey <- c("SYN QCS", "SYN HS")
+  model_ssid <- c(1, 3)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+if (region == "West Coast Vancouver Island") {
+  survey <- c("SYN WCVI")
+  model_ssid <- c(4)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+if (region == "West Coast Haida Gwaii") {
+  survey <- c("SYN WCHG")
+  model_ssid <- c(16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+if (region == "All synoptic surveys") {
+  survey <- c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG")
+  model_ssid <- c(1, 3, 4, 16)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+```
+
+
+# Split biomass by maturity
+
+#### Calculate maturity weighted biomass if not done before
+```{r}
+rm(biomass)
+rm(maturity)
+
+#try(biomass <- readRDS(paste0("data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds")))
+
+if (!exists("biomass")) {
+  survey_sets <- readRDS(paste0("raw/event-data-", spp, ""))
+  fish <- readRDS(paste0("raw/bio-data-", spp, ""))
+  bath <- readRDS("data/bathymetry-data")
+  
+   
+  # for POP: exclude sample with unusually large fish 
+  # sizes are impossible given recorded catch weight
+  # fish <- fish[fish$fishing_event_id!=1506954,]
+  
+  # for Redbanded: 1 fish found at too shallow a depth... 
+  # probably leftover in net?
+  # survey_sets <- survey_sets[survey_sets$fishing_event_id!=2536031,]
+  # fish <- fish[fish$fishing_event_id!=2536031,]
+
+ try({ 
+   maturity <- split_catch_maturity(survey_sets, fish, bath,
+    survey = survey,
+    years = years,
+    year_re = TRUE,
+    cutoff_quantile = c(.9995),
+    p_threshold = threshold,
+    plot = TRUE)
+   })
+  
+  if(is.null(maturity$maturity)) {
+  maturity <- split_catch_maturity(survey_sets, fish, bath,
+    survey = c("SYN QCS","SYN HS","SYN WCVI","SYN WCHG"),
+    years = years,
+    year_re = TRUE,
+    cutoff_quantile = c(.9995),
+    p_threshold = threshold,
+    plot = TRUE
+  )
+  }
+  
+  if (split) {
+  maturity$data <- filter(maturity$data, ssid %in% model_ssid) 
+
+  if (!is.null(maturity$maturity)) {
+  saveRDS(maturity$model, file = paste0("data/", spp, 
+    "/maturity-ogive-", spp, "-", ssid_string, ".rds"
+    ))
+  }
+  } else {
+  if (is.null(maturity$maturity)) {
+    
+    maturity$data <- filter(maturity$data, ssid %in% model_ssid) 
+    
+  } else { # if maturity model is deemed unuseful
+    maturity$data <- filter(maturity$data, ssid %in% model_ssid) %>% 
+      select(-adult_density, -imm_density) 
+  }
+  }
+  
+  saveRDS(maturity$data, file = paste0("data/", spp, 
+    "/data-by-maturity-", spp, "-", ssid_string, ".rds"
+    ))
+}
+
+positive_sets <- filter(survey_sets, density_kgpm2 != 0)
+prop_pos <- round(nrow(positive_sets)/nrow(survey_sets), digits = 3)
+
+paste("proportion of positive sets =", prop_pos)
+```
+
+#### Save length~weight plots
+```{r}
+if (exists("maturity")) {
+  print(maturity$mass_model)
+  ggsave(
+    file = paste0("figs/", spp, "/", spp, "-mass-model-", ssid_string, ".png"),
+    dpi = 600,
+    width = 8, 
+    height = 10
+  )
+}
+```
+
+#### Save length at maturity plot 
+```{r}
+  png(
+    file = paste0("figs/_maturity_ogives/maturity-", prop_pos,"-", spp, "-", ssid_string, ".png"), 
+    res = 600,
+    units = "in",
+    width = 8, 
+    height = 6
+  )
+  if (exists("maturity")) {
+  print(maturity$maturity)
+  } else {
+  ggplot(fish, aes(length)) + geom_histogram(bins=50) + facet_grid(~sex)  
+    }
+
+  dev.off()
+
+try(print(maturity$maturity))
+```
