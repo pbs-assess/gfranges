@@ -181,9 +181,9 @@ for (r_h in seq_along(list_regions)) {
           covs = covs
         ),
         output_file = paste0(
-          "html/VOCC-plots/biotic-gradients-", spp,
+          "html/VOCC-plots/vocc-w-do-", spp,
           # "-imm",
-          covs, "-", reg, "-trim10.html"
+          covs, "-", reg, "-untrimmed.html"
         ),
         envir = env
       )
