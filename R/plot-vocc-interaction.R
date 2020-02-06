@@ -5,7 +5,7 @@
 #' @param species If NULL, loops through all species in raw data.
 #' @param x_variable Which variable to plot sticks on.
 #' @param split_variable Which variable to plot sticks at the min and max of.
-#' @param use_quantiles If TRUE, plots lines for 25th and 75th quantile of splitting
+#' @param use_quantiles If TRUE, plots lines for 2.5th and 97.5th quantile of splitting
 #'    varible values occupied by each species. If FALSE, use min and max values occupied by each species.
 #' @param N Number of increments
 #'

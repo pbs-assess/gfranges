@@ -30,9 +30,9 @@ plot_fuzzy_chopsticks(
 Plot interactions with confidence intervals
 }
 \examples{
-plot_fuzzy_chopsticks(model, 
-   y_label = "Predicted biomass trend", 
-   x_variable = "temp_trend_scaled", 
-   type = "temp")
-
+plot_fuzzy_chopsticks(model,
+  y_label = "Predicted biomass trend",
+  x_variable = "temp_trend_scaled",
+  type = "temp"
+)
 }
