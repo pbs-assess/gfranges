@@ -1,13 +1,14 @@
 library(tidyverse)
+getwd()
+setwd(here::here("/analysis/VOCC"))
 
 # Add "trawled" column to event data
 
 # put event data in sf form
-bath <- readRDS("analysis/VOCC/data/bathymetry-data") 
+bath <- readRDS("data/bathymetry-data") 
 events <- bath$data %>% mutate(X=X*1000, Y=Y*1000) # change utms to meters from Kms
-glimpse(events)
 
-trawl_footprint <- sf::st_read(dsn="analysis/VOCC/data/trawl-footprint",layer="Trawl_footprint")
+trawl_footprint <- sf::st_read(dsn="data/trawl-footprint",layer="Trawl_footprint")
 trawl_footprint <- sf::st_transform(trawl_footprint, crs = 4326)
 
 xx <- events %>%
@@ -27,7 +28,7 @@ xx$trawled <- if_else(xx$fishing_event_id %in% events_in_trawled_area, 1, 0)
 # plot(sf::st_geometry(xx_trawled[,"fishing_event_id"]), col = "red", pch = 4, cex = 0.25,
 #   add = TRUE, reset = FALSE)
 
-saveRDS(xx, file = "analysis/VOCC/data/events-trawled.rds")
+saveRDS(xx, file = "data/events-trawled.rds")
 
 
 
@@ -70,7 +71,7 @@ shp2raster <- function(shp, mask.raster, label, value, transform = FALSE, proj.f
 }
 
 # retrieve trawl shapefile
-trawl_footprint <-readOGR(dsn="analysis/VOCC/data/trawl-footprint",layer="Trawl_footprint")
+trawl_footprint <-readOGR(dsn="data/trawl-footprint",layer="Trawl_footprint")
 plot(trawl_footprint)
 
 # set projections
@@ -78,7 +79,7 @@ proj.from <- proj4string(trawl_footprint)
 proj.to <- "+proj=utm +zone=9 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
 
 # put prediction data in raster form
-nd_all <- readRDS("analysis/VOCC/data/nd_all_synoptic.rds")
+nd_all <- readRDS("data/nd_all_synoptic.rds")
 nd <- nd_all %>% filter(year %in% c(2005,2006)) %>%
   mutate(X=X*1000, Y=Y*1000) # change utms to meters from Kms
 nd_raster <- raster::rasterFromXYZ( nd %>% dplyr::select(X, Y, depth), crs = proj.to)
@@ -98,7 +99,7 @@ trawl <- cbind(coords, trawled)
 trawl$X <- trawl$x/1000
 trawl$Y <- trawl$y/1000
 
-saveRDS(trawl, file = "analysis/VOCC/data/trawl-footprint.rds")
+saveRDS(trawl, file = "data/trawl-footprint.rds")
 
 
 

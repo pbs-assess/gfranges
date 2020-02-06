@@ -1,9 +1,13 @@
 library(dplyr)
 
-events <- readRDS("analysis/VOCC/data/events-trawled.rds")
+
+getwd()
+setwd(here::here("/analysis/VOCC"))
+
+events <- readRDS("data/events-trawled.rds")
 events2 <- events %>% dplyr::select(-catch_weight, -present, -density,-X, -Y, -depth, -akima_depth)
 glimpse(events)
-substrate <- readRDS("analysis/VOCC/data/events-w-substrate.rds")
+substrate <- readRDS("data/events-w-substrate.rds")
 
 substrate2 <- as_tibble(substrate) 
 substrate2 <- substrate2 %>% dplyr::select(fishing_event_id, mixed, muddy, sandy, rocky)
@@ -12,21 +16,21 @@ events2 <- as_tibble(events2)
 events_w_covs <- left_join(events2, substrate2)
 events_w_covs$any_rock <- events_w_covs$rocky + events_w_covs$mixed
 
-saveRDS(events_w_covs, file = "analysis/VOCC/data/event-covariates.rds")
-events_w_covs <- readRDS("analysis/VOCC/data/event-covariates.rds")
+saveRDS(events_w_covs, file = "data/event-covariates.rds")
+events_w_covs <- readRDS("data/event-covariates.rds")
 
 
 
 
 # put prediction data in raster form
-nd_all <- readRDS("analysis/VOCC/data/nd_all_synoptic.rds")
+nd_all <- readRDS("data/nd_all_synoptic.rds")
 nd <- nd_all %>% filter(year %in% c(2005,2006)) %>%
   mutate(X=X*1000, Y=Y*1000) # change utms to meters from Kms
 nd_raster <- raster::rasterFromXYZ( nd %>% dplyr::select(X, Y, depth), crs = proj)
 
 
 
-new_substrate <- readRDS("analysis/VOCC/data/new-substate-raster.rds")
+new_substrate <- readRDS("data/new-substate-raster.rds")
 
 # convert to data.frame for prediction
 coords <- as.data.frame(raster::rasterToPoints(new_substrate[[1]]))[, c("x", "y")]
@@ -50,7 +54,7 @@ nd_new <- nd_all %>% filter(year %in% c(2005,2006))
 nrow(nd_new)
 nd_new <- left_join(nd_new, nd_substrate)
 
-trawl <- readRDS("analysis/VOCC/data/trawl-footprint.rds")
+trawl <- readRDS("data/trawl-footprint.rds")
 trawl <- trawl %>% select(-x, -y)
 nd_test <- left_join(nd_new, trawl)
 
@@ -63,7 +67,7 @@ nd_combind <- nd_test %>% select(-x, -y, -substrate_100m_1step)
 nd_combind$any_rock <- nd_combind$rocky + nd_combind$mixed
 
 glimpse(nd_combind)
-saveRDS(nd_combind, file = "analysis/VOCC/data/new_covariates.rds")
+saveRDS(nd_combind, file = "data/new_covariates.rds")
 #nd_combind <- readRDS("analysis/VOCC/data/new_covariates.rds")
 
 

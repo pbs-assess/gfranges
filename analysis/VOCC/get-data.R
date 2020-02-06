@@ -63,31 +63,65 @@ species <- "Yellowtail Rockfish" # schooling
 species <- "Copper Rockfish"
 species <- "Darkblotched Rockfish"
 species <- "Shortbelly Rockfish"
+# species <- "Tiger" #no data
+species <- "Shortraker Rockfish"
+
+# other species
 species <- "Pacific Hake"
 species <- "Sandpaper Skate"
 species <- "Brown Cat Shark"
+
+
+#### Additional species to be downloaded:
+species <- list(
+"Rex Sole",
+"Curlfin Sole",
+"Sand Sole",
+"Slender Sole",
+"Pacific Sanddab",
+"Pacific Halibut",
+"Pacific Tomcod",
+"Rosethorn Rockfish",
+"Redstripe Rockfish",
+"Yellowmouth Rockfish",
+"Harlequin Rockfish"
+)
+
+##Only found in Hecate Strait 
+#species <- "Sand Sole"
+#species <- "Butter Sole"
+#species <- "Starry Flounder"
+getwd()
+setwd(here::here("/analysis/VOCC"))
+
+species <- "Pacific Cod"
 
 for (i in species) {
 species <- tolower(i)
 events <- gfdata::get_survey_sets(species, ssid = c(1, 3, 4, 16))
 fish <- gfdata::get_survey_samples(species, ssid = c(1, 3, 4, 16))
 spp <- gsub(" ", "-", gsub("\\/", "-", species))
-saveRDS(fish, file = paste0("analysis/VOCC/raw/bio-data-", spp, "")) 
-saveRDS(events, file = paste0("analysis/VOCC/raw/event-data-", spp, "")) 
+saveRDS(fish, file = paste0("raw/bio-data-", spp, "")) 
+saveRDS(events, file = paste0("raw/event-data-", spp, "")) 
 }
 
 
 # create akima_depth once
 
-anyspecies <- "pacific cod"
-survey_sets <- gfdata::get_survey_sets(anyspecies, ssid = c(1, 3, 4, 16))
+# anyspecies <- "pacific cod"
+# survey_sets <- gfdata::get_survey_sets(anyspecies, ssid = c(1, 3, 4, 16))
+
+anyspecies <- "pacific-cod"
+survey_sets <- readRDS(paste0("raw/event-data-", anyspecies, "")) 
+
 years <- unique(survey_sets[["year"]]) 
 survey <- c("SYN HS","SYN QCS","SYN WCVI","SYN WCHG")
 tidy_sets <- tidy_survey_sets(survey_sets, survey = survey, years = years) 
 
 bath <- tidy_sets %>% gfplot:::interp_survey_bathymetry()
 
-saveRDS(bath, file = "analysis/VOCC/data/bathymetry-data")
+# test <- filter(bath$data, Y>5836) %>% filter(Y<5840)
+saveRDS(bath, file = "data/bathymetry-data")
 
 
 # get older sensor data
@@ -125,7 +159,7 @@ View(.d)
 head(.d)
 glimpse(.d)
 # merge with newer sensor data
-new_sensor_data <- readRDS("analysis/tmb-sensor-explore/data/dat-sensor-trawl.rds")
+new_sensor_data <- readRDS("analysis/tmb-sensor-explore/data/dat-sensor-trawl-2019.rds")
 #library(tidyverse)
 head(new_sensor_data)
 View(new_sensor_data)
@@ -145,7 +179,7 @@ fe_event_end = max(end_time), attribute = tolower(attribute)) %>% ungroup() %>%
 
 .d_trawl_N <- new_sensor_data %>%
   mutate(attribute = tolower(attribute)) %>%
-  reshape2::dcast(fishing_event_id ~ attribute, sum, value.var = "count") %>% 
+  reshape2::dcast(fishing_event_id ~ attribute, sum, value.var = "count") #%>% 
 
 .d_trawl2 <- full_join(.d_trawl, .d_trawl_max, by="fishing_event_id", suffix = c("", "_max"))
 .d_trawl3 <- full_join(.d_trawl2, .d_trawl_min, by="fishing_event_id", suffix = c("", "_min"))
@@ -187,7 +221,7 @@ all_sensor <- full_join(.d_trawl4, .d, by = "fishing_event_id") %>%
 glimpse(.d_trawl)
 glimpse(all_sensor)
 View(all_sensor)
-bath <- readRDS(file = "analysis/VOCC/data/bathymetry-data")
+bath <- readRDS(file = "data/bathymetry-data")
 bath$data$fishing_event_id <- as.integer(bath$data$fishing_event_id)
   glimpse(bath$data$year)
 bath$data$year <- as.double(bath$data$year)
@@ -237,63 +271,73 @@ d_trawl$Y <- d_trawl$lat
 d_trawl <- as_tibble(gfplot:::ll2utm(d_trawl, utm_zone = 9))
 
 #d_trawl[d_trawl$fishing_event_id == 308835,]$year <- 2003
-d_trawl <- readRDS( "analysis/tmb-sensor-explore/data/all-sensor-data-processed.rds")
+d_trawl <- readRDS( "analysis/tmb-sensor-explore/data/all-sensor-data-processed-2019.rds")
 
 
 glimpse(d_trawl)
 View(d_trawl)
 #d_trawl <- filter(d_trawl, !is.na(temperature_c), !is.na(depth))
+.d_trawl <- filter(d_trawl, year > 2006)
 
-
-ggplot(d_trawl, aes(depth, temperature_c, colour = temperature_c, size = temperature_c_N/100)) +
+ggplot(.d_trawl, aes(depth, temperature_c, colour = temperature_c, size = temperature_c_N/100)) +
   geom_point() +
   facet_wrap(~year) +
   scale_color_viridis_c()
 
-ggplot(d_trawl, aes(X, Y, colour = temperature_c)) +
+ggplot(.d_trawl, aes(X, Y, colour = temperature_c)) +
   geom_point() +
   facet_wrap(~year) +
   scale_color_viridis_c()
 hist(d_trawl$temperature_c)
 hist(log(d_trawl$temperature_c))
 
-ggplot(d_trawl, aes(X, Y, colour = do_mlpl)) +
+ggplot(.d_trawl, aes(X, Y, colour = do_mlpl)) +
   geom_point() +
   facet_wrap(~year) +
   scale_color_viridis_c()
 
-ggplot(d_trawl, aes(depth, do_mlpl, colour = do_mlpl, size = sqrt(do_change))) +
+ggplot(.d_trawl, aes(depth, do_mlpl, colour = temperature_c), size = 3) + #, size = sqrt(do_change)
+  geom_point() +
+  facet_wrap(~year) +
+  scale_color_viridis_c()
+
+ggplot(filter(.d_trawl, ssid==4), aes(depth, do_mlpl, colour = temperature_c), size = 3) + #, size = sqrt(do_change)
+  geom_point() +
+  facet_wrap(~year) +
+  scale_color_viridis_c()
+
+ggplot(filter(.d_trawl, ssid==4), aes(depth, do_mlpl, colour = salinity_psu), size = 3) + #, size = sqrt(do_change)
   geom_point() +
   facet_wrap(~year) +
   scale_color_viridis_c()
 
 
-ggplot(d_trawl, aes(depth, salinity_psu, colour =  salinity_psu, size = salinity_psu_N/100)) +
+ggplot(.d_trawl, aes(depth, salinity_psu, colour =  salinity_psu, size = salinity_psu_N/100)) +
   geom_point() +
   facet_wrap(~year) +
   scale_color_viridis_c()
 
 
-ggplot(d_trawl, aes(X, Y, colour = salinity_psu)) +
+ggplot(.d_trawl, aes(X, Y, colour = salinity_psu)) +
   geom_point() +
   facet_wrap(~year) +
   scale_color_viridis_c()
 hist(d_trawl$salinity_psu)
 
 # note that N values pre2017 are not on same scale as those post2017
-ggplot(d_trawl, aes(depth, salinity_psu, colour = temperature_c, size = sqrt(salinity_psu_N))) +
+ggplot(.d_trawl, aes(depth, salinity_psu, colour = temperature_c, size = sqrt(salinity_psu_N))) +
   geom_point() +
   facet_wrap(~year) +
   scale_color_viridis_c()
 
 
-ggplot(d_trawl, aes(X, Y, colour = depth)) +
+ggplot(.d_trawl, aes(X, Y, colour = depth)) +
   geom_point() +
   facet_wrap(~year) +
   scale_color_viridis_c()
 
 
-saveRDS(d_trawl, "analysis/tmb-sensor-explore/data/all-sensor-data-processed.rds")
+saveRDS(d_trawl, "analysis/tmb-sensor-explore/data/all-sensor-data-processed-2019.rds")
 
 
 
