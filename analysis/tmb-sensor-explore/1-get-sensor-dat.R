@@ -4,7 +4,7 @@
 # get and save sensor data from different surveys
 
 d_trawl <- gfdata::get_sensor_data_trawl(ssid = c(1, 3, 4, 16), spread_attributes = FALSE)
-saveRDS(d_trawl, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl.rds")
+saveRDS(d_trawl, file = "analysis/tmb-sensor-explore/data/dat-sensor-trawl-2019.rds")
 
 # d_ll <- gfplot::get_sensor_data_ll_ctd(c(22, 36), sensor_min_max = TRUE)
 # saveRDS(d_ll, file = "analysis/tmb-sensor-explore/dat-sensor-ll.rds")

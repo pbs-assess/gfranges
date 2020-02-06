@@ -421,7 +421,7 @@ pred_1
 ```
 
 ```{r}
-p_nd4 <- p_nd %>% filter(ssid==4) %>% filter(year!=2016)
+p_nd4 <- p_nd %>% filter(ssid==4) #%>% filter(year!=2016)
 pred_4 <- plot_map_raster(p_nd4, "do_est") +
   scale_fill_viridis_c(labels = labels, breaks = c(0,2,4,6,8), limits = c(0, 9), na.value = "red")+
   facet_wrap(~year) +
@@ -479,7 +479,7 @@ st_1n3
 ```
 
 ```{r}
-p_nd4 <- p_nd %>% filter(ssid==4) %>% filter(year!=2016)
+p_nd4 <- p_nd %>% filter(ssid==4) #%>% filter(year!=2016)
 st_4 <- plot_map_raster(p_nd4, "epsilon_st") +
   #ggtitle(" ") +
   facet_wrap(~year) +

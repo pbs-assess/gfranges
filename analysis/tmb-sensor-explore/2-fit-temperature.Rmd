@@ -456,9 +456,10 @@ plot_spde(spde)
 
 ```{r}
 m_temp_rw <- sdmTMB(d_trawl,
-  temperature_c ~ 0 + as.factor(year),
+  temperature_c ~ 0 + as.factor(year), #+ DOY_scaled + as.factor(ssid)
   time_varying = ~ 0 + depth_scaled + depth_scaled2,
-  ar1_fields = TRUE, include_spatial = TRUE, # changed AR1_field to true
+  ar1_fields = TRUE, # changed AR1_field to true
+  include_spatial = TRUE, 
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = FALSE
 )
@@ -553,6 +554,9 @@ p_nd <- predict_temp
 ```
 
 ```{r}
+p_nd <- readRDS("../VOCC/data/predicted_temp_allyears_revised")
+
+
 plot_map_raster <- function(dat, column = "est") {
     ggplot(dat, aes_string("X", "Y", fill = column)) +
     geom_raster() +
@@ -644,14 +648,24 @@ st_1n3 <- plot_map_raster(p_nd1, "epsilon_st") +
   ggtitle("Spatiotemporal random effects") +
   facet_wrap(~year) +
    scale_fill_gradient2( low = "Steel Blue 4",
- high = "Red 3", limits = c(-1.5,1.5),
+ high = "Red 3", limits = c(-1.5,1.5), trans = sqrt,
     na.value = "red") +
   labs(fill = "epsilon") + 
   gfplot::theme_pbs() + 
   theme(
   legend.position = "none", 
   axis.title.x = element_blank(), axis.title.y = element_blank())
+
+png(
+  file = "figs/temp-predictions-1n3.png", 
+  res = 400,
+  units = "in",
+  width = 8, 
+  height = 8
+) 
 st_1n3
+dev.off()
+
 ```
 
 ```{r}
@@ -660,7 +674,7 @@ st_4 <- plot_map_raster(p_nd4, "epsilon_st") +
   #ggtitle(" ") +
   facet_wrap(~year) +
      scale_fill_gradient2( low = "Steel Blue 4",
- high = "Red 3", limits = c(-1.5,1.5),
+ high = "Red 3", limits = c(-1.5,1.5), trans = sqrt,
     na.value = "red") +
           labs(fill = " ") + 
 gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = c(.85,.15))
