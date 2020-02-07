@@ -12,11 +12,13 @@
 *.lot
 *.pdf
 *.png
+*.tif
 *.ps
 *.toc
 *.html
 *.png
-# *.txt
+#*.txt
+*.csv
 *.out
 *.snm
 *.nav
