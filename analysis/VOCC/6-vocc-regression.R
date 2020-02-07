@@ -9,7 +9,7 @@ dyn.load(dynlib("vocc_regression"))
 source("vocc-regression-functions.R")
 
 y_type <- "vel"
-# y_type <- "trend"
+y_type <- "trend"
 
 model_type <- "-vel"
 model_type <- "-vel-no-fishing"
@@ -19,7 +19,7 @@ model_type <- "-vel-no-fishing"
 #  model_type <- "-trend-no-covs"
 #  model_type <- "-trend-only"
  # model_type <- "-trend-grad"
- # model_type <- "-trend-with-do"
+model_type <- "-trend-with-do"
 w_genus <- F
 is_null <- T
 
@@ -43,7 +43,7 @@ data_type <- "mature-95-all-do"
 #  null_number <- ""
 null_number <- "-1"
  null_number <- "-2"
-#  null_number <- "-3"
+  null_number <- "-3"
 
 d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
 d <- na.omit(d) %>% as_tibble()
