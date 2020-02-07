@@ -5,12 +5,14 @@ date: "`r Sys.Date()`"
 output: html_document 
 params: 
     species: "Pacific Cod" 
-    #region: "both odd year surveys"
-    region: "West Coast Vancouver Island"
+    #species: "Pacific Ocean Perch"
+    #species: "Redbanded Rockfish"
+    region: "both odd year surveys"
+    #region: "West Coast Vancouver Island"
     age: "mature"
     biomass_threshold: "50"
-    climate: "temperature"
-    threshold: 0.5
+    climate: "do" # if DO use "do"
+    threshold: 0.2
 editor_options: 
   chunk_output_type: inline
 ---
@@ -266,12 +268,12 @@ if (climate=="temperature") {
 # Calculate climate vectors
 ```{r }
 vocc_by_year <- lapply(start_years, function(start_time) {
-  try({
-    vocc <- readRDS(paste0(
-      "data/vocc-", ssid_string, "-", climate_string, "-",
-      min_string, "to", max_string, "-", start_time, "-", delta_t_total, "-update.rds"
-    ))
-  })
+  # try({
+  #   vocc <- readRDS(paste0(
+  #     "data/vocc-", ssid_string, "-", climate_string, "-",
+  #     min_string, "to", max_string, "-", start_time, "-", delta_t_total, "-update.rds"
+  #   ))
+  # })
 
 if (!exists("vocc")) {
     end_time <- start_time + 2
@@ -343,6 +345,7 @@ if (!exists("vocc")) {
     }
 
     if (climate == "do") {
+      
       vocc$diff <- vocc$units_per_decade / 10 * delta_t_total
       vocc_plot <- plot_vocc(vocc, 
         theme_black = TRUE,
@@ -789,6 +792,7 @@ Get all biomass predictions
 ```{r echo=FALSE, warning=FALSE}
 priors <- FALSE
 covs <- "-trawled-ssid"
+covs <- "-trawled-ssid-reml"
 rm(biomass_predictions)
 if (age == "imm") {
   biomass_predictions <- readRDS(paste0(
@@ -1243,15 +1247,15 @@ try({
 
 match_formula <- paste0("treat ~ trawled + x + y + depth_st")
 # depth.st + omega_s + muddy.st + any_rock.st +
-for (j in (variable_names)) {
-  match_formula <- paste0("", match_formula, " + ", j, "_s.st")
-  start_value.st <- paste0("", j, "_s.st")
-  start_value <- paste0("", j, "_s")
-
-  alldata <- alldata %>% mutate((!!start_value.st) :=
-    arm::rescale(alldata[[start_value]]))
-  # (UQ(rlang::sym(paste0(variable_names[j], "_s")))))
-}
+# for (j in (variable_names)) {
+#   match_formula <- paste0("", match_formula, " + ", j, "_s.st")
+#   start_value.st <- paste0("", j, "_s.st")
+#   start_value <- paste0("", j, "_s")
+# 
+#   alldata <- alldata %>% mutate((!!start_value.st) :=
+#     arm::rescale(alldata[[start_value]]))
+#   # (UQ(rlang::sym(paste0(variable_names[j], "_s")))))
+# }
 
 if (!exists("vocc_by_sp")) {
 # matched <- lapply(alldata, function(alldata) {

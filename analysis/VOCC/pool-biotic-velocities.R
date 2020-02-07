@@ -13,6 +13,7 @@ mydir = paste0( "_scrambled4")
 mydir = paste0( "_scrambled5")
 mydir = paste0( "_all_temp")
 mydir = paste0( "_new_null")
+mydir = paste0( "_do_null")
 
 ####################
 myfiles <- list.files(path = mydir, pattern = "*.csv", full.names = TRUE)
@@ -39,4 +40,8 @@ saveRDS(biotic, file = paste0(
 
 saveRDS(biotic, file = paste0(
   "mature-all-temp-untrimmed.rds"
+))
+
+saveRDS(biotic, file = paste0(
+  "mature-all-do-untrimmed.rds"
 ))
