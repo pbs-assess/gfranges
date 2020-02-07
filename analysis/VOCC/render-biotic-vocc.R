@@ -173,7 +173,7 @@ for (r_h in seq_along(list_regions)) {
     covs <- "-tv-depth-only" # string describing model
     reg <- gsub(" ", "-", gsub("\\/", "-", tolower(list_regions[r_h])))
     try({
-      rmarkdown::render("4-vocc-biotic.Rmd",
+      rmarkdown::render("3-vocc-w-do.Rmd",
         params = list(
           species = list_species[spp_i],
           # immature = TRUE,
@@ -199,7 +199,7 @@ for (r_h in seq_along(list_regions)) {
     covs <- "-tv-depth-only" # string describing model
     reg <- gsub(" ", "-", gsub("\\/", "-", tolower(list_regions[r_h])))
     try({
-      rmarkdown::render("4-vocc-temp.Rmd",
+      rmarkdown::render("3-vocc-temp.Rmd",
         params = list(
           species = list_species[spp_i],
           # immature = TRUE,
