@@ -7,8 +7,10 @@ library(gfranges)
 source("vocc-regression-functions.R")
 source("plot-clusters.R")
 
-model <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
+# model <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
 # model <- readRDS("data/trend_by_vel_01-16-multi-spp-biotic-vocc-mature.rds")
+
+model <- readRDS(("data/trend_by_all_temp_w_fishing_01-23-all-temp-mature.rds"))
 
 stats <- readRDS(paste0("data/life-history-stats.rds"))
 
@@ -35,15 +37,18 @@ glimpse(coefs)
 
 coefs <- coefs[ order(row.names(coefs)), ]
 names(coefs)
+all_coefs <- select(coefs, -species, -group, -depth, -age_max, -length_99th, -weight_99th, -status) %>% scale()
+
+# 
+# all_coefs <- select(coefs,
+#   `(Intercept)`, 
+#   mean_DO_scaled, DO_trend_scaled, 
+#   `mean_DO_scaled:DO_trend_scaled`, 
+#   mean_temp_scaled, temp_trend_scaled, 
+#   #`mean_DO_scaled:mean_temp_scaled`, 
+#   `mean_temp_scaled:temp_trend_scaled`) %>% scale()
 
 
-all_coefs <- select(coefs,
-  `(Intercept)`, 
-  mean_DO_scaled, DO_trend_scaled, 
-  `mean_DO_scaled:DO_trend_scaled`, 
-  mean_temp_scaled, temp_trend_scaled, 
-  #`mean_DO_scaled:mean_temp_scaled`, 
-  `mean_temp_scaled:temp_trend_scaled`) %>% scale()
 colnames(all_coefs) <- gsub("_scaled", "", colnames(all_coefs))
 colnames(all_coefs) <- gsub("mean_", "", colnames(all_coefs))
 
@@ -59,21 +64,28 @@ colnames(all_coefs) <- gsub("mean_", "", colnames(all_coefs))
 
 
 temp_coefs <- select(coefs, `(Intercept)`, 
+  temp_grad_scaled, 
+  # `temp_trend_scaled:temp_grad_scaled`, 
   mean_temp_scaled, temp_trend_scaled, 
-  `mean_temp_scaled:temp_trend_scaled`) %>% 
-  rename(intercept = `(Intercept)`, `mean temp` = mean_temp_scaled, `temp trend`= temp_trend_scaled, interaction = `mean_temp_scaled:temp_trend_scaled`) %>% 
+  `temp_trend_scaled:mean_temp_scaled`) %>% 
+  rename(intercept = `(Intercept)`, 
+    `mean temp` = mean_temp_scaled, 
+    `temp trend`= temp_trend_scaled, 
+    `trend x mean` = `temp_trend_scaled:mean_temp_scaled`, 
+    # `trend x grad` = `temp_trend_scaled:temp_grad_scaled`, 
+    gradient = temp_grad_scaled ) %>% 
   scale()
 
 
-do_coefs <- select(coefs, `(Intercept)`, 
-  mean_DO_scaled, DO_trend_scaled, 
-  `mean_DO_scaled:DO_trend_scaled`) %>% scale()
-
-
-glimpse(do_coefs) 
+# do_coefs <- select(coefs, `(Intercept)`, 
+#   mean_DO_scaled, DO_trend_scaled, 
+#   `mean_DO_scaled:DO_trend_scaled`) %>% scale()
+# 
+# 
+# glimpse(do_coefs) 
 
 factoextra::fviz_nbclust(all_coefs, kmeans, method = "silhouette",
-  k.max = 10)
+  k.max = 15)
 
 factoextra::fviz_nbclust(all_coefs, cluster::pam, method = "silhouette",
   k.max = 10)
@@ -93,21 +105,21 @@ factoextra::fviz_nbclust(do_coefs, cluster::pam, method = "silhouette",
   k.max = 10)
 
 
-m_kmeans <- kmeans(all_coefs, 6)
-m_pam <- cluster::pam(all_coefs, k = 7)
+m_kmeans <- kmeans(all_coefs, 3)
+m_pam <- cluster::pam(all_coefs, k = 4)
 m_pam_manhattan <- cluster::pam(all_coefs, k = 7, metric = "manhattan")
 
 plot_clusters(
-#  m_kmeans,
-  m_pam,
-#  m_pam_manhattan, 
+ m_kmeans,
+  # m_pam,
+  # m_pam_manhattan, 
   data = all_coefs, 
   colour_vector = (coefs$depth),
   text_label = coefs$species, shape_by_group = T,
   colour_label = "Depth"
 ) + scale_color_viridis_c(direction = -1, trans = log10) 
 
-m_kmeans <- kmeans(temp_coefs, 2)
+m_kmeans <- kmeans(temp_coefs, 3)
 #m_kmeans <- kmeans(temp_coefs, 3)
 m_kmeans <- kmeans(temp_coefs, 4)
 m_kmeans <- kmeans(temp_coefs, 5)
