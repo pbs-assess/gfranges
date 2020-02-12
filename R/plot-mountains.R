@@ -1,14 +1,20 @@
 #' Predicted curves for parameters in sdmTMB models
 #'
-#' @param dat Dataframe of density estimates containing x, y_hat, and year
+#' @param dat Dataframe of density estimates containing x, y_hat, year, and type
 #' @param time_varying Logical for if the parameter of interest is time-varying
 #' @param variable_label Descriptive label for parameter "x"
-#' @param xlimits X-axis limits. Default is c(0, max(dat$x)).
-#' @param x_breaks Give breaks. Default is the ggplot default.
+#' @param xlimits X-axis limits. Default is c(0, max(dat$x))
+#' @param x_breaks Give breaks. Default is the ggplot default
+#' @param mountains_only Logical for whether to exclude non-"sad-face" type curves. 
 #'
 #' @export
 #'
-plot_mountains <- function(dat, time_varying = TRUE, variable_label = "Depth", xlimits = c(0, max(dat$x)), x_breaks = waiver()) {
+plot_mountains <- function(dat, time_varying = TRUE, 
+  variable_label = "Depth", 
+  xlimits = c(0, max(dat$x)), 
+  x_breaks = waiver(),
+  mountains_only = F
+  ) {
 
   if (time_varying) {
     # mountain_scaler <- max(dat$y_hat)  
@@ -16,7 +22,17 @@ plot_mountains <- function(dat, time_varying = TRUE, variable_label = "Depth", x
     dat <- dat %>% group_by(year) %>% mutate(max_y = max(y_hat), xintercept = x[y_hat == max_y])
     dat$year <- as.factor(dat$year)
     
-    ymaximum <- max(dat$y_hat[dat$x > xlimits[1] & dat$x < xlimits[2]])
+    
+    # make y axis limited by mountain heights
+    if (any(names(dat) == "type")) {
+    dat1 <- filter(dat, type == "sad") 
+    } else { dat1 <- dat }
+    
+    ymaximum <- max(dat1$y_hat[dat1$x > xlimits[1] & dat1$x < xlimits[2]])
+    
+    if (mountains_only) {
+      dat <- filter(dat, type == "sad") 
+    }
     
     # ALTERNATIVE METHOD FOR DETERMINING YMAX. Way worse than above!
     #rangex <- max(dat$x) - min(dat$x)
@@ -98,16 +114,24 @@ time_varying_density <- function(m, predictor = "depth") {
       x = (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]]), 
       # leave these values as predicted for un-trawled zone
       y_hat = exp(b0 + b1 * x_pred + b2 * x_pred^2), 
-      year = year
+      year = year,
+     type = "sad"
     )
        
   } else {
-     NULL
+    data.frame(
+      # if depth, actually is log_depth so must exp(x) for raw depth
+      x = (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]]), 
+      # leave these values as predicted for un-trawled zone
+      y_hat = exp(b0 + b1 * x_pred + b2 * x_pred^2), 
+      year = year,
+      type = "other"
+    )
   }
   }
  
   #r <- m$tmb_obj$report()
-  
+  # browser()
   coefs <- as.data.frame(summary(m$sd_report))
   coefs$name <- rownames(summary(m$sd_report))
   b_j <- c(coefs[coefs$name == "b_j", 1 ])
@@ -117,6 +141,8 @@ time_varying_density <- function(m, predictor = "depth") {
   yrs <- sort(unique(m$data$year))
   n_t <- length(yrs)
   ssid <- m$data$ssid
+  
+  if(length(b_j)<n_t) { b_j <- rep(0,  n_t)}
   
   pred_density <- purrr::map_df(seq_len(n_t), function(.t) {
     get_y_hat(
