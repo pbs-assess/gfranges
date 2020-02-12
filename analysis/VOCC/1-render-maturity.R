@@ -64,6 +64,36 @@ list_species <- c(
 #   "Pacific Halibut"
 # )
 
+# species with small sample
+
+### NEW ADDITIONS FOR SOPO #1
+list_species <- c(
+  "Pacific Hake",
+  "Pacific Tomcod",
+  "Rosethorn Rockfish",
+  "Slender Sole",
+  "Pacific Sanddab",
+  "Harlequin Rockfish",
+  "Copper Rockfish" ,
+  "Shortbelly Rockfish",
+  "Sandpaper Skate",
+  "Brown Cat Shark",
+  "Sand Sole",
+  "Butter Sole",
+  "Starry Flounder")
+
+### NEW ADDITIONS FOR SOPO #2
+list_species <- list(
+  "Buffalo Sculpin",
+  "Cabezon",
+  "Pacifc Staghorn Sculpin",
+  "Red Irish Lord",
+  "Sturgeon Poacher",
+  "Bigmouth Sculpin",
+  "Kelp Greenling",
+  "Threadfn Sculpin"
+)
+
 ## NEEDS SPECIAL SETTINGS
 list_species <- c("North Pacific Spiny Dogfish","Longspine Thornyhead","Sand Sole")
 

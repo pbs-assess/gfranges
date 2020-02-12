@@ -55,7 +55,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
     filter(year %in% years)
 
   # use internal version of tidy_survey_sets to include ssid and month columns
-  tidy_sets <- tidy_survey_sets(survey_sets, survey = survey, years = years)
+  tidy_sets <- gfranges::tidy_survey_sets(survey_sets, survey = survey, years = years)
   tidy_sets <- add_missing_depths(tidy_sets, survey = survey, years = years, bath = bath)
 
   model_ssid <- unique(tidy_sets$ssid)
@@ -179,19 +179,20 @@ split_catch_maturity <- function(survey_sets, fish, bath,
 
     sets_w_ratio <- left_join(tidy_sets, set_ratio, by = "fishing_event_id")
 
-
+# browser()
     # chose value to use when a sample mass ratio is not available
     na_value <- mean(sets_w_ratio$mass_ratio_mature, na.rm = TRUE)
     sets_w_ratio$mass_ratio_mature[is.na(sets_w_ratio$mass_ratio_mature)] <- na_value
 
     # add column to check for discrepencies between total catch weight and biological sample weights
+    # est_sample_mass is in g while catch_weight is in kg?
     sets_w_ratio$errors <- sets_w_ratio$est_sample_mass - sets_w_ratio$catch_weight * 1000
 
     data <- sets_w_ratio %>%
       mutate(adult_density = density * mass_ratio_mature, imm_density = density * (1 - mass_ratio_mature))
 
     if (plot) {
-      try(maturity_plot <- plot_mat_ogive(m) +
+      try(maturity_plot <- gfranges::plot_mat_ogive(m) +
         ggplot2::ggtitle(paste("Length at maturity for", species, "surveys", ssid_string, "")))
 
       try(mass_plot <- ggplot(fish_maturity, aes(length, new_mass, colour = as.factor(sex))) +
