@@ -47,7 +47,32 @@ species <- c(
   "Redstripe Rockfish",
   "Rougheye/Blackspotted Rockfish Complex",
   "Shortraker Rockfish",
-  "Shortbelly Rockfish"
+  "Shortbelly Rockfish",
+  
+  ### NEW ADDITIONS FOR SOPO #1
+    "Pacific Hake",
+    "Pacific Tomcod",
+    "Rosethorn Rockfish",
+    "Slender Sole",
+    "Pacific Sanddab",
+    "Harlequin Rockfish",
+    "Copper Rockfish" ,
+    "Shortbelly Rockfish",
+    "Sandpaper Skate",
+    "Brown Cat Shark",
+    "Sand Sole",
+    "Butter Sole",
+    "Starry Flounder"
+  
+  ### NEW ADDITIONS FOR SOPO #2
+  # "Buffalo Sculpin",
+  # "Cabezon",
+  # "Pacifc Staghorn Sculpin",
+  # "Red Irish Lord",
+  # "Sturgeon Poacher",
+  # "Bigmouth Sculpin",
+  # "Kelp Greenling",
+  # "Threadfn Sculpin"
 )
 
 # species <- c("Spotted Ratfish")
@@ -107,7 +132,7 @@ life_history <- purrr::map_dfr(species, function(x) {
   large_threshold <- quantile(fish$length, 0.90, na.rm = TRUE)
   small_threshold <- quantile(fish$length, 0.10, na.rm = TRUE)
   large <- filter(fish, length > large_threshold)
-  small <- filter(fish, length < 20)#small_threshold)
+  small <- filter(fish, length < small_threshold)
   }
   
   # ## FOR EXPLORING SPECIAL CASES
@@ -161,5 +186,8 @@ life_history <- purrr::map_dfr(species, function(x) {
 View(life_history)
 life_history$group[is.na(life_history$group)] <- "SKATE"
 life_history$group[life_history$species=="Spotted Ratfish"] <- "RATFISH"
+life_history$group[life_history$species=="Brown Cat Shark"] <- "SHARK"
+life_history$group[life_history$species=="North Pacific Spiny Dogfish"] <- "SHARK"
+
 
 saveRDS(life_history, file = "data/life-history-stats.rds")

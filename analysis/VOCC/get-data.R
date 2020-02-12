@@ -1,7 +1,7 @@
 # get data for biomass partitioning
 
 species <- list(
-# Flatfish  
+# Flatfish
   "Arrowtooth Flounder",
   "English Sole",
   "Dover Sole",
@@ -9,25 +9,23 @@ species <- list(
   "Petrale Sole",
 
 # The dominant species from trawl surveys off the west coast of Vancouver Island were
-  "North Pacific Spiny Dogfish", # (Squalus suckleyi), 
-  "Sharpchin Rockfish", # (Sebastes zacentrus), 
-  "Sablefish", # (Anoplopoma fimbria), 
-  "Splitnose Rockfish", # (Sebastes diploproa) and 
-  "Canary Rockfish", # (Sebastes pinniger) 
+  "North Pacific Spiny Dogfish", # (Squalus suckleyi),
+  "Sharpchin Rockfish", # (Sebastes zacentrus),
+  "Sablefish", # (Anoplopoma fimbria),
+  "Splitnose Rockfish", # (Sebastes diploproa) and
+  "Canary Rockfish", # (Sebastes pinniger)
 
-# Off the west coast of Haida Gwaii, the dominant species were 
-  "Pacific Ocean Perch", # (Sebastes alutus), 
-  #"Sharpchin Rockfish", 
-  "Rougheye/Blackspotted Rockfish Complex", # (Sebastes aleutianus/melanostictus), 
-  "Silvergray Rockfish", # (Sebastes brevispinis), and 
-  "Shortspine Thornyhead", # (Sebastolobus alascanus) 
-  
-# Notable trends in abundance 
-  
-  # increases in the abundance indices for 
-  "Bocaccio Rockfish", # (Sebastes paucispinis), 
-  #"Sablefish", 
-  #"Petrale Sole", # (Eopsetta jordani), 
+# Off the west coast of Haida Gwaii, the dominant species were
+  "Pacific Ocean Perch", # (Sebastes alutus),
+  #"Sharpchin Rockfish",
+  "Rougheye/Blackspotted Rockfish Complex", # (Sebastes aleutianus/melanostictus),
+  "Silvergray Rockfish", # (Sebastes brevispinis), and
+  "Shortspine Thornyhead", # (Sebastolobus alascanus)
+
+# Notable trends in abundance increases in the abundance indices for
+ "Bocaccio", # (Sebastes paucispinis),
+ "Sablefish",
+ "Petrale Sole", # (Eopsetta jordani),
   "Flathead Sole", # (Hippoglossoides elassodon), and 
   "Longspine Thornyhead", # (Sebastolobus altivelis) 
 
@@ -46,11 +44,21 @@ species <- list(
   "Pacific Cod",
   "Longnose Skate",
   "Walleye Pollock",
-  "Bocaccio",
   "Redbanded Rockfish",
   "Quillback Rockfish",
   
 # Other species of interest  
+  "Rex Sole",
+  "Curlfin Sole",
+  "Sand Sole",
+  "Slender Sole",
+  "Pacific Sanddab",
+  "Pacific Halibut",
+  "Pacific Tomcod",
+  "Rosethorn Rockfish",
+  "Redstripe Rockfish",
+  "Yellowmouth Rockfish",
+  "Harlequin Rockfish",
   "Pacific Ocean Perch" # schooling
 )
 
@@ -72,29 +80,30 @@ species <- "Sandpaper Skate"
 species <- "Brown Cat Shark"
 
 
-#### Additional species to be downloaded:
-species <- list(
-"Rex Sole",
-"Curlfin Sole",
-"Sand Sole",
-"Slender Sole",
-"Pacific Sanddab",
-"Pacific Halibut",
-"Pacific Tomcod",
-"Rosethorn Rockfish",
-"Redstripe Rockfish",
-"Yellowmouth Rockfish",
-"Harlequin Rockfish"
-)
-
 ##Only found in Hecate Strait 
-#species <- "Sand Sole"
-#species <- "Butter Sole"
-#species <- "Starry Flounder"
+species <- "Sand Sole"
+species <- "Butter Sole"
+species <- "Starry Flounder"
+
+
+species <- list(
+  "Buffalo Sculpin",
+  "Cabezon",
+  "Pacifc Staghorn Sculpin",
+  "Red Irish Lord",
+  "Sturgeon Poacher",
+  
+  ### more species for SOPO
+  
+  "Bigmouth Sculpin",
+  "Kelp Greenling",
+  "Threadfn Sculpin"
+  )
+
 getwd()
 setwd(here::here("/analysis/VOCC"))
 
-species <- "Pacific Cod"
+# species <- "Pacific Cod"
 
 for (i in species) {
 species <- tolower(i)
@@ -108,20 +117,20 @@ saveRDS(events, file = paste0("raw/event-data-", spp, ""))
 
 # create akima_depth once
 
-# anyspecies <- "pacific cod"
-# survey_sets <- gfdata::get_survey_sets(anyspecies, ssid = c(1, 3, 4, 16))
-
-anyspecies <- "pacific-cod"
-survey_sets <- readRDS(paste0("raw/event-data-", anyspecies, "")) 
-
-years <- unique(survey_sets[["year"]]) 
-survey <- c("SYN HS","SYN QCS","SYN WCVI","SYN WCHG")
-tidy_sets <- tidy_survey_sets(survey_sets, survey = survey, years = years) 
-
-bath <- tidy_sets %>% gfplot:::interp_survey_bathymetry()
-
-# test <- filter(bath$data, Y>5836) %>% filter(Y<5840)
-saveRDS(bath, file = "data/bathymetry-data")
+# # anyspecies <- "pacific cod"
+# # survey_sets <- gfdata::get_survey_sets(anyspecies, ssid = c(1, 3, 4, 16))
+# 
+# anyspecies <- "pacific-cod"
+# survey_sets <- readRDS(paste0("raw/event-data-", anyspecies, "")) 
+# 
+# years <- unique(survey_sets[["year"]]) 
+# survey <- c("SYN HS","SYN QCS","SYN WCVI","SYN WCHG")
+# tidy_sets <- tidy_survey_sets(survey_sets, survey = survey, years = years) 
+# 
+# bath <- tidy_sets %>% gfplot:::interp_survey_bathymetry()
+# 
+# # test <- filter(bath$data, Y>5836) %>% filter(Y<5840)
+# saveRDS(bath, file = "data/bathymetry-data")
 
 
 # get older sensor data
@@ -278,66 +287,66 @@ glimpse(d_trawl)
 View(d_trawl)
 #d_trawl <- filter(d_trawl, !is.na(temperature_c), !is.na(depth))
 .d_trawl <- filter(d_trawl, year > 2006)
+# 
+# ggplot(.d_trawl, aes(depth, temperature_c, colour = temperature_c, size = temperature_c_N/100)) +
+#   geom_point() +
+#   facet_wrap(~year) +
+#   scale_color_viridis_c()
+# 
+# ggplot(.d_trawl, aes(X, Y, colour = temperature_c)) +
+#   geom_point() +
+#   facet_wrap(~year) +
+#   scale_color_viridis_c()
+# hist(d_trawl$temperature_c)
+# hist(log(d_trawl$temperature_c))
+# 
+# ggplot(.d_trawl, aes(X, Y, colour = do_mlpl)) +
+#   geom_point() +
+#   facet_wrap(~year) +
+#   scale_color_viridis_c()
+# 
+# ggplot(.d_trawl, aes(depth, do_mlpl, colour = temperature_c), size = 3) + #, size = sqrt(do_change)
+#   geom_point() +
+#   facet_wrap(~year) +
+#   scale_color_viridis_c()
+# 
+# ggplot(filter(.d_trawl, ssid==4), aes(depth, do_mlpl, colour = temperature_c), size = 3) + #, size = sqrt(do_change)
+#   geom_point() +
+#   facet_wrap(~year) +
+#   scale_color_viridis_c()
+# 
+# ggplot(filter(.d_trawl, ssid==4), aes(depth, do_mlpl, colour = salinity_psu), size = 3) + #, size = sqrt(do_change)
+#   geom_point() +
+#   facet_wrap(~year) +
+#   scale_color_viridis_c()
+# 
+# 
+# ggplot(.d_trawl, aes(depth, salinity_psu, colour =  salinity_psu, size = salinity_psu_N/100)) +
+#   geom_point() +
+#   facet_wrap(~year) +
+#   scale_color_viridis_c()
+# 
+# 
+# ggplot(.d_trawl, aes(X, Y, colour = salinity_psu)) +
+#   geom_point() +
+#   facet_wrap(~year) +
+#   scale_color_viridis_c()
+# hist(d_trawl$salinity_psu)
+# 
+# # note that N values pre2017 are not on same scale as those post2017
+# ggplot(.d_trawl, aes(depth, salinity_psu, colour = temperature_c, size = sqrt(salinity_psu_N))) +
+#   geom_point() +
+#   facet_wrap(~year) +
+#   scale_color_viridis_c()
+# 
+# 
+# ggplot(.d_trawl, aes(X, Y, colour = depth)) +
+#   geom_point() +
+#   facet_wrap(~year) +
+#   scale_color_viridis_c()
 
-ggplot(.d_trawl, aes(depth, temperature_c, colour = temperature_c, size = temperature_c_N/100)) +
-  geom_point() +
-  facet_wrap(~year) +
-  scale_color_viridis_c()
 
-ggplot(.d_trawl, aes(X, Y, colour = temperature_c)) +
-  geom_point() +
-  facet_wrap(~year) +
-  scale_color_viridis_c()
-hist(d_trawl$temperature_c)
-hist(log(d_trawl$temperature_c))
-
-ggplot(.d_trawl, aes(X, Y, colour = do_mlpl)) +
-  geom_point() +
-  facet_wrap(~year) +
-  scale_color_viridis_c()
-
-ggplot(.d_trawl, aes(depth, do_mlpl, colour = temperature_c), size = 3) + #, size = sqrt(do_change)
-  geom_point() +
-  facet_wrap(~year) +
-  scale_color_viridis_c()
-
-ggplot(filter(.d_trawl, ssid==4), aes(depth, do_mlpl, colour = temperature_c), size = 3) + #, size = sqrt(do_change)
-  geom_point() +
-  facet_wrap(~year) +
-  scale_color_viridis_c()
-
-ggplot(filter(.d_trawl, ssid==4), aes(depth, do_mlpl, colour = salinity_psu), size = 3) + #, size = sqrt(do_change)
-  geom_point() +
-  facet_wrap(~year) +
-  scale_color_viridis_c()
-
-
-ggplot(.d_trawl, aes(depth, salinity_psu, colour =  salinity_psu, size = salinity_psu_N/100)) +
-  geom_point() +
-  facet_wrap(~year) +
-  scale_color_viridis_c()
-
-
-ggplot(.d_trawl, aes(X, Y, colour = salinity_psu)) +
-  geom_point() +
-  facet_wrap(~year) +
-  scale_color_viridis_c()
-hist(d_trawl$salinity_psu)
-
-# note that N values pre2017 are not on same scale as those post2017
-ggplot(.d_trawl, aes(depth, salinity_psu, colour = temperature_c, size = sqrt(salinity_psu_N))) +
-  geom_point() +
-  facet_wrap(~year) +
-  scale_color_viridis_c()
-
-
-ggplot(.d_trawl, aes(X, Y, colour = depth)) +
-  geom_point() +
-  facet_wrap(~year) +
-  scale_color_viridis_c()
-
-
-saveRDS(d_trawl, "analysis/tmb-sensor-explore/data/all-sensor-data-processed-2019.rds")
+# saveRDS(d_trawl, "analysis/tmb-sensor-explore/data/all-sensor-data-processed-2019.rds")
 
 
 
