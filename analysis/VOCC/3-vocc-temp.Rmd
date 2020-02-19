@@ -116,8 +116,8 @@ if (multiyear) {
   years_sampled <- length(unique(d$year))
   year_range <- (years_sampled - 1) * 2
 
-  if (years_sampled == 7) indices <- c(1, 1, 1, 2, 2, 2)
-  if (years_sampled == 8) indices <- c(1, 1, 1, 1, 2, 2, 2,2)
+  if (years_sampled == 7) indices <- c(1, 1, 1, 2, 2, 2, 2) # was 6 for some reason?
+  if (years_sampled == 8) indices <- c(1, 1, 1, 1, 2, 2, 2, 2)
 } else {
   d <- d_all %>%
     filter(year >= start_year) %>%
