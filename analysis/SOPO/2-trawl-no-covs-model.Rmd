@@ -3,27 +3,27 @@ title: "Spatiotemporal models of `r paste(params$species)` biomass with time-var
 author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
-params: 
+params:
     # species: "Redbanded Rockfish"
     # species: "North Pacific Spiny Dogfish"
     # species: "Pacific Ocean Perch"
-    # species: "Big Skate"
+    # species: "Pacific Sand Lance"
     # species: "Pacific Cod"
-    #species: "Petrale Sole"
-    species: "Starry Flounder"
-    # species: "Bocaccio"
+    # species: "Buffalo Sculpin"
+    # species: "Cabezon"
+    species: "Harlequin Rockfish"
     # region: "All synoptic surveys"
     region: "Both odd year surveys"
     start_year: 2003
-    knots: 250
+    knots: 300
     covariates: "" # +as.factor(ssid)
     #additional fixed-effect covariates
-    covs: "-no-covs" # covariate string used to name model rds
+    covs: "-no-covs-300" # covariate string used to name model rds
     AR1: TRUE
     fixed_spatial: FALSE
-    update_model: FALSE # TRUE
+    update_model: FALSE #TRUE
     update_model_check: FALSE #TRUE
-    update_predictions: FALSE # TRUE
+    update_predictions: FALSE #TRUE
     update_index: TRUE
 ---
 
@@ -52,12 +52,15 @@ covariates <- params$covariates
 covs <- params$covs
 knots <- params$knots
 priors <- FALSE
+update_model <- params$update_model
+update_model_check <- params$update_model_check
+update_predictions <- params$update_predictions
+update_index <- params$update_index
 
 paste("region =", region)
 paste("model covariates =", covariates)
 paste("model label =", covs)
 paste("priors =", priors)
-paste("knots =", knots)
 ```
 
 ```{r, message=FALSE, warning=FALSE}
@@ -103,7 +106,33 @@ biomass <- readRDS(paste0(
   "data/", spp, "/data-by-maturity-", spp, "-1n3n4n16.rds"
 ))
 
-if(nrow(biomass)<2000) {stop("Need to recalculate split by maturity!")}
+  positive_sets <- filter(biomass, density != 0)
+  prop_pos <- round(nrow(positive_sets)/nrow(biomass), digits = 3)
+      if (prop_pos < 0.1) {
+        update_model <- T
+        update_model_check <- T
+        update_predictions <- T
+        update_index <- T
+        knots <- 150
+        }
+    if (prop_pos < 0.05) {
+        update_model <- F
+        update_model_check <- F
+        update_predictions <- F
+        update_index <- T
+        knots <- 150
+        }
+
+# View(biomass)
+if (nrow(biomass)<2000) {
+  # update_model <- T
+  # update_model_check <- T
+  # update_predictions <- T
+  # update_index <- T
+  knots <- 100
+  if(prop_pos < 0.05) { knots <- 50 }
+  }
+if(nrow(biomass)<1000) {stop("Need to recalculate split by maturity!")}
 
 # covars <- readRDS("data/event-covariates.rds")
 # data <- dplyr::left_join(biomass, covars)
@@ -121,12 +150,13 @@ data <- data %>%
 rm(adult_biomass)
 rm(imm_biomass)
 rm(total_biomass)
+
 ```
 
 Make mesh
 ```{r}
 if (region == "Both odd year surveys") {
-  spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 250)
+  spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = knots)
 }
 
 if (region == "West Coast Vancouver Island") {
@@ -144,10 +174,14 @@ if (region == "All synoptic surveys") {
 sdmTMB::plot_spde(spde)
 ```
 
+```{r}
+paste("knots =", knots)
+```
 
 Run climate independent sdmTMB model
 ```{r }
-if (params$update_model) {
+
+if (update_model) {
   tictoc::tic()
   if (any(names(data) == "adult_density")) {
     adult_formula <- as.formula(paste(
@@ -229,7 +263,8 @@ rm(ad_predictions)
 rm(im_predictions)
 rm(predicted)
 
-if(params$update_predictions) {
+if(update_predictions) {
+  
   # nd_all <- readRDS(paste0("data/nd_just_depth.rds"))
   # nd_all <- readRDS(paste0("data/nd_whole_coast_index.rds"))
   nd_all <- readRDS(paste0("data/nd_odd.rds"))
@@ -243,7 +278,7 @@ if (!exists("adult_biomass")) {
     "/mod-mat-biomass-", spp, covs, "-", ssid_string, 
     "-ar1-", params$AR1, "-reml.rds"))
 }
-
+  
     nd <- nd_all %>%
       filter(ssid %in% model_ssid) %>%
       filter(year %in% unique(adult_biomass$data$year))
@@ -315,8 +350,7 @@ if (!exists("adult_biomass")) {
 
 ### Check residuals
 ```{r}
-
-if(params$update_model_check) {
+if(update_model_check) {
 try({
   
 if (!exists("ad_predictions")) {    
@@ -348,16 +382,19 @@ saveRDS(point_predictions, file = paste0(
 ```
 
 
-```{r}
+```{r }
+
+if(update_model_check) {
 check_predictions <- readRDS(paste0(
   "data/", spp,
   "/check-mod-predictions-", spp, covs, "-", ssid_string, "-ar1-", params$AR1, "-reml.rds"
 ))
 
+
 check_predictions <- filter(
   check_predictions,
   # ssid %in% c(1,3)) %>% filter (
-  year > 2003
+  year > 2004
 )
 
 try({
@@ -371,6 +408,7 @@ try({
 })
 
 g
+}
 ```
 
 ```{r}
@@ -386,17 +424,20 @@ try({
     facet_wrap(~year)
 })
 
-g2
+try ({g2})
 ```
 
 ```{r}
-ggplot(check_predictions, aes(X, Y, colour = (residuals))) +
-  geom_point() +
-  scale_colour_gradient2() +
-  scale_x_continuous(trans = "log10") +
-  facet_wrap(~year)
+try({
+  ggplot(check_predictions, aes(X, Y, colour = (residuals))) +
+    geom_point() +
+    scale_colour_gradient2() +
+    scale_x_continuous(trans = "log10") +
+    facet_wrap(~year)
+})
 ```
 
+Load predictions 
 
 Transform estimates to kg/ha
 ```{r}
@@ -405,22 +446,43 @@ rm(imm_predictions)
 rm(predictions)
 
 if (!exists("ad_predictions")) {
-try({
-  ad_predictions <- readRDS(paste0("data/", spp, 
-    "/mod-mat-biomass-", spp, covs, "-", ssid_string, 
-    "-ar1-", params$AR1, "-reml.rds"))
+  try({
+    ad_predictions <- readRDS(paste0("data/", spp, 
+      "/mod-mat-biomass-", spp, covs, "-", ssid_string, 
+      "-ar1-", params$AR1, "-reml.rds"))
   })
+  
+  if (!exists("ad_predictions")) {
+     try({ ad_predictions <- readRDS(paste0("data/", spp,
+      "/mod-mat-biomass-", spp, "-no-covs-", ssid_string,
+      "-ar1-", params$AR1, "-reml.rds")) })
+  }
+  
   try({
     im_predictions <- readRDS(paste0("data/", spp, 
-    "/mod-imm-biomass-", spp, covs, "-", ssid_string, 
-    "-ar1-", params$AR1, "-reml.rds"))
+      "/mod-imm-biomass-", spp, covs, "-", ssid_string, 
+      "-ar1-", params$AR1, "-reml.rds"))
   })
+    if (!exists("im_predictions")) {
+     try({ im_predictions <- readRDS(paste0("data/", spp,
+      "/mod-imm-biomass-", spp, "-no-covs-", ssid_string,
+      "-ar1-", params$AR1, "-reml.rds")) })
+  }
+  
+  
   if (!exists("ad_predictions")) {
     try({
       predicted <-  readRDS(paste0("data/", spp,
         "/model-total-biomass-", spp, covs, "-", ssid_string, 
         "-ar1-", params$AR1, "-reml.rds"))
     })
+    if (!exists("predicted")) {
+     try({
+       predicted <- readRDS(paste0("data/", spp,
+      "/model-total-biomass-", spp, "-no-covs-", ssid_string,
+      "-ar1-", params$AR1, "-reml.rds"))
+       })
+  }
   }
 }
 
@@ -480,7 +542,7 @@ if (exists("ad_predictions")) {
 ```{r}
  try({ ad_predictions$fit_obj})
  try({ im_predictions$fit_obj})
- try({ predicted$fitobj})
+ try({ predicted$fit_obj})
 ```
 
 
@@ -539,41 +601,46 @@ p_adult_all <- predictions  %>%
 ```{r}
 rm(ind)
 rm(ind_imm)
-if(params$update_index) {
+library(data.table)
+if(update_index) {
+  
 if (exists("ad_predictions")) {
-ind <- get_index(ad_predictions, bias_correct = FALSE)
-ind$species <- species
-ind$maturity <- "mature"
-ind$ssid <- ssid_string
-ind$covs <- covs
-
-write.csv(ind, file = paste0("data/_indices/sopo-index-", 
-  spp,"-", ssid_string, "-reml.csv"))
-
-try ({
-  ind_imm <- get_index(im_predictions, bias_correct = FALSE)
-  ind_imm$species <- species
-  ind_imm$maturity <- "immature"
-  ind_imm$ssid <- ssid_string
-  ind_imm$covs <- covs
-
-  write.csv(ind_imm, file = paste0("data/_indices/sopo-index-imm-", 
-    spp,"-", ssid_string, "-reml.csv"))
-})
+  
+  ind <- get_index(ad_predictions, bias_correct = FALSE)
+  ind$species <- species
+  ind$maturity <- "mature"
+  ind$ssid <- ssid_string
+  ind$covs <- covs
+  ind <- as.data.frame(ind)
+  write.csv(ind, file = paste0("data/_indices/sopo-index-", 
+    spp,"-", ssid_string, "-", covs, "-reml.csv"), row.names = FALSE)
+  
+  try ({
+    ind_imm <- get_index(im_predictions, bias_correct = FALSE)
+    ind_imm$species <- species
+    ind_imm$maturity <- "immature"
+    ind_imm$ssid <- ssid_string
+    ind_imm$covs <- covs
+    ind_imm <- as.data.frame(ind_imm)
+    write.csv(ind_imm, file = paste0("data/_indices/sopo-index-imm-", 
+      spp,"-", ssid_string, "-", covs, "-reml.csv"), row.names = FALSE)
+  })
+  
 } else {
   ind <- get_index(predicted, bias_correct = FALSE)
   ind$species <- species
   ind$maturity <- "all"
   ind$ssid <- ssid_string
   ind$covs <- covs
+  
+  ind <- as.data.frame(ind)
 
   write.csv(ind, file = paste0("data/_indices/sopo-index-", 
-    spp,"-", ssid_string, "-reml.csv"))
+    spp,"-", ssid_string, "-", covs, "-reml.csv"), row.names = FALSE)
 }
-}
-
-try({head(ind)})
-try({head(ind_imm)})
+try({ glimpse(ind_imm) })
+try({ glimpse(ind) })
+}  
 ```
 
 
@@ -583,27 +650,29 @@ scale <- 1000000 * 4 /1000 # if density was in kg/m2: m2 to km2 * 4 km2 grid siz
 ad_col <- "deepskyblue4"
 
 ind <- read.csv(paste0("data/_indices/sopo-index-", 
-  spp,"-", ssid_string, "-reml.csv"))
+  spp,"-", ssid_string, "-", covs, "-reml.csv"))
 
 ind %>% filter(year > 2004) %>%
 ggplot(aes(year, est*scale)) + geom_line(col=ad_col) +
   geom_ribbon(aes(ymin = lwr*scale, ymax = upr*scale), fill=ad_col, alpha = 0.4) +
   xlab('Year') +  
   ylab('Mature biomass estimate (metric tonnes)') +
-  gfplot::theme_pbs()
+  gfplot::theme_pbs() +
+    ggtitle(paste0("", species, " "))
 ```
 
 Add immature trend if available
 ```{r}
 try({
   ind_imm <- read.csv(paste0("data/_indices/sopo-index-imm-", 
-    spp,"-", ssid_string, "-reml.csv"))# %>% filter(year > 2004)
+    spp,"-", ssid_string, "-", covs, "-reml.csv")) %>% filter(year > 2004)
 })
 
 if (exists("ind_imm")) {
 ratio <- mean(ind$est)/max(ind_imm$est)
 imm_col <- "orangered"
-ind %>% #filter(year > 2004) %>%
+
+ind %>% filter(year > 2004) %>%
 ggplot(aes(year, est*scale)) + geom_line(col = ad_col, ) +
   geom_ribbon(aes(ymin = lwr*scale, ymax = upr*scale), fill = ad_col, alpha = 0.4) +
 # adding the relative humidity data, transformed to match roughly the range of the temperature
