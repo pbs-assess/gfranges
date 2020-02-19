@@ -151,7 +151,7 @@ if (params$update_model) {
       include_spatial = TRUE,
       # reml = TRUE,
       enable_priors = priors,
-      # control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+      control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
       silent = FALSE
     )
 
@@ -177,7 +177,7 @@ if (params$update_model) {
       # reml = TRUE,
       include_spatial = TRUE,
       enable_priors = priors,
-      # control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+      control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
       silent = FALSE
     )
 
