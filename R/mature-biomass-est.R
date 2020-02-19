@@ -86,13 +86,19 @@ split_catch_maturity <- function(survey_sets, fish, bath,
       mutate(maturity_levels = length(unique(maturity_code)))
 
     levels_per_year <- unique(years_w_maturity$maturity_levels)
-
+    
     if (max(levels_per_year) < 3) {
       return(list(data = tidy_sets, maturity = NULL, mass_model = NULL))
     }
 
     if (min(levels_per_year) < 3) {
+      
+      if (length(levels_per_year) < 3) {
+        return(list(data = tidy_sets, maturity = NULL, mass_model = NULL))
+      } else {
+      
       m <- fit_mat_ogive_re(fish, type = "length", sample_id_re = TRUE, year_re = FALSE)
+      
       if(p_threshold == 0.5) {
       f_fish$threshold <- m$mat_perc$f.p0.5
       m_fish$threshold <- m$mat_perc$m.p0.5
@@ -104,6 +110,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
       if(p_threshold == 0.95) {
         f_fish$threshold <- m$mat_perc$f.p0.95
         m_fish$threshold <- m$mat_perc$m.p0.95
+      }
       }
     } else {
       if (year_re) {
