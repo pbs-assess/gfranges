@@ -66,18 +66,21 @@ if (region == "both odd year surveys") {
   survey <- c("SYN QCS", "SYN HS")
   model_ssid <- c(1, 3)
   ssid_string <- paste0(model_ssid, collapse = "n")
+  start_year <- 2008
 }
 
 if (region == "West Coast Vancouver Island") {
   survey <- c("SYN WCVI")
   model_ssid <- c(4)
   ssid_string <- paste0(model_ssid, collapse = "n")
+  start_year <- 2008
 }
 
 if (region == "West Coast Haida Gwaii") {
   survey <- c("SYN WCHG")
   model_ssid <- c(16)
   ssid_string <- paste0(model_ssid, collapse = "n")
+  start_year <- 2008
 }
 ```
 
@@ -88,20 +91,20 @@ if (immature) {
   d_all <- readRDS(paste0(
     "data/", spp,
     "/predictions-", spp, covs, "-1n3n4n16-imm-biomass-prior-FALSE.rds"
-  )) %>% filter(year > 2007)
+  )) %>% filter(year >= start_year )
 } else {
   age <- "mature"
   try({
     d_all <- readRDS(paste0(
       "data/", spp,
       "/predictions-", spp, covs, "-1n3n4n16-total-biomass-prior-FALSE.rds"
-    )) %>% filter(year > 2007)
+    )) %>% filter(year >= start_year )
   })
   try({
     d_all <- readRDS(paste0(
       "data/", spp,
       "/predictions-", spp, covs, "-1n3n4n16-mature-biomass-prior-FALSE.rds"
-    )) %>% filter(year > 2007)
+    )) %>% filter(year >= start_year )
   })
 }
 # hist(d_all$log_effort)
@@ -117,9 +120,16 @@ if (multiyear) {
   length(unique(d$year))
   years_sampled <- length(unique(d$year))
   year_range <- (years_sampled - 1) * 2
-  start_year <- 2007
+
+  # current version of this model
   if (years_sampled == 5) indices <- c(1, 2, 2, 2, 2)
   if (years_sampled == 6) indices <- c(1, 2, 2, 2, 2, 2)
+  
+  # should try running with gradient based on only later years?
+  if (years_sampled == 5) indices <- c(1, 1, 2, 2, 2)
+  if (years_sampled == 6) indices <- c(1, 1, 1, 2, 2, 2)
+  
+  
 } else {
   d <- d_all %>%
     filter(year >= start_year) %>%
@@ -134,6 +144,8 @@ delta_t_step <- year_range
 delta_t_total <- year_range
 
 glimpse(d)
+
+
 if (scrambled_years) {
   d2 <- list()
   # set.seed(9999)
@@ -158,7 +170,7 @@ if (scrambled_years) {
 #### TRIM environment to range sampled
 ```{r}
 nd_all <- readRDS(paste0("data/predicted-DO-new.rds")) %>% select(X, Y, year, temp, do_est)
-fishing <- readRDS("data/fishing-effort-grid.rds")
+fishing <- readRDS("data/_fishing_effort/fishing-effort-grid.rds")
 # fishing <- readRDS("data/fishing-effort-grid-6hr.rds")
 
 d <- left_join(d, nd_all, by = c("X", "Y", "year"))
@@ -198,6 +210,13 @@ gf <- gf %>%
 
 gf$squashed_effort <- collapse_outliers(gf$mean_effort, c(0, 0.95))
 
+
+# fished <- gf %>%
+#   select(x, y, fishing_trend, mean_effort)
+# saveRDS(fished, file = paste0("data/fishing-effort-trend-6hr-", ssid_string, ".rds"))
+```
+
+```{r eval = F}
 
 effort <- plot_vocc(gf,
   # theme_black = TRUE,
@@ -249,11 +268,7 @@ fish_t <- plot_vocc(gf,
 
 fish_t
 
-# fished <- gf %>%
-#   select(x, y, fishing_trend, mean_effort)
-# saveRDS(fished, file = paste0("data/fishing-effort-trend-6hr-", ssid_string, ".rds"))
 ```
-
 
 # Calculate climate velocity
 ### Dissolved Oxygen
@@ -278,7 +293,7 @@ gf0 <- gf0 %>%
 ```
 
 
-```{r eval=T}
+```{r eval=F}
 gf0$squashed_velocity <- collapse_outliers(gf0$velocity, c(0.005, 0.995))
 
 grad0v <- plot_vocc(gf0,
@@ -308,7 +323,7 @@ grad0v
 ```
 
 
-```{r eval=T}
+```{r eval=F}
 grad0 <- plot_vocc(gf0,
   # theme_black = TRUE,
   coast = TRUE,
@@ -357,7 +372,7 @@ gf2 <- gf2 %>%
   dplyr::mutate(X = x, Y = y)
 ```
 
-```{r eval=T}
+```{r eval=F}
 gf2$squashed_velocity <- collapse_outliers(gf2$velocity, c(0.005, 0.995))
 
 grad2v <- plot_vocc(gf2,
@@ -384,7 +399,7 @@ grad2v <- plot_vocc(gf2,
 grad2v
 ```
 
-```{r eval=T}
+```{r eval=F}
 grad2 <- plot_vocc(gf2,
   # theme = "black",
   coast = TRUE,
@@ -548,7 +563,7 @@ grad6 <- gfranges::plot_vocc(gf3t,
 grad6
 ```
 
-```{r eval=T}
+```{r eval=F}
 raster_max <- quantile(gf3t$CV, 0.90, na.rm = TRUE)
 grad7 <- gfranges::plot_vocc(gf3t,
   # theme = "black",
@@ -621,16 +636,40 @@ vocc <- left_join(vocc, temp_values) # add temp
 vocc <- mutate(vocc, species = !!species, method = "gradient")
 
 write.csv(vocc, file = paste0(
-  "data/_do_null/", age, "-w-do-nulls-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), ".csv"
+  "data/_do_new_grad/", age, "-w-do-nulls-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), ".csv"
 ))
 ```
 
+```{r eval=T}
+vocc_t <- filter(vocc, mean_biomass > lower_density_threshold)
+vocc_t$squashed_temp <- collapse_outliers(vocc_t$temp_vel, c(0.005, 0.995))
 
+grad2t <- plot_vocc(vocc_t,
+  # theme = "black",
+  coast = TRUE,
+  vec_aes = NULL,
+  # grad_vec_aes = "velocity",
+  # vec_lwd_range = c(0.5, 0.5),
+  NA_label = "NA",
+  fill_col = "squashed_temp",
+  fill_label = "temperature \nvelocity",
+  raster_alpha = 1,
+  # raster_limits = c(raster_min, raster_max),
+  na_colour = "white",
+  white_zero = TRUE,
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = sqrt #
+) + labs(
+  title = "temp velocity",
+  subtitle = paste0(min(d$year), "-", max(d$year))
+)
+
+grad2t
+```
 
 ```{r eval=T}
-
-vocc_t <- filter(vocc, mean_biomass > lower_density_threshold)
-grad2t <- plot_vocc(vocc_t,
+grad2tt <- plot_vocc(vocc_t,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -651,5 +690,112 @@ grad2t <- plot_vocc(vocc_t,
   subtitle = paste0(min(d$year), "-", max(d$year))
 )
 
-grad2t
+grad2tt
 ```
+
+```{r eval=T}
+vocc_t$squashed_do <- collapse_outliers(vocc_t$DO_vel, c(0.005, 0.995))
+
+# grad2dv <- 
+plot_vocc(vocc_t,
+  # theme = "black",
+  coast = TRUE,
+  vec_aes = NULL,
+  # grad_vec_aes = "velocity",
+  # vec_lwd_range = c(0.5, 0.5),
+  NA_label = "NA",
+  fill_col = "squashed_do",
+  fill_label = "temperature \nvelocity",
+  raster_alpha = 1,
+  # raster_limits = c(raster_min, raster_max),
+  na_colour = "white",
+  white_zero = TRUE,
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = sqrt #
+) + labs(
+  title = "DO velocity",
+  subtitle = paste0(min(d$year), "-", max(d$year))
+)
+
+# grad2dv
+```
+
+```{r eval=T}
+# grad2dt <- 
+plot_vocc(vocc_t,
+  # theme = "black",
+  coast = TRUE,
+  vec_aes = NULL,
+  # grad_vec_aes = "velocity",
+  # vec_lwd_range = c(0.5, 0.5),
+  NA_label = "NA",
+  fill_col = "DO_trend",
+  fill_label = "DO \ntrend",
+  raster_alpha = 1,
+  # raster_limits = c(raster_min, raster_max),
+  na_colour = "white",
+  white_zero = TRUE,
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = no_trans # log10 # fourth_root_power # sqrt #
+) + labs(
+  title = "DO trend",
+  subtitle = paste0(min(d$year), "-", max(d$year))
+)
+# 
+# grad2dt
+```
+
+```{r eval=T}
+vocc_t$squashed_effort <- collapse_outliers(vocc_t$mean_effort, c(0.005, 0.995))
+
+plot_vocc(vocc_t,
+  # theme_black = TRUE,
+  coast = TRUE,
+  vec_aes = NULL,
+  # grad_vec_aes = "velocity",
+  # vec_lwd_range = c(0.5, 0.5),
+  # NA_label = "NA",
+  fill_col = "squashed_effort",
+  fill_label = "mean effort",
+  raster_alpha = 1,
+  # raster_limits = c(raster_min, raster_max),
+  na_colour = "white",
+  # high_fill = "Steel Blue 4",
+  # low_fill = "Red 3",
+  # white_zero = TRUE,
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = fourth_root_power #
+) + labs(
+  title = "Fishing presssure",
+  subtitle = paste0(min(d$year), "-", max(d$year))
+)
+
+
+plot_vocc(vocc_t,
+  # theme_black = TRUE,
+  coast = TRUE,
+  vec_aes = NULL,
+  # grad_vec_aes = "velocity",
+  # vec_lwd_range = c(0.5, 0.5),
+  # NA_label = "NA",
+  fill_col = "fishing_trend",
+  fill_label = "trend",
+  raster_alpha = 1,
+  # raster_limits = c(raster_min, raster_max),
+  # high_fill = "Steel Blue 4",
+  # low_fill = "Red 3",
+  # white_zero = TRUE,
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = sqrt # no_trans #
+) + labs(
+  title = "Fishing trend",
+  subtitle = paste0(min(d$year), "-", max(d$year))
+)
+
+
+```
+
