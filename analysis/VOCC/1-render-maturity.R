@@ -86,12 +86,25 @@ list_species <- c(
 list_species <- list(
   "Buffalo Sculpin",
   "Cabezon",
-  "Pacifc Staghorn Sculpin",
+  # "Pacifc Staghorn Sculpin", # didn't find any records
+  "Threadfin Sculpin", 
   "Red Irish Lord",
   "Sturgeon Poacher",
   "Bigmouth Sculpin",
   "Kelp Greenling",
-  "Threadfn Sculpin"
+  "Aleutian Skate",
+  "Bigfin Eelpout",
+  "Black Eelpout",
+  "Wattled Eelpout",
+  "Blackbelly Eelpout",
+  "Shiner Perch",
+  "Snake Prickleback",
+  #Wolf Eel
+  "Pacific Sand Lance",
+  "Dusky Rockfish",
+  "Chilipepper",
+  "Pygmy Rockfish",
+  "C-O Sole"
 )
 
 ## NEEDS SPECIAL SETTINGS

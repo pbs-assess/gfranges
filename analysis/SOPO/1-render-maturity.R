@@ -66,14 +66,30 @@ list_species <- c(
 list_species <- list(
   "Buffalo Sculpin",
   "Cabezon",
-  "Pacifc Staghorn Sculpin",
+  "Threadfin Sculpin",
+ # "Pacifc Staghorn Sculpin",
   "Red Irish Lord",
   "Sturgeon Poacher",
   "Bigmouth Sculpin",
   "Kelp Greenling",
-  "Threadfn Sculpin"
+  "Aleutian Skate",
+  "Bigfin Eelpout",
+  "Black Eelpout",
+  "Wattled Eelpout",
+  "Blackbelly Eelpout",
+  "Shiner Perch",
+  "Snake Prickleback",
+  #Wolf Eel
+  "Pacific Sand Lance",
+  "Dusky Rockfish",
+  "Chilipepper",
+  "Pygmy Rockfish",
+  "Sand Sole",
+  "Butter Sole",
+  "C-O Sole"
 )
 
+list_species <- c("North Pacific Spiny Dogfish","Longspine Thornyhead","Sand Sole")
 
 list_regions <- c("All synoptic surveys")
 

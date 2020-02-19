@@ -87,24 +87,34 @@ species <- "Starry Flounder"
 
 
 species <- list(
-  "Buffalo Sculpin",
-  "Cabezon",
-  "Pacifc Staghorn Sculpin",
-  "Red Irish Lord",
-  "Sturgeon Poacher",
-  
-  ### more species for SOPO
-  
-  "Bigmouth Sculpin",
-  "Kelp Greenling",
-  "Threadfn Sculpin"
-  )
-
+  # "Buffalo Sculpin",
+  # "Cabezon",
+  ## "Pacifc Staghorn Sculpin", # didn't find any records
+  # "Red Irish Lord",
+  # "Sturgeon Poacher",
+  # 
+  # ### more species for SOPO
+  # 
+  # "Bigmouth Sculpin",
+  # "Kelp Greenling",
+  ##"Threadfin Sculpin" # didn't find any records
+"Aleutian Skate",
+"Bigfin Eelpout",
+"Black Eelpout",
+"Wattled Eelpout",
+"Blackbelly Eelpout",
+"Shiner Perch",
+"Snake Prickleback",
+#Wolf Eel
+"Pacific Sand Lance",
+"Dusky Rockfish",
+"Chilipepper",
+"Pygmy Rockfish",
+"C-O Sole"
+)
 getwd()
 setwd(here::here("/analysis/VOCC"))
-
-# species <- "Pacific Cod"
-
+species <- "Threadfin Sculpin" # didn't find any records
 for (i in species) {
 species <- tolower(i)
 events <- gfdata::get_survey_sets(species, ssid = c(1, 3, 4, 16))

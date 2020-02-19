@@ -9,75 +9,86 @@ list_regions <- c("Both odd year surveys")
 
 
 list_species <- c(
-  # "Big Skate",
-  # "Longnose Skate",
-  # "Spotted Ratfish",
-  # "North Pacific Spiny Dogfish",
-  # "Pacific Tomcod",
-  # "Walleye Pollock",
-  # "Pacific Cod",
-  "Lingcod",
-  "Sablefish",
+  "Aleutian Skate",
+  "Big Skate",
+  "Longnose Skate",
+  "Sandpaper Skate",
+  "North Pacific Spiny Dogfish",
+  "Brown Cat Shark",
+  "Spotted Ratfish",
   
-  # "Bocaccio",
+  "Pacific Tomcod",
+  "Walleye Pollock",
+  "Pacific Cod",
+  "Lingcod",
+  "Pacific Hake",
+  "Buffalo Sculpin",
+  "Cabezon",
+  #"Pacifc Staghorn Sculpin",
+  "Red Irish Lord",
+  "Sturgeon Poacher",
+  "Bigmouth Sculpin",
+  "Kelp Greenling",
+  "Threadfin Sculpin",
+  "Bigfin Eelpout",
+  "Black Eelpout",
+  "Wattled Eelpout",
+  "Blackbelly Eelpout",
+  "Shiner Perch",
+  "Snake Prickleback",
+  # "Wolf Eel"
+  "Pacific Sand Lance",
+
+  "Sablefish",
+  "Bocaccio",
   "Canary Rockfish",
+  "Chilipepper",
   "Copper Rockfish", # small sample
-  # "Darkblotched Rockfish", # need predictions still
+  "Darkblotched Rockfish", # need predictions still
+  "Dusky Rockfish",
   "Greenstriped Rockfish",
+  "Harlequin Rockfish",
   "Pacific Ocean Perch",
+  "Pygmy Rockfish",
   "Quillback Rockfish",
   "Redbanded Rockfish",
-  # "Redstripe Rockfish", # faild to converge?
+  "Redstripe Rockfish",
+  "Rosethorn Rockfish",
   "Rougheye/Blackspotted Rockfish Complex",
-  # "Sharpchin Rockfish",
-  # "Shortbelly Rockfish", # small sample
-  # "Shortraker Rockfish",
+  "Sharpchin Rockfish",
+  "Shortbelly Rockfish", # small sample
+  "Shortraker Rockfish",
   "Silvergray Rockfish",
   "Splitnose Rockfish",
   "Widow Rockfish", # schooling
-  # "Yellowmouth Rockfish",
-  # "Yellowtail Rockfish", # schooling
-  # "Yelloweye Rockfish" # ran mature only with AR1, rerunning without
-  # "Longspine Thornyhead",
+  "Yellowmouth Rockfish",
+  "Yellowtail Rockfish", # schooling
+  "Yelloweye Rockfish", 
+  "Longspine Thornyhead",
   "Shortspine Thornyhead",
 
-  # "Pacific Halibut",
+  "Pacific Halibut",
   "Arrowtooth Flounder",
+  "Butter Sole",
+  "C-O Sole",
   "Curlfin Sole",
   "Dover Sole",
   "English Sole",
-  # "Flathead Sole", # needs predictions
+  "Flathead Sole",
+  "Pacific Sanddab", 
   "Petrale Sole",
-  # "Rex Sole", # needs predictions
-  "Southern Rock Sole"
-)
-
-
-list_species <- c(
-  # "Pacific Hake",
-  # "Pacific Tomcod",
-  # "Rosethorn Rockfish",
-  # "Slender Sole",
-  # "Pacific Sanddab",
-  # "Harlequin Rockfish",
-  # "Copper Rockfish" ,
-  # # "Shortbelly Rockfish",
-  "Sandpaper Skate"
-  # "Brown Cat Shark"
-)
-
-list_species <- c( 
-#   "Sand Sole",
-# "Butter Sole",
-"Starry Flounder"
+  "Rex Sole",
+  "Southern Rock Sole",
+  "Slender Sole",
+  "Sand Sole",
+  "Starry Flounder"
   )
-
 
 # dir.create(file.path("html/biomass-by-depth"))
 for (r_h in seq_along(list_regions)) {
   for (spp_i in seq_along(list_species)) {
     spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
-    covs <- "-no-covs" # string describing model covariates
+    covs <- "-no-covs-300" # string describing model covariates
     # covs <- "-ssid-only"
     try({
       rmarkdown::render("2-trawl-no-covs-model.Rmd",
@@ -87,20 +98,21 @@ for (r_h in seq_along(list_regions)) {
           covariates = "", # additional non-climate variables
           covs = covs,
           # start_year = 2005,
-          knots = 200, #250
+          knots = 300, #250
           AR1 = TRUE,
           fixed_spatial = FALSE,
-          # update_model = FALSE,
-          # update_model_check = FALSE, 
+          update_model = FALSE,
+          update_model_check = FALSE,
           # update_predictions = FALSE,
-          update_model = TRUE,
-          update_predictions = TRUE,
-          update_model_check = TRUE,
+          # update_model = TRUE,
+          # update_predictions = TRUE,
+          # update_model_check = TRUE,
           update_index = TRUE
+          # update_index = FALSE
         ),
         output_file = paste0(
           "html/density-models/biomass-by",
-          covs, "-", spp, "-odd-reml-200.html"
+          covs, "-", spp, "-odd-reml.html"
         ),
         envir = env
       )
