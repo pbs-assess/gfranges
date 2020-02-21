@@ -596,7 +596,7 @@ grad0dv <- plot_vocc(gf0,
 grad0dv
 ``` 
 
-### Gradient-based BIOTIC VECTORS
+### BIOTIC VECTORS
 ```{r}
 gf3 <- vocc_gradient_calc(d, "est",
   scale_fac = scale_fac,
@@ -692,12 +692,14 @@ gradbv <- plot_vocc(gf3t,
   # vec_lwd_range = c(0.5, 0.5),
   NA_label = "NA",
   fill_col = "dvocc",
-  fill_label = "biotic \ndvocc",
+  fill_label = "km/decade",
   raster_alpha = 1,
   # raster_limits = c(raster_min, raster_max),
-  na_colour = "white",
-  white_zero = TRUE,
-  vec_alpha = 0.35,
+  # raster_limits = c(raster_min, raster_max),
+  na_colour = "black",
+  # white_zero = TRUE,
+  high_fill = "Steel Blue 4",
+  low_fill = "Red 3",
   axis_lables = FALSE,
   transform_col = no_trans # fourth_root_power # sqrt #
 ) + labs(
@@ -866,7 +868,7 @@ grad7
 ```
 
 
-### Save gradient-based VOCCs
+### Save VOCCs
 ```{r}
 
 biotic_values <- gf3 %>%
@@ -935,12 +937,40 @@ grad2t <- plot_vocc(vocc_t,
   raster_alpha = 1,
   # raster_limits = c(raster_min, raster_max),
   na_colour = "white",
+  mid_fill = "lightyellow",
   white_zero = TRUE,
   vec_alpha = 0.35,
   axis_lables = FALSE,
   transform_col = sqrt #
 ) + labs(
   title = "temp velocity",
+  subtitle = paste0(min(d$year), "-", max(d$year))
+)
+
+grad2t
+```
+
+```{r eval=T}
+grad2t <- plot_vocc(vocc_t,
+  # theme = "black",
+  coast = TRUE,
+  vec_aes = NULL,
+  # grad_vec_aes = "velocity",
+  # vec_lwd_range = c(0.5, 0.5),
+  NA_label = "NA",
+  fill_col = "temp_dvocc",
+  fill_label = "temperature \nkm/decade",
+  raster_alpha = 1,
+  # raster_limits = c(raster_min, raster_max),
+  na_colour = "white",
+   # viridis_option = "C",
+   mid_fill = "lightyellow",
+  white_zero = TRUE,
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = sqrt #
+) + labs(
+  title = "temp distance-based velocity",
   subtitle = paste0(min(d$year), "-", max(d$year))
 )
 
@@ -959,8 +989,9 @@ grad2tt <- plot_vocc(vocc_t,
   fill_label = "temperature \ntrend",
   raster_alpha = 1,
   # raster_limits = c(raster_min, raster_max),
-  na_colour = "white",
+  na_colour = "grey",
   white_zero = TRUE,
+   mid_fill = "lightyellow",
   vec_alpha = 0.35,
   axis_lables = FALSE,
   transform_col = no_trans # log10 # fourth_root_power # sqrt #
