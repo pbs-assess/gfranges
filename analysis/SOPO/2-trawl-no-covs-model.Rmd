@@ -7,11 +7,8 @@ params:
     # species: "Redbanded Rockfish"
     # species: "North Pacific Spiny Dogfish"
     # species: "Pacific Ocean Perch"
-    # species: "Pacific Sand Lance"
-    # species: "Pacific Cod"
-    # species: "Buffalo Sculpin"
-    # species: "Cabezon"
-    species: "Harlequin Rockfish"
+    species: "Pacific Sand Lance"
+    # species: "Pacific Herring"
     # region: "All synoptic surveys"
     region: "Both odd year surveys"
     start_year: 2003
@@ -21,10 +18,10 @@ params:
     covs: "-no-covs-300" # covariate string used to name model rds
     AR1: TRUE
     fixed_spatial: FALSE
-    update_model: FALSE #TRUE
+    update_model: FALSE
     update_model_check: FALSE #TRUE
     update_predictions: FALSE #TRUE
-    update_index: TRUE
+    update_index: FALSE
 ---
 
 ```{r global_options, include=FALSE}
@@ -109,17 +106,17 @@ biomass <- readRDS(paste0(
   positive_sets <- filter(biomass, density != 0)
   prop_pos <- round(nrow(positive_sets)/nrow(biomass), digits = 3)
       if (prop_pos < 0.1) {
-        update_model <- T
-        update_model_check <- T
-        update_predictions <- T
-        update_index <- T
+        # update_model <- T
+        # update_model_check <- T
+        # update_predictions <- T
+        # update_index <- T
         knots <- 150
         }
     if (prop_pos < 0.05) {
-        update_model <- F
-        update_model_check <- F
-        update_predictions <- F
-        update_index <- T
+        # update_model <- F
+        # update_model_check <- F
+        # update_predictions <- F
+        # update_index <- T
         knots <- 150
         }
 
@@ -551,9 +548,10 @@ if (exists("ad_predictions")) {
 ```{r, error=TRUE}
 legend_coords <- c(0.9, 0.17) #"none"
 
+
 if (exists("adult_predictions")) {
   
- p_adult_all <- adult_predictions %>% filter(year>2004) %>%
+ p_adult_all <- adult_predictions %>% filter(!((year<2005) & (ssid == 3)))%>%
    mutate(x = X, y = Y, X = 2 * round(X/2), Y = 2 * round(Y/2)) %>%  
    plot_facet_map("est_exp", 
       raster_limits = c(0, max_raster_ad),
@@ -566,7 +564,7 @@ if (exists("adult_predictions")) {
  print(p_adult_all)
   
 try({
- p_imm_all <- imm_predictions %>% filter(year>2004) %>%
+ p_imm_all <- imm_predictions %>% filter(!((year<2005) & (ssid == 3)))%>%
     mutate(x = X, y = Y, X = 2 * round(X/2), Y = 2 * round(Y/2)) %>%
     plot_facet_map("est_exp",
       raster_limits = c(0, max_raster_imm),
@@ -581,7 +579,7 @@ print(p_imm_all)
   
 } else {
 
-p_adult_all <- predictions  %>% 
+p_adult_all <- predictions  %>% filter(!((year<2005) & (ssid == 3))) %>% #filter(year>2003) %>%
   mutate(x = X, y = Y, X = 2 * round(X/2), Y = 2 * round(Y/2)) %>% 
   plot_facet_map("total_bio",
     raster_limits = c(0, max_raster),
