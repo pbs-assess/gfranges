@@ -15,9 +15,9 @@
 #' @param variable_names Name(s) of column containing parameter(s).
 #' @param round_fact Speed up searches by rounding (1 = integers; 10 = 10ths; 100 = 100ths).
 #'  If NULL, will use 10x precision of the plus_minus threshold when `match_logic` = NULL.
-#' @param min_thresholds Optional vector of negative thresholds.
+#' @param min_thresholds Optional vector of negative thresholds. Apply 'Inf' for no min threshold. 
 #'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.
-#' @param max_thresholds Optional vector of positive thresholds.
+#' @param max_thresholds Optional vector of positive thresholds. Apply 'Inf' for no max threshold. 
 #'  Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.
 #' @param plus_minus Vector of plus/minus threshold(s) to define a symmetical (default = 1 unit) climate match.
 #' @param match_logic An optional vector of logical functions applied using 'rounding' of allnclimate values.
