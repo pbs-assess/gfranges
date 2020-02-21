@@ -27,6 +27,11 @@ is_null <- T
 stats <- readRDS(paste0("data/life-history-stats.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 stats$genus <- tolower(stats$group)
+stats$group[stats$group == "SHARK"] <- "DOGFISH"
+# stats$group[stats$group == "SHARK"] <- "SHARKS & SKATES"
+# stats$group[stats$group == "SKATE"] <- "SHARKS & SKATES"
+stats$group[stats$group == "HAKE"] <- "COD"
+
 
 #### LOAD MATURE VOCC DATA
 # data_type <- "multi-spp-biotic-vocc-mature"
@@ -42,8 +47,8 @@ data_type <- "mature-95-all-do"
 
 #  null_number <- ""
 null_number <- "-1"
- null_number <- "-2"
-  null_number <- "-3"
+ # null_number <- "-2"
+ #  null_number <- "-3"
 
 d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
 d <- na.omit(d) %>% as_tibble()
@@ -367,7 +372,7 @@ if (model_type == "-vel-no-fishing") {
 # d_bio$`(Intercept)` <- 0 
 
 X_pj <- as.matrix(bind_rows(
-  # select(d_do, -chopstick, -species, -genus),
+  select(d_do, -chopstick, -species, -genus),
   select(d_temp, -chopstick, -species, -genus)#,
   # select(d_bio, -chopstick, -species, -genus) # ,
   # select(d_fish, -chopstick, -species, -genus) 
@@ -376,7 +381,7 @@ X_pj <- as.matrix(bind_rows(
 ))
 
 pred_dat <- bind_rows(
-  # mutate(d_do, type = "do"),
+  mutate(d_do, type = "do"),
   mutate(d_temp, type = "temp")#,
   # mutate(d_bio, type = "biomass")
    # mutate(d_fish, type = "fish")
@@ -418,12 +423,12 @@ if (y_type == "trend") {
     model_type <- paste0(model_type, "-genus")
     new_model <- vocc_regression(d, y,
       X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-      knots = 200, group_by_genus = T, student_t = F
+      knots = 400, group_by_genus = T, student_t = F
     )
   } else {
     new_model <- vocc_regression(d, y,
       X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-      knots = 200, group_by_genus = FALSE, student_t = F
+      knots = 400, group_by_genus = FALSE, student_t = F
     )
   }
 
@@ -440,12 +445,12 @@ if (y_type == "trend") {
     model_type <- paste0(model_type, "-genus")
     new_model <- vocc_regression(d, y,
       X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-      knots = 200, group_by_genus = T, student_t = T
+      knots = 400, group_by_genus = T, student_t = T
     )
   } else {
     new_model <- vocc_regression(d, y,
       X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-      knots = 200, group_by_genus = FALSE, student_t = T
+      knots = 400, group_by_genus = FALSE, student_t = T
     )
   }
 
@@ -560,36 +565,36 @@ get_aic(model)
 #### CHECK MODEL RESIDUALS ####
 ##############################
 # # 
-# # # library(ggsidekick) # for fourth_root_power if gfranges not loaded
-# ggplot(model$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
-#   scale_fill_gradient2(trans = fourth_root_power) + gfplot::theme_pbs() +
-#   facet_wrap(~species)
-# # 
-# # # ggsave("figs/vel-model-omega.png", width = 12, height = 12, dpi = 300)
-# # # ggsave("figs/trend-model-omega.png", width = 12, height = 12, dpi = 300)
-# # 
-# r <- model$obj$report()
-# model$data$residual <- model$y_i - r$eta_i
-# 
-# model$data %>%
-#   mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
-#   mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
-#   mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
-#   mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
-#   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-#   scale_fill_gradient2() + #gfplot::theme_pbs() +
-#   facet_wrap(~species)
-# 
-# # # ggsave("figs/vel-model-residuals.png", width = 12, height = 12, dpi = 300)
-# # # ggsave("figs/trend-model-residuals.png", width = 12, height = 12, dpi = 300)
-# # 
-# # norm_resids <- qres_student(model)
-# # norm_resids <- norm_resids[is.finite(norm_resids)]
-# # # qqnorm(norm_resids)
-# hist(norm_resids)
-# 
-# # norm_resids <- qres_student(model_genus)
-# # norm_resids <- norm_resids[is.finite(norm_resids)]
+# # library(ggsidekick) # for fourth_root_power if gfranges not loaded
+ggplot(model$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2(trans = fourth_root_power) + gfplot::theme_pbs() +
+  facet_wrap(~species)
+#
+# # ggsave("figs/vel-model-omega.png", width = 12, height = 12, dpi = 300)
+# # ggsave("figs/trend-model-omega.png", width = 12, height = 12, dpi = 300)
+#
+r <- model$obj$report()
+model$data$residual <- model$y_i - r$eta_i
+
+model$data %>%
+  mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
+  mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
+  mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
+  mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
+  ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2() + gfplot::theme_pbs() +
+  facet_wrap(~species)
+
+# # ggsave("figs/vel-model-residuals.png", width = 12, height = 12, dpi = 300)
+# # ggsave("figs/trend-model-residuals.png", width = 12, height = 12, dpi = 300)
+#
+norm_resids <- qres_student(model)
+norm_resids <- norm_resids[is.finite(norm_resids)]
+# # qqnorm(norm_resids)
+hist(norm_resids)
+
+# norm_resids <- qres_student(model_genus)
+# norm_resids <- norm_resids[is.finite(norm_resids)]
 # # hist(norm_resids)
 # 
 # # qqnorm(model$data$residual)
