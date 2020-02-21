@@ -83,7 +83,7 @@ make_vector_data <- function(data,
     end_data <- list(end_raster)
     names(end_data)[[1]] <- parameter
 
-    # FIXME: need to change function to deal with different time steps within a brick
+    # FIXME: could change function to deal with different time steps within a brick
     slopedat <- calcslope(rbrick, delta_t_step = delta_t_step) # vocc::calcslope for comparison
     slopedat$units_per_decade <- slopedat$slope * 10
   } else {

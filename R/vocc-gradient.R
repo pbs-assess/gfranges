@@ -5,6 +5,7 @@
 #' @param scale_fac Controls how the original 2-km projection is aggregated
 #'    (e.g. a value of 5 means that the raster would be reprojected to 10km grid).
 #' @param time_step Time variable.
+#' @param delta_t_step Time between values of time variable.
 #' @param indices If null, gradient will be based on mean across all times. 
 #'    If integer vector of same length as number of unique time steps, 
 #'    gradient will be based on final time steps given largest index value. 
@@ -14,6 +15,7 @@
 #'    If TRUE will save 'cv' in log space and true 'sd'.
 #' @param quantile_cutoff Used for plotting to set min and max angles of vectors.
 #'    Defaults to 0.05.
+
 #'
 #' @export
 #'
@@ -21,6 +23,7 @@ vocc_gradient_calc <- function(data,
                                layer,
                                scale_fac = 1,
                                time_step = "year",
+                               delta_t_step = 2,
                                indices = NULL,
                                divisor = 10,
                                latlon = FALSE,
@@ -56,7 +59,8 @@ vocc_gradient_calc <- function(data,
   
   
   # Then calculate the trend per pixel:
-  slopedat <- vocc::calcslope(rbrick, divisor = divisor)
+  # slopedat <- vocc::calcslope(rbrick, divisor = divisor) # when using vocc:: code with 2 year time steps, results are doubled
+  slopedat <- calcslope(rbrick, delta_t_step = delta_t_step) 
   
   # Then get the mean values for a time period
   if (!is.null(indices)) {
@@ -96,8 +100,8 @@ vocc_gradient_calc <- function(data,
   rtrend <- rgrad_lon <- rgrad_lat <- rvocc <- rgrad <- angle <- magn <- raster::raster(rbrick)
   rgrad_lat[spatx$icell] <- spatx$NS # latitude shift, NS
   rgrad_lon[spatx$icell] <- spatx$WE # longitude shift, WE
-  rtrend[slopedat$icell] <- slopedat$slope # why was this multiplied by -1?
-  rvocc[velodf$icell] <- velodf$velocity
+  rtrend[slopedat$icell] <- slopedat$slope*divisor # why was this multiplied by -1?
+  rvocc[velodf$icell] <- velodf$velocity*divisor
   rgrad[velodf$icell] <- velodf$spatial_gradient
 
   # convert to data frames for ggplot
