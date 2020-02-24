@@ -6,11 +6,12 @@ library(sdmTMB)
 setwd(here::here("analysis", "VOCC"))
 d <- readRDS("data/mature-all-do-untrimmed.rds")
 # d <- readRDS("data/mature-all-temp-untrimmed.rds")
+d <- readRDS("data/mature-all-do-dvocc.rds")
 d <- na.omit(d) %>% as_tibble()
 
 all_species <- unique(d$species)
 
-null_number <- 3
+null_number <- 1
 trim_threshold <- 0.05
 
 if (trim_threshold == 0.05) { trim_percent <- 95}

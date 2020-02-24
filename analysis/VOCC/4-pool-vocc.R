@@ -5,6 +5,7 @@ library("dplyr")
 # covs <- "-fixed"
 mydir = paste0( "_new_null")
 mydir = paste0( "_do_null")
+mydir = paste0( "_dvocc")
 
 ####################
 myfiles <- list.files(path = mydir, pattern = "*.csv", full.names = TRUE)
@@ -20,4 +21,8 @@ saveRDS(biotic, file = paste0(
 
 saveRDS(biotic, file = paste0(
   "mature-all-do-untrimmed.rds"
+))
+
+saveRDS(biotic, file = paste0(
+  "mature-all-do-dvocc.rds"
 ))
