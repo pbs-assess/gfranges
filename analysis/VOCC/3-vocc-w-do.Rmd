@@ -6,9 +6,9 @@ output: html_document
 params: 
     # species: "Redbanded Rockfish"
     # species: "Canary Rockfish"
-    species: "English Sole"
+    # species: "English Sole"
     # species: "Dover Sole"
-    # species: "Flathead Sole"
+    species: "Flathead Sole"
     # species: "Sablefish"
     # species: "Arrowtooth Flounder"
     immature: FALSE
@@ -121,14 +121,14 @@ if (multiyear) {
   years_sampled <- length(unique(d$year))
   year_range <- (years_sampled - 1) * 2
 
-  # current version of this model
-  if (years_sampled == 5) indices <- c(1, 2, 2, 2, 2)
-  if (years_sampled == 6) indices <- c(1, 2, 2, 2, 2, 2)
-  
+  # # alternate version of this model
+  # if (years_sampled == 5) indices <- c(1, 2, 2, 2, 2)
+  # if (years_sampled == 6) indices <- c(1, 2, 2, 2, 2, 2)
+
   # should try running with gradient based on only later years?
-  if (years_sampled == 5) indices <- c(1, 1, 2, 2, 2)
-  if (years_sampled == 6) indices <- c(1, 1, 1, 2, 2, 2)
-  
+  if (years_sampled == 5) indices <- c(1, 1, 1, 1, 2)
+  if (years_sampled == 6) indices <- c(1, 1, 1, 1, 1, 2)
+
   
 } else {
   d <- d_all %>%
@@ -277,7 +277,7 @@ gf0 <- vocc_gradient_calc(d, "do_est",
   scale_fac = scale_fac,
   # all layers with max indice will be averaged for spatial gradient
   # if default (NULL) will use all years
-  # indices = indices,
+  indices = indices,
   divisor = 1,
   quantile_cutoff = 0.05
 )
@@ -358,7 +358,7 @@ gf2 <- vocc_gradient_calc(d, "temp",
   scale_fac = scale_fac,
   # all layers with max indice will be averaged for spatial gradient
   # if default (NULL) will use all years
-  # indices = indices,
+  indices = indices,
   divisor = 1,
   quantile_cutoff = 0.05
 )
@@ -426,11 +426,9 @@ grad2
 
 ### Gradient-based BIOTIC VECTORS
 ```{r}
-# indices <- c(1,2,3,4,5)
-
 gf3 <- vocc_gradient_calc(d, "est",
   scale_fac = scale_fac,
-  # indices = indices,
+  indices = indices,
   divisor = 1,
   log_space = TRUE,
   quantile_cutoff = 0.025
@@ -484,7 +482,32 @@ grad3 <- gfranges::plot_vocc(gf3t,
 grad3
 ```
 
+```{r eval=T}
+# gf3t$squashed_velocity <- collapse_outliers(gf3t$velocity, c(0.005, 0.995))
 
+grad3 <- gfranges::plot_vocc(gf3t,
+  # theme = "black",
+  coast = TRUE,
+  vec_aes = NULL,
+  # grad_vec_aes = "velocity",
+  # vec_lwd_range = c(0.5, 0.5),
+  NA_label = "NA",
+  fill_col = "gradient",
+  fill_label = "biotic \ngradient",
+  raster_alpha = 1,
+  # raster_limits = c(raster_min, raster_max),
+  na_colour = "black",
+  # white_zero = TRUE,
+  high_fill = "Steel Blue 4",
+  low_fill = "Red 3",
+  axis_lables = FALSE,
+  transform_col = sqrt # no_trans #
+) + labs(
+  title = paste0(species, " (", age, ")"), #
+  subtitle = paste0("Biotic gradient for final year")
+)
+grad3
+```
 
 ```{r eval=T}
 #raster_max <- quantile(gf3$mean_biomass, 0.995, na.rm = T)
@@ -705,7 +728,7 @@ plot_vocc(vocc_t,
   # vec_lwd_range = c(0.5, 0.5),
   NA_label = "NA",
   fill_col = "squashed_do",
-  fill_label = "temperature \nvelocity",
+  fill_label = "DO \nvelocity",
   raster_alpha = 1,
   # raster_limits = c(raster_min, raster_max),
   na_colour = "white",
