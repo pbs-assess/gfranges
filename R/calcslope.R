@@ -7,8 +7,7 @@
 #'
 #' @export
 calcslope <- function(rx, delta_t_step = 2, na.rm = TRUE) {
-  # FIXME: Can we make this robust to uneven timesteps?
-  # this function is a modified version of Chris Brown's 
+  # the function below is a modified version of Chris Brown's 
   # (https://github.com/cbrown5/vocc/blob/master/R/calcslope.R)
   # gives same result in intial tests, but may be slower
   # use vocc::calcslope from devtools::install_github("seananderson/vocc") to apply his method 
@@ -37,3 +36,31 @@ calcslope <- function(rx, delta_t_step = 2, na.rm = TRUE) {
   slope <- numerator / denom
   data.frame(slope = slope, N = N, time_step = delta_t_step, coord, icell)
 }
+
+#' Calculates slope for regression line through values of raster layers for each cell
+#'
+#' @param x Cell of a raster as provided by `raster::calc(rbrick, raster_slopes)`
+#'
+#' @export
+raster_slopes <- function(x) { 
+  if (length(which(!is.na(x))) < 3){ 
+     return(NA)
+  } else { 
+      try({
+      time <- sub("X", "", names(x))
+      time <- as.integer(time)
+      })
+    
+      if (length(which(!is.na(time))) > 1) {
+      m <- lm(x ~ time)
+      return(m$coefficients[[2]])
+      } else {
+        stop("raster not labelled with time") 
+        # could be replaced with warning: 
+        # message("In absence of time labels for raster layers, trends assume neven timesteps.")
+        # slices <- seq(1:length(x))
+        # m <- lm(x ~ slices)
+        # return(m$coefficients[[2]])
+      }
+  }
+  }
