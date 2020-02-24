@@ -439,8 +439,9 @@ do_median_sd <- median(gf0$sd, na.rm = T)
 
 do_sd_choice <- do_median_sd
 
-lower_change_t <- c(Inf, do_sd_choice*2) 
-upper_change_t <- c(temp_sd_choice*2, do_sd_choice*2) 
+
+lower_change_d <- c(do_sd_choice*2) 
+upper_change_d <- c(do_sd_choice*2) 
 
 # variable_names <- c("temp")
 # input_cell_size <- 2
@@ -449,8 +450,8 @@ upper_change_t <- c(temp_sd_choice*2, do_sd_choice*2)
 max_dist_all_years <- 10 * year_range
 
 
-dvocc_d <- make_vector_data(list(d, d),
-  variable_names = c("temp", "do_est"),
+dvocc_d <- make_vector_data(d,
+  variable_names = c("do_est"),
   ssid = model_ssid,
   # start_time = 2013,
   # end_time = 2015,
@@ -461,8 +462,8 @@ dvocc_d <- make_vector_data(list(d, d),
   delta_t_total = years_sampled,
   delta_t_step = 2,
   indices = indices,
-  min_thresholds = lower_change_t,
-  max_thresholds = upper_change_t,
+  min_thresholds = lower_change_d,
+  max_thresholds = upper_change_d,
   round_fact = 10
 )
 
@@ -479,6 +480,49 @@ dv_d <- dvocc_d %>% select(icell, x, y, dvocc) %>% unique()
 # glimpse(gf0)
 
 gf0$dvocc <- dv_d$dvocc
+
+
+
+lower_change_td <- c(Inf, do_sd_choice*2) 
+upper_change_td <- c(temp_sd_choice*2, do_sd_choice*2) 
+
+# variable_names <- c("temp")
+# input_cell_size <- 2
+
+## USED for truncating velocities?
+max_dist_all_years <- 10 * year_range
+
+
+dvocc_td <- make_vector_data(list(d, d),
+  variable_names = c("temp", "do_est"),
+  ssid = model_ssid,
+  # start_time = 2013,
+  # end_time = 2015,
+  # skip_time = skip_time,
+  input_cell_size = 2,
+  scale_fac = scale_fac,
+  min_dist = 0,
+  delta_t_total = years_sampled,
+  delta_t_step = 2,
+  indices = indices,
+  min_thresholds = lower_change_td,
+  max_thresholds = upper_change_td,
+  round_fact = 10
+)
+
+# glimpse(dvocc_d)
+dvocc_td <- dvocc_td %>% mutate(dvocc = if_else(do_est.slope < 0, -km_per_decade, km_per_decade), trend= do_est.slope)
+
+dvocc_td <- dvocc_td %>% mutate(dvocc = if_else(dvocc > (max_dist_all_years/ year_range)*10, 
+  (max_dist_all_years/ year_range)*10, dvocc))
+dvocc_td <- mutate(dvocc_td, dvocc = if_else(dvocc < -(max_dist_all_years / year_range)*10,
+  -(max_dist_all_years / year_range)*10, dvocc))
+
+dv_td <- dvocc_td %>% select(icell, x, y, dvocc) %>% unique()
+# glimpse(dv_b)
+# glimpse(gf0)
+
+gf0$dvocc_both <- dv_td$dvocc
 ```
 
 ```{r eval=F}
@@ -872,7 +916,7 @@ DO_values <- gf0 %>%
     DO_grad = gradient,
     mean_DO = mean
   ) %>%
-  select(x, y, DO_vel, DO_dvocc, DO_trend, DO_grad, mean_DO)
+  select(x, y, DO_vel, DO_dvocc, DO_trend, DO_grad, mean_DO, dvocc_both)
 
 temp_values <- gf2 %>%
   rename(
