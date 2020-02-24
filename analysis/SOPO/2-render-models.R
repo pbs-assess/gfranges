@@ -38,7 +38,7 @@ list_species <- c(
   "Snake Prickleback",
   # "Wolf Eel"
   "Pacific Sand Lance",
-
+  "Pacific Herring",
   "Sablefish",
   "Bocaccio",
   "Canary Rockfish",
@@ -103,16 +103,16 @@ for (r_h in seq_along(list_regions)) {
           fixed_spatial = FALSE,
           update_model = FALSE,
           update_model_check = FALSE,
-          # update_predictions = FALSE,
+          update_predictions = FALSE,
           # update_model = TRUE,
           # update_predictions = TRUE,
           # update_model_check = TRUE,
-          update_index = TRUE
-          # update_index = FALSE
+          # update_index = TRUE
+          update_index = FALSE
         ),
         output_file = paste0(
           "html/density-models/biomass-by",
-          covs, "-", spp, "-odd-reml.html"
+          covs, "-", spp, "-new-maps.html"
         ),
         envir = env
       )

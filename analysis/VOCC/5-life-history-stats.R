@@ -117,6 +117,7 @@ species <- c(
   "Snake Prickleback",
   # "Wolf Eel"
   "Pacific Sand Lance",
+  "Pacific Herring",
   "Sablefish",
   "Bocaccio",
   "Canary Rockfish",

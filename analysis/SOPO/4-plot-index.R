@@ -207,6 +207,7 @@ plot_indices <- function(data,
 
 all_indices3 <- all_indices2[order(-all_indices2$total_kg_2019),]
 kg_totals <- sort(unique(all_indices3$total_kg_2019), decreasing = T)
+#(unique(all_indices3$species))
 
 kg_totals[1:10]
 alldata1 <- all_indices3 %>% filter(total_kg_2019 > 6500) 
@@ -225,26 +226,37 @@ alldata4 <- all_indices3 %>% filter(total_kg_2019 <= 1000) %>%
 
 kg_totals[41:50]
 alldata5 <- all_indices3 %>% filter(total_kg_2019 <= 107) %>% 
-  filter(total_kg_2019 > 34) 
+  filter(total_kg_2019 > 50) 
 
 kg_totals[51:60]
-alldata6 <- all_indices3 %>% filter(total_kg_2019 <= 34) %>% 
-  filter(total_kg_2019 > 4) 
+alldata6 <- all_indices3 %>% filter(total_kg_2019 <= 50) %>% 
+  filter(total_kg_2019 > 5) 
 
-kg_totals[61:66]
-alldata7 <- all_indices3 %>% filter(total_kg_2019 <= 4) 
+kg_totals[61:68]
+alldata7 <- all_indices3 %>% filter(total_kg_2019 <= 5) 
 
-# save as pdfs 4x10 inch portraits
-p <- plot_indices(alldata1)
-p <- plot_indices(alldata2)
-p <- plot_indices(alldata3)
-p <- plot_indices(alldata4)
-p <- plot_indices(alldata5)
-p <- plot_indices(alldata6)
-p <- plot_indices(alldata7)
+# # save as pdfs 4x10 inch portraits
+# p <- plot_indices(alldata1)
+# p <- plot_indices(alldata2)
+# p <- plot_indices(alldata3)
+# p <- plot_indices(alldata4)
+# p <- plot_indices(alldata5)
+# p <- plot_indices(alldata6)
+# p <- plot_indices(alldata7)
+# p
+# ggsave("figs/panel7.pdf", plot = p, device = "pdf", width = 4, height = 10, units = c("in"),
+#   dpi = 300)
 
-ggsave("panel7.pdf", plot = p, device = "pdf", width = 4, height = 10, units = c("in"),
-  dpi = 300)
+# ### Shallow species
+# all_indices4 <- all_indices2[order(all_indices2$depth),]
+# # kg_totals <- sort(unique(all_indices3$total_kg_2019), decreasing = T)
+# 
+# shallow <- all_indices4 %>% filter(depth <= 100) %>% filter(group != "FLATFISH") %>% filter(group != "SKATE") %>% filter(total_kg_2019 >0.5) 
+# 
+# p <- plot_indices(shallow)
+# ggsave("figs/shallow.pdf", plot = p, device = "pdf", width = 4, height = 10, units = c("in"),
+#   dpi = 300)
+
 
 # ### top 20 species
 # alldata20 <- all_indices3 %>% 

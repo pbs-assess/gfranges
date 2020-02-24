@@ -107,6 +107,9 @@ list_species <- list(
   "C-O Sole"
 )
 
+
+list_species <- c("Pacific Herring")
+
 ## NEEDS SPECIAL SETTINGS
 list_species <- c("North Pacific Spiny Dogfish","Longspine Thornyhead","Sand Sole")
 
@@ -129,7 +132,7 @@ for (r_h in seq_along(list_regions)) {
             threshold = 0.5,
             split = TRUE
           ),
-          output_file = paste0("html/maturity/maturity-", spp, "0.05.html"),
+          output_file = paste0("html/maturity/maturity-", spp, "0.5.html"),
           envir = env
         )
       })
