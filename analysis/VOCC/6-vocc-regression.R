@@ -8,20 +8,25 @@ compile("vocc_regression.cpp")
 dyn.load(dynlib("vocc_regression"))
 source("vocc-regression-functions.R")
 
+knots <- 500
+
 y_type <- "vel"
 y_type <- "trend"
 
-model_type <- "-vel"
-model_type <- "-vel-no-fishing"
+model_type <- "-vel-both"
+# model_type <- "-vel-no-fishing"
 # model_type <- "-trend"
 # # model_type <- "-trend-no-fish-trend"
 # # model_type <- "-trend-no-fishing"
 #  model_type <- "-trend-no-covs"
 #  model_type <- "-trend-only"
  # model_type <- "-trend-grad"
-model_type <- "-trend-with-do"
+# model_type <- "-trend-with-do"
+
+# model_type <- "-dist-vel-temp"
+
 w_genus <- F
-is_null <- T
+is_null <- F
 
 
 stats <- readRDS(paste0("data/life-history-stats.rds"))
@@ -48,7 +53,7 @@ data_type <- "mature-95-all-do"
 #  null_number <- ""
 null_number <- "-1"
  # null_number <- "-2"
- #  null_number <- "-3"
+  null_number <- "-3"
 
 d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
 d <- na.omit(d) %>% as_tibble()
@@ -76,8 +81,11 @@ select(d, genus, species) %>%
 
 #### PREP TEMP VARIABLES ####
 d$squashed_temp_vel <- collapse_outliers(d$temp_vel, c(0.005, 0.995))
+
+d$squashed_temp_dvocc <- collapse_outliers(d$temp_dvocc, c(0.005, 0.995))
 # plot(squashed_do_vel ~ squashed_temp_vel, data = d, col = "#00000010")
 d$squashed_temp_vel_scaled <- scale(d$squashed_temp_vel, center = FALSE)
+d$squashed_temp_dvocc_scaled <- scale(d$squashed_temp_dvocc, center = F)
 d$mean_temp_scaled <- scale(d$mean_temp)
 # hist(d$mean_temp_scaled)
 # hist(d$temp_trend)
@@ -102,8 +110,12 @@ d$temp_grad_scaled <- scale(d$temp_grad)
 
 #### PREP DO VARIABLES ####
 
-d$squashed_do_vel <- collapse_outliers(d$DO_vel, c(0.005, 0.995))
-d$squashed_do_vel_scaled <- scale(d$squashed_do_vel, center = FALSE)
+d$squashed_DO_vel <- collapse_outliers(d$DO_vel, c(0.005, 0.995))
+d$squashed_DO_vel_scaled <- scale(d$squashed_DO_vel, center = FALSE)
+d$DO_dvocc_scaled <- scale(d$DO_dvocc, center = F)
+d$squashed_DO_dvocc <- collapse_outliers(d$DO_dvocc, c(0.005, 0.995))
+d$squashed_DO_dvocc_scaled <- scale(d$squashed_DO_dvocc, center = FALSE)
+
 # hist(d$mean_DO)
 d$mean_DO_scaled <- scale(d$mean_DO)
 # hist(d$mean_DO_scaled)
@@ -114,7 +126,7 @@ d$DO_grad_scaled <- scale(d$DO_grad)
 # hist(d$DO_grad_scaled)
 # d$DO_grad_scaled <- scale(sqrt(d$DO_grad))
 # hist(d$DO_grad_scaled)
-# ggplot(d, aes(x,y, color=squashed_do_vel)) + geom_point(size=2, shape=15) +
+# ggplot(d, aes(x,y, color=squashed_DO_vel)) + geom_point(size=2, shape=15) +
 #   scale_color_gradient2(trans = fourth_root_power)
 # # ggplot(d, aes(x,y, color=DO_trend)) + geom_point(size=2, shape=15) + scale_color_gradient2()
 # ggplot(d, aes(x,y, color=DO_trend_scaled)) + geom_point(size=2, shape=15) + scale_color_gradient2()
@@ -168,6 +180,7 @@ d$log_biomass_scaled2 <- d$log_biomass_scaled^2
 # hist(d$biotic_vel)
 d$squashed_biotic_vel <- collapse_outliers(d$biotic_vel, c(0.005, 0.995))
 # hist(d$squashed_biotic_vel)
+d$squashed_biotic_dvocc <- collapse_outliers(d$biotic_dvocc, c(0.005, 0.995))
 
 d$fake_vel <- d$fake_trend / d$biotic_grad
 # hist(d$fake_vel)
@@ -267,14 +280,16 @@ d_temp <- interaction_df(d, formula,
 
 if (model_type == "-trend-with-do") {
 formula <- ~ temp_trend_scaled +
-  mean_temp_scaled + temp_trend_scaled:mean_temp_scaled +
-  # # log_effort_scaled + fishing_trend_scaled +
+  mean_temp_scaled + 
+  temp_trend_scaled:mean_temp_scaled +
+  #log_effort_scaled + fishing_trend_scaled +
   # #fishing_trend_scaled:log_effort_scaled +
   # # fishing_trend_scaled:log_biomass_scaled +
   # #temp_trend_scaled:log_biomass_scaled +
-  temp_grad_scaled + #log_biomass_scaled:temp_grad_scaled +
+  # temp_grad_scaled + #log_biomass_scaled:temp_grad_scaled +
   DO_trend_scaled +
-  mean_DO_scaled +  DO_trend_scaled:mean_DO_scaled +
+  mean_DO_scaled +  
+  DO_trend_scaled:mean_DO_scaled +
   # grad_diff + grad_diff:DO_trend_scaled +
   # mean_DO_scaled:mean_temp_scaled
   # log_sd_est + log_sd_est2 +
@@ -310,11 +325,16 @@ d_do <- interaction_df(d,
 
 ############################
 # #### VELOCITY VARIABLES
+# model_type <- "-vel-both"
 
-# if(model_type == "-vel") {
-if (model_type == "-vel-no-fishing") {
-  formula <- ~ squashed_temp_vel_scaled +
-    mean_temp_scaled +  squashed_temp_vel_scaled:mean_temp_scaled +
+if(model_type == "-vel-both") {
+# if (model_type == "-vel-no-fishing") {
+  formula <- ~ squashed_temp_vel_scaled + 
+    squashed_DO_vel_scaled +
+    mean_temp_scaled +  
+    squashed_temp_vel_scaled:mean_temp_scaled +
+    mean_DO_scaled +  
+    squashed_DO_vel_scaled:mean_DO_scaled +
     # log_effort_scaled + fishing_trend_scaled +
     # fishing_trend_scaled:log_effort_scaled +
     log_biomass_scaled #+ log_biomass_scaled2
@@ -326,6 +346,55 @@ if (model_type == "-vel-no-fishing") {
     x_variable = "squashed_temp_vel_scaled",
     split_variable = "mean_temp_scaled",
     N = 5
+  )
+  
+  d_do <- interaction_df(d,
+    formula = formula,
+    x_variable = "squashed_DO_vel_scaled",
+    split_variable = "mean_DO_scaled",
+    N = 4
+  )
+  # d_bio <- interaction_df(d,
+  #   formula = formula,
+  #   x_variable = "squashed_temp_vel_scaled",
+  #   split_variable = "log_biomass_scaled",
+  #   N = 5
+  # )
+  # d_fish <- interaction_df(d,
+  #   formula = formula,
+  #   x_variable = "fishing_trend_scaled",
+  #   split_variable = "log_effort_scaled",
+  #   N = 5
+  # )
+  
+}
+
+# model_type <- "-dist-vel-both"
+if (model_type == "-dist-vel-both") {
+  formula <- ~ squashed_temp_dvocc_scaled + 
+    squashed_DO_dvocc_scaled +
+    mean_temp_scaled +  
+    squashed_temp_dvocc_scaled:mean_temp_scaled +
+    mean_DO_scaled + 
+    squashed_DO_dvocc_scaled:mean_DO_scaled +
+    log_effort_scaled + fishing_trend_scaled +
+    # fishing_trend_scaled:log_effort_scaled +
+    log_biomass_scaled # + log_biomass_scaled2
+    # squashed_temp_vel_scaled:log_biomass_scaled 
+  
+  x <- model.matrix(formula, data = d)
+  
+  d_temp <- interaction_df(d, formula,
+    x_variable = "squashed_temp_dvocc_scaled",
+    split_variable = "mean_temp_scaled",
+    N = 4
+  )
+  
+  d_do <- interaction_df(d,
+    formula = formula,
+    x_variable = "squashed_DO_dvocc_scaled",
+    split_variable = "mean_DO_scaled",
+    N = 4
   )
   # d_bio <- interaction_df(d,
   #   formula = formula,
@@ -347,7 +416,7 @@ if (model_type == "-vel-no-fishing") {
 # formula <- ~ mean_DO_scaled + mean_temp_scaled +
 #   mean_biomass_scaled +
 #   mean_temp_scaled:mean_DO_scaled +
-#   squashed_do_vel_scaled + squashed_do_vel_scaled:mean_DO_scaled +
+#   squashed_DO_vel_scaled + squashed_DO_vel_scaled:mean_DO_scaled +
 #   squashed_temp_vel_scaled + squashed_temp_vel_scaled:mean_temp_scaled
 #
 # x <- model.matrix(formula, data = d)
@@ -359,7 +428,7 @@ if (model_type == "-vel-no-fishing") {
 # )
 # d_do <- interaction_df(d,
 #   formula = formula,
-#   x_variable = "squashed_do_vel_scaled",
+#   x_variable = "squashed_DO_vel_scaled",
 #   split_variable = "mean_DO_scaled",
 #   N = 5
 # )
@@ -386,6 +455,7 @@ pred_dat <- bind_rows(
   # mutate(d_bio, type = "biomass")
    # mutate(d_fish, type = "fish")
 )
+
 # mutate(d_bio, type = "biomass"),
 # mutate(d_grad, type = "temp_grad"))
 # mutate(d_grad, type = "temp_grad"),
@@ -403,7 +473,7 @@ pred_dat <- bind_rows(
 # w_genus <- F
 # is_null <- F
 
-  if (is_null) {
+if (is_null) {
     null_lab <- "-sim"
   } else {
     null_lab <- ""
@@ -423,12 +493,12 @@ if (y_type == "trend") {
     model_type <- paste0(model_type, "-genus")
     new_model <- vocc_regression(d, y,
       X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-      knots = 400, group_by_genus = T, student_t = F
+      knots = knots, group_by_genus = T, student_t = F
     )
   } else {
     new_model <- vocc_regression(d, y,
       X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-      knots = 400, group_by_genus = FALSE, student_t = F
+      knots = knots, group_by_genus = FALSE, student_t = F
     )
   }
 
@@ -440,20 +510,24 @@ if (y_type == "trend") {
     y <- d$squashed_fake_vel
   } else {
     y <- d$squashed_biotic_vel
+    
+    if(model_type == "-dist-vel-temp") {
+      y <- d$squashed_biotic_dvocc
+      # y <- d$biotic_trend
+    }
   }
   if (w_genus) {
     model_type <- paste0(model_type, "-genus")
     new_model <- vocc_regression(d, y,
       X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-      knots = 400, group_by_genus = T, student_t = T
+      knots = knots, group_by_genus = T, student_t = T
     )
   } else {
     new_model <- vocc_regression(d, y,
       X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-      knots = 400, group_by_genus = FALSE, student_t = T
+      knots = knots, group_by_genus = FALSE, student_t = T
     )
   }
-
 }
 
 
@@ -461,7 +535,7 @@ date <- format(Sys.time(), "-%m-%d")
 
 saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, ".rds"))
 
-paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, ".rds")
+paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, "-", knots, ".rds")
 
 
 ##############################
@@ -491,7 +565,11 @@ model <- new_model
 
 nrow(model$data)
 
-model2 <- add_colours(model$coefs) # %>% filter(species != "Shortbelly Rockfish")
+model2 <- add_colours(model$coefs) %>%
+  # filter(coeffZicient != "mean_DO_scaled" ) %>%
+   # filter(coefficient != "temp_grad_scaled" ) %>%
+#   filter(coefficient != "mean_temp_scaled" ) %>% 
+  filter(coefficient != "log_biomass_scaled" )
 
 # ### IF IMMATURE CAN RUN THIS TO MAKE COLOURS MATCH
 # mature <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
