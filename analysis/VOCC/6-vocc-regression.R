@@ -13,15 +13,20 @@ knots <- 500
 y_type <- "vel"
 y_type <- "trend"
 
+both <- T
 model_type <- "-vel-both"
-# model_type <- "-vel-no-fishing"
+# model_type <- "-vel-both-fishing"
+# model_type <- "-trend-with-do"
+
+both <- F
+model_type <- "-vel-temp"
+
 # model_type <- "-trend"
 # # model_type <- "-trend-no-fish-trend"
 # # model_type <- "-trend-no-fishing"
 #  model_type <- "-trend-no-covs"
 #  model_type <- "-trend-only"
- # model_type <- "-trend-grad"
-# model_type <- "-trend-with-do"
+# model_type <- "-trend-grad"
 
 # model_type <- "-dist-vel-temp"
 
@@ -46,14 +51,14 @@ data_type <- "mature-95-all-temp"
  # data_type <- "mature-90-all-temp"
 # data_type <- "mature-80-all-temp"
 #  data_type <- "mature-50-all-temp"
-data_type <- "mature-90-all-do"
+# data_type <- "mature-90-all-do"
 # data_type <- "mature-80-all-do"
-data_type <- "mature-95-all-do"
+# data_type <- "mature-95-all-do"
 
 #  null_number <- ""
 null_number <- "-1"
  # null_number <- "-2"
-  null_number <- "-3"
+  # null_number <- "-3"
 
 d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
 d <- na.omit(d) %>% as_tibble()
@@ -309,23 +314,26 @@ d_do <- interaction_df(d,
   split_variable = "mean_DO_scaled",
   N = 2
 )
-## d_means <- interaction_df(d, formula,
-#   x_variable = "mean_temp_scaled",
-#   split_variable = "mean_DO_scaled",
-#   # use_quantiles = FALSE,
-#   N = 5
-# )
-# d_means2 <- interaction_df(d, formula,
-#   x_variable = "mean_DO_scaled",
-#   split_variable = "mean_temp_scaled",
-#   # use_quantiles = FALSE,
-#   N = 5
-# )
 }
 
 ############################
 # #### VELOCITY VARIABLES
-# model_type <- "-vel-both"
+
+if(model_type == "-vel-temp") {
+  formula <- ~ squashed_temp_vel_scaled + 
+    mean_temp_scaled +  
+    squashed_temp_vel_scaled:mean_temp_scaled +
+    log_biomass_scaled #+ log_biomass_scaled2
+  #squashed_temp_vel_scaled:log_biomass_scaled 
+  
+  x <- model.matrix(formula, data = d)
+  
+  d_temp <- interaction_df(d, formula,
+    x_variable = "squashed_temp_vel_scaled",
+    split_variable = "mean_temp_scaled",
+    N = 5
+  )
+}
 
 if(model_type == "-vel-both") {
 # if (model_type == "-vel-no-fishing") {
@@ -354,12 +362,36 @@ if(model_type == "-vel-both") {
     split_variable = "mean_DO_scaled",
     N = 4
   )
-  # d_bio <- interaction_df(d,
-  #   formula = formula,
-  #   x_variable = "squashed_temp_vel_scaled",
-  #   split_variable = "log_biomass_scaled",
-  #   N = 5
-  # )
+}
+
+if(model_type == "-vel-both-fishing") {
+  # if (model_type == "-vel-no-fishing") {
+  formula <- ~ squashed_temp_vel_scaled + 
+    squashed_DO_vel_scaled +
+    mean_temp_scaled +  
+    squashed_temp_vel_scaled:mean_temp_scaled +
+    mean_DO_scaled +  
+    squashed_DO_vel_scaled:mean_DO_scaled +
+    log_effort_scaled + fishing_trend_scaled +
+    # fishing_trend_scaled:log_effort_scaled +
+    log_biomass_scaled #+ log_biomass_scaled2
+  #squashed_temp_vel_scaled:log_biomass_scaled 
+  
+  x <- model.matrix(formula, data = d)
+  
+  d_temp <- interaction_df(d, formula,
+    x_variable = "squashed_temp_vel_scaled",
+    split_variable = "mean_temp_scaled",
+    N = 5
+  )
+  
+  d_do <- interaction_df(d,
+    formula = formula,
+    x_variable = "squashed_DO_vel_scaled",
+    split_variable = "mean_DO_scaled",
+    N = 4
+  )
+
   # d_fish <- interaction_df(d,
   #   formula = formula,
   #   x_variable = "fishing_trend_scaled",
@@ -368,6 +400,7 @@ if(model_type == "-vel-both") {
   # )
   
 }
+
 
 # model_type <- "-dist-vel-both"
 if (model_type == "-dist-vel-both") {
@@ -396,42 +429,9 @@ if (model_type == "-dist-vel-both") {
     split_variable = "mean_DO_scaled",
     N = 4
   )
-  # d_bio <- interaction_df(d,
-  #   formula = formula,
-  #   x_variable = "squashed_temp_vel_scaled",
-  #   split_variable = "log_biomass_scaled",
-  #   N = 5
-  # )
-  # d_fish <- interaction_df(d,
-  #   formula = formula,
-  #   x_variable = "fishing_trend_scaled",
-  #   split_variable = "log_effort_scaled",
-  #   N = 5
-  # )
-  
 }
 
 
-### VEL DO INTERACTIONS
-# formula <- ~ mean_DO_scaled + mean_temp_scaled +
-#   mean_biomass_scaled +
-#   mean_temp_scaled:mean_DO_scaled +
-#   squashed_DO_vel_scaled + squashed_DO_vel_scaled:mean_DO_scaled +
-#   squashed_temp_vel_scaled + squashed_temp_vel_scaled:mean_temp_scaled
-#
-# x <- model.matrix(formula, data = d)
-#
-# d_temp <- interaction_df(d, formula,
-#   x_variable = "squashed_temp_vel_scaled",
-#   split_variable = "mean_temp_scaled",
-#   N = 5
-# )
-# d_do <- interaction_df(d,
-#   formula = formula,
-#   x_variable = "squashed_DO_vel_scaled",
-#   split_variable = "mean_DO_scaled",
-#   N = 5
-# )
 
 ########################
 #### INTERACTION DATAFRAMES
@@ -440,21 +440,31 @@ if (model_type == "-dist-vel-both") {
 # d_temp$`(Intercept)` <- 0 
 # d_bio$`(Intercept)` <- 0 
 
+if(both) {
 X_pj <- as.matrix(bind_rows(
   select(d_do, -chopstick, -species, -genus),
   select(d_temp, -chopstick, -species, -genus)#,
-  # select(d_bio, -chopstick, -species, -genus) # ,
   # select(d_fish, -chopstick, -species, -genus) 
-  # select(d_grad, -chopstick, -species, -genus)#,
-  # select(d_means, -chopstick, -species, -genus)
 ))
 
 pred_dat <- bind_rows(
   mutate(d_do, type = "do"),
   mutate(d_temp, type = "temp")#,
-  # mutate(d_bio, type = "biomass")
    # mutate(d_fish, type = "fish")
 )
+} else {
+  X_pj <- as.matrix(bind_rows(
+    select(d_temp, -chopstick, -species, -genus)#,
+    # select(d_fish, -chopstick, -species, -genus) 
+  ))
+  
+  pred_dat <- bind_rows(
+    mutate(d_temp, type = "temp")#,
+    # mutate(d_bio, type = "biomass")
+    # mutate(d_fish, type = "fish")
+  )
+}
+
 
 # mutate(d_bio, type = "biomass"),
 # mutate(d_grad, type = "temp_grad"))
@@ -539,29 +549,8 @@ paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number
 
 
 ##############################
-#### LOAD TREND MODELS ####
-
-#### ONE JUST BUILT
+#### LOAD MODEL JUST BUILT
 model <- new_model
-
-#### SAVED MODELS
-
-
-# #### VELOCITY
-# model <- readRDS("data/trend-mature-90-all-temp-01-26-vel-2.rds")
-# # model <- readRDS("data/trend-mature-80-all-temp-01-27-vel-2.rds")
-# # model <- readRDS("data/trend-mature-50-all-temp-01-27-vel-2.rds")
-
-# model <- readRDS("data/trend-mature-90-all-temp-01-27-vel-sim-2.rds") # not great
-# # model <- readRDS("data/trend-mature-80-all-temp-01-27-vel-sim-2.rds") # better
-# # model <- readRDS("data/trend-mature-50-all-temp-01-27-vel-sim-2.rds") # good
-
-# # model <- readRDS("data/vel-mature-95-all-temp-01-26-vel-fishing-2.rds")
-# # model <- readRDS("data/vel-mature-95-all-temp-01-26-vel-2.rds")
-# model <- readRDS("data/vel-mature-90-all-temp-01-26-vel-2.rds") # some small +ve
-# # model <- readRDS("data/vel-mature-80-all-temp-01-26-vel-2.rds")
-# # model <- readRDS("data/vel-mature-90-all-temp-01-27-vel-sim-2.rds") # good
-# # model <- readRDS("data/vel-mature-50-all-temp-01-27-vel-sim-2.rds") # better
 
 nrow(model$data)
 
@@ -582,37 +571,6 @@ manipulate::manipulate({
 }, order_by = manipulate::picker( 
   as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
 )
-
-
-# manipulate::manipulate({
-#   plot_coefs(model2, order_by_trait = T, fixed_scales = F, order_by = order_by)
-# },
-# order_by = manipulate::picker(as.list(sort(names(model2[, 6:15]))))
-# )
-
-# model2a <- model2 %>%
-#   filter(coefficient != "mean_temp_scaled") %>%
-#   filter(coefficient != "mean_DO_scaled") %>%
-#   filter(coefficient != "mean_biomass_scaled") %>%
-#   filter(coefficient != "mean_temp_scaled:mean_DO_scaled") %>%
-#   filter(coefficient != "mean_DO_scaled:mean_temp_scaled")
-# manipulate::manipulate({plot_coefs(model2a, order_by = order_by)},
-#   order_by = manipulate::picker(as.list(sort(unique(shortener(model2b$coefficient))))))
-
-# model2b <- model2 %>% filter(coefficient %in%
-#    c("mean_temp_scaled", "mean_DO_scaled", "mean_biomass_scaled",
-#    "mean_temp_scaled:mean_DO_scaled", "mean_DO_scaled:mean_temp_scaled"))
-# manipulate::manipulate({plot_coefs(model2b, order_by = order_by)},
-#   order_by = manipulate::picker(as.list(sort(unique(shortener(model2b$coefficient))))))
-### SAVE PLOT WITH SELECTED PARAMS
-# model3 <- plot_coefs(model2, order_by = "squashed_temp_vel_scaled)")
-# model_plot <- model3 +
-#   ggtitle(paste("Mature biomass trend"))
-#   # ggtitle(paste("Immature biotic trend"))
-# model_plot
-# ggsave("figs/worm-plot-temp-trend-sort.png", width = 10, height = 10, dpi = 300)
-# ggsave("figs/worm-plot-imm-temp-trend-sort.png", width = 10, height = 10, dpi = 300)
-
 
 ##############################
 #### CHECK SAMPLE SIZE AND DISTRIBUTION OF MODEL DATA
