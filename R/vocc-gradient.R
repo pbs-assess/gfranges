@@ -5,7 +5,8 @@
 #' @param scale_fac Controls how the original 2-km projection is aggregated
 #'    (e.g. a value of 5 means that the raster would be reprojected to 10km grid).
 #' @param time_step Time variable.
-#' @param delta_t_step Time between values of time variable.
+#' @param delta_t_step Time between values of time variable. 
+#'    Required if raster layers not labeled with "X" plus an integer representing time.  
 #' @param indices If null, gradient will be based on mean across all times. 
 #'    If integer vector of same length as number of unique time steps, 
 #'    gradient will be based on final time steps given largest index value. 
@@ -57,10 +58,28 @@ vocc_gradient_calc <- function(data,
   
   }
   
-  
   # Then calculate the trend per pixel:
-  # slopedat <- vocc::calcslope(rbrick, divisor = divisor) # when using vocc:: code with 2 year time steps, results are doubled
-  slopedat <- calcslope(rbrick, delta_t_step = delta_t_step) 
+  
+  # first check if layers are labeled with an integer representing time steps
+  time_as_name <- sub("X", "", names(rbrick))
+  time_as_name <- as.integer(time_as_name)
+  
+  if (length(which(!is.na(time_as_name))) > 1) {
+    # if layers are labeled with time than slope can be calculated for uneven timesteps
+    sloperaster <- raster::calc(rbrick, raster_slopes)
+    # slopedat <- as.data.frame(raster::rasterToPoints(sloperaster)) %>%
+    #   dplyr::rename(slope = layer)
+    icell <- seq(1, raster::ncell(sloperaster))
+    coord <- raster::xyFromCell(sloperaster, icell)
+    slope <- raster::getValues(sloperaster)
+    slopedat <- data.frame(slope = slope, coord, icell)
+    message("Trends allowing for uneven timesteps.")
+  } else {
+    # if layers are NOT labeled with time than slope can only be calculated for EVEN timesteps
+    # slopedat <- vocc::calcslope(rbrick, divisor = divisor) # when using vocc:: code with 2 year time steps, results are doubled
+    slopedat <- calcslope(rbrick, delta_t_step = delta_t_step) 
+    message("Trends assume even timesteps.")
+  }
   
   # Then get the mean values for a time period
   if (!is.null(indices)) {
@@ -92,7 +111,7 @@ vocc_gradient_calc <- function(data,
     # must use y_dist = res(rx) if data is in UTMs or other true distance grid
     spatx <- vocc::spatialgrad(gradraster, y_dist = raster::res(gradraster), y_diff = NA)
   }
-
+  
   # Now we can calculate the VoCC:
   velodf <- vocc::calcvelocity(spatx, slopedat, y_dist = 1)
 
@@ -176,6 +195,7 @@ make_gradient_brick <- function(data,
     }
   }
   rbrick <- raster::brick(rstack)
+  names(rbrick) <- unique(d[[time_step]])
   rbrick
 }
 
