@@ -125,9 +125,7 @@ ggplot(d_trawl, aes(DOY, temperature_c, colour = -depth, alpha=0.5)) + geom_poin
 ```
 
 
-
-
-```{r}
+```{r eval = FALSE}
 library(gbm)
 
 m <- gbm( temperature_c ~ depth_scaled + X + Y, data = d_trawl, n.trees = 2000, interaction.depth = 3, shrinkage = 0.02)
@@ -257,7 +255,7 @@ View(cv$summary)
 # 10-fold cross-validation 
 
 ## Just compare fixed slope models with simplest random effect structure
-```{r}
+```{r eval=F}
 cv_args <- generate_cv_args(
   formula = list(
     temperature_c ~ 0 + SST_scaled*shallow + depth_scaled,
@@ -297,18 +295,18 @@ All are better than fixed slope models
 cv_args <- generate_cv_args(
   formula = list(
     #temperature_c ~ 0 + SST_scaled*shallow,
-    temperature_c ~ 0 + as.factor(year) + SST_scaled*shallow,
-    #temperature_c ~ 1 + SST_scaled,
-    temperature_c ~ 0 + as.factor(year) + SST_scaled,
+    # temperature_c ~ 0 + as.factor(year) + SST_scaled*shallow,
+    # #temperature_c ~ 1 + SST_scaled,
+    # temperature_c ~ 0 + as.factor(year) + SST_scaled,
     temperature_c ~ 0 + as.factor(year)
   ),
   time_varying = list(
+    # ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
     ~ 0 + depth_scaled + depth_scaled2,
-    ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3
   ),
-  ar1_fields = c(FALSE),
-  include_spatial = c(FALSE),
-  n_knots = c(100), # keep same n_knots
+  ar1_fields = c(TRUE),
+  include_spatial = c(TRUE),
+  n_knots = c(400), # keep same n_knots
   seed = c(1111, 2222, 3333, 4444) # keep same seeds
 )
 

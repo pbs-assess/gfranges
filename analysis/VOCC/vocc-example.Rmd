@@ -7,7 +7,7 @@ output: html_document
 
 Load climate predictions
 ```{r}
-pred_temp_do <- readRDS(here::here("predicted-DO.rds"))
+pred_temp_do <- readRDS("data/predicted-DO-new.rds")
 ```
 
 

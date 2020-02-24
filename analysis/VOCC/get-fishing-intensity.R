@@ -4,8 +4,8 @@ getwd()
 setwd(here::here())
 
 d <- gfdata::get_cpue_index("bottom trawl", min_cpue_year = 2004)
-saveRDS(d, file = "analysis/VOCC/data/fishing-effort.rds") # 2008:2018
-d <- readRDS("analysis/VOCC/data/fishing-effort.rds")
+saveRDS(d, file = "analysis/VOCC/data/_fishing_effort/fishing-effort.rds") # 2008:2018
+d <- readRDS("analysis/VOCC/data/_fishing_effort/fishing-effort.rds")
 
 d$year <- lubridate::year(d$best_date)
 d <- dplyr::select(d, year, fishing_event_id, longitude, latitude, fe_end_date, fe_start_date)
@@ -72,8 +72,8 @@ dat <- filter(dat, effort <= 9) # or max 6 hours?
 hist(dat$effort)
 data <- dat %>% group_by(X, Y) %>% mutate(effort = sum(effort)) %>% select(-fishing_event_id) %>% distinct() %>% filter(year < 2019) %>% mutate(log_effort = log(effort))
 
-saveRDS(data, file = "analysis/VOCC/data/fishing-effort-grid.rds")
-# saveRDS(data, file = "analysis/VOCC/data/fishing-effort-grid-6hr.rds")
+saveRDS(data, file = "analysis/VOCC/data/_fishing_effort/fishing-effort-grid.rds")
+# saveRDS(data, file = "analysis/VOCC/data/_fishing_effort/fishing-effort-grid-6hr.rds")
 
 hist(data$log_effort)
 

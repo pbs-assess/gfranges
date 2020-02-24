@@ -25,7 +25,6 @@ stats$group[stats$group == "HAKE"] <- "COD"
 #### ONE JUST BUILT
 model <- new_model
 
-
 nrow(model$data)
 
 model2 <- add_colours(model$coefs) %>%
@@ -67,6 +66,7 @@ manipulate::manipulate({
 #    "mean_temp_scaled:mean_DO_scaled", "mean_DO_scaled:mean_temp_scaled"))
 # manipulate::manipulate({plot_coefs(model2b, order_by = order_by)},
 #   order_by = manipulate::picker(as.list(sort(unique(shortener(model2b$coefficient))))))
+
 ### SAVE PLOT WITH SELECTED PARAMS
 # model3 <- plot_coefs(model2, order_by = "squashed_temp_vel_scaled)")
 # model_plot <- model3 +
