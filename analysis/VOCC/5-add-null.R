@@ -11,7 +11,7 @@ d <- na.omit(d) %>% as_tibble()
 
 all_species <- unique(d$species)
 
-null_number <- 1
+null_number <- 3
 trim_threshold <- 0.05
 
 if (trim_threshold == 0.05) { trim_percent <- 95}
@@ -132,24 +132,84 @@ saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-do-with-null-", 
 # data <- readRDS("data/mature-90-all-temp-with-null-3.rds")
 # data <- readRDS("data/mature-80-all-temp-with-null-3.rds")
 
+data <- readRDS("data/mature-95-all-do-with-null-3.rds")
+
 plots <- list()
 for (i in seq_along(all_species)) {
 
   .x <- filter(data, species == all_species[[i]])
 
 o <- ggplot(.x, aes(x, y, fill = biotic_trend)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2(limits = range(c(.x$biotic_trend, .x$fake_trend))) + xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
-  coord_fixed() + ggtitle(paste(all_species[[i]]))
+  scale_fill_gradient2(limits = range(c(.x$biotic_trend, .x$fake_trend)), guide=FALSE) + 
+  xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
+  coord_fixed() + ggtitle(paste(all_species[[i]])) + theme_void ()
+
 
 n <- ggplot(.x, aes(x, y, fill = fake_trend)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2(limits = range(c(.x$biotic_trend, .x$fake_trend))) + xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
-  coord_fixed() + ggtitle(paste(" "))
+  scale_fill_gradient2(limits = range(c(.x$biotic_trend, .x$fake_trend)), guide=FALSE) + 
+  xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
+  coord_fixed() + ggtitle(paste(" ")) + theme_void ()
+
+# t <- ggplot(.x, aes(x, y, fill = temp_trend)) + geom_tile(width = 4, height = 4) +
+#   scale_fill_gradient2(guide=FALSE) + 
+#   xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
+#   coord_fixed() + ggtitle(paste(" "))
+# 
+# d <- ggplot(.x, aes(x, y, fill = DO_trend)) + geom_tile(width = 4, height = 4) +
+#   scale_fill_gradient2( guide=FALSE) + 
+#   xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
+#   coord_fixed() + ggtitle(paste(" "))
 
 plots[[i]] <- cowplot::plot_grid(o, n) 
 }
 
+pdf(paste0("null-", null_number, "-trends.pdf"))
+plots
+dev.off()
 
-plots 
+
+#### PLOT REAL AND FAKE VELOCITY DATA
+data$fake_vel <- data$fake_trend / data$biotic_grad
+data$fake_vel <- collapse_outliers(data$fake_vel, c(0.005, 0.995))
+data$biotic_vel <- collapse_outliers(data$biotic_vel, c(0.005, 0.995))
+data$temp_vel <- collapse_outliers(data$temp_vel, c(0.005, 0.995))
+data$DO_vel <- collapse_outliers(data$DO_vel, c(0.005, 0.995))
+
+plots2 <- list()
+for (i in seq_along(all_species)) {
+  
+  .x <- filter(data, species == all_species[[i]])
+  
+  o <- ggplot(.x, aes(x, y, fill = biotic_vel)) + geom_tile(width = 4, height = 4) +
+    scale_fill_gradient2(limits = range(c(.x$biotic_vel, .x$fake_vel)), guide=FALSE) + 
+    xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
+    coord_fixed() + theme_void () + ggtitle(paste(all_species[[i]]), subtitle = "biotic vel")
+  
+  n <- ggplot(.x, aes(x, y, fill = fake_vel)) + geom_tile(width = 4, height = 4) +
+    scale_fill_gradient2(limits = range(c(.x$biotic_vel, .x$fake_vel)), guide=FALSE) + 
+    xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
+    coord_fixed() + theme_void () + ggtitle(paste(" "), subtitle = "fake vel")
+  
+  t <- ggplot(.x, aes(x, y, fill = temp_vel)) + geom_tile(width = 4, height = 4) +
+    scale_fill_gradient2(guide=FALSE) + 
+    xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
+    coord_fixed() + theme_void () + ggtitle(paste(" "), subtitle = "temp vel")
+  
+  d <- ggplot(.x, aes(x, y, fill = DO_vel)) + geom_tile(width = 4, height = 4) +
+    scale_fill_gradient2( guide=FALSE) + 
+    xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
+    coord_fixed() + theme_void () + ggtitle(paste(" "), subtitle = "DO vel")
+  
+  plots2[[i]] <- cowplot::plot_grid(o, n, t, d) 
+}
+
+pdf(paste0("null-", null_number, "-vel.pdf"))
+  plots2
+dev.off()
+
+
+
+
 # plots_90 <- plots
 
 ### PLOT REAL BIOTIC GRADIENTS
