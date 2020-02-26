@@ -110,12 +110,12 @@ plot_fuzzy_chopsticks <- function(model,
                                   colours = NULL,
                                   species = NULL) {
   par_est <- as.list(model$sdr, "Estimate", report = TRUE)
-  par_sd <- as.list(model$sdr, "Std. Error", report = TRUE)
+  par_se <- as.list(model$sdr, "Std. Error", report = TRUE)
 
   pred_dat <- model$pred_dat
   pred_dat$est_p <- par_est$eta_p
-  pred_dat$sd_p <- par_sd$eta_p
-
+  pred_dat$se_p <- par_se$eta_p
+  
   if (is.null(colours)) {
     if (type == "do") {
       colours <- c("#5E4FA2", "#FDAE61")
@@ -137,11 +137,17 @@ plot_fuzzy_chopsticks <- function(model,
     pred_dat <- filter(pred_dat, type == !!type)
   }
 
+  # pred_dat <- pred_dat %>% group_by(species, chopstick) %>%
+  #   mutate(
+  #     slope = round(lm("est_p"~x_variable)$coefficients[2], 4),
+  #     mean_se = mean(se_p) 
+  #   ) 
+  
   p <- ggplot(pred_dat, aes_string(x_variable, "est_p")) +
     geom_line(aes(colour = chopstick)) +
     geom_ribbon(aes(
       fill = chopstick,
-      ymin = est_p - 1.96 * sd_p, ymax = est_p + 1.96 * sd_p
+      ymin = est_p - 1.96 * se_p, ymax = est_p + 1.96 * se_p
     ), alpha = 0.3) +
     scale_colour_manual(values = colours) +
     scale_fill_manual(values = colours) +
@@ -160,6 +166,43 @@ plot_fuzzy_chopsticks <- function(model,
   }
   p
 }
+
+#' Save slopes from chopstick plots
+chopstick_slopes <- function (model,
+      type = NULL,
+      x_variable = "temp_trend_scaled",
+      species = NULL) {
+  
+  par_est <- as.list(model$sdr, "Estimate", report = TRUE)
+  par_se <- as.list(model$sdr, "Std. Error", report = TRUE)
+  
+  pred_dat <- model$pred_dat
+  pred_dat$est_p <- par_est$eta_p
+  pred_dat$se_p <- par_se$eta_p
+  
+  if (!is.null(species)) {
+    spp <- species
+    pred_dat <- filter(pred_dat, species == !!spp)
+  }
+  
+  if (!is.null(type)) {
+    pred_dat <- filter(pred_dat, type == !!type)
+  }
+  browser()
+  
+  model_formula <- paste0("est_p", "~", x_variable)
+  
+  slopes <- pred_dat %>% 
+    rename( x = x_variable) %>% 
+    group_by(species, chopstick) %>% #select(species, type, chopstick, x)%>% 
+    mutate(
+      slope = signif(lm(est_p~x)$coefficients[2], 2)
+    ) %>% select(species, type, chopstick, slope) %>% unique()
+
+  slopes
+}
+
+
 
 #' Plot raw chopsticks for vocc regression models
 #'
