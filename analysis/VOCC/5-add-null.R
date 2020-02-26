@@ -2,6 +2,7 @@
 library(dplyr)
 library(ggplot2)
 library(sdmTMB)
+library(gfranges)
 
 setwd(here::here("analysis", "VOCC"))
 d <- readRDS("data/mature-all-do-untrimmed.rds")
@@ -19,6 +20,7 @@ if (trim_threshold == 0.1) { trim_percent <- 90}
 if (trim_threshold == 0.2) { trim_percent <- 80}
 if (trim_threshold == 0.5) { trim_percent <- 50}
 
+#####################################
 ### SIMULATE FAKE TREND LAYER FOR EACH SPECIES
 with_nulls <- list()
 for (i in seq_along(all_species)) {
@@ -102,11 +104,74 @@ newdata <- do.call(rbind, with_nulls)
 saveRDS(newdata, file = paste0("data/mature-all-do-with-null-", null_number, "-untrimmed.rds"))
 
 
+
+
+#####################################
+### FAILED ATTEMPT TO SIMULATE FAKE VELOCITY (without a true gradient) LAYER FOR EACH SPECIES
+# with_nulls <- list()
+# for (i in seq_along(all_species)) {
+#   
+#   .x <- filter(d, species == all_species[[i]])
+#   bio5perc <- sum(.x$mean_biomass, na.rm = TRUE) * 0.01
+#   s <- sort(.x$mean_biomass)
+#   bio_sum <- cumsum(s)
+#   lower_density_threshold <- s[which(bio_sum >= bio5perc)[1]]
+#   .x <- filter(.x, mean_biomass > lower_density_threshold)
+# 
+#   nrow(.x)
+#   ggplot(.x, aes(x, y, fill = biotic_vel)) + geom_tile(width = 4, height = 4) +
+#     scale_fill_gradient2()
+#   spde <- make_spde(x = .x$x, y = .x$y, n_knots = 200)
+#   plot_spde(spde)
+#   # browser()
+#   .x$biotic_vel <- collapse_outliers(.x$biotic_vel, c(0.005, 0.995))
+#   m <- sdmTMB(biotic_vel ~ 1, data = .x, family = student(link = "identity"), 
+#     spatial_only = TRUE, spde = spde, silent = F)
+#   # m
+#   set.seed(i + null_number)
+#   sigma_O <- sd(.x$biotic_vel - mean(.x$biotic_vel))
+#   # sigma_O <-  exp(m$model$par[["ln_phi"]])
+#   kappa <- exp(m$model$par[["ln_kappa"]])
+#   # exp(m$model$par[["ln_tau_O"]])
+#   rf_omega <- RandomFields::RMmatern(nu = 1, var = sigma_O^2, scale = 1/kappa)
+#   # rf_omega1 <- RandomFields::RPt(rf_omega, nu = 1)
+#   
+#   omega_fun <- function(model, x, y) {
+#     suppressMessages(RandomFields::RFsimulate(model, x, y, n=1)$variable1 )}
+#   omega_s <- omega_fun(rf_omega, .x$x,  .x$y) # sdmTMB:::rf_sim(model = rf_omega, .x$x, .x$y)
+#   omega_s <- omega_s - mean(omega_s)
+#   # observed <- rt(length(omega_s), 4)
+#   
+#   observed <- rnorm(length(omega_s), omega_s + mean(.x$biotic_trend), 0.001)
+#   
+#   s <- data.frame(x = .x$x, y = .x$y, fake_vel = observed)
+#   
+#   o <- ggplot(.x, aes(x, y, fill = biotic_vel)) + geom_tile(width = 4, height = 4) +
+#     scale_fill_gradient2(limits = range(c(.x$biotic_vel, s$fake_vel))) +
+#     coord_fixed()
+#   n <- ggplot(s, aes(x, y, fill = fake_vel)) + geom_tile(width = 4, height = 4) +
+#     scale_fill_gradient2(limits = range(c(.x$biotic_vel, s$fake_vel))) +
+#     coord_fixed()
+# 
+#   print(cowplot::plot_grid(o, n))
+#   # browser()
+#   .s <- left_join(.x, s)
+#   with_nulls[[i]] <- .s
+# }
+# 
+# newvel <- do.call(rbind, with_nulls)
+# 
+# # saveRDS(newdata, file = paste0("data/mature-all-temp-with-null-1-untrimmed.rds"))
+# saveRDS(newvel, file = paste0("data/mature-all-do-with-null-", null_number, "-newvel.rds"))
+# 
+# # newdata <- newvel 
+
+
+
+
+##########################################
 ### TRIM EACH SPECIES LAYERS TO INCLUDE PROPORTION OF MEAN TOTAL BIOMASS
 
-# newdata <- readRDS("data/mature-all-temp-with-null-1-untrimmed.rds")
-# newdata <- readRDS("data/mature-all-temp-with-null-2-untrimmed.rds")
-# newdata <- readRDS("data/mature-all-temp-with-null-3-untrimmed.rds")
 # newdata <- readRDS("data/mature-all-do-with-null-1-untrimmed.rds")
 
 trimmed.dat <- list()
@@ -123,15 +188,11 @@ data <- do.call(rbind, trimmed.dat)
 # saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-temp-with-null-", null_number, ".rds"))
 saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
 
-### PLOT REAL AND FAKE TREND DATA
-# data <- readRDS("data/mature-95-all-temp-with-null-2.rds")
-# data <- readRDS("data/mature-90-all-temp-with-null-2.rds")
-# data <- readRDS("data/mature-80-all-temp-with-null-2.rds")
-# data <- readRDS("data/mature-50-all-temp-with-null-2.rds")
-# data <- readRDS("data/mature-95-all-temp-with-null-3.rds")
-# data <- readRDS("data/mature-90-all-temp-with-null-3.rds")
-# data <- readRDS("data/mature-80-all-temp-with-null-3.rds")
 
+
+
+#####################################
+### PLOT REAL AND FAKE TREND DATA
 data <- readRDS("data/mature-95-all-do-with-null-3.rds")
 
 plots <- list()
@@ -168,6 +229,8 @@ plots
 dev.off()
 
 
+
+#####################################
 #### PLOT REAL AND FAKE VELOCITY DATA
 data$fake_vel <- data$fake_trend / data$biotic_grad
 data$fake_vel <- collapse_outliers(data$fake_vel, c(0.005, 0.995))
@@ -190,20 +253,20 @@ for (i in seq_along(all_species)) {
     xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
     coord_fixed() + theme_void () + ggtitle(paste(" "), subtitle = "fake vel")
   
-  t <- ggplot(.x, aes(x, y, fill = temp_vel)) + geom_tile(width = 4, height = 4) +
+  t <- ggplot(.x, aes(x, y, fill = temp_grad)) + geom_tile(width = 4, height = 4) +
     scale_fill_gradient2(guide=FALSE) + 
     xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
-    coord_fixed() + theme_void () + ggtitle(paste(" "), subtitle = "temp vel")
+    coord_fixed() + theme_void () + ggtitle(paste(" "), subtitle = "temp grad")
   
-  d <- ggplot(.x, aes(x, y, fill = DO_vel)) + geom_tile(width = 4, height = 4) +
+  d <- ggplot(.x, aes(x, y, fill = biotic_grad)) + geom_tile(width = 4, height = 4) +
     scale_fill_gradient2( guide=FALSE) + 
     xlim(min(data$x), max(data$x)) + ylim(min(data$y), max(data$y)) +
-    coord_fixed() + theme_void () + ggtitle(paste(" "), subtitle = "DO vel")
+    coord_fixed() + theme_void () + ggtitle(paste(" "), subtitle = "biotic grad")
   
   plots2[[i]] <- cowplot::plot_grid(o, n, t, d) 
 }
 
-pdf(paste0("null-", null_number, "-vel.pdf"))
+pdf(paste0("null-", null_number, "-newvel.pdf"))
   plots2
 dev.off()
 
