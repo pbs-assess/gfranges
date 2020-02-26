@@ -168,6 +168,7 @@ plot_fuzzy_chopsticks <- function(model,
 }
 
 #' Save slopes from chopstick plots
+#' @export
 chopstick_slopes <- function (model,
       type = NULL,
       x_variable = "temp_trend_scaled",
@@ -188,18 +189,24 @@ chopstick_slopes <- function (model,
   if (!is.null(type)) {
     pred_dat <- filter(pred_dat, type == !!type)
   }
-  browser()
-  
-  model_formula <- paste0("est_p", "~", x_variable)
   
   slopes <- pred_dat %>% 
     rename( x = x_variable) %>% 
     group_by(species, chopstick) %>% #select(species, type, chopstick, x)%>% 
     mutate(
-      slope = signif(lm(est_p~x)$coefficients[2], 2)
-    ) %>% select(species, type, chopstick, slope) %>% unique()
+      slope = signif(lm(est_p~x)$coefficients[2], 2),
+      est_low = est_p-se_p,
+      est_high = est_p+se_p,
+      est_max = if_else( (x<quantile(x, 0.01)), est_low, 
+        if_else(  (x>quantile(x, 0.99)) , est_high, NA_real_, NA_real_)),
+      est_min = if_else( (x<quantile(x, 0.01)), est_high, 
+        if_else(  (x>quantile(x, 0.99)) , est_low, NA_real_, NA_real_)),
+      slope_max = signif(lm(est_max~x)$coefficients[2], 2),
+      slope_min = signif(lm(est_min~x)$coefficients[2], 2)
+    ) %>% select(species, type, chopstick, slope, slope_max, slope_min) %>% unique()
 
   slopes
+
 }
 
 
