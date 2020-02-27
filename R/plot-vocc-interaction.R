@@ -225,6 +225,7 @@ chopstick_slopes <- function (model,
 plot_chopstick_slopes <- function (slopedat,
   type = NULL,
   x_variable = "temp_trend_scaled",
+  legend_position = c(.7, .95),
   colours = NULL) {
   
   if (!is.null(type)) {
@@ -257,7 +258,7 @@ p <- ggplot(slopedat, aes(
   xlab("") + #ylab("") + # ggtitle("slopes") +
   gfplot:::theme_pbs() + theme(
     # axis.title.y = element_blank(),
-    legend.position = c(.7, .95),
+    legend.position = legend_position,
     legend.title = element_blank(),
     legend.text = element_text(size = 10)#,
     # legend.direction = "vertical"
