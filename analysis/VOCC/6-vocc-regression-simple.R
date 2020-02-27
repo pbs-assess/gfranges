@@ -288,6 +288,11 @@ date <- format(Sys.time(), "-%m-%d")
 # 
 # paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, "-", knots, ".rds")
 
+# Example of chopstick slopes:
+# par_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
+# par_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
+# par_est$delta_q_high
+# par_se$delta_q_high
 
 ##############################
 #### LOAD MODEL JUST BUILT
