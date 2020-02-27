@@ -10,7 +10,6 @@ source("vocc-regression-functions.R")
 
 knots <- 100
 
-
 y_type <- "trend"
 
 both <- F
