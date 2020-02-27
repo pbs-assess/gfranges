@@ -195,8 +195,8 @@ chopstick_slopes <- function (model,
     group_by(species, chopstick) %>% #select(species, type, chopstick, x)%>% 
     mutate(
       slope = signif(lm(est_p~x)$coefficients[2], 2),
-      est_low = est_p-se_p,
-      est_high = est_p+se_p,
+      est_low = est_p-(se_p*1.96),
+      est_high = est_p+(se_p*1.96),
       est_max = if_else( (x<quantile(x, 0.01)), est_low, 
         if_else(  (x>quantile(x, 0.99)) , est_high, NA_real_, NA_real_)),
       est_min = if_else( (x<quantile(x, 0.01)), est_high, 
@@ -209,6 +209,44 @@ chopstick_slopes <- function (model,
 
 }
 
+
+#' Plot slopes from chopstick plots
+#' @export
+plot_chopstick_slopes <- function (slopedat,
+  type = NULL,
+  x_variable = "temp_trend_scaled",
+  colours = NULL) {
+  
+  if (!is.null(type)) {
+  if (is.null(colours)) {
+    if (type == "do") {
+      colours <- c("#5E4FA2", "#FDAE61")
+    } else {
+      if (type == "mean_temp") {
+        colours <- c("#5E4FA2", "#FDAE61")
+      } else {
+        colours <- c("#D53E4F", "#3288BD")
+      }
+    }
+  }
+  }
+  
+p <- ggplot(slopedat, aes(
+  forcats::fct_reorder(species, -slope),
+  slope,
+  colour = chopstick, 
+  ymin = slope_min,
+  ymax = slope_max
+)) + 
+  geom_hline(yintercept = 0, colour = "darkgray") +
+  scale_colour_manual(values = colours, guide=F) +
+  geom_pointrange(alpha=0.75) + 
+  coord_flip() +
+  xlab("") + ylab("") + ggtitle("slopes") +
+  gfplot:::theme_pbs() + theme(axis.title.y = element_blank())
+p
+
+}
 
 
 #' Plot raw chopsticks for vocc regression models
