@@ -41,9 +41,7 @@ d <- na.omit(d) %>% as_tibble()
 d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
   # filter(species != "Bocaccio") %>%
   # filter(species != "Sand Sole") %>%
-  filter(species != "Longspine Thornyhead") %>% 
-  filter(genus == "rockfish")
-
+  filter(species != "Longspine Thornyhead") 
 
 select(d, genus, species) %>%
   distinct() %>%
@@ -131,8 +129,8 @@ d$squashed_fake_vel <- collapse_outliers(d$fake_vel, c(0.005, 0.995))
 
 if (model_type == "-trend") {
   formula <- ~ temp_trend_scaled +
-    mean_temp_scaled + temp_trend_scaled:mean_temp_scaled #+
-    #log_biomass_scaled #+ log_biomass_scaled2 
+    mean_temp_scaled + temp_trend_scaled:mean_temp_scaled +
+    log_biomass_scaled #+ log_biomass_scaled2 
   
   x <- model.matrix(formula, data = d)
   
