@@ -220,7 +220,7 @@ Type objective_function<Type>::operator()()
     eta_q_high(q) = eta_fixed_q_high(q);
     for (int j = 0; j < (b_re.cols()); j++) {
       eta_q_low(q) += X_qj_low(q, j) * b_re(k_q(q), j);
-      eta_q_low(q) += X_qj_low(q, j) * b_re(k_q(q), j);
+      eta_q_high(q) += X_qj_high(q, j) * b_re(k_q(q), j);
       eta_q_low_p1(q) += X_qj_low_p1(q, j) * b_re(k_q(q), j);
       eta_q_high_p1(q) += X_qj_high_p1(q, j) * b_re(k_q(q), j);
     }
