@@ -108,7 +108,9 @@ plot_fuzzy_chopsticks <- function(model,
                                   x_variable = "temp_trend_scaled",
                                   type = NULL,
                                   colours = NULL,
-                                  species = NULL) {
+                                  species = NULL, 
+                                  order_var = "species"
+  ) {
   par_est <- as.list(model$sdr, "Estimate", report = TRUE)
   par_se <- as.list(model$sdr, "Std. Error", report = TRUE)
 
@@ -131,6 +133,8 @@ plot_fuzzy_chopsticks <- function(model,
   if (!is.null(species)) {
     spp <- species
     pred_dat <- filter(pred_dat, species == !!spp)
+  } else {
+    pred_dat <- mutate(pred_dat, order = !!order_var)
   }
 
   if (!is.null(type)) {
@@ -155,14 +159,14 @@ plot_fuzzy_chopsticks <- function(model,
     gfplot::theme_pbs() +
     guides(colour = guide_legend(nrow = 1, ncol = 2)) +
     theme(
-      legend.position = "top",
       legend.title = element_blank(),
       legend.text = element_text(size = 10),
-      legend.direction = "vertical"
+      legend.direction = "vertical",
+      legend.position = "top"
     )
 
   if (is.null(species)) {
-    p <- p + facet_wrap(vars(species))
+    p <- p + facet_wrap(vars(species)) #forcats::fct_reorder(species, order)
   }
   p
 }
@@ -197,14 +201,20 @@ chopstick_slopes <- function (model,
       slope = signif(lm(est_p~x)$coefficients[2], 2),
       est_low = est_p-(se_p*1.96),
       est_high = est_p+(se_p*1.96),
-      est_max = if_else( (x<quantile(x, 0.01)), est_low, 
-        if_else(  (x>quantile(x, 0.99)) , est_high, NA_real_, NA_real_)),
-      est_min = if_else( (x<quantile(x, 0.01)), est_high, 
-        if_else(  (x>quantile(x, 0.99)) , est_low, NA_real_, NA_real_)),
+      est_max = if_else((x<quantile(x, 0.01)), est_low, 
+        if_else((x>quantile(x, 0.99)), est_high, NA_real_, NA_real_)),
+      est_min = if_else((x<quantile(x, 0.01)), est_high, 
+        if_else((x>quantile(x, 0.99)), est_low, NA_real_, NA_real_)),
       slope_max = signif(lm(est_max~x)$coefficients[2], 2),
-      slope_min = signif(lm(est_min~x)$coefficients[2], 2)
-    ) %>% select(species, type, chopstick, slope, slope_max, slope_min) %>% unique()
-
+      slope_min = signif(lm(est_min~x)$coefficients[2], 2)) %>% 
+    select(species, type, chopstick, slope, slope_max, slope_min) %>% 
+    unique()
+  
+  SE <- model$coefs %>% filter(coefficient == x_variable) %>% 
+    select(species, `Std. Error`) %>% 
+    rename(SE = `Std. Error`)
+  
+  slopes <- left_join(slopes, SE)
   slopes
 
 }
@@ -235,15 +245,23 @@ p <- ggplot(slopedat, aes(
   forcats::fct_reorder(species, -slope),
   slope,
   colour = chopstick, 
-  ymin = slope_min,
-  ymax = slope_max
+  ymin = (slope - SE*1.96),
+  ymax = (slope + SE*1.96)
+  # ymin = slope_min,
+  # ymax = slope_max
 )) + 
   geom_hline(yintercept = 0, colour = "darkgray") +
-  scale_colour_manual(values = colours, guide=F) +
-  geom_pointrange(alpha=0.75) + 
+  scale_colour_manual(values = colours) + #, guide=T
+  geom_pointrange(alpha=0.65, position = position_dodge(width=0.5)) + 
   coord_flip() +
-  xlab("") + ylab("") + ggtitle("slopes") +
-  gfplot:::theme_pbs() + theme(axis.title.y = element_blank())
+  xlab("") + #ylab("") + # ggtitle("slopes") +
+  gfplot:::theme_pbs() + theme(
+    # axis.title.y = element_blank(),
+    legend.position = c(.7, .95),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 10)#,
+    # legend.direction = "vertical"
+  )
 p
 
 }
