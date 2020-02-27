@@ -37,7 +37,7 @@ data_type <- "mature-95-with-do"
 
 ### Y LABEL
 y_label <- "Predicted biomass trend"
-# y_label <- "Predicted biomass vel"
+y_label <- "Predicted biomass vel"
 ## y_label <- "Predicted biomass dist-velocity" # didn't converge
 
 
@@ -55,6 +55,21 @@ plot_fuzzy_chopsticks(model,
 ) + #ylim(-1.5, 1) + # 
   #facet_wrap(vars(species), scales="free_y") +
   ggtitle(paste(title_all, "(", data_type, ")"))
+
+
+#### EXTRACT SLOPES AND PLOT THEM IN WORM FORM
+slopes <- chopstick_slopes(model, x_variable = "temp_trend_scaled", type = "temp")
+
+p1 <- plot_chopstick_slopes(slopes, type = "temp") +
+  scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
+
+p2 <- plot_fuzzy_chopsticks(model,
+  x_variable = "temp_trend_scaled", type = "temp",
+  y_label = y_label
+) + ggtitle(paste(title_all, "(", data_type, ")"))
+
+# display beside chopstick plots
+cowplot::plot_grid(p1,p2, rel_widths = c(1, 1.85)) 
 
 
 
