@@ -234,6 +234,8 @@ Type objective_function<Type>::operator()()
     delta_q_high(q) = eta_q_high_p1(q) - eta_q_high(q); // calculate the difference
   }
   REPORT(delta_q_low);
+  ADREPORT(delta_q_low);
+  REPORT(delta_q_high);
   ADREPORT(delta_q_high);
   
   // ------------------ Reporting ----------------------------------------------
