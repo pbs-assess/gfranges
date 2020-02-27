@@ -10,6 +10,12 @@ collapse_outliers <- function(.x, outliers) {
 #' @param X_ij Covariate matrix
 #' @param X_pj Covariate prediction matrix
 #' @param pred_dat Prediction data frame
+#' @param chop_low Chopstick slope (low temperature) prediction data frame.
+#' @param chop_high Chopstick slope (high temperature) prediction data frame.
+#' @param chop_mm_cols Columns of `chop_low` and `chop_high` to build the
+#'   chopstick slope model matrix from.
+#' @param chopstick_columns In order: main effect column to increment; 2nd
+#'   effect column that interacts, the interaction itself.
 #' @param offset Optional offset vector
 #' @param knots Number of SPDE knots
 #' @param nu Student-t degrees of freedom parameter (fixed)
@@ -19,9 +25,16 @@ collapse_outliers <- function(.x, outliers) {
 #'   structure is used.
 vocc_regression <- function(dat, y_i, X_ij, 
   X_pj, pred_dat,
+  chop_low, chop_high, chop_mm_cols, chopstick_columns,
   offset = rep(0, length(y_i)),
   knots = 200, nu = 7, student_t = TRUE,
   group_by_genus = FALSE, binomial = FALSE) {
+  
+  stopifnot(length(chopstick_columns) == 3L)
+  stopifnot(chopstick_columns[3] > chopstick_columns[2])
+  stopifnot(chopstick_columns[2] > chopstick_columns[1])
+  stopifnot(nrow(chop_low) == nrow(chop_high))
+  stopifnot(chopstick_columns %in% chop_mm_cols)
 
   if (binomial) student_t <- FALSE
 
@@ -32,6 +45,14 @@ vocc_regression <- function(dat, y_i, X_ij,
     distinct(select(dat, species, species_id)), by = "species")
   pred_dat <- left_join(pred_dat, 
     distinct(select(dat, genus, genus_id)), by = "genus")
+  
+  chop_low <- left_join(chop_low, 
+    distinct(select(dat, species, species_id)), by = "species")
+  chop_low <- left_join(chop_low, 
+    distinct(select(dat, genus, genus_id)), by = "genus")
+  
+  X_qj_low <- as.matrix(chop_low[,chop_mm_cols, drop=FALSE])
+  X_qj_high <- as.matrix(chop_high[,chop_mm_cols, drop=FALSE])
 
   # if (outliers[1] > 0 || outliers[2] < 1) {
   #   y_i <- collapse_outliers(y_i, outliers = outliers)
@@ -63,18 +84,23 @@ vocc_regression <- function(dat, y_i, X_ij,
   genus_index_k_df <- data.frame(species_id = dat$species_id, 
     genus_id = dat$genus_id) %>% 
     dplyr::distinct()
-  
+
   tmb_data <- list(
     y_i = y_i,
     X_ij = X_ij,
     X_pj = X_pj,
+    X_qj_low = X_qj_low,
+    X_qj_high = X_qj_high,
+    chop_cols = chopstick_columns - 1L,
     A_sk = A_sk,
     A_spatial_index = data$sdm_spatial_id - 1L,
     spde = spde$spde$param.inla[c("M0", "M1", "M2")],
     k_i = dat$species_id - 1L,
     k_p = pred_dat$species_id - 1L,
+    k_q = chop_low$species_id - 1L,
     m_i = dat$genus_id - 1L,
     m_p = pred_dat$genus_id - 1L,
+    m_q = chop_low$genus_id - 1L,
     n_k = n_k,
     nu = nu, # Student-t DF
     student_t = as.integer(student_t),

@@ -50,6 +50,13 @@ Type objective_function<Type>::operator()()
   DATA_IVECTOR(k_p); // species index
   DATA_IVECTOR(m_p); // genus index
   
+  DATA_MATRIX(X_qj_low);     // model matrix
+  DATA_MATRIX(X_qj_high);     // model matrix
+  // in order: main effect column to increment; 2nd effect column that interacts, the interaction itself:
+  DATA_IVECTOR(chop_cols);
+  DATA_IVECTOR(k_q); // species index
+  DATA_IVECTOR(m_q); // genus index
+  
   // ------------------ Parameters ---------------------------------------------
   
   // Parameters
@@ -169,6 +176,65 @@ Type objective_function<Type>::operator()()
   }
   REPORT(eta_p);
   ADREPORT(eta_p);
+  
+  // Chopstick slopes:
+  int n_q = X_qj_low.rows();
+  
+  // Holders for the predictions:
+  vector<Type> eta_q_low(n_q);
+  vector<Type> eta_q_high(n_q);
+  vector<Type> eta_q_low_p1(n_q); // + 1 on variable of interest
+  vector<Type> eta_q_high_p1(n_q); // + 1 on variable of interest
+  
+  // Fixed effect predictions:
+  vector<Type> eta_fixed_q_low = X_qj_low * b_j;
+  vector<Type> eta_fixed_q_high = X_qj_high * b_j;
+  
+  // Fixed effective predictions at variable of interest + 1 unit:
+  matrix<Type> X_qj_low_p1(n_q,X_qj_low.cols());
+  matrix<Type> X_qj_high_p1(n_q,X_qj_high.cols());
+  for (int q = 0; q < n_q; q++) {
+    for (int j = 0; j < b_re.cols(); j ++) {
+      X_qj_low_p1(q, j) = X_qj_low(q, j);
+      X_qj_high_p1(q, j) = X_qj_high(q, j);
+    }
+  }
+  for (int q = 0; q < n_q; q++) {
+    // increment the main effect by one unit:
+    X_qj_low_p1(q, chop_cols(0)) += Type(1.0);
+    X_qj_high_p1(q, chop_cols(0)) += Type(1.0);
+    // form the interaction predictor:
+    X_qj_low_p1(q, chop_cols(2)) = X_qj_low_p1(q, chop_cols(0)) * X_qj_low_p1(q, chop_cols(1));
+    X_qj_high_p1(q, chop_cols(2)) = X_qj_high_p1(q, chop_cols(0)) * X_qj_high_p1(q, chop_cols(1));
+  }
+  vector<Type> eta_fixed_q_low_p1 = X_qj_low_p1 * b_j;
+  vector<Type> eta_fixed_q_high_p1 = X_qj_high_p1 * b_j;
+  
+  // Variables to hold the outcome of interest:
+  vector<Type> delta_q_low(n_q);
+  vector<Type> delta_q_high(n_q);
+    
+  // Add in all the random effect predictions:
+  for (int q = 0; q < n_q; q++) {
+    eta_q_low(q) = eta_fixed_q_low(q);
+    eta_q_high(q) = eta_fixed_q_high(q);
+    for (int j = 0; j < (b_re.cols()); j++) {
+      eta_q_low(q) += X_qj_low(q, j) * b_re(k_q(q), j);
+      eta_q_low(q) += X_qj_low(q, j) * b_re(k_q(q), j);
+      eta_q_low_p1(q) += X_qj_low_p1(q, j) * b_re(k_q(q), j);
+      eta_q_high_p1(q) += X_qj_high_p1(q, j) * b_re(k_q(q), j);
+    }
+    for (int m = 0; m < (b_re_genus.cols()); m++) {
+      eta_q_low(q) += X_qj_low(q, m) * b_re_genus(m_q(q), m);
+      eta_q_high(q) += X_qj_high(q, m) * b_re_genus(m_q(q), m);
+      eta_q_low_p1(q) += X_qj_low_p1(q, m) * b_re_genus(m_q(q), m);
+      eta_q_high_p1(q) += X_qj_high_p1(q, m) * b_re_genus(m_q(q), m);
+    }
+    delta_q_low(q) = eta_q_low_p1(q) - eta_q_low(q); // calculate the difference
+    delta_q_high(q) = eta_q_high_p1(q) - eta_q_high(q); // calculate the difference
+  }
+  REPORT(delta_q_low);
+  ADREPORT(delta_q_high);
   
   // ------------------ Reporting ----------------------------------------------
   
