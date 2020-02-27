@@ -60,13 +60,16 @@ plot_fuzzy_chopsticks(model,
 #### EXTRACT SLOPES AND PLOT THEM IN WORM FORM
 slopes <- chopstick_slopes(model, x_variable = "temp_trend_scaled", type = "temp")
 
-p1 <- plot_chopstick_slopes(slopes, type = "temp") +
-  scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
+slopes[slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
+
+p1 <- plot_chopstick_slopes(slopes, type = "temp") + 
+  ggtitle(paste("Interactions (", data_type, ")")) # +
+  # scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
 
 p2 <- plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
   y_label = y_label
-) + ggtitle(paste(title_all, "(", data_type, ")"))
+) + theme(legend.position = "none")
 
 # display beside chopstick plots
 cowplot::plot_grid(p1,p2, rel_widths = c(1, 1.85)) 
