@@ -290,4 +290,17 @@ life_history$group[life_history$species=="C-O Sole"] <- "FLATFISH"
 life_history$group[life_history$species=="Aleutian Skate"] <- "SKATE"
 #life_history$group[life_history$species=="	"] <- " "
 
+
+# saveRDS(life_history, file = "data/life-history-stats.rds")
+# life_history <- readRDS("data/life-history-stats.rds") 
+
+life_history <- life_history %>% mutate (species_common_name = tolower(species))
+
+taxonomic_info <- gfdata::get_species() %>% select(species_common_name, species_science_name, parent_taxonomic_unit) %>% unique() %>% 	
+  filter( species_science_name != "ophiodontinae")
+
+life_history <- inner_join(life_history, taxonomic_info) 
+
+life_history$parent_taxonomic_unit[life_history$parent_taxonomic_unit=="bathyraja"] <- "rajidae(skates)"
+
 saveRDS(life_history, file = "data/life-history-stats.rds")
