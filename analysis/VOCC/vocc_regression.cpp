@@ -179,8 +179,8 @@ Type objective_function<Type>::operator()()
   for (int g = 0; g < delta_q.cols(); g++) {
     for (int q = 0; q < n_q; q++) {
       delta_q(q, g) =
-        (b_j(chop_cols(0)) + b_re(k_p(q), chop_cols(0)) + b_re_genus(m_p(q), chop_cols(0))) * X_q2(q, g) +
-        (b_j(chop_cols(1)) + b_re(k_p(q), chop_cols(1)) + b_re_genus(m_p(q), chop_cols(1)));
+        (b_j(chop_cols(0)) + b_re(q, chop_cols(0)) + b_re_genus(genus_index_k(q), chop_cols(0))) * X_q2(q, g) +
+        (b_j(chop_cols(1)) + b_re(q, chop_cols(1)) + b_re_genus(genus_index_k(q), chop_cols(1)));
     }
   }
   REPORT(delta_q);
