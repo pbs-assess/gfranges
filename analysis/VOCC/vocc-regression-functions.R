@@ -191,10 +191,10 @@ vocc_regression <- function(dat, y_i, X_ij,
   }
 
   d_q_low <- as.data.frame(s[grep("^delta_q_low$", row.names(s)), , drop = FALSE])
-  d_q_low <- bind_cols(ids_unique, d_q_low)
+  d_q_low <- bind_cols(chop_low, d_q_low)
   
   d_q_high <- as.data.frame(s[grep("^delta_q_high$", row.names(s)), , drop = FALSE])
-  d_q_high <- bind_cols(ids_unique, d_q_high)
+  d_q_high <- bind_cols(chop_high, d_q_high)
   
   r <- obj$report()
   nd <- dat
