@@ -83,7 +83,7 @@ vocc_regression <- function(dat, y_i, X_ij,
     y_i = y_i,
     X_ij = X_ij,
     X_pj = X_pj,
-    X_q2 = cbind(low, high),
+    X_k2 = cbind(low, high),
     chop_cols = chop_cols - 1L,
     A_sk = A_sk,
     A_spatial_index = data$sdm_spatial_id - 1L,
@@ -185,10 +185,10 @@ vocc_regression <- function(dat, y_i, X_ij,
   # save slope estimates 
   ids_pred <- distinct(select(pred_dat, species, species_id)) %>% arrange(species_id)
   n_pred <- nrow(ids_pred)
-  n_cols <- ncol(tmb_data$X_q2)
+  n_cols <- ncol(tmb_data$X_k2)
   d_ids <- do.call("rbind", replicate(n_cols, ids_pred, simplify = FALSE))
-  d_ids[["chopstick"]] <- rep(colnames(tmb_data$X_q2), each = n_pred)
-  deltas <- as.data.frame(s[grep("^delta_q$", row.names(s)), , drop = FALSE])
+  d_ids[["chopstick"]] <- rep(colnames(tmb_data$X_k2), each = n_pred)
+  deltas <- as.data.frame(s[grep("^delta_k$", row.names(s)), , drop = FALSE])
   deltas <- bind_cols(d_ids, deltas)
 
   

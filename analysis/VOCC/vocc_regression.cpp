@@ -50,7 +50,7 @@ Type objective_function<Type>::operator()()
   DATA_IVECTOR(k_p); // species index
   DATA_IVECTOR(m_p); // genus index
 
-  DATA_ARRAY(X_q2);
+  DATA_ARRAY(X_k2);
   DATA_IVECTOR(chop_cols);
 
   // ------------------ Parameters ---------------------------------------------
@@ -174,17 +174,16 @@ Type objective_function<Type>::operator()()
   ADREPORT(eta_p);
 
   // Chopstick slopes at 2 levels:
-  int n_q = b_re.rows();
-  matrix<Type> delta_q(n_q,X_q2.cols());
-  for (int g = 0; g < delta_q.cols(); g++) {
-    for (int q = 0; q < n_q; q++) {
-      delta_q(q, g) =
-        (b_j(chop_cols(0)) + b_re(q, chop_cols(0)) + b_re_genus(genus_index_k(q), chop_cols(0))) * X_q2(q, g) +
-        (b_j(chop_cols(1)) + b_re(q, chop_cols(1)) + b_re_genus(genus_index_k(q), chop_cols(1)));
+  matrix<Type> delta_k(n_k,X_k2.cols());
+  for (int g = 0; g < delta_k.cols(); g++) {
+    for (int k = 0; k < n_k; k++) {
+      delta_k(k, g) =
+        (b_j(chop_cols(0)) + b_re(k, chop_cols(0)) + b_re_genus(genus_index_k(k), chop_cols(0))) * X_k2(k, g) +
+        (b_j(chop_cols(1)) + b_re(k, chop_cols(1)) + b_re_genus(genus_index_k(k), chop_cols(1)));
     }
   }
-  REPORT(delta_q);
-  ADREPORT(delta_q);
+  REPORT(delta_k);
+  ADREPORT(delta_k);
 
   // ------------------ Reporting ----------------------------------------------
 
