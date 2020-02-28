@@ -166,10 +166,10 @@ vocc_regression <- function(dat, y_i, X_ij,
 
   s <- summary(sdr)
 
-  ids <- distinct(select(dat, species, species_id)) %>% arrange(species_id)
-  n_spp <- nrow(ids)
+  ids_unique <- distinct(select(dat, species, species_id)) %>% arrange(species_id)
+  n_spp <- nrow(ids_unique)
   n_coefs <- ncol(X_ij)
-  ids <- do.call("rbind", replicate(n_coefs, ids, simplify = FALSE))
+  ids <- do.call("rbind", replicate(n_coefs, ids_unique, simplify = FALSE))
   ids[["coefficient"]] <- rep(colnames(X_ij), each = n_spp)
 
   ids_genus <- distinct(select(dat, genus, genus_id)) %>% arrange(genus_id)
@@ -190,6 +190,12 @@ vocc_regression <- function(dat, y_i, X_ij,
     b_re_genus <- NA
   }
 
+  d_q_low <- as.data.frame(s[grep("^delta_q_low$", row.names(s)), , drop = FALSE])
+  d_q_low <- bind_cols(ids_unique, d_q_low)
+  
+  d_q_high <- as.data.frame(s[grep("^delta_q_high$", row.names(s)), , drop = FALSE])
+  d_q_high <- bind_cols(ids_unique, d_q_high)
+  
   r <- obj$report()
   nd <- dat
   nd$omega_s <- r$omega_sk_A_vec
@@ -199,7 +205,8 @@ vocc_regression <- function(dat, y_i, X_ij,
   list(obj = obj, opt = opt, sdr = sdr, coefs = b_re, 
     coefs_genus = b_re_genus, data = nd,
     group_by_genus = group_by_genus, nu = nu, y_i = y_i, X_ij = X_ij,
-    X_pj = X_pj, pred_dat = pred_dat,
+    X_pj = X_pj, pred_dat = pred_dat,  
+    d_q_low = d_q_low, d_q_high = d_q_high,
     b_re_species = b_re_species)
 }
 
