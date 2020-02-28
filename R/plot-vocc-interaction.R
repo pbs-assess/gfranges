@@ -213,21 +213,20 @@ chopstick_slopes <- function (model,
     select(species, `Std. Error`) %>% 
     rename(SE = `Std. Error`)
   
-  # pred_dat$est_low <-  par_est$delta_q_low
-  # pred_dat$est_high <-  par_est$delta_q_high
+  
   # browser()
-  delta_low <- model$d_q_low %>% select(species, Estimate, `Std. Error`) %>% rename(slope_est = Estimate, slope_se = `Std. Error`) 
+  #delta_low 
   
-  low_slopes <- slopes %>% filter(chopstick == "low") 
-  low_slopes <- left_join(low_slopes, delta_low)
+  deltas <- model$deltas %>% select(species, chopstick, Estimate, `Std. Error`) %>% rename(slope_est = Estimate, slope_se = `Std. Error`)
   
-  delta_high <- model$d_q_high %>% select(species, Estimate, `Std. Error`) %>% rename(slope_est = Estimate, slope_se = `Std. Error`) 
+  # low_slopes <- slopes %>% filter(chopstick == "low") 
+  # low_slopes <- left_join(low_slopes, delta_low)
+  # delta_high <- model$delta %>% select(species, Estimate, `Std. Error`) %>% rename(slope_est = Estimate, slope_se = `Std. Error`) 
+  # high_slopes <- slopes %>% filter(chopstick == "high") 
+  # high_slopes <- left_join(high_slopes, delta_high)
+  #slopes <- rbind(low_slopes, high_slopes)
   
-  high_slopes <- slopes %>% filter(chopstick == "high") 
-  
-  high_slopes <- left_join(high_slopes, delta_high)
-  
-  slopes <- rbind(low_slopes, high_slopes)
+  slopes <- left_join(slopes, deltas)
   slopes <- left_join(slopes, SE)
 
   slopes

@@ -37,12 +37,13 @@ vocc_regression <- function(dat, y_i, X_ij,
   pred_dat <- left_join(pred_dat,
     distinct(select(dat, genus, genus_id)), by = "genus")
 
-  low <- split(pred_dat, pred_dat[[split_effect_column]]) %>%
-    purrr::map_dbl(~min(.x[[split_effect_column]])) %>%
+  low <- split(pred_dat, pred_dat[["species_id"]]) %>%
+    purrr::map_dbl(~min(.x[[split_effect_column]])) %>% 
     as.numeric()
-  high <- split(pred_dat, pred_dat[[split_effect_column]]) %>%
+  high <- split(pred_dat, pred_dat[["species_id"]]) %>%
     purrr::map_dbl(~max(.x[[split_effect_column]])) %>%
     as.numeric()
+  
   chop_cols <- c(
     which(interaction_column == colnames(X_pj)),
     which(main_effect_column == colnames(X_pj)))
@@ -179,12 +180,18 @@ vocc_regression <- function(dat, y_i, X_ij,
   } else {
     b_re_genus <- NA
   }
-
-  d_q_low <- as.data.frame(s[grep("^delta_q_low$", row.names(s)), , drop = FALSE])
-  d_q_low <- bind_cols(chop_low, d_q_low)
+  # browser()
   
-  d_q_high <- as.data.frame(s[grep("^delta_q_high$", row.names(s)), , drop = FALSE])
-  d_q_high <- bind_cols(chop_high, d_q_high)
+  # save slope estimates 
+  ids_pred <- distinct(select(pred_dat, species, species_id)) %>% arrange(species_id)
+  n_pred <- nrow(ids_pred)
+  n_cols <- ncol(tmb_data$X_q2)
+  d_ids <- do.call("rbind", replicate(n_cols, ids_pred, simplify = FALSE))
+  d_ids[["chopstick"]] <- rep(colnames(tmb_data$X_q2), each = n_pred)
+  deltas <- as.data.frame(s[grep("^delta_q$", row.names(s)), , drop = FALSE])
+  deltas <- bind_cols(d_ids, deltas)
+
+  
   
   r <- obj$report()
   nd <- dat
@@ -196,7 +203,7 @@ vocc_regression <- function(dat, y_i, X_ij,
     coefs_genus = b_re_genus, data = nd,
     group_by_genus = group_by_genus, nu = nu, y_i = y_i, X_ij = X_ij,
     X_pj = X_pj, pred_dat = pred_dat,  
-    d_q_low = d_q_low, d_q_high = d_q_high,
+    deltas = deltas,
     b_re_species = b_re_species)
 }
 
