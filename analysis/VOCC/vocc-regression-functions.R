@@ -10,12 +10,6 @@ collapse_outliers <- function(.x, outliers) {
 #' @param X_ij Covariate matrix
 #' @param X_pj Covariate prediction matrix
 #' @param pred_dat Prediction data frame
-#' @param chop_low Chopstick slope (low temperature) prediction data frame.
-#' @param chop_high Chopstick slope (high temperature) prediction data frame.
-#' @param chop_mm_cols Columns of `chop_low` and `chop_high` to build the
-#'   chopstick slope model matrix from.
-#' @param chopstick_columns In order: main effect column to increment; 2nd
-#'   effect column that interacts, the interaction itself.
 #' @param offset Optional offset vector
 #' @param knots Number of SPDE knots
 #' @param nu Student-t degrees of freedom parameter (fixed)
@@ -23,36 +17,35 @@ collapse_outliers <- function(.x, outliers) {
 #'   normal distribution observation model is used.
 #' @param group_by_genus Logical. If `TRUE`, a hierarchical random effect
 #'   structure is used.
-vocc_regression <- function(dat, y_i, X_ij, 
+vocc_regression <- function(dat, y_i, X_ij,
   X_pj, pred_dat,
-  chop_low, chop_high, chop_mm_cols, chopstick_columns,
   offset = rep(0, length(y_i)),
   knots = 200, nu = 7, student_t = TRUE,
-  group_by_genus = FALSE, binomial = FALSE) {
-  
-  stopifnot(length(chopstick_columns) == 3L)
-  stopifnot(chopstick_columns[3] > chopstick_columns[2])
-  stopifnot(chopstick_columns[2] > chopstick_columns[1])
-  stopifnot(nrow(chop_low) == nrow(chop_high))
-  stopifnot(chopstick_columns %in% chop_mm_cols)
+  group_by_genus = FALSE, binomial = FALSE,
+  interaction_column,
+  main_effect_column,
+  split_effect_column
+  ) {
 
   if (binomial) student_t <- FALSE
 
   dat$species_id <- as.integer(as.factor(dat$species))
   dat$genus_id <- as.integer(as.factor(dat$genus))
-  
-  pred_dat <- left_join(pred_dat, 
+
+  pred_dat <- left_join(pred_dat,
     distinct(select(dat, species, species_id)), by = "species")
-  pred_dat <- left_join(pred_dat, 
+  pred_dat <- left_join(pred_dat,
     distinct(select(dat, genus, genus_id)), by = "genus")
-  
-  chop_low <- left_join(chop_low, 
-    distinct(select(dat, species, species_id)), by = "species")
-  chop_low <- left_join(chop_low, 
-    distinct(select(dat, genus, genus_id)), by = "genus")
-  
-  X_qj_low <- as.matrix(chop_low[,chop_mm_cols, drop=FALSE])
-  X_qj_high <- as.matrix(chop_high[,chop_mm_cols, drop=FALSE])
+
+  low <- split(pred_dat, pred_dat[[split_effect_column]]) %>%
+    purrr::map_dbl(~min(.x[[split_effect_column]])) %>%
+    as.numeric()
+  high <- split(pred_dat, pred_dat[[split_effect_column]]) %>%
+    purrr::map_dbl(~max(.x[[split_effect_column]])) %>%
+    as.numeric()
+  chop_cols <- c(
+    which(interaction_column == colnames(X_pj)),
+    which(main_effect_column == colnames(X_pj)))
 
   # if (outliers[1] > 0 || outliers[2] < 1) {
   #   y_i <- collapse_outliers(y_i, outliers = outliers)
@@ -81,26 +74,23 @@ vocc_regression <- function(dat, y_i, X_ij,
     loc = as.matrix(fake_data[, c("sdm_x", "sdm_y"), drop = FALSE])
   )
 
-  genus_index_k_df <- data.frame(species_id = dat$species_id, 
-    genus_id = dat$genus_id) %>% 
+  genus_index_k_df <- data.frame(species_id = dat$species_id,
+    genus_id = dat$genus_id) %>%
     dplyr::distinct()
 
   tmb_data <- list(
     y_i = y_i,
     X_ij = X_ij,
     X_pj = X_pj,
-    X_qj_low = X_qj_low,
-    X_qj_high = X_qj_high,
-    chop_cols = chopstick_columns - 1L,
+    X_q2 = cbind(low, high),
+    chop_cols = chop_cols - 1L,
     A_sk = A_sk,
     A_spatial_index = data$sdm_spatial_id - 1L,
     spde = spde$spde$param.inla[c("M0", "M1", "M2")],
     k_i = dat$species_id - 1L,
     k_p = pred_dat$species_id - 1L,
-    k_q = chop_low$species_id - 1L,
     m_i = dat$genus_id - 1L,
     m_p = pred_dat$genus_id - 1L,
-    m_q = chop_low$genus_id - 1L,
     n_k = n_k,
     nu = nu, # Student-t DF
     student_t = as.integer(student_t),
@@ -133,7 +123,7 @@ vocc_regression <- function(dat, y_i, X_ij,
     b_re = as.factor(matrix(NA, nrow = n_k, ncol = ncol(X_ij))),
     b_re_genus = as.factor(matrix(NA, nrow = n_m, ncol = ncol(X_ij)))
   )
-  
+
   if (binomial) tmb_map <- c(tmb_map, list(ln_phi = factor(NA)))
   obj_fe <- TMB::MakeADFun(
     data = tmb_data, parameters = tmb_param, map = tmb_map,
@@ -160,7 +150,7 @@ vocc_regression <- function(dat, y_i, X_ij,
     obj <- MakeADFun(tmb_data, tmb_param, DLL = "vocc_regression",
       random = c("omega_sk", "b_re"), map = tmb_map)
   }
-  opt <- nlminb(obj$par, obj$fn, obj$gr, 
+  opt <- nlminb(obj$par, obj$fn, obj$gr,
     control = list(eval.max = 1e4, iter.max = 1e4))
   sdr <- sdreport(obj)
 
@@ -179,7 +169,7 @@ vocc_regression <- function(dat, y_i, X_ij,
 
   b_re_species <- as.data.frame(s[grep("^b_re$", row.names(s)), , drop = FALSE])
   b_re_species <- bind_cols(ids, b_re_species)
-  
+
   b_re <- as.data.frame(s[grep("^combined_re$", row.names(s)), , drop = FALSE])
   b_re <- bind_cols(ids, b_re)
 
@@ -202,7 +192,7 @@ vocc_regression <- function(dat, y_i, X_ij,
   nd$eta_i <- r$eta_i
   nd$residual <- y_i - r$eta_i
 
-  list(obj = obj, opt = opt, sdr = sdr, coefs = b_re, 
+  list(obj = obj, opt = opt, sdr = sdr, coefs = b_re,
     coefs_genus = b_re_genus, data = nd,
     group_by_genus = group_by_genus, nu = nu, y_i = y_i, X_ij = X_ij,
     X_pj = X_pj, pred_dat = pred_dat,  
@@ -210,13 +200,13 @@ vocc_regression <- function(dat, y_i, X_ij,
     b_re_species = b_re_species)
 }
 
-add_colours <- function(coefs, col_var = "group", species_data = stats, 
+add_colours <- function(coefs, col_var = "group", species_data = stats,
   add_spp_data = TRUE, manual_colours = FALSE, last_used = FALSE) {
   if (add_spp_data) {
     coefs <- left_join(coefs, species_data)
   }
   coefs$col_var <- coefs[[col_var]]
-  
+
   if (manual_colours) {
     col_var <- c(
       "Arrowtooth Flounder",
@@ -308,26 +298,26 @@ add_colours <- function(coefs, col_var = "group", species_data = stats,
     if (length(missing_colours) > 0) {
       stop(paste(missing_colours, "need a colour assigned."))
     }
-    
+
   } else {
     if (last_used) {
     col_var <- unique(model2[[col_var]])
     colours <- unique(model2$colours)
     } else {
-   
+
     if (add_spp_data) {
       coefs <- left_join(coefs, species_data)
     }
-    
+
     coefs$col_var <- coefs[[col_var]]
-    
+
     N <- length(unique(coefs$col_var))
     col_var <- sort(unique(coefs$col_var), decreasing = TRUE)
-    
+
    # colours <- gfutilities::rich.colors(n = N, alpha = 1)
     colours <- RColorBrewer::brewer.pal(n = N, name = 'Spectral')
     }
-    
+
     colour_key <- as_tibble(cbind(col_var, colours))
     colour_key$col_var<- as.factor(colour_key$col_var)
     out <- left_join(coefs, colour_key)
@@ -339,19 +329,19 @@ add_colours <- function(coefs, col_var = "group", species_data = stats,
 
 #' Plot coefficients from vocc_regression
 #'
-#' @param coloured_coefs Coefficient dataframe with colours column. 
+#' @param coloured_coefs Coefficient dataframe with colours column.
 #' @param order_by Coefficient by which to order species in plot.
-#' @param manipulate Logical to allow manipulation in R studio. 
+#' @param manipulate Logical to allow manipulation in R studio.
 #'
 #' @export
-plot_coefs <- function(coloured_coefs, 
+plot_coefs <- function(coloured_coefs,
   order_by_trait = FALSE,
   order_by = "scale(do_vel_squashed)",
   fixed_scales = TRUE
   ) {
   # browser()
   # coloured_coefs <- out
-  coloured_coefs <- filter(coloured_coefs, coefficient != "(Intercept)") %>% 
+  coloured_coefs <- filter(coloured_coefs, coefficient != "(Intercept)") %>%
     mutate(coefficient = shortener(coefficient))
 
 
@@ -361,7 +351,7 @@ plot_coefs <- function(coloured_coefs,
     coloured_coefs <- filter(coloured_coefs, order != "NA")
   } else {
   order_by <- shortener(order_by)
-  order_values <- filter(coloured_coefs, coefficient == !!order_by) %>% 
+  order_values <- filter(coloured_coefs, coefficient == !!order_by) %>%
     select(species, Estimate) %>% rename(order = Estimate)
   coloured_coefs <- left_join(coloured_coefs, order_values)
   }
@@ -371,19 +361,19 @@ plot_coefs <- function(coloured_coefs,
        forcats::fct_reorder(species, -order), #-Estimate),
        #forcats::fct_reorder(species, -coloured_coefs[coloured_coefs$coefficient == "do_vel", ]$Estimate),
        Estimate,
-       colour = col_var, 
+       colour = col_var,
        ymin = Estimate + qnorm(0.025) * `Std. Error`,
        ymax = Estimate + qnorm(0.975) * `Std. Error`
-     )) + 
+     )) +
        geom_hline(yintercept = 0, colour = "darkgray") +
        scale_colour_manual(values = colour_list) +
-       geom_pointrange() + 
+       geom_pointrange() +
        coord_flip() + xlab("") +
        gfplot:::theme_pbs()
   if (fixed_scales) {
-    p <- p + facet_wrap(~coefficient, scales = "fixed") 
+    p <- p + facet_wrap(~coefficient, scales = "fixed")
   } else {
-  p <- p + facet_wrap(~coefficient, scales = "free_x") 
+  p <- p + facet_wrap(~coefficient, scales = "free_x")
   }
   p
 }

@@ -10,7 +10,7 @@ compile("vocc_regression.cpp")
 dyn.load(dynlib("vocc_regression"))
 source("vocc-regression-functions.R")
 
-knots <- 200
+knots <- 45
 
 y_type <- "trend"
 
@@ -190,32 +190,34 @@ pred_dat <- bind_rows(
 # Create prediction data frames for 
 # chopstick slopes:
 # (there must be a cleaner way of doing this)
-pred_chopstick_delta_low <-
-  group_by(pred_dat, genus, species) %>%
-  group_split() %>%
-  purrr::map_df(~ tibble(
-    `(Intercept)` = 0, 
-    temp_trend_scaled = 1, 
-    mean_temp_scaled = min(.x$mean_temp_scaled), 
-    log_biomass_scaled = 0, 
-    `temp_trend_scaled:mean_temp_scaled` = 
-      temp_trend_scaled * mean_temp_scaled, 
-    species = .x$species[1], 
-    genus = .x$genus[1]))
-pred_chopstick_delta_high <-
-  group_by(pred_dat, genus, species) %>%
-  group_split() %>%
-  purrr::map_df(~ tibble(
-    `(Intercept)` = 0, 
-    temp_trend_scaled = 1, 
-    mean_temp_scaled = max(.x$mean_temp_scaled), 
-    log_biomass_scaled = 0, 
-    `temp_trend_scaled:mean_temp_scaled` = 
-      temp_trend_scaled * mean_temp_scaled, 
-    species = .x$species[1], 
-    genus = .x$genus[1]))
-pred_chopstick_mm_columns <- 1:5 # columns to build the model matrix from
-chopstick_columns <- c(2, 3, 5) # in order: main effect column to increment; 2nd effect column that interacts, the interaction itself
+# pred_chopstick_delta_low <-
+#   group_by(pred_dat, genus, species) %>%
+#   group_split() %>%
+#   purrr::map_df(~ tibble(
+#     `(Intercept)` = 0,
+#     temp_trend_scaled = 1,
+#     mean_temp_scaled = min(.x$mean_temp_scaled),
+#     log_biomass_scaled = 0,
+#     `temp_trend_scaled:mean_temp_scaled` =
+#       temp_trend_scaled * mean_temp_scaled,
+#     species = .x$species[1],
+#     genus = .x$genus[1]))
+# pred_chopstick_delta_high <-
+#   group_by(pred_dat, genus, species) %>%
+#   group_split() %>%
+#   purrr::map_df(~ tibble(
+#     `(Intercept)` = 0,
+#     temp_trend_scaled = 1,
+#     mean_temp_scaled = max(.x$mean_temp_scaled),
+#     log_biomass_scaled = 0,
+#     `temp_trend_scaled:mean_temp_scaled` =
+#       temp_trend_scaled * mean_temp_scaled,
+#     species = .x$species[1],
+#     genus = .x$genus[1]))
+# pred_chopstick_mm_columns <- 1:5 # columns to build the model matrix from
+# chopstick_columns <- c(2, 3, 5) # in order: main effect column to increment; 2nd effect column that interacts, the interaction itself
+
+
 
 if (is_null) {
     null_lab <- "-sim"
@@ -233,24 +235,23 @@ if (y_type == "trend") {
     y <- d$biotic_trend
   }
   
+  # group_by(pred_dat, species) %>% summarise(z = min(mean_temp_scaled))
+
   if (w_genus) {
     model_type <- paste0(model_type, "-genus")
     new_model <- vocc_regression(d, y,
       X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
       knots = knots, group_by_genus = T, student_t = F,
-      chop_low = pred_chopstick_delta_low,
-      chop_high = pred_chopstick_delta_high,
-      chop_mm_cols = pred_chopstick_mm_columns,
-      chopstick_columns = chopstick_columns
+      chopstick_columns = c(5, 2),
+      chopstick_split_column = "mean_temp_scaled"
     )
   } else {
     new_model <- vocc_regression(d, y,
       X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
       knots = knots, group_by_genus = FALSE, student_t = F,
-      chop_low = pred_chopstick_delta_low,
-      chop_high = pred_chopstick_delta_high,
-      chop_mm_cols = pred_chopstick_mm_columns,
-      chopstick_columns = chopstick_columns
+      interaction_column = "temp_trend_scaled:mean_temp_scaled",
+      main_effect_column = "temp_trend_scaled",
+      split_effect_column = "mean_temp_scaled"
     )
   }
 
@@ -290,10 +291,10 @@ saveRDS(new_model, file = paste0("data/test-slopes-genus2.rds"))
 # paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, "-", knots, ".rds")
 
 # Example of chopstick slopes:
-# par_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
-# par_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
-# par_est$delta_q_high
-# par_se$delta_q_high
+par_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
+par_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
+par_est$delta_q
+par_se$delta_q
 
 ##############################
 #### LOAD MODEL JUST BUILT
