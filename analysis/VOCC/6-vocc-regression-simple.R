@@ -244,8 +244,9 @@ if (y_type == "trend") {
     new_model <- vocc_regression(d, y,
       X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
       knots = knots, group_by_genus = FALSE, student_t = F,
-      chopstick_betas = c(5, 2),
-      chopstick_split_column = "mean_temp_scaled"
+      interaction_column = "temp_trend_scaled:mean_temp_scaled",
+      main_effect_column = "temp_trend_scaled",
+      split_effect_column = "mean_temp_scaled"
     )
   }
 
@@ -285,10 +286,10 @@ date <- format(Sys.time(), "-%m-%d")
 # paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, "-", knots, ".rds")
 
 # Example of chopstick slopes:
-# par_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
-# par_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
-# par_est$delta_q_high
-# par_se$delta_q_high
+par_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
+par_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
+par_est$delta_q
+par_se$delta_q
 
 ##############################
 #### LOAD MODEL JUST BUILT
