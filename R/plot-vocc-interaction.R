@@ -36,13 +36,9 @@ interaction_df <- function(
 
       nd$chopstick <- c(
         rep(paste0(
-          "low ", shortener(split_variable),
-          ""
-        ), length.out = N),
+          "low"), length.out = N),
         rep(paste0(
-          "high ", shortener(split_variable),
-          ""
-        ), length.out = N)
+          "high"), length.out = N)
       )
     } else {
       split_range <- range((spp_d[[split_variable]]), na.rm = TRUE)
@@ -51,7 +47,7 @@ interaction_df <- function(
 
       nd$chopstick <- c(
         rep(paste0(
-          "min ", shortener(split_variable),
+          "min", shortener(split_variable),
           ""
         ), length.out = N),
         rep(paste0(
@@ -181,9 +177,12 @@ chopstick_slopes <- function (model,
   par_est <- as.list(model$sdr, "Estimate", report = TRUE)
   par_se <- as.list(model$sdr, "Std. Error", report = TRUE)
   
+  
+  #model$obj$delta_q_low
   pred_dat <- model$pred_dat
   pred_dat$est_p <- par_est$eta_p
   pred_dat$se_p <- par_se$eta_p
+  
   
   if (!is.null(species)) {
     spp <- species
@@ -214,7 +213,23 @@ chopstick_slopes <- function (model,
     select(species, `Std. Error`) %>% 
     rename(SE = `Std. Error`)
   
+  # pred_dat$est_low <-  par_est$delta_q_low
+  # pred_dat$est_high <-  par_est$delta_q_high
+  # browser()
+  delta_low <- model$d_q_low %>% select(species, Estimate, `Std. Error`) %>% rename(slope_est = Estimate, slope_se = `Std. Error`) 
+  
+  low_slopes <- slopes %>% filter(chopstick == "low") 
+  low_slopes <- left_join(low_slopes, delta_low)
+  
+  delta_high <- model$d_q_high %>% select(species, Estimate, `Std. Error`) %>% rename(slope_est = Estimate, slope_se = `Std. Error`) 
+  
+  high_slopes <- slopes %>% filter(chopstick == "high") 
+  
+  high_slopes <- left_join(high_slopes, delta_high)
+  
+  slopes <- rbind(low_slopes, high_slopes)
   slopes <- left_join(slopes, SE)
+
   slopes
 
 }
@@ -226,6 +241,7 @@ plot_chopstick_slopes <- function (slopedat,
   type = NULL,
   x_variable = "temp_trend_scaled",
   legend_position = c(.7, .95),
+  hack = F,
   colours = NULL) {
   
   if (!is.null(type)) {
@@ -241,7 +257,8 @@ plot_chopstick_slopes <- function (slopedat,
     }
   }
   }
-  
+
+if(hack) { 
 p <- ggplot(slopedat, aes(
   forcats::fct_reorder(species, -slope),
   slope,
@@ -263,6 +280,31 @@ p <- ggplot(slopedat, aes(
     legend.text = element_text(size = 10)#,
     # legend.direction = "vertical"
   )
+} else {
+  p <- ggplot(slopedat, aes(
+    forcats::fct_reorder(species, -slope),
+    slope_est,
+    colour = chopstick, 
+    ymin = (slope_est - slope_se*1.96),
+    ymax = (slope_est + slope_se*1.96)
+    # ymin = slope_min,
+    # ymax = slope_max
+  )) + 
+    geom_hline(yintercept = 0, colour = "darkgray") +
+    scale_colour_manual(values = colours) + #, guide=T
+    geom_pointrange(alpha=0.65, position = position_dodge(width=0.5)) + 
+    coord_flip() +
+    xlab("") + #ylab("") + # ggtitle("slopes") +
+    gfplot:::theme_pbs() + theme(
+      # axis.title.y = element_blank(),
+      legend.position = legend_position,
+      legend.title = element_blank(),
+      legend.text = element_text(size = 10)#,
+      # legend.direction = "vertical"
+    )
+}
+  
+  
 p
 
 }
