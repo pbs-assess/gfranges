@@ -175,17 +175,19 @@ Type objective_function<Type>::operator()()
 
   // Chopstick slopes at 2 levels:
   matrix<Type> delta_k(n_k,X_k2.cols());
-  vector<Type> diff_delta_k(n_k);
   for (int g = 0; g < delta_k.cols(); g++) {
     for (int k = 0; k < n_k; k++) {
       delta_k(k, g) =
         (b_j(chop_cols(0)) + b_re(k, chop_cols(0)) + b_re_genus(genus_index_k(k), chop_cols(0))) * X_k2(k, g) +
         (b_j(chop_cols(1)) + b_re(k, chop_cols(1)) + b_re_genus(genus_index_k(k), chop_cols(1)));
-      diff_delta_k(k) = delta_k(k, 1) - delta_k(k, 0);
     }
   }
   REPORT(delta_k);
   ADREPORT(delta_k);
+  vector<Type> diff_delta_k(n_k);
+  for (int k = 0; k < n_k; k++) {
+    diff_delta_k(k) = delta_k(k, 1) - delta_k(k, 0);
+  }
   REPORT(diff_delta_k);
   ADREPORT(diff_delta_k);
 
