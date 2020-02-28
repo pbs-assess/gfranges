@@ -1,5 +1,7 @@
 library(TMB)
 library(dplyr)
+# library(stringr)
+library(tidyr)
 library(ggplot2)
 library(gfranges)
 
@@ -8,7 +10,7 @@ compile("vocc_regression.cpp")
 dyn.load(dynlib("vocc_regression"))
 source("vocc-regression-functions.R")
 
-knots <- 100
+knots <- 200
 
 y_type <- "trend"
 
@@ -21,7 +23,10 @@ is_null <- F
 
 stats <- readRDS(paste0("data/life-history-stats.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
-stats$genus <- tolower(stats$group)
+
+stats <- stats %>% mutate(genus = parent_taxonomic_unit) %>% 
+  separate(species_science_name, " ", into = c("true_genus","specific"))
+stats$genus <- gsub( '\\(.*','', stats$genus )
 stats$group[stats$group == "SHARK"] <- "DOGFISH"
 # stats$group[stats$group == "SHARK"] <- "SHARKS & SKATES"
 # stats$group[stats$group == "SKATE"] <- "SHARKS & SKATES"
@@ -280,7 +285,7 @@ if (y_type == "trend") {
 
 date <- format(Sys.time(), "-%m-%d")
 
-# saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, "-", knots, ".rds"))
+saveRDS(new_model, file = paste0("data/test-slopes-genus2.rds"))
 # 
 # paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, "-", knots, ".rds")
 
