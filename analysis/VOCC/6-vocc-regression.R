@@ -29,7 +29,7 @@ model_type <- "-trend-with-do"
 # model_type <- "-trend-grad"
 # model_type <- "-dist-vel-temp"
 
-w_genus <- T
+w_genus <- F
 is_null <- F
 
 
@@ -309,10 +309,10 @@ if (model_type == "-dist-vel-both") {
 
 
  if(no_chopsticks){
-#   temp_chopstick <- F
+  temp_chopstick <- T
   DO_chopstick <- F
-#   fishing_chopstick <- F
-# # would need to add dummy data then?
+  fishing_chopstick <- F
+# # would need to add dummy data to eliminate temp?
  }
  
 if (is_null) {
@@ -326,95 +326,6 @@ if (w_genus) {
 } else {
   genus_lab <- ""
 }
-
-
-if(temp_chopstick){
-  split_effect_column <- "mean_temp_scaled"
-  
-  if(x_type == "trend"){
-  interaction_column <- "temp_trend_scaled:mean_temp_scaled"
-  main_effect_column <- "temp_trend_scaled"
-  } else {
-    if(x_type == "vel") {
-      interaction_column <- "squashed_temp_vel_scaled:mean_temp_scaled"
-      main_effect_column <- "squashed_temp_vel_scaled"
-    } else {
-      interaction_column <- "squashed_temp_dvocc_scaled:mean_temp_scaled"
-      main_effect_column <- "squashed_temp_dvocc_scaled"
-    }
-  }
-  
-  pred_dat <- interaction_df(d, formula,
-    x_variable = main_effect_column,
-    split_variable = split_effect_column,
-    N = 2 # increase for final figures
-  ) %>% mutate(type = "temp")
-  
-  X_pj <- as.matrix(select(pred_dat, -chopstick, -species, -genus, -type))
-  
-  if (y_type == "trend") {
-    
-    #### biotic tend 
-    if (is_null) {
-      y <- d$fake_trend
-    } else {
-      y <- d$biotic_trend
-    }
-    
-    if (w_genus) {
-      model_type <- paste0(model_type, "-genus")
-      new_model %<-%  vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-        knots = knots, group_by_genus = T, student_t = F,
-        interaction_column = interaction_column,
-        main_effect_column = main_effect_column,
-        split_effect_column = split_effect_column
-      )
-    } else {
-      new_model %<-%  vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-        knots = knots, group_by_genus = FALSE, student_t = F,
-        interaction_column = interaction_column,
-        main_effect_column = main_effect_column,
-        split_effect_column = split_effect_column
-      )
-    }
-    
-  } else { 
-    
-    #### biotic velocity (uses student_t)
-    
-    if (is_null) {
-      y <- d$squashed_fake_vel
-    } else {
-      y <- d$squashed_biotic_vel
-      
-      if(model_type == "-dist-vel-temp") {
-        y <- d$squashed_biotic_dvocc
-        # y <- d$biotic_trend
-      }
-    }
-    if (w_genus) {
-      model_type <- paste0(model_type, "-genus")
-      new_model %<-%  vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-        knots = knots, group_by_genus = T, student_t = T,
-        interaction_column = interaction_column,
-        main_effect_column = main_effect_column,
-        split_effect_column = split_effect_column
-      )
-    } else {
-      new_model %<-%  vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-        knots = knots, group_by_genus = FALSE, student_t = T,
-        interaction_column = interaction_column,
-        main_effect_column = main_effect_column,
-        split_effect_column = split_effect_column
-      )
-    }
-  }
-}
-
 
 if(DO_chopstick){
   split_effect_column <- "mean_DO_scaled"
@@ -451,7 +362,8 @@ if(DO_chopstick){
     
     if (w_genus) {
       model_type <- paste0(model_type, "-genus")
-      DO_model %<-%  vocc_regression(d, y,
+      # DO_model %<-% 
+      DO_model <-  vocc_regression(d, y,
         X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
         knots = knots, group_by_genus = T, student_t = F,
         interaction_column = interaction_column,
@@ -459,7 +371,8 @@ if(DO_chopstick){
         split_effect_column = split_effect_column
       )
     } else {
-      DO_model %<-%  vocc_regression(d, y,
+      # DO_model %<-% 
+      DO_model <-  vocc_regression(d, y,
         X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
         knots = knots, group_by_genus = FALSE, student_t = F,
         interaction_column = interaction_column,
@@ -469,7 +382,7 @@ if(DO_chopstick){
     }
     
   } else { 
-    
+    if (y_type == "vel") {
     #### biotic velocity (uses student_t)
     
     if (is_null) {
@@ -484,7 +397,8 @@ if(DO_chopstick){
     }
     if (w_genus) {
       model_type <- paste0(model_type, "-genus")
-      DO_model %<-%  vocc_regression(d, y,
+      # DO_model %<-% 
+      DO_model <- vocc_regression(d, y,
         X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
         knots = knots, group_by_genus = T, student_t = T,
         interaction_column = interaction_column,
@@ -492,13 +406,15 @@ if(DO_chopstick){
         split_effect_column = split_effect_column
       )
     } else {
-      DO_model %<-%  vocc_regression(d, y,
+      # DO_model %<-% 
+      DO_model <-  vocc_regression(d, y,
         X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
         knots = knots, group_by_genus = FALSE, student_t = T,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
         split_effect_column = split_effect_column
       )
+    }
     }
   }
 }
@@ -544,6 +460,7 @@ if(fishing_chopstick){
       )
     }
   } else { 
+    if (y_type == "trend") {
     #### biotic velocity (uses student_t)
     if (is_null) {
       y <- d$squashed_fake_vel
@@ -572,20 +489,141 @@ if(fishing_chopstick){
         split_effect_column = split_effect_column
       )
     }
+    }
   }
 }
 
+if(temp_chopstick){
+  split_effect_column <- "mean_temp_scaled"
+  
+  if(x_type == "trend"){
+    interaction_column <- "temp_trend_scaled:mean_temp_scaled"
+    main_effect_column <- "temp_trend_scaled"
+  } else {
+    if(x_type == "vel") {
+      interaction_column <- "squashed_temp_vel_scaled:mean_temp_scaled"
+      main_effect_column <- "squashed_temp_vel_scaled"
+    } else {
+      interaction_column <- "squashed_temp_dvocc_scaled:mean_temp_scaled"
+      main_effect_column <- "squashed_temp_dvocc_scaled"
+    }
+  }
+  
+  pred_dat <- interaction_df(d, formula,
+    x_variable = main_effect_column,
+    split_variable = split_effect_column,
+    N = 2 # increase for final figures
+  ) %>% mutate(type = "temp")
+  
+  X_pj <- as.matrix(select(pred_dat, -chopstick, -species, -genus, -type))
+  
+  if (y_type == "trend") {
+    
+    #### biotic tend 
+    if (is_null) {
+      y <- d$fake_trend
+    } else {
+      y <- d$biotic_trend
+    }
+    
+    if (w_genus) {
+      model_type <- paste0(model_type, "-genus")
+      # new_model %<-%  
+      new_model <-  vocc_regression(d, y,
+        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+        knots = knots, group_by_genus = T, student_t = F,
+        interaction_column = interaction_column,
+        main_effect_column = main_effect_column,
+        split_effect_column = split_effect_column
+      )
+    } else {
+      #new_model %<-%  
+      new_model <-  vocc_regression(d, y,
+          X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+          knots = knots, group_by_genus = FALSE, student_t = F,
+          interaction_column = interaction_column,
+          main_effect_column = main_effect_column,
+          split_effect_column = split_effect_column
+        )
+    }
+    
+  } else { 
+    if (y_type == "vel") {
+      #### biotic velocity (uses student_t)
+      
+      if (is_null) {
+        y <- d$squashed_fake_vel
+      } else {
+        y <- d$squashed_biotic_vel
+        
+        if(model_type == "-dist-vel-temp") {
+          y <- d$squashed_biotic_dvocc
+          # y <- d$biotic_trend
+        }
+      }
+      if (w_genus) {
+        model_type <- paste0(model_type, "-genus")
+        #new_model %<-%  
+        new_model <-  vocc_regression(d, y,
+          X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+          knots = knots, group_by_genus = T, student_t = T,
+          interaction_column = interaction_column,
+          main_effect_column = main_effect_column,
+          split_effect_column = split_effect_column
+        )
+      } else {
+        #new_model %<-%  
+        new_model <-  vocc_regression(d, y,
+          X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+          knots = knots, group_by_genus = FALSE, student_t = T,
+          interaction_column = interaction_column,
+          main_effect_column = main_effect_column,
+          split_effect_column = split_effect_column
+        )
+      }
+    }
+  }
+}
+
+
+############################
+# Needs to wait until after models finish
+# can't figure out how to do that automatically
+# f <- futureOf(new_model)
+# count <- 1
+# while (!resolved(f)) {
+#   cat(count, "\n")
+#   Sys.sleep(0.2)
+#   count <- count + 1
+# }
+
+############################
+# Check if finished
+print(head(new_model$deltas))
+print(head(DO_model$deltas))
 ############################
 
+
 if(DO_chopstick){
+  
+new_model$pred_dat <- rbind(new_model$pred_dat, DO_model$pred_dat)
+new_model$deltas <- rbind(new_model$deltas, DO_model$deltas)
+new_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
+new_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
+new_model$delta_diff <- cbind(new_est$diff_delta_k, new_se$diff_delta_k)
+new_model$delta_diff <- as.data.frame(new_model$delta_diff)
+new_model$delta_diff$type <- "temp"
+  
+DO_est <- as.list(DO_model$sdr, "Estimate", report = TRUE)
+DO_se <- as.list(DO_model$sdr, "Std. Error", report = TRUE)
 
-new_model$DO_pred_dat <- DO_model$pred_dat
-new_model$DO_deltas <- DO_model$deltas
+DO_model$delta_diff <- cbind(DO_est$diff_delta_k, DO_se$diff_delta_k)
+DO_model$delta_diff <- as.data.frame(DO_model$delta_diff)
+DO_model$delta_diff$type <- "DO"
 
-par_est <- as.list(DO_model$sdr, "Estimate", report = TRUE)
-par_se <- as.list(DO_model$sdr, "Std. Error", report = TRUE)
+new_model$delta_diff <- rbind(new_model$delta_diff, DO_model$delta_diff)
 
-new_model$DO_delta_diff <- cbind(par_est$diff_delta_k, par_se$diff_delta_k)
+names(new_model$delta_diff) <- c("est", "se", "type")
 }
 
 
