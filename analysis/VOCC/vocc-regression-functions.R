@@ -47,7 +47,7 @@ vocc_regression <- function(dat, y_i, X_ij,
   chop_cols <- c(
     which(interaction_column == colnames(X_pj)),
     which(main_effect_column == colnames(X_pj)))
-
+# browser()
   # if (outliers[1] > 0 || outliers[2] < 1) {
   #   y_i <- collapse_outliers(y_i, outliers = outliers)
   #   X_ij[,2] <- collapse_outliers(X_ij[,2], outliers = outliers)
@@ -183,7 +183,7 @@ vocc_regression <- function(dat, y_i, X_ij,
   # browser()
   
   # save slope estimates 
-  ids_pred <- distinct(select(pred_dat, species, species_id)) %>% arrange(species_id)
+  ids_pred <- distinct(select(pred_dat, species, species_id, type)) %>% arrange(species_id)
   n_pred <- nrow(ids_pred)
   n_cols <- ncol(tmb_data$X_k2)
   d_ids <- do.call("rbind", replicate(n_cols, ids_pred, simplify = FALSE))
