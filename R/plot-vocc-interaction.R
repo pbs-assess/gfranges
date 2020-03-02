@@ -105,17 +105,31 @@ plot_fuzzy_chopsticks <- function(model,
                                   type = NULL,
                                   colours = NULL,
                                   species = NULL, 
-                                  order_var = "species"
+                                  order_var = "species",
+                                  slopes = NULL
   ) {
-  par_est <- as.list(model$sdr, "Estimate", report = TRUE)
-  par_se <- as.list(model$sdr, "Std. Error", report = TRUE)
-
+  
   pred_dat <- model$pred_dat
-  pred_dat$est_p <- par_est$eta_p
-  pred_dat$se_p <- par_se$eta_p
+  
+  if (is.null(pred_dat$est_p)) {
+  est <- as.list(model$sdr, "Estimate", report = TRUE)
+  se <- as.list(model$sdr, "Std. Error", report = TRUE)
+  pred_dat$est_p <- est$eta_p
+  pred_dat$se_p <- se$eta_p
+  }
+  
+  if(!is.null(slopes)) {
+    signif <- slopes %>% 
+      select(species, type, chopstick, sig_diff, global_slope, global_se) %>% 
+      unique()
+    pred_dat <- left_join(pred_dat, signif) %>% 
+      mutate(global = if_else(sig_diff=="N", 
+        if_else(((abs(global_slope)-global_se*1.96)>=0), est_p, NA_real_), 
+        NA_real_)) 
+  }
   
   if (is.null(colours)) {
-    if (type == "do") {
+    if (type == "DO") {
       colours <- c("#5E4FA2", "#FDAE61")
     } else {
       if (type == "mean_temp") {
@@ -135,6 +149,8 @@ plot_fuzzy_chopsticks <- function(model,
 
   if (!is.null(type)) {
     pred_dat <- filter(pred_dat, type == !!type)
+  } else {
+    
   }
 
   # pred_dat <- pred_dat %>% group_by(species, chopstick) %>%
@@ -144,11 +160,10 @@ plot_fuzzy_chopsticks <- function(model,
   #   ) 
   
   p <- ggplot(pred_dat, aes_string(x_variable, "est_p")) +
-    geom_line(aes(colour = chopstick)) +
     geom_ribbon(aes(
       fill = chopstick,
       ymin = est_p - 1.96 * se_p, ymax = est_p + 1.96 * se_p
-    ), alpha = 0.3) +
+    ), alpha = 0.2) +
     scale_colour_manual(values = colours) +
     scale_fill_manual(values = colours) +
     ylab(y_label) +
@@ -160,7 +175,16 @@ plot_fuzzy_chopsticks <- function(model,
       legend.direction = "vertical",
       legend.position = "top"
     )
-
+  
+  if(is.null(pred_dat$sig_diff)) {
+  p <- p + geom_line(aes(colour = chopstick)) 
+  } else {
+    p <- p + geom_line(aes(alpha = sig_diff, colour = chopstick), size=1.25) +
+      geom_smooth(method = lm, aes_string(x_variable, "global"), size = 0.5, 
+        colour = "black", se = F, inherit.aes = F) +
+      scale_alpha_discrete(range = c(0.25, 0.9), guide=F) 
+  }
+  
   if (is.null(species)) {
     p <- p + facet_wrap(vars(species)) #forcats::fct_reorder(species, order)
   }
@@ -171,19 +195,27 @@ plot_fuzzy_chopsticks <- function(model,
 #' @export
 chopstick_slopes <- function (model,
       type = NULL,
+      interaction_column = "temp_trend_scaled:mean_temp_scaled" ,
       x_variable = "temp_trend_scaled",
       species = NULL) {
   
-  par_est <- as.list(model$sdr, "Estimate", report = TRUE)
-  par_se <- as.list(model$sdr, "Std. Error", report = TRUE)
-  
-  
-  #model$obj$delta_q_low
   pred_dat <- model$pred_dat
-  pred_dat$est_p <- par_est$eta_p
-  pred_dat$se_p <- par_se$eta_p
   
+  if (is.null(pred_dat$est_p)) {
+    est <- as.list(model$sdr, "Estimate", report = TRUE)
+    se <- as.list(model$sdr, "Std. Error", report = TRUE)
+    pred_dat$est_p <- est$eta_p
+    pred_dat$se_p <- se$eta_p
+  }
   
+  deltas <- model$deltas %>% 
+    select(species, type, chopstick, Estimate, `Std. Error`) %>% 
+    rename(slope_est = Estimate, slope_se = `Std. Error`)
+  
+  diffs <- model$delta_diff %>% rename(diff = est, diff_se = se) %>% 
+    mutate(min_diff = abs(diff)-diff_se*1.96, sig_diff = if_else(min_diff<=0, "N", "Y"))
+  
+   
   if (!is.null(species)) {
     spp <- species
     pred_dat <- filter(pred_dat, species == !!spp)
@@ -191,11 +223,20 @@ chopstick_slopes <- function (model,
   
   if (!is.null(type)) {
     pred_dat <- filter(pred_dat, type == !!type)
+    deltas <- filter(deltas, type == !!type)
+    diffs <- filter(diffs, type == !!type)
+    
+    global_slopes <- filter(diffs, sig_diff == "N") %>% select(species)
+    global_coefs <- filter(model$coefs, coefficient == !!x_variable) %>% 
+      select(-species_id, -coefficient) %>% 
+      rename(global_slope= Estimate, global_se = `Std. Error`)
+    global <- left_join(global_slopes, global_coefs)
+    diffs <- left_join(diffs, global)
   }
   
   slopes <- pred_dat %>% 
     rename( x = x_variable) %>% 
-    group_by(species, chopstick) %>% #select(species, type, chopstick, x)%>% 
+    group_by(species, type, chopstick) %>% #select(species, type, chopstick, x)
     mutate(
       slope = signif(lm(est_p~x)$coefficients[2], 2),
       est_low = est_p-(se_p*1.96),
@@ -209,26 +250,14 @@ chopstick_slopes <- function (model,
     select(species, type, chopstick, slope, slope_max, slope_min) %>% 
     unique()
   
-  SE <- model$coefs %>% filter(coefficient == x_variable) %>% 
+  # SE for interation involving x_variable
+  SE <- model$coefs %>% filter(coefficient == interaction_column) %>% 
     select(species, `Std. Error`) %>% 
     rename(SE = `Std. Error`)
-  
-  
-  # browser()
-  #delta_low 
-  
-  deltas <- model$deltas %>% select(species, chopstick, Estimate, `Std. Error`) %>% rename(slope_est = Estimate, slope_se = `Std. Error`)
-  
-  # low_slopes <- slopes %>% filter(chopstick == "low") 
-  # low_slopes <- left_join(low_slopes, delta_low)
-  # delta_high <- model$delta %>% select(species, Estimate, `Std. Error`) %>% rename(slope_est = Estimate, slope_se = `Std. Error`) 
-  # high_slopes <- slopes %>% filter(chopstick == "high") 
-  # high_slopes <- left_join(high_slopes, delta_high)
-  #slopes <- rbind(low_slopes, high_slopes)
-  
-  slopes <- left_join(slopes, deltas)
-  slopes <- left_join(slopes, SE)
 
+  slopes <- left_join(slopes, deltas) #by = c("species", "type", "chopstick")
+  slopes <- left_join(slopes, diffs)
+  slopes <- left_join(slopes, SE)
   slopes
 
 }
@@ -244,8 +273,9 @@ plot_chopstick_slopes <- function (slopedat,
   colours = NULL) {
   
   if (!is.null(type)) {
+    slopedat <- filter(slopedat, type == !!type)
   if (is.null(colours)) {
-    if (type == "do") {
+    if (type == "DO") {
       colours <- c("#5E4FA2", "#FDAE61")
     } else {
       if (type == "mean_temp") {
@@ -258,18 +288,23 @@ plot_chopstick_slopes <- function (slopedat,
   }
 
 if(hack) { 
-p <- ggplot(slopedat, aes(
-  forcats::fct_reorder(species, -slope),
-  slope,
-  colour = chopstick, 
-  ymin = (slope - SE*1.96),
-  ymax = (slope + SE*1.96)
-  # ymin = slope_min,
-  # ymax = slope_max
-)) + 
+p <- ggplot(slopedat) + 
   geom_hline(yintercept = 0, colour = "darkgray") +
+  geom_linerange(aes(forcats::fct_reorder(species, -slope), abs(diff),
+    ymin = (abs(diff) - diff_se*1.96),
+    ymax = (abs(diff) + diff_se*1.96)), size=2, alpha=0.25, colour = "gray"
+    #, position = position_dodge(width=0.75)
+    ) +
   scale_colour_manual(values = colours) + #, guide=T
-  geom_pointrange(alpha=0.65, position = position_dodge(width=0.5)) + 
+  geom_pointrange(aes(
+    forcats::fct_reorder(species, -slope),
+    slope,
+    colour = chopstick, 
+    # ymin = (slope - SE*1.96),
+    # ymax = (slope + SE*1.96)
+    ymin = slope_min,
+    ymax = slope_max
+  ), alpha=0.65, position = position_dodge(width=0.75)) + 
   coord_flip() +
   xlab("") + #ylab("") + # ggtitle("slopes") +
   gfplot:::theme_pbs() + theme(
@@ -279,19 +314,27 @@ p <- ggplot(slopedat, aes(
     legend.text = element_text(size = 10)#,
     # legend.direction = "vertical"
   )
+
+
+
 } else {
+  # browser()
   p <- ggplot(slopedat, aes(
-    forcats::fct_reorder(species, -slope),
+    forcats::fct_reorder(species, -slope_est),
     slope_est,
     colour = chopstick, 
+    alpha = sig_diff,
     ymin = (slope_est - slope_se*1.96),
     ymax = (slope_est + slope_se*1.96)
     # ymin = slope_min,
     # ymax = slope_max
   )) + 
     geom_hline(yintercept = 0, colour = "darkgray") +
+    scale_alpha_discrete(range = c(0.25, 0.9), guide=F) +
     scale_colour_manual(values = colours) + #, guide=T
-    geom_pointrange(alpha=0.65, position = position_dodge(width=0.5)) + 
+    geom_pointrange(position = position_dodge(width=0.5)) +
+    geom_linerange(aes(forcats::fct_reorder(species, -slope_est), ymin = global_slope - 1.96 * global_se, 
+      ymax = global_slope + 1.96 * global_se), alpha = 0.5, colour="black", inherit.aes = F) +
     coord_flip() +
     xlab("") + #ylab("") + # ggtitle("slopes") +
     gfplot:::theme_pbs() + theme(

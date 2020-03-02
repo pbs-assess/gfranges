@@ -37,7 +37,7 @@ data_type <- "mature-95-with-do"
 
 ### Y LABEL
 y_label <- "Predicted biomass trend"
-y_label <- "Predicted biomass vel"
+# y_label <- "Predicted biomass vel"
 ## y_label <- "Predicted biomass dist-velocity" # didn't converge
 
 
@@ -50,7 +50,7 @@ plot_fuzzy_chopsticks(model,
   ggtitle(paste(title_all, "(", data_type, ")"))
 
 plot_fuzzy_chopsticks(model,
-  x_variable = "DO_trend_scaled", type = "do",
+  x_variable = "DO_trend_scaled", type = "DO",
   y_label = y_label
 ) + #ylim(-1.5, 1) + # 
   #facet_wrap(vars(species), scales="free_y") +
@@ -58,21 +58,45 @@ plot_fuzzy_chopsticks(model,
 
 
 #### EXTRACT SLOPES AND PLOT THEM IN WORM FORM
-slopes <- chopstick_slopes(model, x_variable = "temp_trend_scaled", type = "temp")
+slopes <- chopstick_slopes(model, x_variable = "temp_trend_scaled", 
+  interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp")
 
 slopes$species[slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
 
-p1 <- plot_chopstick_slopes(slopes, type = "temp", legend_position = c(.75,.95)) + 
-  ggtitle(paste("Interactions (", data_type, ")")) +
-  scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
+p1 <- plot_chopstick_slopes(slopes, type = "temp", legend_position = c(.75,.95), hack=F) + 
+  ggtitle(paste("Interactions (", data_type, ")")) #+
+# scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
 
 p2 <- plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
-  y_label = y_label
-) + theme(legend.position = "none")
+  y_label = y_label, 
+  slopes = slopes # if add, the global slope can be included for insig.
+) + xlab("Temperature trend (scaled)") + theme(legend.position = "none")
 
 # display beside chopstick plots
-cowplot::plot_grid(p1,p2, rel_widths = c(1, 1.85)) 
+cowplot::plot_grid(p1,p2, rel_widths = c(1, 2)) 
+
+
+
+#### EXTRACT SLOPES AND PLOT THEM IN WORM FORM
+slopes <- chopstick_slopes(model, x_variable = "DO_trend_scaled", 
+  interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO")
+
+slopes$species[slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
+
+p1 <- plot_chopstick_slopes(slopes, type = "DO", legend_position = c(.75,.95), hack=F) + 
+  ggtitle(paste("Interactions (", data_type, ")")) #+
+ #scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
+
+p2 <- plot_fuzzy_chopsticks(model,
+  x_variable = "DO_trend_scaled", type = "DO",
+  y_label = y_label
+) + xlab("DO trend (scaled)") + theme(legend.position = "none")
+
+# display beside chopstick plots
+cowplot::plot_grid(p1,p2, rel_widths = c(1, 2)) 
+
+
 
 
 

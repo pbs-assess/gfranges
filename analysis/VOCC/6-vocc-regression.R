@@ -344,13 +344,13 @@ if(DO_chopstick){
   }
   
   
-  pred_dat <- interaction_df(d, formula,
+  DO_dat <- interaction_df(d, formula,
     x_variable = main_effect_column,
     split_variable = split_effect_column,
     N = 2 # increase for final figures
   ) %>% mutate(type = "DO")
   
-  X_pj <- as.matrix(select(pred_dat, -chopstick, -species, -genus, -type))
+  DO_pj <- as.matrix(select(DO_dat, -chopstick, -species, -genus, -type))
   if (y_type == "trend") {
     
     #### biotic tend 
@@ -364,7 +364,7 @@ if(DO_chopstick){
       model_type <- paste0(model_type, "-genus")
       # DO_model %<-% 
       DO_model <-  vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+        X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
         knots = knots, group_by_genus = T, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
@@ -373,7 +373,7 @@ if(DO_chopstick){
     } else {
       # DO_model %<-% 
       DO_model <-  vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+        X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
         knots = knots, group_by_genus = FALSE, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
@@ -399,7 +399,7 @@ if(DO_chopstick){
       model_type <- paste0(model_type, "-genus")
       # DO_model %<-% 
       DO_model <- vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+        X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
         knots = knots, group_by_genus = T, student_t = T,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
@@ -408,7 +408,7 @@ if(DO_chopstick){
     } else {
       # DO_model %<-% 
       DO_model <-  vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+        X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
         knots = knots, group_by_genus = FALSE, student_t = T,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
@@ -424,13 +424,13 @@ if(fishing_chopstick){
   interaction_column <- "fishing_trend_scaled:log_effort_scaled"
   main_effect_column <- "fishing_trend_scaled"
   
-  pred_dat <- interaction_df(d, formula,
+  F_dat <- interaction_df(d, formula,
     x_variable = main_effect_column,
     split_variable = split_effect_column,
     N = 2 # increase for final figures
   ) %>% mutate(type = "fishing")
   
-  X_pj <- as.matrix(select(pred_dat, -chopstick, -species, -genus, -type))
+  F_pj <- as.matrix(select(F_dat, -chopstick, -species, -genus, -type))
 
   if (y_type == "trend") {
     
@@ -444,7 +444,7 @@ if(fishing_chopstick){
     if (w_genus) {
       model_type <- paste0(model_type, "-genus")
       fishing_model %<-%  vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+        X_ij = x, X_pj = F_pj, pred_dat = F_dat,
         knots = knots, group_by_genus = T, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
@@ -452,7 +452,7 @@ if(fishing_chopstick){
       )
     } else {
       fishing_model %<-%  vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+        X_ij = x, X_pj = F_pj, pred_dat = F_dat,
         knots = knots, group_by_genus = FALSE, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
@@ -474,7 +474,7 @@ if(fishing_chopstick){
     if (w_genus) {
       model_type <- paste0(model_type, "-genus")
       fishing_model %<-%  vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+        X_ij = x, X_pj = F_pj, pred_dat = F_dat,
         knots = knots, group_by_genus = T, student_t = T,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
@@ -482,7 +482,7 @@ if(fishing_chopstick){
       )
     } else {
       fishing_model %<-%  vocc_regression(d, y,
-        X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
+        X_ij = x, X_pj = F_pj, pred_dat = F_dat,
         knots = knots, group_by_genus = FALSE, student_t = T,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
@@ -528,8 +528,8 @@ if(temp_chopstick){
     
     if (w_genus) {
       model_type <- paste0(model_type, "-genus")
-      # new_model %<-%  
-      new_model <-  vocc_regression(d, y,
+      # temp_model %<-%  
+      temp_model <-  vocc_regression(d, y,
         X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
         knots = knots, group_by_genus = T, student_t = F,
         interaction_column = interaction_column,
@@ -537,8 +537,8 @@ if(temp_chopstick){
         split_effect_column = split_effect_column
       )
     } else {
-      #new_model %<-%  
-      new_model <-  vocc_regression(d, y,
+      # temp_model %<-%  
+      temp_model <-  vocc_regression(d, y,
           X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
           knots = knots, group_by_genus = FALSE, student_t = F,
           interaction_column = interaction_column,
@@ -563,8 +563,8 @@ if(temp_chopstick){
       }
       if (w_genus) {
         model_type <- paste0(model_type, "-genus")
-        #new_model %<-%  
-        new_model <-  vocc_regression(d, y,
+        # temp_model %<-%  
+        temp_model <-  vocc_regression(d, y,
           X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
           knots = knots, group_by_genus = T, student_t = T,
           interaction_column = interaction_column,
@@ -572,8 +572,8 @@ if(temp_chopstick){
           split_effect_column = split_effect_column
         )
       } else {
-        #new_model %<-%  
-        new_model <-  vocc_regression(d, y,
+        # temp_model %<-%  
+        temp_model <-  vocc_regression(d, y,
           X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
           knots = knots, group_by_genus = FALSE, student_t = T,
           interaction_column = interaction_column,
@@ -596,7 +596,6 @@ if(temp_chopstick){
 #   Sys.sleep(0.2)
 #   count <- count + 1
 # }
-
 ############################
 # Check if finished
 print(head(new_model$deltas))
@@ -606,30 +605,56 @@ print(head(DO_model$deltas))
 
 if(DO_chopstick){
   
-new_model$pred_dat <- rbind(new_model$pred_dat, DO_model$pred_dat)
-new_model$deltas <- rbind(new_model$deltas, DO_model$deltas)
-new_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
-new_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
-new_model$delta_diff <- cbind(new_est$diff_delta_k, new_se$diff_delta_k)
-new_model$delta_diff <- as.data.frame(new_model$delta_diff)
-new_model$delta_diff$type <- "temp"
-  
+new_model <- temp_model
+
+# temp_model <- new_model
+# temp_model$pred_dat <- filter(new_model$pred_dat, type == "temp")
+# temp_model$deltas <- filter(new_model$deltas, type == "temp")
+
+temp_est <- as.list(temp_model$sdr, "Estimate", report = TRUE)
+temp_se <- as.list(temp_model$sdr, "Std. Error", report = TRUE)
+temp_model$pred_dat$est_p <- temp_est$eta_p
+temp_model$pred_dat$se_p <- temp_se$eta_p
+
 DO_est <- as.list(DO_model$sdr, "Estimate", report = TRUE)
 DO_se <- as.list(DO_model$sdr, "Std. Error", report = TRUE)
+DO_model$pred_dat$est_p <- DO_est$eta_p
+DO_model$pred_dat$se_p <- DO_se$eta_p
 
-DO_model$delta_diff <- cbind(DO_est$diff_delta_k, DO_se$diff_delta_k)
+
+new_model$pred_dat <- rbind(temp_model$pred_dat, DO_model$pred_dat)
+new_model$deltas <- rbind(temp_model$deltas, DO_model$deltas)
+
+temp_est <- as.list(temp_model$sdr, "Estimate", report = TRUE)
+temp_se <- as.list(temp_model$sdr, "Std. Error", report = TRUE)
+temp_model$delta_diff <- 
+  cbind(temp_est$diff_delta_k, temp_se$diff_delta_k)
+temp_model$delta_diff <- as.data.frame(temp_model$delta_diff)
+temp_model$delta_diff$type <- "temp"
+temp_model$delta_diff$species <- unique(temp_model$deltas$species)
+
+DO_est <- as.list(DO_model$sdr, "Estimate", report = TRUE)
+DO_se <- as.list(DO_model$sdr, "Std. Error", report = TRUE)
+DO_model$delta_diff <- 
+  cbind(DO_est$diff_delta_k, DO_se$diff_delta_k)
 DO_model$delta_diff <- as.data.frame(DO_model$delta_diff)
 DO_model$delta_diff$type <- "DO"
+DO_model$delta_diff$species <- unique(DO_model$deltas$species)
+names(temp_model$delta_diff) <- c("est", "se", "type", "species")
+names(DO_model$delta_diff) <- c("est", "se", "type", "species")
 
-new_model$delta_diff <- rbind(new_model$delta_diff, DO_model$delta_diff)
+new_model$delta_diff <- 
+  rbind(temp_model$delta_diff, DO_model$delta_diff)
 
-names(new_model$delta_diff) <- c("est", "se", "type")
 }
 
 
 date <- format(Sys.time(), "-%m-%d")
 
 saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, ".rds"))
+
+# saveRDS(DO_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-DO.rds"))
+# saveRDS(temp_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-temp.rds"))
 
 paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, genus_lab, "-", knots, ".rds")
 
