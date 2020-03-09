@@ -553,6 +553,7 @@ p_nd <- predict_temp
 
 ```{r}
 p_nd <- readRDS("../VOCC/data/predicted_temp_allyears_revised")
+# p_nd <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/predicted_temp_allyears_revised.rds")
 
 
 plot_map_raster <- function(dat, column = "est") {
@@ -563,9 +564,15 @@ gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = eleme
 }
 
 plot_map_raster(p_nd, "est") +
-  scale_fill_viridis_c(trans = "log") +
+  scale_fill_viridis_c(trans = sqrt) +
   facet_wrap(~year) +
   ggtitle("Prediction (fixed effects + all random effects)")
+
+
+test <- plot_facet_map(p_nd, "est", viridis_option = "D",
+    raster_limits = c(min(p_nd$est),quantile(p_nd$est, 0.99)),
+    transform_col = sqrt
+  )
 ```
 
 
