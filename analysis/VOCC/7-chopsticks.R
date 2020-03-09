@@ -61,17 +61,17 @@ plot_fuzzy_chopsticks(model,
 slopes <- chopstick_slopes(model, x_variable = "temp_trend_scaled", 
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp")
 
-slopes$species[slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
-
-p1 <- plot_chopstick_slopes(slopes, type = "temp", legend_position = c(.75,.95), hack=F) + 
-  ggtitle(paste("Interactions (", data_type, ")")) #+
-# scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
-
 p2 <- plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
   y_label = y_label, 
   slopes = slopes # if add, the global slope can be included for insig.
 ) + xlab("Temperature trend (scaled)") + theme(legend.position = "none")
+
+slopes$species[slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
+
+p1 <- plot_chopstick_slopes(slopes, type = "temp", legend_position = c(.8,.95), hack=F) + 
+  ggtitle(paste("Effect of temperature trend on biomass")) + ylab("Slopes") #+
+# scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
 
 # display beside chopstick plots
 cowplot::plot_grid(p1,p2, rel_widths = c(1, 2)) 
@@ -82,16 +82,16 @@ cowplot::plot_grid(p1,p2, rel_widths = c(1, 2))
 slopes <- chopstick_slopes(model, x_variable = "DO_trend_scaled", 
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO")
 
-slopes$species[slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
-
-p1 <- plot_chopstick_slopes(slopes, type = "DO", legend_position = c(.75,.95), hack=F) + 
-  ggtitle(paste("Interactions (", data_type, ")")) #+
- #scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
-
 p2 <- plot_fuzzy_chopsticks(model,
   x_variable = "DO_trend_scaled", type = "DO",
-  y_label = y_label
-) + xlab("DO trend (scaled)") + theme(legend.position = "none")
+  y_label = y_label,
+  slopes = slopes # if add, the global slope can be included for insig.
+) + xlab("DO trend (scaled)") + ylab("Predicted % change in biomass") + theme(legend.position = "none")
+
+slopes$species[slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
+p1 <- plot_chopstick_slopes(slopes, type = "DO", legend_position = c(.75,.95), hack=F) + 
+  ggtitle(paste("Effect of DO trend on biomass")) + ylab("Slopes") #+
+ #scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
 
 # display beside chopstick plots
 cowplot::plot_grid(p1,p2, rel_widths = c(1, 2)) 
