@@ -8,7 +8,7 @@ options(scipen = 999)
 
 unit_conversion <- 1000000 * 4 /1000 # if density was in kg/m2: m2 to km2 * 4 km2 grid size and kg to tonnes
 
-all_indices <- readRDS(paste0("data/sopo-2019-indices2.rds"))
+all_indices <- readRDS(paste0("data/sopo-2019-indices3.rds"))
 # View(all_indices)
 
 # all_indices <- filter(all_indices, covs == "-no-covs")
@@ -129,23 +129,32 @@ plot_index_facets <- function(data,
     ylab('Mature biomass estimate (metric tonnes)') + 
     geom_text(data = ratio_lab, aes(x = 2012,  y = maxy*scale, 
       label = paste(#"catch weight (kg) =", total_kg_2019, 
-        "\nimmature biomass = 1/", ratio))) +
+        "\n immature ratio = 1/", ratio))) +
     scale_y_continuous(limits = c(0, NA)) +
     # scale_x_continuous(limits = c(2004, 2020)) +
     gfplot::theme_pbs(base_size = 16)
 }
 
-# Remove 3 species with smallest total catch in 2019 (<1.5 kg total)
-# data <- all_indices2 %>% 
-#   #filter(species != "Dusky") %>% # messy 
-#   filter(species != "Cabezon") %>% 
-#   filter(species != "Shiner Perch") %>% 
-#   filter(species != "C-O Sole")
+data <- filter(all_indices2, group == "FLATFISH") # 7 x12
 
-# data <- filter(all_indices2, group == "ROCKFISH") #%>% filter(total_kg_2019)
-# data <- filter(all_indices2, group != "ROCKFISH") %>% filter(group != "FLATFISH")
-# data <- filter(all_indices2, group == "FLATFISH")
-# plot_index_facets(data)
+
+data <- filter(all_indices2, group == "ROCKFISH") %>% filter(species != "Threadfin Sculpin") #9x16
+data$species <- as.character(data$species)
+data$species[data$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
+
+
+# Remove 3 species with smallest total catch in 2019 (<1.5 kg total)
+data <- all_indices2 %>%
+  #filter(species != "Dusky") %>% # messy
+  filter(species != "Cabezon") %>%
+  filter(species != "Shiner Perch") %>%
+  filter(species != "C-O Sole")
+data <- filter(all_indices2, group != "ROCKFISH") %>% filter(group != "FLATFISH")
+
+data <- filter(all_indices2, group == "OTHER") %>% filter(species != "Cabezon")
+
+# plot_index_facets(data) + theme(axis.text.y = element_blank(), axis.ticks.y = element_blank()) + ylab("")
+
 
 
 # function to plot with facet wrap

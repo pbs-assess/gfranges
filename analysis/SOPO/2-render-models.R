@@ -84,6 +84,9 @@ list_species <- c(
   "Starry Flounder"
   )
 
+# list_species <- c("Redbanded Rockfish", "Pacific Ocean Perch")
+
+
 # dir.create(file.path("html/biomass-by-depth"))
 for (r_h in seq_along(list_regions)) {
   for (spp_i in seq_along(list_species)) {
@@ -101,18 +104,18 @@ for (r_h in seq_along(list_regions)) {
           knots = 300, #250
           AR1 = TRUE,
           fixed_spatial = FALSE,
-          update_model = FALSE,
-          update_model_check = FALSE,
-          update_predictions = FALSE,
-          # update_model = TRUE,
-          # update_predictions = TRUE,
-          # update_model_check = TRUE,
-          # update_index = TRUE
-          update_index = FALSE
+          # update_model = FALSE,
+          # update_model_check = FALSE,
+          # update_predictions = FALSE,
+          update_model = TRUE,
+          update_predictions = TRUE,
+          update_model_check = TRUE,
+          update_index = TRUE
+          # update_index = FALSE
         ),
         output_file = paste0(
           "html/density-models/biomass-by",
-          covs, "-", spp, "-new-maps.html"
+          covs, "-", spp, "-exclude-errors.html"
         ),
         envir = env
       )

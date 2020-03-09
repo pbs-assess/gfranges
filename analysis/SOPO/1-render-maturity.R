@@ -91,6 +91,10 @@ list_species <- list(
 
 list_species <- c("North Pacific Spiny Dogfish","Longspine Thornyhead","Sand Sole")
 
+list_species <- c("Redbanded Rockfish")
+list_species <- c("Pacific Ocean Perch")
+
+
 list_regions <- c("All synoptic surveys")
 
 # list_regions <- c(
@@ -129,6 +133,7 @@ list_species <- c(
 
 ## NEEDS SPECIAL SETTINGS
 list_species <- c("North Pacific Spiny Dogfish","Longspine Thornyhead","Sand Sole")
+
 
 # dir.create(file.path("html/maturity"))
 for (r_h in seq_along(list_regions)) {
