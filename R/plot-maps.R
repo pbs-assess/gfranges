@@ -349,6 +349,7 @@ plot_facet_map <- function(df, column = "est",
                            na_colour = "red",
                            transform_col = no_trans,
                            raster_limits = NULL,
+                           text_size = 4,
                            legend_position = "right") {
   breaks <- scales::trans_breaks(transform_col[["transform"]],
     transform_col[["inverse"]],
@@ -379,7 +380,7 @@ plot_facet_map <- function(df, column = "est",
   anno$y <- max(df$Y) - (width_Y * 0.1)
 
   gfacet <- ggplot(df, aes_string(X, Y, fill = column)) +
-    geom_tile() +
+    geom_tile(colour = NA) +
     facet_wrap(~year) +
     coord_fixed(
       xlim = range(df$X) + buffer_X,
@@ -488,7 +489,7 @@ plot_facet_map <- function(df, column = "est",
   gfacet <- gfacet +
     geom_text(
       data = anno, aes(label = year, x = x, y = y),
-      size = 2, col = "grey40", inherit.aes = FALSE
+      size = text_size, col = "grey40", inherit.aes = FALSE
     )
   gfacet
 }
