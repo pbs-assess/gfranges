@@ -148,7 +148,7 @@ plot_fuzzy_chopsticks <- function(model,
   }
 
   if (!is.null(type)) {
-    pred_dat <- filter(pred_dat, type == !!type)
+    pred_dat <- filter(pred_dat, type == !!type) %>% mutate(chopstick = paste(chopstick, type))
   } else {
     
   }
@@ -180,7 +180,7 @@ plot_fuzzy_chopsticks <- function(model,
   p <- p + geom_line(aes(colour = chopstick)) 
   } else {
     p <- p + geom_line(aes(alpha = sig_diff, colour = chopstick), size=1.25) +
-      geom_smooth(method = lm, aes_string(x_variable, "global"), size = 0.5, 
+      geom_smooth(method = lm, aes_string(x_variable, "global"), size = 0.75, 
         colour = "black", se = F, inherit.aes = F) +
       scale_alpha_discrete(range = c(0.25, 0.9), guide=F) 
   }
@@ -273,7 +273,8 @@ plot_chopstick_slopes <- function (slopedat,
   colours = NULL) {
   
   if (!is.null(type)) {
-    slopedat <- filter(slopedat, type == !!type)
+    slopedat <- filter(slopedat, type == !!type) %>% ungroup()
+    slopedat <- slopedat %>% mutate(chopstick = paste(chopstick, type))
   if (is.null(colours)) {
     if (type == "DO") {
       colours <- c("#5E4FA2", "#FDAE61")
