@@ -5,14 +5,19 @@ library(sdmTMB)
 library(gfranges)
 
 setwd(here::here("analysis", "VOCC"))
-d <- readRDS("data/mature-all-do-untrimmed.rds")
-# d <- readRDS("data/mature-all-temp-untrimmed.rds")
-d <- readRDS("data/mature-all-do-dvocc.rds")
+
+age <- "mature"
+age <- "immature"
+
+# d <- readRDS("data/", age, "-all-do-untrimmed.rds")
+# d <- readRDS("data/", age, "-all-temp-untrimmed.rds")
+d <- readRDS("data/", age, "-all-do-dvocc.rds")
+
 d <- na.omit(d) %>% as_tibble()
 
 all_species <- unique(d$species)
 
-null_number <- 3
+null_number <- 1
 trim_threshold <- 0.05
 
 if (trim_threshold == 0.05) { trim_percent <- 95}
@@ -101,7 +106,8 @@ with_nulls[[i]] <- .s
 newdata <- do.call(rbind, with_nulls)
 
 # saveRDS(newdata, file = paste0("data/mature-all-temp-with-null-1-untrimmed.rds"))
-saveRDS(newdata, file = paste0("data/mature-all-do-with-null-", null_number, "-untrimmed.rds"))
+# saveRDS(newdata, file = paste0("data/mature-all-do-with-null-", null_number, "-untrimmed.rds"))
+saveRDS(newdata, file = paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed.rds"))
 
 
 
@@ -186,14 +192,18 @@ for (i in seq_along(all_species)) {
 data <- do.call(rbind, trimmed.dat)
 
 # saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-temp-with-null-", null_number, ".rds"))
-saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
+
+if (age == "immature") {
+ data <- filter(data, species != "Curlfin Sole")}
+
+saveRDS(data, file = paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
 
 
 
 
 #####################################
 ### PLOT REAL AND FAKE TREND DATA
-data <- readRDS("data/mature-95-all-do-with-null-3.rds")
+data <- readRDS(paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
 
 plots <- list()
 for (i in seq_along(all_species)) {
@@ -224,7 +234,7 @@ n <- ggplot(.x, aes(x, y, fill = fake_trend)) + geom_tile(width = 4, height = 4)
 plots[[i]] <- cowplot::plot_grid(o, n) 
 }
 
-pdf(paste0("null-", null_number, "-trends.pdf"))
+pdf(paste0(age, "-null-", null_number, "-trends.pdf"))
 plots
 dev.off()
 
@@ -266,7 +276,7 @@ for (i in seq_along(all_species)) {
   plots2[[i]] <- cowplot::plot_grid(o, n, t, d) 
 }
 
-pdf(paste0("null-", null_number, "-newvel.pdf"))
+pdf(paste0(age, "-null-", null_number, "-newvel.pdf"))
   plots2
 dev.off()
 

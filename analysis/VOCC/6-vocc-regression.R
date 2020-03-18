@@ -3,8 +3,8 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(gfranges)
-library(future)
-plan(multiprocess)
+# library(future)
+# plan(multiprocess)
 # plan("multisession")
 setwd(here::here("analysis", "VOCC"))
 compile("vocc_regression.cpp")
@@ -54,11 +54,12 @@ data_type <- "mature-95-all-temp"
 # data_type <- "mature-90-all-do"
 # data_type <- "mature-80-all-do"
 data_type <- "mature-95-all-do"
+data_type <- "immature-95-all-do"
 
 #  null_number <- ""
 null_number <- "-1"
  # null_number <- "-2"
-  null_number <- "-3"
+ # null_number <- "-3"
 
 d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
 d <- na.omit(d) %>% as_tibble()
@@ -653,8 +654,8 @@ date <- format(Sys.time(), "-%m-%d")
 
 saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, ".rds"))
 
-# saveRDS(DO_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-DO.rds"))
-# saveRDS(temp_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-temp.rds"))
+saveRDS(DO_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-DO.rds"))
+saveRDS(temp_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-temp.rds"))
 
 paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, genus_lab, "-", knots, ".rds")
 

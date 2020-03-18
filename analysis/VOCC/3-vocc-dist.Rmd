@@ -11,7 +11,7 @@ params:
     # species: "Flathead Sole"
     # species: "Sablefish"
     # species: "Arrowtooth Flounder"
-    immature: FALSE
+    immature: T
     region: "West Coast Vancouver Island"
     # region: "both odd year surveys"
     # region: "West Coast Haida Gwaii"
@@ -468,7 +468,7 @@ dvocc_d <- make_vector_data(d,
 )
 
 # glimpse(dvocc_d)
-dvocc_d <- dvocc_d %>% mutate(dvocc = if_else(do_est.slope < 0, -km_per_decade, km_per_decade), trend= do_est.slope)
+dvocc_d <- dvocc_d %>% mutate(dvocc = if_else(slope < 0, -km_per_decade, km_per_decade), trend= slope)
 
 dvocc_d <- dvocc_d %>% mutate(dvocc = if_else(dvocc > (max_dist_all_years/ year_range)*10, 
   (max_dist_all_years/ year_range)*10, dvocc))
@@ -934,7 +934,7 @@ vocc <- left_join(vocc, temp_values) # add temp
 vocc <- mutate(vocc, species = !!species, method = "both")
 
 write.csv(vocc, file = paste0(
-  "data/_dvocc/", age, "-w-do-nulls-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), ".csv"
+  "data/_dvocc_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), ".csv"
 ))
 
 ```
