@@ -4,7 +4,8 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document 
 params: 
-    species: "Redbanded Rockfish"
+    # species: "Redbanded Rockfish"
+    species: "Widow Rockfish"
     # species: "Canary Rockfish"
     # species: "English Sole"
     # species: "Dover Sole"
@@ -12,8 +13,8 @@ params:
     # species: "Sablefish"
     # species: "Arrowtooth Flounder"
     immature: T
-    region: "West Coast Vancouver Island"
-    # region: "both odd year surveys"
+    # region: "West Coast Vancouver Island"
+    region: "both odd year surveys"
     # region: "West Coast Haida Gwaii"
     covs: "-tv-depth-only"
     scrambled_years: FALSE
@@ -652,8 +653,14 @@ upper_change_t <- c(b_choice)
 
 ## USED for truncating velocities?
 max_dist_all_years <- 10 * year_range
+bio5perc <- sum(gf3$mean_biomass, na.rm = TRUE) * 0.05
+s <- sort(gf3$mean_biomass)
 
+bio_sum <- cumsum(s)
+lower_density_threshold <- s[which(bio_sum >= bio5perc)[1]]
+```
 
+```{r}
 dvocc_b <- make_vector_data(d,
   variable_names = c("est"),
   ssid = model_ssid,
@@ -687,15 +694,8 @@ dv_b <- dvocc_b %>% select(icell, x, y, dvocc) %>% unique()
 
 gf3$dvocc <- dv_b$dvocc
 
-bio5perc <- sum(gf3$mean_biomass, na.rm = TRUE) * 0.05
-s <- sort(gf3$mean_biomass)
-
-bio_sum <- cumsum(s)
-lower_density_threshold <- s[which(bio_sum >= bio5perc)[1]]
-
 gf3t <- filter(gf3, mean_biomass > lower_density_threshold)
 ```
-
 
 ```{r eval=T}
 gradbv <- plot_vocc(gf3t,
@@ -940,6 +940,9 @@ write.csv(vocc, file = paste0(
 ```
 
 ```{r}
+vocc  <- read.csv(paste0(
+  "data/_dvocc_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), ".csv"
+))
 vocc_t <- filter(vocc, mean_biomass > lower_density_threshold)
 ```
 
@@ -1014,6 +1017,30 @@ plot_vocc(vocc_t,
   transform_col = no_trans # log10 # fourth_root_power # sqrt #
 ) + labs(
   title = "temp trend",
+  subtitle = paste0(min(d$year), "-", max(d$year))
+)
+```
+
+```{r eval=T}
+plot_vocc(vocc_t,
+  # theme = "black",
+  coast = TRUE,
+  vec_aes = NULL,
+  # grad_vec_aes = "velocity",
+  # vec_lwd_range = c(0.5, 0.5),
+  NA_label = "NA",
+  fill_col = "mean_temp",
+  fill_label = "mean \ntemperature",
+  raster_alpha = 1,
+  # raster_limits = c(raster_min, raster_max),
+  na_colour = "grey",
+  white_zero = TRUE,
+   mid_fill = "lightyellow",
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = no_trans # log10 # fourth_root_power # sqrt #
+) + labs(
+  title = "mean temp",
   subtitle = paste0(min(d$year), "-", max(d$year))
 )
 ```
@@ -1095,6 +1122,34 @@ plot_vocc(vocc_t,
   subtitle = paste0(min(d$year), "-", max(d$year))
 )
 ```
+
+
+```{r eval=T}
+plot_vocc(vocc_t,
+  # theme = "black",
+  coast = TRUE,
+  vec_aes = NULL,
+  # grad_vec_aes = "velocity",
+  # vec_lwd_range = c(0.5, 0.5),
+  NA_label = "NA",
+  fill_col = "mean_DO",
+  fill_label = "mean \nDO",
+  raster_alpha = 1,
+  # raster_limits = c(raster_min, raster_max),
+  na_colour = "white",
+  white_zero = TRUE,
+  high_fill = "Steel Blue 4",
+  low_fill = "Red 3",
+   mid_fill = "lightyellow",
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = no_trans # log10 # fourth_root_power # sqrt #
+) + labs(
+  title = "mean DO",
+  subtitle = paste0(min(d$year), "-", max(d$year))
+)
+```
+
 
 ```{r eval=T}
 vocc_t$squashed_effort <- collapse_outliers(vocc_t$mean_effort, c(0.005, 0.995))
