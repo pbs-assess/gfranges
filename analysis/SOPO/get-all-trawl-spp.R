@@ -30,3 +30,13 @@ all_trawl_catch_2019 <- all_trawl_catch %>% filter(year == 2019)
 saveRDS(all_trawl_catch, file = "data/all_trawl_catch.rds")
 saveRDS(all_trawl_catch_2019, file = "data/all_trawl_catch.rds")
 
+####
+
+#species codes not captured with above method
+
+# 66S = blue mussel (exact species undetermined),	mytilus edulis complex
+# 68P	= pacific scallop,	patinopecten caurinus x mizuhopecten yessoensis,	hybrid
+# 394	= rougheye/blackspotted rockfish complex,	sebastes aleutianus/melanostictus complex
+# 013	= unidentified shark,	unidentified shark
+# 	015	unknown fish
+# 390	NA	sebastosomus-type larvae
