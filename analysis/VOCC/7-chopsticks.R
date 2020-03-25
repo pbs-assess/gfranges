@@ -37,60 +37,112 @@ data_type <- "mature-95-with-do"
 
 ### Y LABEL
 y_label <- "Predicted biomass trend"
-# y_label <- "Predicted biomass vel"
-## y_label <- "Predicted biomass dist-velocity" # didn't converge
 
 
 #### INTERACTIONS WITH CLIMATE TRENDS
+model <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-mature-95-with-do-02-29-trend-with-do-3-500.rds")
+mat_slopes <- chopstick_slopes(model, x_variable = "temp_trend_scaled", 
+  interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp")
+
+imm_model <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-immature-95-all-do-03-18-trend-with-do-1-500.rds")
+imm_slopes <- chopstick_slopes(imm_model, x_variable = "temp_trend_scaled", 
+  interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp")
+
 plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
-  y_label = y_label
-) + #ylim(-1.5, 1) + # 
-  #facet_wrap(vars(species), scales="free_y") +
-  ggtitle(paste(title_all, "(", data_type, ")"))
+  y_label = y_label, 
+  imm_model = imm_model, 
+  slopes = mat_slopes,
+  imm_slopes = imm_slopes
+) 
+
+plot_fuzzy_chopsticks(model,
+  x_variable = "temp_trend_scaled", type = "temp",
+  y_label = y_label, 
+  imm_model = imm_model, 
+  slopes = mat_slopes,
+  imm_slopes = imm_slopes,
+  scale_imm = 0.1
+) 
+
+# model <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-mature-95-with-do-02-29-trend-with-do-3-500.rds")
+mat_slopes_do <- chopstick_slopes(model, x_variable = "DO_trend_scaled", 
+  interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO")
+
+# imm_model <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-immature-95-all-do-03-18-trend-with-do-1-500.rds")
+imm_slopes_do <- chopstick_slopes(imm_model, x_variable = "DO_trend_scaled", 
+  interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO")
+
 
 plot_fuzzy_chopsticks(model,
   x_variable = "DO_trend_scaled", type = "DO",
-  y_label = y_label
-) + #ylim(-1.5, 1) + # 
-  #facet_wrap(vars(species), scales="free_y") +
-  ggtitle(paste(title_all, "(", data_type, ")"))
+  y_label = y_label, 
+  imm_model = imm_model, 
+  slopes = mat_slopes_do,
+  imm_slopes = imm_slopes_do
+) 
 
+plot_fuzzy_chopsticks(model,
+  x_variable = "DO_trend_scaled", type = "DO",
+  y_label = y_label, 
+  imm_model = imm_model, 
+  slopes = mat_slopes_do,
+  imm_slopes = imm_slopes_do,
+  scale_imm = 0.1
+) 
+
+
+y_label <- "Predicted mature biomass trend"
+
+y_label <- "Predicted immature biomass trend"
+
+y_label <- "Predicted % change in biomass"
 
 #### EXTRACT SLOPES AND PLOT THEM IN WORM FORM
 slopes <- chopstick_slopes(model, x_variable = "temp_trend_scaled", 
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp")
+imm_slopes <- chopstick_slopes(imm_model, x_variable = "temp_trend_scaled", 
+  interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp")
+
 
 p2 <- plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
   y_label = y_label, 
-  slopes = slopes # if add, the global slope can be included for insig.
+  slopes = slopes,  # if add, the global slope can be included for insig.
+  imm_model = imm_model, imm_slopes = imm_slopes, scale_imm = 0.1
 ) + xlab("Temperature trend (scaled)") + theme(legend.position = "none")
 
 slopes$species[slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
+imm_slopes$species[imm_slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
 
-p1 <- plot_chopstick_slopes(slopes, type = "temp", legend_position = c(.8,.95), hack=F) + 
-  ggtitle(paste("Effect of temperature trend on biomass")) + ylab("Slopes") #+
-# scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
-
+p1 <- plot_chopstick_slopes(slopes, type = "temp", legend_position = c(.25,.95), #c(.8,.95), 
+  imm_slopes = imm_slopes, scale_imm = 0.1, 
+  hack=F) + # scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1)) +
+ylab("Slopes")
 # display beside chopstick plots
 cowplot::plot_grid(p1,p2, rel_widths = c(1, 2)) 
 
 
 
 #### EXTRACT SLOPES AND PLOT THEM IN WORM FORM
-slopes <- chopstick_slopes(model, x_variable = "DO_trend_scaled", 
+do_slopes <- chopstick_slopes(model, x_variable = "DO_trend_scaled", 
+  interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO")
+imm_slopes_do <- chopstick_slopes(imm_model, x_variable = "DO_trend_scaled", 
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO")
 
 p2 <- plot_fuzzy_chopsticks(model,
   x_variable = "DO_trend_scaled", type = "DO",
   y_label = y_label,
-  slopes = slopes # if add, the global slope can be included for insig.
-) + xlab("DO trend (scaled)") + ylab("Predicted % change in biomass") + theme(legend.position = "none")
+  slopes = do_slopes, # if add, the global slope can be included for insig.
+  imm_model = imm_model, imm_slopes = imm_slopes_do, scale_imm = 0.1
+  ) + xlab("DO trend (scaled)") + theme(legend.position = "none")
 
-slopes$species[slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
-p1 <- plot_chopstick_slopes(slopes, type = "DO", legend_position = c(.75,.95), hack=F) + 
-  ggtitle(paste("Effect of DO trend on biomass")) + ylab("Slopes") #+
+do_slopes$species[do_slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
+imm_slopes_do$species[imm_slopes_do$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
+p1 <- plot_chopstick_slopes(do_slopes, type = "DO", legend_position = c(.25,.95), 
+  imm_slopes = imm_slopes_do, scale_imm = 0.1,
+  hack=F) + #ggtitle(paste("Effect of DO trend on biomass")) + 
+  ylab("Slopes") #+
  #scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
 
 # display beside chopstick plots
@@ -101,6 +153,41 @@ cowplot::plot_grid(p1,p2, rel_widths = c(1, 2))
 
 
 #### INTERACTIONS WITH CLIMATE VELOCITIES
+#### EXTRACT SLOPES AND PLOT THEM IN WORM FORM
+
+y_label <- "Predicted mature biomass vel"
+# y_label <- "Predicted immature biomass vel"
+
+
+
+slopes <- chopstick_slopes(model, x_variable = "squashed_temp_vel_scaled", 
+  interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp")
+imm_slopes <- chopstick_slopes(imm_model, x_variable = "squashed_temp_vel_scaled", 
+  interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp")
+
+p2 <- plot_fuzzy_chopsticks(model,
+  x_variable = "squashed_temp_vel_scaled", type = "temp",
+  y_label = y_label, 
+  imm_model = imm_model, imm_slopes = imm_slopes, scale_imm = 0.1,
+  slopes = slopes # if add, the global slope can be included for insig.
+) + xlab("Temperature vel (scaled)") + theme(legend.position = "none")
+
+slopes$species[slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
+
+p1 <- plot_chopstick_slopes(slopes, type = "temp", legend_position = c(.8,.95), 
+  imm_slopes = imm_slopes, scale_imm = 0.1,
+  hack=F) + 
+  ggtitle(paste("Effect of temperature vel on biomass")) + ylab("Slopes") #+
+# scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
+
+# display beside chopstick plots
+cowplot::plot_grid(p1,p2, rel_widths = c(1, 2)) 
+
+
+
+
+
+
 plot_fuzzy_chopsticks(model,
   x_variable = "squashed_temp_vel_scaled", type = "temp",
   y_label = y_label
