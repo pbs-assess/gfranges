@@ -12,7 +12,7 @@ params:
     # species: "Flathead Sole"
     # species: "Sablefish"
     # species: "Arrowtooth Flounder"
-    immature: T
+    immature: F
     # region: "West Coast Vancouver Island"
     region: "both odd year surveys"
     # region: "West Coast Haida Gwaii"
@@ -85,8 +85,8 @@ if (region == "West Coast Haida Gwaii") {
 }
 ```
 
-#### Get species-specific optimal values from mountain plots for most abundant year
-```{r, include=FALSE}
+
+```{r}
 if (immature) {
   age <- "immature"
   d_all <- readRDS(paste0(
@@ -934,7 +934,7 @@ vocc <- left_join(vocc, temp_values) # add temp
 vocc <- mutate(vocc, species = !!species, method = "both")
 
 write.csv(vocc, file = paste0(
-  "data/_dvocc_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), ".csv"
+  "data/_dvocc_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
 ))
 
 ```

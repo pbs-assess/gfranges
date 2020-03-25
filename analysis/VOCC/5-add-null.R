@@ -7,11 +7,11 @@ library(gfranges)
 setwd(here::here("analysis", "VOCC"))
 
 age <- "mature"
-age <- "immature"
+# age <- "immature"
 
 # d <- readRDS("data/", age, "-all-do-untrimmed.rds")
 # d <- readRDS("data/", age, "-all-temp-untrimmed.rds")
-d <- readRDS("data/", age, "-all-do-dvocc.rds")
+d <- readRDS(paste0("data/", age, "-all-do-dvocc.rds"))
 
 d <- na.omit(d) %>% as_tibble()
 

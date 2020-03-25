@@ -13,13 +13,15 @@ source("vocc-regression-functions.R")
 
 knots <- 500
 
+age <- "mature"
+# age <- "immature"
 
-# y_type <- "vel"
+y_type <- "vel"
 y_type <- "trend"
 
 no_chopsticks <- F
 both <- T
-# # model_type <- "-vel-both"
+# model_type <- "-vel-both"
 # # model_type <- "-vel-both-fishing"
 model_type <- "-trend-with-do"
 
@@ -47,14 +49,13 @@ stats$group[stats$group == "HAKE"] <- "COD"
 # data_type <- "multi-spp-biotic-vocc-mature"
 # d <- readRDS(paste0("data/", data_type, "-with-fished.rds"))
 
-data_type <- "mature-95-all-temp"
- # data_type <- "mature-90-all-temp"
-# data_type <- "mature-80-all-temp"
-#  data_type <- "mature-50-all-temp"
-# data_type <- "mature-90-all-do"
-# data_type <- "mature-80-all-do"
-data_type <- "mature-95-all-do"
-data_type <- "immature-95-all-do"
+data_type <- paste0(age,"-95-all-temp")
+# data_type <- paste0(age,"-90-all-temp")
+# data_type <- paste0(age,"-80-all-temp")
+# data_type <- paste0(age,"-50-all-temp")
+# data_type <- paste0(age,"-90-all-do")
+# data_type <- paste0(age,"-80-all-do")
+data_type <- paste0(age,"-95-all-do")
 
 #  null_number <- ""
 null_number <- "-1"
@@ -83,6 +84,7 @@ select(d, genus, species) %>%
   distinct() %>%
   arrange(genus, species) %>%
   as.data.frame()
+
 
 
 #### PREP TEMP VARIABLES ####
@@ -152,8 +154,15 @@ d$log_biomass_scaled2 <- d$log_biomass_scaled^2
 
 #### MAKE FAKE BIOTIC VELOCITY
 # hist(d$biotic_vel)
+hist(d$biotic_trend)
+
+if(age == "mature") {
 d$squashed_biotic_vel <- collapse_outliers(d$biotic_vel, c(0.005, 0.995))
-# hist(d$squashed_biotic_vel)
+} else {
+  d$squashed_biotic_vel <- collapse_outliers(d$biotic_vel, c(0.005, 0.99))
+}
+hist(d$squashed_biotic_vel)
+
 d$squashed_biotic_dvocc <- collapse_outliers(d$biotic_dvocc, c(0.005, 0.995))
 
 d$fake_vel <- d$fake_trend / d$biotic_grad
@@ -361,6 +370,8 @@ if(DO_chopstick){
       y <- d$biotic_trend
     }
     
+    hist(y)
+    
     if (w_genus) {
       model_type <- paste0(model_type, "-genus")
       # DO_model %<-% 
@@ -396,6 +407,9 @@ if(DO_chopstick){
         # y <- d$biotic_trend
       }
     }
+    
+    hist(y)  
+      
     if (w_genus) {
       model_type <- paste0(model_type, "-genus")
       # DO_model %<-% 
@@ -442,6 +456,8 @@ if(fishing_chopstick){
       y <- d$biotic_trend
     }
     
+    hist(y)
+    
     if (w_genus) {
       model_type <- paste0(model_type, "-genus")
       fishing_model %<-%  vocc_regression(d, y,
@@ -472,6 +488,9 @@ if(fishing_chopstick){
         # y <- d$biotic_trend
       }
     }
+      
+    hist(y)  
+      
     if (w_genus) {
       model_type <- paste0(model_type, "-genus")
       fishing_model %<-%  vocc_regression(d, y,
@@ -562,6 +581,9 @@ if(temp_chopstick){
           # y <- d$biotic_trend
         }
       }
+      
+      hist(y)
+      
       if (w_genus) {
         model_type <- paste0(model_type, "-genus")
         # temp_model %<-%  
@@ -603,6 +625,8 @@ print(head(new_model$deltas))
 print(head(DO_model$deltas))
 ############################
 
+
+date <- format(Sys.time(), "-%m-%d")
 
 if(DO_chopstick){
   
@@ -647,15 +671,24 @@ names(DO_model$delta_diff) <- c("est", "se", "type", "species")
 new_model$delta_diff <- 
   rbind(temp_model$delta_diff, DO_model$delta_diff)
 
-}
+saveRDS(DO_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-DO.rds"))
+saveRDS(temp_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-temp.rds"))
 
 
-date <- format(Sys.time(), "-%m-%d")
+} else {
+  temp_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
+  temp_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
+  new_model$delta_diff <- 
+    cbind(temp_est$diff_delta_k, temp_se$diff_delta_k)
+  new_model$delta_diff <- as.data.frame(new_model$delta_diff)
+  new_model$delta_diff$type <- "temp"
+  new_model$delta_diff$species <- unique(new_model$deltas$species)
+  names(new_model$delta_diff) <- c("est", "se", "type", "species")
+  }
+
 
 saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, ".rds"))
 
-saveRDS(DO_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-DO.rds"))
-saveRDS(temp_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-temp.rds"))
 
 paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, genus_lab, "-", knots, ".rds")
 

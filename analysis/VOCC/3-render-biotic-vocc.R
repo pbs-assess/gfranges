@@ -60,7 +60,7 @@ list_regions <- c(
 )
 
 # age <- "mature"
-if age == "mature") {
+if (age == "mature") {
 for (r_h in seq_along(list_regions)) {
   for (spp_i in seq_along(list_species)) {
     spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
@@ -71,13 +71,14 @@ for (r_h in seq_along(list_regions)) {
         params = list(
           species = list_species[spp_i],
           # immature = TRUE,
+          immature = FALSE,
           region = list_regions[r_h],
           covs = covs
         ),
         output_file = paste0(
           "html/VOCC-plots/vocc-w-do-", spp,
           # "-imm",
-          covs, "-", reg, "-dvocc.html"
+          covs, "-", reg, "-dvocc-decade.html"
         ),
         envir = env
       )
@@ -87,7 +88,7 @@ for (r_h in seq_along(list_regions)) {
 }
 
 # age <- "immature"
-if age == "immature") {
+if (age == "immature") {
 for (r_h in seq_along(list_regions)) {
   for (spp_i in seq_along(list_species)) {
     spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
