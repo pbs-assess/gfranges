@@ -9,19 +9,22 @@ plot_mountains(
   time_varying = TRUE,
   variable_label = "Depth",
   xlimits = c(0, max(dat$x)),
-  x_breaks = waiver()
+  x_breaks = waiver(),
+  mountains_only = F
 )
 }
 \arguments{
-\item{dat}{Dataframe of density estimates containing x, y_hat, and year}
+\item{dat}{Dataframe of density estimates containing x, y_hat, year, and type}
 
 \item{time_varying}{Logical for if the parameter of interest is time-varying}
 
 \item{variable_label}{Descriptive label for parameter "x"}
 
-\item{xlimits}{X-axis limits. Default is c(0, max(dat$x)).}
+\item{xlimits}{X-axis limits. Default is c(0, max(dat$x))}
 
-\item{x_breaks}{Give breaks. Default is the ggplot default.}
+\item{x_breaks}{Give breaks. Default is the ggplot default}
+
+\item{mountains_only}{Logical for whether to exclude non-"sad-face" type curves.}
 }
 \description{
 Predicted curves for parameters in sdmTMB models

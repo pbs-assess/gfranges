@@ -17,6 +17,7 @@ plot_facet_map(
   na_colour = "red",
   transform_col = no_trans,
   raster_limits = NULL,
+  text_size = 4,
   legend_position = "right"
 )
 }

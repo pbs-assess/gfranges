@@ -54,10 +54,10 @@ where 1 = starting time step(s), 2 = end time step(s).}
 \item{round_fact}{Speed up searches by rounding (1 = integers; 10 = 10ths; 100 = 100ths).
 If NULL, will use 10x precision of the plus_minus threshold when `match_logic` = NULL.}
 
-\item{min_thresholds}{Optional vector of negative thresholds.
+\item{min_thresholds}{Optional vector of negative thresholds. Apply 'Inf' for no min threshold. 
 Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.}
 
-\item{max_thresholds}{Optional vector of positive thresholds.
+\item{max_thresholds}{Optional vector of positive thresholds. Apply 'Inf' for no max threshold. 
 Include if sensitivity to the direction of climate change is not symmetrical and `match_logic` = NULL.}
 
 \item{plus_minus}{Vector of plus/minus threshold(s) to define a symmetical (default = 1 unit) climate match.}

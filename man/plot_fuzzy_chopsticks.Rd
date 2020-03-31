@@ -10,7 +10,12 @@ plot_fuzzy_chopsticks(
   x_variable = "temp_trend_scaled",
   type = NULL,
   colours = NULL,
-  species = NULL
+  species = NULL,
+  order_var = "species",
+  slopes = NULL,
+  imm_model = NULL,
+  imm_slopes = NULL,
+  rug = F
 )
 }
 \arguments{
@@ -25,6 +30,16 @@ plot_fuzzy_chopsticks(
 \item{colours}{Default NULL gives red for high and blue for low.}
 
 \item{species}{Can plot just one species, otherwise NULL will facet.}
+
+\item{order_var}{Varible to order plots by}
+
+\item{slopes}{Df of slopes from chopstick_slopes function}
+
+\item{imm_model}{Add immature data from separate model}
+
+\item{imm_slopes}{Add separate slope df for immatures}
+
+\item{rug}{Logical for adding rug}
 }
 \description{
 Plot interactions with confidence intervals

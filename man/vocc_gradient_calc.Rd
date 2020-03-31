@@ -9,6 +9,7 @@ vocc_gradient_calc(
   layer,
   scale_fac = 1,
   time_step = "year",
+  delta_t_step = 2,
   indices = NULL,
   divisor = 10,
   latlon = FALSE,
@@ -26,13 +27,22 @@ vocc_gradient_calc(
 
 \item{time_step}{Time variable.}
 
+\item{delta_t_step}{Time between values of time variable. 
+Required if raster layers not labeled with "X" plus an integer representing time.}
+
+\item{indices}{If null, gradient will be based on mean across all times. 
+If integer vector of same length as number of unique time steps, 
+gradient will be based on final time steps given largest index value.}
+
+\item{divisor}{Default of 10 gives trends and velocities per decade.}
+
 \item{latlon}{Default is TRUE. False for UTMs or other true distance grid.}
+
+\item{log_space}{Logical for layer being in log space. 
+If TRUE will save 'cv' in log space and true 'sd'.}
 
 \item{quantile_cutoff}{Used for plotting to set min and max angles of vectors.
 Defaults to 0.05.}
-
-\item{grad_time_steps}{Define time periods.
-If NULL will use spatial gradient in last time period.}
 }
 \description{
 Velocity of climate change
