@@ -1,3 +1,4 @@
+.rs.restartR()
 library(TMB)
 library(dplyr)
 library(tidyr)
@@ -13,10 +14,11 @@ source("vocc-regression-functions.R")
 
 knots <- 500
 
-age <- "mature"
+# age <- "mature"
 # age <- "immature"
+age <- "both"
 
-y_type <- "vel"
+# y_type <- "vel"
 y_type <- "trend"
 
 no_chopsticks <- F
@@ -35,16 +37,6 @@ w_genus <- F
 is_null <- F
 
 
-stats <- readRDS(paste0("data/life-history-stats.rds"))
-stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
-
-stats <- stats %>% separate(species_science_name, " ", into = c("genus","specific"))
-stats$group[stats$group == "SHARK"] <- "DOGFISH"
-# stats$group[stats$group == "SHARK"] <- "SHARKS & SKATES"
-# stats$group[stats$group == "SKATE"] <- "SHARKS & SKATES"
-stats$group[stats$group == "HAKE"] <- "COD"
-
-
 #### LOAD MATURE VOCC DATA
 # data_type <- "multi-spp-biotic-vocc-mature"
 # d <- readRDS(paste0("data/", data_type, "-with-fished.rds"))
@@ -57,85 +49,22 @@ data_type <- paste0(age,"-95-all-temp")
 # data_type <- paste0(age,"-80-all-do")
 data_type <- paste0(age,"-95-all-do")
 
+if(age=="both") data_type <- paste0("all-95-all-do")
+
 #  null_number <- ""
 null_number <- "-1"
  # null_number <- "-2"
  # null_number <- "-3"
 
 d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
-d <- na.omit(d) %>% as_tibble()
 
-d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
+d <- as_tibble(d) %>%
   # filter(species != "Bocaccio") %>%
   # filter(species != "Sand Sole") %>%
   filter(species != "Longspine Thornyhead")
 
-# #### LOAD IMMATURE VOCC DATA
-# data_type <- "multi-spp-biotic-vocc-immature"
-# d <- readRDS(paste0("data/", data_type, "-with-fished.rds"))
-# d <- na.omit(d) %>% as_tibble()
-#
-# d <- suppressWarnings(left_join(d, stats, by = "species")) %>%
-#   # filter(species != "Curlfin Sole") %>%
-#   # filter(species != "Bocaccio") %>%
-#   filter(species != "Longspine Thornyhead")
-
-select(d, genus, species) %>%
-  distinct() %>%
-  arrange(genus, species) %>%
-  as.data.frame()
-
-
-
-#### PREP TEMP VARIABLES ####
-d$squashed_temp_vel <- collapse_outliers(d$temp_vel, c(0.005, 0.995))
-
-d$squashed_temp_dvocc <- collapse_outliers(d$temp_dvocc, c(0.005, 0.995))
-# plot(squashed_do_vel ~ squashed_temp_vel, data = d, col = "#00000010")
-d$squashed_temp_vel_scaled <- scale(d$squashed_temp_vel, center = FALSE)
-d$squashed_temp_dvocc_scaled <- scale(d$squashed_temp_dvocc, center = F)
-d$mean_temp_scaled <- scale(d$mean_temp)
-# hist(d$mean_temp_scaled)
-# hist(d$temp_trend)
-d$temp_trend_scaled <- scale(d$temp_trend, center = FALSE)
-# hist(d$temp_trend_scaled)
-d$temp_grad_scaled <- scale(d$temp_grad)
-# hist(d$temp_grad_scaled)
-# d$temp_grad_scaled <- scale(sqrt(d$temp_grad))
-# hist(d$temp_grad_scaled)
-
-#### PREP DO VARIABLES ####
-
-d$squashed_DO_vel <- collapse_outliers(d$DO_vel, c(0.005, 0.995))
-d$squashed_DO_vel_scaled <- scale(d$squashed_DO_vel, center = FALSE)
-d$DO_dvocc_scaled <- scale(d$DO_dvocc, center = F)
-d$squashed_DO_dvocc <- collapse_outliers(d$DO_dvocc, c(0.005, 0.995))
-d$squashed_DO_dvocc_scaled <- scale(d$squashed_DO_dvocc, center = FALSE)
-
-# hist(d$mean_DO)
-d$mean_DO_scaled <- scale(d$mean_DO)
-# hist(d$mean_DO_scaled)
-# hist(d$DO_trend)
-d$DO_trend_scaled <- scale(d$DO_trend, center = FALSE)
-# hist(d$DO_trend_scaled)
-d$DO_grad_scaled <- scale(d$DO_grad)
-# hist(d$DO_grad_scaled)
-# d$DO_grad_scaled <- scale(sqrt(d$DO_grad))
-# hist(d$DO_grad_scaled)
-
-#### PREP FISHING VARIABLES ####
-
-# hist(d$mean_effort)
-d$sqrt_effort <- sqrt(d$mean_effort)
-d$sqrt_effort_scaled <- scale(sqrt(d$mean_effort), center = F)
-
-d$fishing_trend_scaled <- scale(d$fishing_trend, center = F)
-# hist(d$fishing_trend_scaled)
-
-# hist(sqrt(d$mean_effort))
-d$log_effort <- log(d$mean_effort + 1)
-# hist(log(d$mean_effort + 1))
-d$log_effort_scaled <- scale(d$log_effort, center = F)
+# if combining adult and imm in same model
+if(age=="both") d <- mutate(d, species_only = species, species = species_age)
 
 #### PREP FISH BIOMASS VARIABLES ####
 # range(d$mean_biomass)
@@ -153,15 +82,17 @@ d$log_biomass_scaled2 <- d$log_biomass_scaled^2
 
 
 #### MAKE FAKE BIOTIC VELOCITY
-# hist(d$biotic_vel)
-hist(d$biotic_trend)
+hist(d$biotic_vel, breaks=100)
+hist(d$biotic_trend, breaks =100)
 
 if(age == "mature") {
 d$squashed_biotic_vel <- collapse_outliers(d$biotic_vel, c(0.005, 0.995))
 } else {
   d$squashed_biotic_vel <- collapse_outliers(d$biotic_vel, c(0.005, 0.99))
-}
+  d$squashed_biotic_trend <- collapse_outliers(d$biotic_trend, c(0.001, 0.999))
+  }
 hist(d$squashed_biotic_vel)
+hist(d$squashed_biotic_trend)
 
 d$squashed_biotic_dvocc <- collapse_outliers(d$biotic_dvocc, c(0.005, 0.995))
 
@@ -318,7 +249,7 @@ if (model_type == "-dist-vel-both") {
 }
 
 
- if(no_chopsticks){
+if(no_chopsticks){
   temp_chopstick <- T
   DO_chopstick <- F
   fishing_chopstick <- F
@@ -357,7 +288,7 @@ if(DO_chopstick){
   DO_dat <- interaction_df(d, formula,
     x_variable = main_effect_column,
     split_variable = split_effect_column,
-    N = 2 # increase for final figures
+    N = 3 # increase for final figures
   ) %>% mutate(type = "DO")
   
   DO_pj <- as.matrix(select(DO_dat, -chopstick, -species, -genus, -type))
@@ -442,7 +373,7 @@ if(fishing_chopstick){
   F_dat <- interaction_df(d, formula,
     x_variable = main_effect_column,
     split_variable = split_effect_column,
-    N = 2 # increase for final figures
+    N = 3 # increase for final figures
   ) %>% mutate(type = "fishing")
   
   F_pj <- as.matrix(select(F_dat, -chopstick, -species, -genus, -type))
@@ -532,7 +463,7 @@ if(temp_chopstick){
   pred_dat <- interaction_df(d, formula,
     x_variable = main_effect_column,
     split_variable = split_effect_column,
-    N = 2 # increase for final figures
+    N = 3 # increase for final figures
   ) %>% mutate(type = "temp")
   
   X_pj <- as.matrix(select(pred_dat, -chopstick, -species, -genus, -type))

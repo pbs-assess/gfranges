@@ -1,5 +1,7 @@
+.rs.restartR()
 # library(TMB)
 library(dplyr)
+library(tidyverse)
 library(ggplot2)
 library(sdmTMB)
 library(gfranges)
@@ -7,15 +9,17 @@ library(gfranges)
 setwd(here::here("analysis", "VOCC"))
 
 age <- "mature"
-# age <- "immature"
+d1 <- readRDS(paste0("data/", age, "-all-do-dvocc.rds")) %>% mutate(age = "mature")
 
-# d <- readRDS("data/", age, "-all-do-untrimmed.rds")
-# d <- readRDS("data/", age, "-all-temp-untrimmed.rds")
-d <- readRDS(paste0("data/", age, "-all-do-dvocc.rds"))
+age <- "immature"
+d2 <- readRDS(paste0("data/", age, "-all-do-dvocc.rds")) %>% mutate(age = "immature")
 
-d <- na.omit(d) %>% as_tibble()
 
-all_species <- unique(d$species)
+d <- rbind(d1, d2) 
+
+d <- na.omit(d) %>% as_tibble() %>% mutate(species_age = paste(age, species))
+
+all_species <- unique(d$species_age)
 
 null_number <- 1
 trim_threshold <- 0.05
@@ -30,7 +34,7 @@ if (trim_threshold == 0.5) { trim_percent <- 50}
 with_nulls <- list()
 for (i in seq_along(all_species)) {
  
-.x <- filter(d, species == all_species[[i]])
+.x <- filter(d, species_age == all_species[[i]])
 bio5perc <- sum(.x$mean_biomass, na.rm = TRUE) * 0.01
 s <- sort(.x$mean_biomass)
 bio_sum <- cumsum(s)
@@ -106,83 +110,112 @@ with_nulls[[i]] <- .s
 newdata <- do.call(rbind, with_nulls)
 
 # saveRDS(newdata, file = paste0("data/mature-all-temp-with-null-1-untrimmed.rds"))
-# saveRDS(newdata, file = paste0("data/mature-all-do-with-null-", null_number, "-untrimmed.rds"))
-saveRDS(newdata, file = paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed.rds"))
+# saveRDS(newdata, file = paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed.rds"))
+saveRDS(newdata, file = paste0("data/all-do-with-null-", null_number, "-untrimmed.rds"))
+
+
+### ADD SPECIES TRAITS ANS SCALE VARIABLES
+# age <- "mature"
+# d <- readRDS(paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed.rds"))
+
+d <- readRDS(paste0("data/all-do-with-null-", null_number, "-untrimmed.rds"))
+
+
+stats <- readRDS(paste0("data/life-history-stats.rds"))
+stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
+
+stats <- stats %>% separate(species_science_name, " ", into = c("genus","specific"))
+stats$group[stats$group == "SHARK"] <- "DOGFISH"
+# stats$group[stats$group == "SHARK"] <- "SHARKS & SKATES"
+# stats$group[stats$group == "SKATE"] <- "SHARKS & SKATES"
+stats$group[stats$group == "HAKE"] <- "COD"
+
+
+d <- na.omit(d) %>% as_tibble()
+d <- suppressWarnings(left_join(d, stats, by = "species")) 
+select(d, genus, species) %>%
+  distinct() %>%
+  arrange(genus, species) %>%
+  as.data.frame()
 
 
 
+#### PREP TEMP VARIABLES ####
+d$squashed_temp_vel <- collapse_outliers(d$temp_vel, c(0.005, 0.995))
 
-#####################################
-### FAILED ATTEMPT TO SIMULATE FAKE VELOCITY (without a true gradient) LAYER FOR EACH SPECIES
-# with_nulls <- list()
-# for (i in seq_along(all_species)) {
-#   
-#   .x <- filter(d, species == all_species[[i]])
-#   bio5perc <- sum(.x$mean_biomass, na.rm = TRUE) * 0.01
-#   s <- sort(.x$mean_biomass)
-#   bio_sum <- cumsum(s)
-#   lower_density_threshold <- s[which(bio_sum >= bio5perc)[1]]
-#   .x <- filter(.x, mean_biomass > lower_density_threshold)
-# 
-#   nrow(.x)
-#   ggplot(.x, aes(x, y, fill = biotic_vel)) + geom_tile(width = 4, height = 4) +
-#     scale_fill_gradient2()
-#   spde <- make_spde(x = .x$x, y = .x$y, n_knots = 200)
-#   plot_spde(spde)
-#   # browser()
-#   .x$biotic_vel <- collapse_outliers(.x$biotic_vel, c(0.005, 0.995))
-#   m <- sdmTMB(biotic_vel ~ 1, data = .x, family = student(link = "identity"), 
-#     spatial_only = TRUE, spde = spde, silent = F)
-#   # m
-#   set.seed(i + null_number)
-#   sigma_O <- sd(.x$biotic_vel - mean(.x$biotic_vel))
-#   # sigma_O <-  exp(m$model$par[["ln_phi"]])
-#   kappa <- exp(m$model$par[["ln_kappa"]])
-#   # exp(m$model$par[["ln_tau_O"]])
-#   rf_omega <- RandomFields::RMmatern(nu = 1, var = sigma_O^2, scale = 1/kappa)
-#   # rf_omega1 <- RandomFields::RPt(rf_omega, nu = 1)
-#   
-#   omega_fun <- function(model, x, y) {
-#     suppressMessages(RandomFields::RFsimulate(model, x, y, n=1)$variable1 )}
-#   omega_s <- omega_fun(rf_omega, .x$x,  .x$y) # sdmTMB:::rf_sim(model = rf_omega, .x$x, .x$y)
-#   omega_s <- omega_s - mean(omega_s)
-#   # observed <- rt(length(omega_s), 4)
-#   
-#   observed <- rnorm(length(omega_s), omega_s + mean(.x$biotic_trend), 0.001)
-#   
-#   s <- data.frame(x = .x$x, y = .x$y, fake_vel = observed)
-#   
-#   o <- ggplot(.x, aes(x, y, fill = biotic_vel)) + geom_tile(width = 4, height = 4) +
-#     scale_fill_gradient2(limits = range(c(.x$biotic_vel, s$fake_vel))) +
-#     coord_fixed()
-#   n <- ggplot(s, aes(x, y, fill = fake_vel)) + geom_tile(width = 4, height = 4) +
-#     scale_fill_gradient2(limits = range(c(.x$biotic_vel, s$fake_vel))) +
-#     coord_fixed()
-# 
-#   print(cowplot::plot_grid(o, n))
-#   # browser()
-#   .s <- left_join(.x, s)
-#   with_nulls[[i]] <- .s
-# }
-# 
-# newvel <- do.call(rbind, with_nulls)
-# 
-# # saveRDS(newdata, file = paste0("data/mature-all-temp-with-null-1-untrimmed.rds"))
-# saveRDS(newvel, file = paste0("data/mature-all-do-with-null-", null_number, "-newvel.rds"))
-# 
-# # newdata <- newvel 
+d$squashed_temp_dvocc <- collapse_outliers(d$temp_dvocc, c(0.005, 0.995))
+# plot(squashed_do_vel ~ squashed_temp_vel, data = d, col = "#00000010")
+d$squashed_temp_vel_scaled <- scale(d$squashed_temp_vel, center = FALSE)
+d$squashed_temp_dvocc_scaled <- scale(d$squashed_temp_dvocc, center = F)
+d$mean_temp_scaled2 <- scale(log(d$mean_temp))
+d$mean_temp_scaled <- scale((d$mean_temp))
+hist((d$mean_temp_scaled))
+hist((d$mean_temp_scaled2))
+
+# hist(d$temp_trend)
+d$temp_trend_scaled <- scale(d$temp_trend, center = FALSE)
+# hist(d$temp_trend_scaled)
+d$temp_grad_scaled <- scale(d$temp_grad)
+# hist(d$temp_grad_scaled)
+# d$temp_grad_scaled <- scale(sqrt(d$temp_grad))
+# hist(d$temp_grad_scaled)
+
+#### PREP DO VARIABLES ####
+
+d$squashed_DO_vel <- collapse_outliers(d$DO_vel, c(0.005, 0.995))
+d$squashed_DO_vel_scaled <- scale(d$squashed_DO_vel, center = FALSE)
+d$DO_dvocc_scaled <- scale(d$DO_dvocc, center = F)
+d$squashed_DO_dvocc <- collapse_outliers(d$DO_dvocc, c(0.005, 0.995))
+d$squashed_DO_dvocc_scaled <- scale(d$squashed_DO_dvocc, center = FALSE)
+
+# hist(d$mean_DO)
+d$mean_DO_scaled2 <- scale(log(d$mean_DO))
+d$mean_DO_scaled <- scale(d$mean_DO)
+hist((d$mean_DO_scaled))
+hist((d$mean_DO_scaled2))
+
+# hist(d$mean_DO_scaled)
+# hist(d$DO_trend)
+d$squashed_DO_trend <- collapse_outliers(d$DO_trend, c(0.000, 0.999))
+hist(d$squashed_DO_trend)
+
+d$DO_trend_scaled <- scale(collapse_outliers(d$DO_trend, c(0.000, 0.999)), center = FALSE)
+hist(d$DO_trend_scaled)
+d$DO_grad_scaled <- scale(d$DO_grad)
+# hist(d$DO_grad_scaled)
+# d$DO_grad_scaled <- scale(sqrt(d$DO_grad))
+# hist(d$DO_grad_scaled)
+
+#### PREP FISHING VARIABLES ####
+
+# hist(d$mean_effort)
+d$sqrt_effort <- sqrt(d$mean_effort)
+d$sqrt_effort_scaled <- scale(sqrt(d$mean_effort), center = F)
+
+d$fishing_trend_scaled <- scale(d$fishing_trend, center = F)
+# hist(d$fishing_trend_scaled)
+
+# hist(sqrt(d$mean_effort))
+d$log_effort <- log(d$mean_effort + 1)
+# hist(log(d$mean_effort + 1))
+d$log_effort_scaled <- scale(d$log_effort, center = F)
 
 
+
+ # saveRDS(d, file = paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
+saveRDS(d, file = paste0("data/all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
 
 
 ##########################################
 ### TRIM EACH SPECIES LAYERS TO INCLUDE PROPORTION OF MEAN TOTAL BIOMASS
-
-# newdata <- readRDS("data/mature-all-do-with-null-1-untrimmed.rds")
+# age <- "mature"
+# age <- "immature"
+# newdata <- readRDS(paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
+newdata <- readRDS(paste0("data/all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
 
 trimmed.dat <- list()
 for (i in seq_along(all_species)) {
-  .x <- filter(newdata, species == all_species[[i]])
+  .x <- filter(newdata, species_age == all_species[[i]])
   bio5perc <- sum(.x$mean_biomass, na.rm = TRUE) * trim_threshold
   s <- sort(.x$mean_biomass)
   bio_sum <- cumsum(s)
@@ -193,22 +226,28 @@ data <- do.call(rbind, trimmed.dat)
 
 # saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-temp-with-null-", null_number, ".rds"))
 
-if (age == "immature") {
- data <- filter(data, species != "Curlfin Sole")}
 
-saveRDS(data, file = paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
+data <- filter(data, species_age != "immature Curlfin Sole")
 
+# saveRDS(data, file = paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
+saveRDS(data, file = paste0("data/all-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
 
+# ggplot(data = data, aes(mean_DO_scaled, log(mean_biomass+1))) + 
+#   geom_point(alpha= .2) + facet_wrap(~species)
+# ggplot(data = data, aes(mean_temp_scaled, log(mean_biomass+1))) + 
+#   geom_point(alpha= .2)  + facet_wrap(~species)
+ggplot(data, aes(mean_DO_scaled, DO_trend_scaled)) + geom_point() + geom_smooth(method = "lm") + facet_wrap(~species)
 
 
 #####################################
 ### PLOT REAL AND FAKE TREND DATA
 data <- readRDS(paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
+data <- readRDS(paste0("data/all-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
 
 plots <- list()
 for (i in seq_along(all_species)) {
 
-  .x <- filter(data, species == all_species[[i]])
+  .x <- filter(data, species_age == all_species[[i]])
 
 o <- ggplot(.x, aes(x, y, fill = biotic_trend)) + geom_tile(width = 4, height = 4) +
   scale_fill_gradient2(limits = range(c(.x$biotic_trend, .x$fake_trend)), guide=FALSE) + 
@@ -234,7 +273,9 @@ n <- ggplot(.x, aes(x, y, fill = fake_trend)) + geom_tile(width = 4, height = 4)
 plots[[i]] <- cowplot::plot_grid(o, n) 
 }
 
-pdf(paste0(age, "-null-", null_number, "-trends.pdf"))
+# pdf(paste0(age, "-null-", null_number, "-trends-new.pdf"))
+pdf(paste0("all-null-", null_number, "-trends-new.pdf"))
+
 plots
 dev.off()
 
@@ -251,7 +292,7 @@ data$DO_vel <- collapse_outliers(data$DO_vel, c(0.005, 0.995))
 plots2 <- list()
 for (i in seq_along(all_species)) {
   
-  .x <- filter(data, species == all_species[[i]])
+  .x <- filter(data, species_age == all_species[[i]])
   
   o <- ggplot(.x, aes(x, y, fill = biotic_vel)) + geom_tile(width = 4, height = 4) +
     scale_fill_gradient2(limits = range(c(.x$biotic_vel, .x$fake_vel)), guide=FALSE) + 
