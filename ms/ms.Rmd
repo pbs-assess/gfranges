@@ -1,7 +1,7 @@
 ---
 title: VOCC outline
 author: |
-  Philina A. English, Authors, ...\
+  Philina A. English^1^, Authors, ...\
   ^1^Pacific Biological Station, Fisheries and Oceans Canada,\
      3190 Hammond Bay Road, Nanaimo, BC, V6T 6N7, Canada;\
      philina.english@dfo-mpo.gc.ca\
