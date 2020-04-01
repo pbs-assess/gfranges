@@ -12,9 +12,12 @@ output:
 fontfamily: libertine
 fontsize: 12pt
 header-includes:
-    - \usepackage{setspace}
-    - \onehalfspacing
-geometry: "left=2.54cm, right=2.54cm, top=2.54cm, bottom=2.54cm"
+  - \usepackage{setspace}
+  - \onehalfspacing
+  - \usepackage{lineno}
+  - \linenumbers
+  - \modulolinenumbers[2]
+geometry: "left=2.64cm, right=2.64cm, top=2.54cm, bottom=2.54cm"
 bibliography: "refs.bib"
 csl: "ecology.csl"
 ---
