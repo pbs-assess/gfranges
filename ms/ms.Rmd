@@ -101,8 +101,7 @@ Even at a local scale, the rate of change in overall biomass density should stil
 <!-- TODO: Check 20 & find REF -->
 In order to detect the impact of climate change on species like rockfish (many of which are territorial with generation times > 20 yrs), one would require either datasets in excess of 20 years, or to contrast patterns of change between age classes.
 Indeed, responses to environmental change can be expected to differ between species, and between age classes within species, depending on the life history of species including physiological tolerances , lifespan and dispersal patterns.
-For groundfish it is well established that some species shift their depth distribution as they age (often approximated by fish length bins; REF e.g.
-Li et al 2019).
+For groundfish it is well established that some species shift their depth distribution as they age [often approximated by fish length bins; e.g. @li2019].
 However, choosing the relevant length (or age, if available) thresholds can complicate analyses.
 Instead, the reaching of reproductive maturity is likely an important threshold for shifts in dispersal patterns, habitat selectivity, physiological tolerances, that therefore represents the most appropriate break point for understanding the impacts of climate.
 Fortunately reproductive maturity information is much easier to collect than fish age, and is therefore more widely available for a wide range of species.
@@ -123,7 +122,7 @@ Example Figure reference: Fig. \@ref(fig:climate-maps).
 ## Survey data
 
 Fisheries and Oceans Canada conducts fishery-independent bottom trawl surveys with biennial coverage of the continental shelf and upper slope of most of the BC coast.
-These surveys follow a random depth stratified design and use the same bottom trawl fishing gear and fishing protocols (Sinclair et al. 2003.
+These surveys follow a random depth stratified design and use the same bottom trawl fishing gear and fishing protocols (TODO: Sinclair et al. 2003).
 Surveys are stratified within four separate regions two of which are surveyed each year since 2005 (with surveys also conducted in some regions in 2003 & 2004): Hecate Strait and Queen Charlotte Sound (odd years) and West Coast Vancouver Island and West Coast Haida Gwaii (even years).
 Each region is sampled over the same month long period between late May and early August each year.
 Only successful tows of 15--20 min duration are included in analyses and total biomass of each species captured was converted to a biomass density estimate based on the speed, distance covered and net opening.
@@ -132,7 +131,7 @@ Catches of between 10--50 individuals are weighed and measured individually, whi
 ## Estimate spatiotemporal variation in adult and immature biomass densities
 
 We chose 36 species of Pacific groundfish most regularly encountered on fisheries-independent bottom trawl surveys and relatively widely distributed within Canadian waters.
-Because ontogenetic shifts in habitat, particularly depth, are well documented in groundfish species (Mindel et al. 2016, Barbeaux and Hollowed 2018, Li et al. 2019), we estimate biomass densities separately for mature and immature size classes whenever possible (maturity is not assessed for certain Chondrichthians, or when catches are particularly low).
+Because ontogenetic shifts in habitat, particularly depth, are well documented in groundfish species [@mindel2016; @barbeaux2018; @li2019], we estimate biomass densities separately for mature and immature size classes whenever possible (maturity is not assessed for certain Chondrichthians, or when catches are particularly low)
 To do this, we first estimate length at 50% maturity (defined by gonadal development stages of immature or maturing vs. mature, ripe, or spent) using ogives fit as sex-specific logistic regressions to individual specimens.
 When sufficient samples were available in all years, a random effect of year was included to allow for temporal change in size at maturity (REF) and these year specific thresholds were used to split observed catches.
 For those species lacking maturity data in some years, a random effect of tow id was included instead, but catches were split based on the global estimate.
@@ -141,11 +140,11 @@ We then calculate the summed weight of all measured which exceeded the length at
 For each tow which resulted in a catch too small for detailed measurements to have been taken, we apply the mean ratio from all measured tows to estimate mature biomass.
 Immature density was estimated as the difference between the total density and mature density.
 
-We then modeled expected biomass density through space and time separately for adults and immatures of each species using spatial GLMMs (e.g., Shelton et al. 2014, Thorson et al. 2015, 2016, Ward et al. 2015).
+We then modeled expected biomass density through space and time separately for adults and immatures of each species using spatial GLMMs [e.g., @shelton2014; @thorson2015; @thorson2016a; @ward2015].
 We model each species and maturity class separately because although these abundance patterns are certainly correlated, explicitly modeling those relationships among groundfish species has not been shown to dramatically improve precision of overall estimates (Thorson and Barnett 2017), and keeping estimates independent should make identification of shared climate responses more conservative.
 Because biomass densities contain both zeros and positive continuous values, we modeled the response with a Tweedie distribution and a log link (Anderson et al. in press, Tweedie 1984, Dunn and Smyth 2005).
 Each model included fixed-effects for year, year-specific quadratic effects of bottom depth, spatial random effects that represent an amalgamation of spatial processes not explicitly included in the model, spatiotemporal random effects that allow these spatial random effects to differ independently between years, and an observation error component.
-The spatial components were modeled as random fields, using a triangulated mesh with vertices at 400 knots to approximate a continuous spatial field (Rue et al. 2009, Lindgren et al. 2011).
+The spatial components were modeled as random fields, using a triangulated mesh with vertices at 400 knots to approximate a continuous spatial field (TODO: Rue et al. 2009, Lindgren et al. 2011).
 The inclusion of year as a factor centered each of the estimated spatiotemporal fields to have mean zero. Maximum likelihood estimation was conducted in R version 3.5.3 (R Core Team 2019) with the package sdmTMB (Anderson et al. In press, Anderson 2019) which interfaces automatic differentiation in Template Model Builder (Kristensen et al. 2016) with INLA (Rue et al. 2009) to .
 
 We modeled the effects of depth and depth squared by first standardizing the log-transformed depth covariate by subtracting its mean and scaling it by its standard deviation.
