@@ -1,0 +1,299 @@
+---
+title: VOCC outline
+author: |
+  Philina A. English, Authors, ...\
+  ^1^Pacific Biological Station, Fisheries and Oceans Canada,\
+     3190 Hammond Bay Road, Nanaimo, BC, V6T 6N7, Canada;\
+     philina.english@dfo-mpo.gc.ca\
+output:
+  bookdown::pdf_document2:
+    number_sections: yes
+    toc: no
+fontfamily: libertine
+fontsize: 12pt
+header-includes:
+    - \usepackage{setspace}
+    - \onehalfspacing
+geometry: "left=2.54cm, right=2.54cm, top=2.54cm, bottom=2.54cm"
+bibliography: "refs.bib"
+csl: "ecology.csl"
+---
+
+```{r setup, echo=FALSE, cache=FALSE, message=FALSE, results='hide', warning=FALSE}
+library(knitr)
+library(here)
+opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  echo = FALSE,
+  autodep = TRUE,
+  fig.align = "center",
+  fig.pos = "htb"
+)
+```
+
+# Abstract {-}
+
+# Introduction
+
+**Question framing notes:**
+
+-   *Groundfish*
+
+    -   *occupy a relatively homogenous thermal environment*
+
+        -   *predict less tendency to move in response to climate*
+
+    -   *many migrate and school*
+
+    -   *high possibility of movement in response to climate*
+
+-   *Stock assessments assume stationary distributions*
+
+-   *Choices of marine protected areas*
+
+-   *Approaches used often consider the whole of species ranges and apply forward projections assuming that species responses to climate variables will remain the same through time.*
+
+**Spatial scales of biotic responses to climate change**
+
+-   **Range boundaries** ...
+
+-   **Center of gravity** -- commonly used to assess responses...
+
+-   suggests that fishing pressure is more important than average bottom temperature on annual (maybe seasonal?) basis for predicting COG for entire stocks [@adams2018] however a relatively higher influence of bottom temperature on inertia (variance in biomass relative to COG) suggests that is spatial variability in temperature (or responses to temperature) that aren't captured in COG
+
+-   Because population density often increases faster than area occupied, and organisms likely move towards preferred habitat as populations decline( the basin model of density-dependent habitat selection theory)... populations merit cautious management during population declines, because a compressed range may increase the efficiency of harvest. ... [@thorson2016b]
+
+-   ... Could complicate interpretation of indices such as COG?
+
+-   **Local climate velocities** are one way of quantifying these changes at finer spatial scales.
+
+**Measuring biotic responses in terms of density**
+
+These same principles of change velocity can also be applied to changes in biotic variables.
+
+Known as biotic velocity, these become estimates of the minimum distance and approximate direction an organism might be expected to move to reach an equivalent degree of habitat suitability.
+Like with climate velocity, a positive value will be associated with an increase in biotic suitability of the focal location and the distance to the nearest location predicted to have current (or future) suitability equivalent to the lower previous suitability of the focal location, while a negative value represents a decline in suitability of the focal location and the distance to the nearest location that is predicted to meet that prior degreed of biotic suitability.
+
+While COG estimates are intrinsically sensitive to changes in abundance, fine scale estimates of species distributions (SDMs) have traditional been based on presence-absence data both because it's easier to collect and simpler to model than zero inflated abundance or biomass data.
+
+However, with advances in computing power and methods of estimating spatial random effect structures and more flexible distributions like the Tweedie, abundance and biomass based species distribution models can be used to assess habitat suitability in terms more relevant to estimating carrying capacity rather than just occupancy.
+
+These capacity approximating metrics are likely to be much more relevant to fisheries management decision and food security, than simple occupancy estimates.
+
+Like SDMs, most previous applications of biotic velocities have focused on habitat suitability in terms of presence absence rather than using the abundance or density information (REFS).
+
+However, changes in climate may cause shifts carrying capacity long before range shifts are clearly detectable. Therefore, we will extend the application of biotic velocities to estimates of change in fish biomass densities rather than probability of presence.
+
+*DO I need to talk about trends here, if trend analysis is included?*
+
+**Time-scales of change depend on life history**
+
+Just as identifying the appropriate spatial and biotic scales for detecting responses to climate can be fraught, the timescales at which changes occur for each of these other dimensions is likely to differ as well.
+
+At longer timescales it because easier to disentangle variability from overall trends, however standardized long-term datasets are relatively rare, and over shorter timescales, a focus on average trends can obscure meaningful variability.
+
+While overall population status and distribution limits are likely related (e.g. through basin model of density-dependent habitat selection), the time delay between changes in survival and/or reproductive rate and the subsequent redistribution of the population will depend on both spatial scale and species life histories.
+For example, this lag should be smaller when generation times are particularly short, or when individuals of all age classes tend to disperse greater distances.
+Likewise, changes in local abundances at finer spatial scales should occur more quickly due to shorter dispersal distances involved and *reduced homogenization of responses*.
+<!-- TODO: Struggling with how to describe the dilution of responses by greater conflicting processes at larger spatial scales?  -->
+Even at a local scale, the rate of change in overall biomass density should still be limited by species' generation times under certain conditions (e.g. when fecundity or early life history stages are most climate sensitive, and when the larger age classes are highly sedentary or territorial).
+<!-- TODO: Check 20 & find REF -->
+In order to detect the impact of climate change on species like rockfish (many of which are territorial with generation times > 20 yrs), one would require either datasets in excess of 20 years, or to contrast patterns of change between age classes.
+Indeed, responses to environmental change can be expected to differ between species, and between age classes within species, depending on the life history of species including physiological tolerances , lifespan and dispersal patterns.
+For groundfish it is well established that some species shift their depth distribution as they age (often approximated by fish length bins; REF e.g.
+Li et al 2019).
+However, choosing the relevant length (or age, if available) thresholds can complicate analyses.
+Instead, the reaching of reproductive maturity is likely an important threshold for shifts in dispersal patterns, habitat selectivity, physiological tolerances, that therefore represents the most appropriate break point for understanding the impacts of climate.
+Fortunately reproductive maturity information is much easier to collect than fish age, and is therefore more widely available for a wide range of species.
+
+Fishery-independent survey data is often collected to aid in stock assessments and fisheries management.
+In Canadian Pacific waters, randomized bottom trawl surveys outfitted with dissolved oxygen and temperature collecting CTD sensors, have been run for about a decade now.
+During this time bottom temperatures have tended to rise everywhere, while the direction of change in the availability of oxygen has been spatially variable.
+In addition to estimates of biomass density for each species captured, data on size distributions and reproductive maturity are also collected for most species.
+***We use these concurrent estimates of both climate and biomass to assess the extent to which groundfish densities are changing in response to climate at the local scales most relevant to management***.
+In order to better understand the extent to which the temporal and spatial scales considered are appropriate for different species within this fish community, we also assess the concordance between the life histories and apparent sensitivities across species and maturity classes.
+Given the relatively short timescale encompassed in this survey, we expect *stronger patterns in shorter-lived, more pelagic species, and immatures.*
+<!-- TODO: Discuss with sean & chris rooper -->
+
+# Methods
+
+Example Figure reference: Fig. \@ref(fig:climate-maps).
+
+## Survey data
+
+Fisheries and Oceans Canada conducts fishery-independent bottom trawl surveys with biennial coverage of the continental shelf and upper slope of most of the BC coast.
+These surveys follow a random depth stratified design and use the same bottom trawl fishing gear and fishing protocols (Sinclair et al. 2003.
+Surveys are stratified within four separate regions two of which are surveyed each year since 2005 (with surveys also conducted in some regions in 2003 & 2004): Hecate Strait and Queen Charlotte Sound (odd years) and West Coast Vancouver Island and West Coast Haida Gwaii (even years).
+Each region is sampled over the same month long period between late May and early August each year.
+Only successful tows of 15--20 min duration are included in analyses and total biomass of each species captured was converted to a biomass density estimate based on the speed, distance covered and net opening.
+Catches of between 10--50 individuals are weighed and measured individually, while larger catches are subsampled and for commercially important species data on maturity and age are also collected.
+
+## Estimate spatiotemporal variation in adult and immature biomass densities
+
+We chose 36 species of Pacific groundfish most regularly encountered on fisheries-independent bottom trawl surveys and relatively widely distributed within Canadian waters.
+Because ontogenetic shifts in habitat, particularly depth, are well documented in groundfish species (Mindel et al. 2016, Barbeaux and Hollowed 2018, Li et al. 2019), we estimate biomass densities separately for mature and immature size classes whenever possible (maturity is not assessed for certain Chondrichthians, or when catches are particularly low).
+To do this, we first estimate length at 50% maturity (defined by gonadal development stages of immature or maturing vs. mature, ripe, or spent) using ogives fit as sex-specific logistic regressions to individual specimens.
+When sufficient samples were available in all years, a random effect of year was included to allow for temporal change in size at maturity (REF) and these year specific thresholds were used to split observed catches.
+For those species lacking maturity data in some years, a random effect of tow id was included instead, but catches were split based on the global estimate.
+For all catches exceeding the species-specific threshold count of individual fish, either a random subset of roughly 50 fish, or all individuals will be measured for both length and weight (occasional missing weights were estimated from $\log(W_i) \sim \mathrm{Student-t} (df = 3, \log(a) + b \log(L_i), \sigma)$, with $W_i$ and $L_i$ representing the weight and length for fish $i$ and $\sigma$ representing the observation error scale).
+We then calculate the summed weight of all measured which exceeded the length at 50% maturity threshold, divided by the total weight of all measured fish, and multiply this ratio by the estimated biomass density for each tow.
+For each tow which resulted in a catch too small for detailed measurements to have been taken, we apply the mean ratio from all measured tows to estimate mature biomass.
+Immature density was estimated as the difference between the total density and mature density.
+
+We then modeled expected biomass density through space and time separately for adults and immatures of each species using spatial GLMMs (e.g., Shelton et al. 2014, Thorson et al. 2015, 2016, Ward et al. 2015).
+We model each species and maturity class separately because although these abundance patterns are certainly correlated, explicitly modeling those relationships among groundfish species has not been shown to dramatically improve precision of overall estimates (Thorson and Barnett 2017), and keeping estimates independent should make identification of shared climate responses more conservative.
+Because biomass densities contain both zeros and positive continuous values, we modeled the response with a Tweedie distribution and a log link (Anderson et al. in press, Tweedie 1984, Dunn and Smyth 2005).
+Each model included fixed-effects for year, year-specific quadratic effects of bottom depth, spatial random effects that represent an amalgamation of spatial processes not explicitly included in the model, spatiotemporal random effects that allow these spatial random effects to differ independently between years, and an observation error component.
+The spatial components were modeled as random fields, using a triangulated mesh with vertices at 400 knots to approximate a continuous spatial field (Rue et al. 2009, Lindgren et al. 2011).
+The inclusion of year as a factor centered each of the estimated spatiotemporal fields to have mean zero. Maximum likelihood estimation was conducted in R version 3.5.3 (R Core Team 2019) with the package sdmTMB (Anderson et al. In press, Anderson 2019) which interfaces automatic differentiation in Template Model Builder (Kristensen et al. 2016) with INLA (Rue et al. 2009) to .
+
+We modeled the effects of depth and depth squared by first standardizing the log-transformed depth covariate by subtracting its mean and scaling it by its standard deviation.
+We then calculated 'depth squared' from this centred and scaled variable.
+This ensures the covariate values are not too large or small to avoid computational issues and the centring separates the linear and quadratic predictor components.
+We also tried including the proportion of muddy sediment, and proportion of sediment with any rocks, but the values we used were likely not specific enough to the trawl path sampled, and therefore not helpful to our models.
+Certainly more spatially precise estimates would be possible with refined substrate variables, but likely irrelevant to this analysis given the resolution and uncertainty in our climate variables.
+Furthermore, the spatial random effects can account for spatial factors that are constant across time, like substrate type, while spatiotemporal random effects account for factors that vary from year to year spatially such as bottom temperature, water circulation patterns, species interactions, and species movement.
+
+*MODEL VALIDATION?*
+
+## Estimate climate velocities
+
+A Seabird Electronics 19plus conductivity, temperature, and depth recorder (CTD) with dissolved oxygen (DO) sensor has also been successfully deployed on most tows since 2008.
+Therefore, we modeled bottom temperature and DO levels from CTD sensor data collected on each survey tow using a similar geostatistical model as for biomass.
+The approach for these models differed only be being Gaussian and by estimating the spatiotemporal random fields using an AR1 process.
+Because DO levels cannot be negative and are known to be influenced be both water temperature and seasonal biological processes (REF), we predict log(DO) with added fixed effects for day of year (centered and scaled) and temperature (quadratic of scaled values similar to depth).
+Bottom temperature data (but not DO) was also collected on tows prior to 2008, so this data was also included in the model in order to better inform the static spatial field component of the model.
+
+For all climate and biomass models, we then project the model predictions onto a 4 km x 4 km grid (UTM 9 projection) consisting of the particular coastal zone surveyed in each year. We then calculate both gradient-based and distance-based velocities of change, and constituent local trends and spatial gradients, for each cell.
+
+Explain ways of calculating:
+
+- Gradient velocities
+- Analog-distance velocities <!-- TODO: Might leave out -->
+
+Both spatial gradients (denominator for gradient-based calculation) and t~2~ conditions (distance-search method) are based on the years 2014-2019 (which correspond to the start of the "Blob", and corresponds with the warm transition in Alaskan waters---Albia et al. 2018).
+Most prior application of gradient-based VOCC use a mean spatial gradient across the entire period analyzed, which tends to result in smaller gradients due to reduced variability in means based on larger sample sizes.
+Because velocity estimates explode as gradients approach zero, estimated velocities will tend to be smaller (more conservative) when fewer estimates are averaged in the gradient calculation.
+Furthermore, the period most relevant to the actual distance travelled is end point, however given that samples were collected only once every two years and that there is variability between species in when dispersal occurs and how long it takes, we use roughly the latter half of the time period analyzed in our estimates of spatial gradients.
+<!-- TODO: Cut if analog cut: -->
+This gradient is also based on exactly the same cell values are as searched in the analog-distance algorithm.
+
+Because locations varied in the number of years sampled ...
+
+Because the space searched by the analog-distance algorithm was much larger in one dimension than in others, we truncate distance to a max of 100 km.
+Likewise, extremes in the gradient-based velocity estimates were collapsed to the 0.005 and 0.995 quantiles.
+As a result both estimates produce heavy-tailed distributions...
+
+<!-- TODO: Might leave out? -->
+**Control for commercial fishing effort?**
+
+-   include fishing trips up to 9hrs in length
+
+-   calculate mean hrs fished per year per 4x4 km grid cell
+
+-   calculate % change in hrs fished between 2008-2018
+
+**Link biomass change with climate**
+
+To explore the potential for change in climate to predict local changes in biomass density, we used similar spatial GLMMs, but with independent random spatial fields for each species (and genus?)
+in order to control for spatial autocorrelation amongst cells.
+For each species, only the fewest cells that encompass 95% of total mean biomass were included.
+In all models mean biomass density was included as a covariate in order to reduce the influence of changes occurring only at either the highest or lowest densities for a particular species.
+We attempt to predict change in biomass of each species as a function of local climate change (just temperature, or both temperature and DO) and an interaction between the mean climate of each cell and its local change estimate.
+We model both biomass and climate as either velocities or as raw trends. In addition we attempt to assess the importance of the gradient component in velocity estimates by adding gradient to the model based on trends.
+
+All covariates were scaled to their standard deviations.
+Covariates capturing cell means were also centered (except fishing effort---so that estimates can be interpreted as in the absence of fishing), but change variables were kept uncentred because an intercept of 0 change is more intuitive to interpret.
+In addition to checking the spatial distribution of model residuals, we simulated fake biomass trends for each species (using variance and spatial correlation parameters unique to each species) and reran each model 3 times and compared the distribution of effect sizes and number of sig effects in our simulated null models with the actual estimates.
+<!-- TODO: Maybe up to 10 times? -->
+
+In order to better understand the extent to which the temporal and spatial scales considered are appropriate for different species within this groundfish community, we also assess the concordance between the life histories and apparent sensitivities across species and maturity classes.
+
+# Results
+
+Very little difference whether biotic velocity or trend are the response variable...
+
+Big difference whether temp velocity or temp trend are the predictor...
+
+# Discussion
+
+# Acknowledgements
+
+# References
+
+<div id="refs"></div>
+
+\clearpage
+
+# Figures
+
+<!-- Reference this figure as: Fig. \@ref(fig:climate-maps) -->
+
+```{r climate-maps, fig.cap="Caption goes here", out.width="5in"}
+include_graphics(here("ms", "figs", "example.pdf"))
+```
+
+\clearpage
+
+```{r another, fig.cap="Caption goes here", out.width="5in"}
+include_graphics(here("ms", "figs", "example.pdf"))
+```
+
+\clearpage
+
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\thetable}{S\arabic{table}}
+\setcounter{figure}{0}
+\setcounter{table}{0}
+\setcounter{page}{1}
+\setcounter{section}{0}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+
+# Supporting Information {-}
+
+# TODO Repeat the title here {-}
+
+TODO Repeat the authors here
+
+# Supporting Methods
+
+<!-- TODO: rewrite the following: -->
+
+These models can be represented as Tweedie GLMMs with a log link, spatiotemporal random effects defined for locations in space $s$ and time $t$), and annual predictors for the mean biomass each year:
+\begin{align}
+  y_{s,t} &\sim \mathrm{Tweedie}(\mu_{s,t}, p, \phi), \quad 1 < p < 2,\\
+  \mu_{s,t} &= \exp \left( \mathbf{X}_{s,t} \mathbf{\beta} + \omega_s + \epsilon_{s,t} \right).
+\end{align}
+where $s$ represents a spatial location, $y_s$ represents observed fish density
+for a survey set, $\mu_s$ represents expected fish density, $p$ represents the
+Tweedie power parameter, and $\phi$ represents the Tweedie dispersion
+parameter. The symbol $\mathbf{X_s}$ represents a vector of predictors (an
+intercept, log depth, and log depth squared) and $\mathbf{\beta}$ represents
+a corresponding vector of coefficients. The spatial random effects $\omega_s$
+<!-- TODO: Need to specify time-varying depth -->
+are assumed to be drawn from a multivariate normal distribution with
+a covariance matrix $\mathbf{\Sigma}_\omega$ that is centered on zero:
+
+$$
+\mathbf{\omega} \sim \mathrm{MVNormal} \left( \mathbf{0}, \mathbf{\Sigma}_\omega \right),
+$$
+
+and we assume the same for the spatiotemporal random effects, with each time slice being given its own independent set of random effects ($t$) with covariance matrix $\mathbf{\Sigma}_{\epsilon,t}$::
+
+$$
+\mathbf{\epsilon}_t \sim \mathrm{MVNormal} \left( \mathbf{0}, \mathbf{\Sigma}_{\epsilon,t} \right).
+$$
+
+All spatial random effects are constrained to follow a Mat\'ern covariance function, which defines the rate with which spatial correlation decays with distance. The Matern function describes the covariance XX (sj , sk ) between spatial locations sj and sk as:
+
+TODO: finish and simplify
+
+\clearpage
+
+# Supporting Figures and Tables
+
+```{r yet-another, fig.cap="Caption goes here", out.width="5in"}
+include_graphics(here("ms", "figs", "example.pdf"))
+```
