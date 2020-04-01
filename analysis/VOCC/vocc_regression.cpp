@@ -52,6 +52,10 @@ Type objective_function<Type>::operator()()
 
   DATA_ARRAY(X_k2);
   DATA_IVECTOR(chop_cols);
+  
+  DATA_ARRAY(XO2_k2);
+  DATA_IVECTOR(chopO2_cols);
+  DATA_INTEGER(two_chopstick_types);
 
   // ------------------ Parameters ---------------------------------------------
 
@@ -190,6 +194,26 @@ Type objective_function<Type>::operator()()
   }
   REPORT(diff_delta_k);
   ADREPORT(diff_delta_k);
+  
+  if (two_chopstick_types) {
+    // Chopstick slopes at 2 levels:
+    matrix<Type> deltaO2_k(n_k,XO2_k2.cols());
+    for (int g = 0; g < deltaO2_k.cols(); g++) {
+      for (int k = 0; k < n_k; k++) {
+        deltaO2_k(k, g) =
+          (b_j(chopO2_cols(0)) + b_re(k, chopO2_cols(0)) + b_re_genus(genus_index_k(k), chopO2_cols(0))) * XO2_k2(k, g) +
+          (b_j(chopO2_cols(1)) + b_re(k, chopO2_cols(1)) + b_re_genus(genus_index_k(k), chopO2_cols(1)));
+      }
+    }
+    REPORT(deltaO2_k);
+    ADREPORT(deltaO2_k);
+    vector<Type> diff_deltaO2_k(n_k);
+    for (int k = 0; k < n_k; k++) {
+      diff_deltaO2_k(k) = deltaO2_k(k, 1) - deltaO2_k(k, 0);
+    }
+    REPORT(diff_deltaO2_k);
+    ADREPORT(diff_deltaO2_k);
+  }
 
   // ------------------ Reporting ----------------------------------------------
 
