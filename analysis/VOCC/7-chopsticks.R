@@ -75,7 +75,7 @@ mat_slopes_do <- chopstick_slopes(model, x_variable = "DO_trend_scaled",
 
 
 plot_fuzzy_chopsticks(model,
-  x_variable = "DO_trend_scaled", type = "DO",
+  x_variable = "DO_trend_scaled", type = "DO", rug = T,
   y_label = y_label, 
   # imm_model = imm_model, 
   # imm_slopes = imm_slopes_do,
