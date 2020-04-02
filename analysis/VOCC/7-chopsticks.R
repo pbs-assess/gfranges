@@ -118,13 +118,13 @@ stat <- readRDS(paste0("data/life-history-stats.rds")) %>%
 
 do_slopes <- chopstick_slopes(model, x_variable = "DO_trend_scaled", 
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO")
-do_slopes <- left_join(do_slopes, stat) #%>% mutate(sort_var = slope_est)
+do_slopes <- left_join(do_slopes, stat) %>% mutate(sort_var = slope_est)
 
 p2 <- plot_fuzzy_chopsticks(model,
   x_variable = "DO_trend_scaled", type = "DO",
   y_label = y_label,
   slopes = do_slopes
-) + # ylim(-5,5) +
+) + coord_cartesian(ylim = c(-5,10)) + 
   xlab("DO trend (scaled)") + theme(legend.position = "none")
 
 do_slopes$species[do_slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"	
