@@ -24,7 +24,8 @@ vocc_regression <- function(dat, y_i, X_ij,
   group_by_genus = FALSE, binomial = FALSE,
   interaction_column,
   main_effect_column,
-  split_effect_column
+  split_effect_column,
+  par_init = NULL
   ) {
 
   if (binomial) student_t <- FALSE
@@ -126,15 +127,19 @@ vocc_regression <- function(dat, y_i, X_ij,
   )
 
   if (binomial) tmb_map <- c(tmb_map, list(ln_phi = factor(NA)))
-  obj_fe <- TMB::MakeADFun(
-    data = tmb_data, parameters = tmb_param, map = tmb_map,
-    random = NULL, DLL = "vocc_regression"
-  )
-  opt_fe <- nlminb(obj_fe$par, obj_fe$fn, obj_fe$gr)
+  
   set_par_value <- function(opt, par) as.numeric(opt$par[par == names(opt$par)])
-  tmb_param$b_j <- set_par_value(opt_fe, "b_j")
-  if (!binomial) tmb_param$ln_phi <- set_par_value(opt_fe, "ln_phi")
-
+  if (is.null(par_init)) {
+    obj_fe <- TMB::MakeADFun(
+      data = tmb_data, parameters = tmb_param, map = tmb_map,
+      random = NULL, DLL = "vocc_regression"
+    )
+    opt_fe <- nlminb(obj_fe$par, obj_fe$fn, obj_fe$gr,
+      control = list(eval.max = 1e3, iter.max = 1e3))
+    tmb_param$b_j <- set_par_value(opt_fe, "b_j")
+    if (!binomial) tmb_param$ln_phi <- set_par_value(opt_fe, "ln_phi")
+  }
+  
   message("Fitting fixed and random effects...")
 
   tmb_map <- list()
@@ -151,7 +156,12 @@ vocc_regression <- function(dat, y_i, X_ij,
     obj <- MakeADFun(tmb_data, tmb_param, DLL = "vocc_regression",
       random = c("omega_sk", "b_re"), map = tmb_map)
   }
-  opt <- nlminb(obj$par, obj$fn, obj$gr,
+  if (!is.null(par_init)) {
+    nlminb_start <- par_init
+  } else {
+    nlminb_start <- obj$par
+  }
+  opt <- nlminb(nlminb_start, obj$fn, obj$gr,
     control = list(eval.max = 1e4, iter.max = 1e4))
   sdr <- sdreport(obj)
 
