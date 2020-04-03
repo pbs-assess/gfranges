@@ -171,7 +171,7 @@ plot_fuzzy_chopsticks <- function(model,
   
   
   if (is.null(colours)) {
-    if (type == "DO") {
+    if (type == "DO"|type == "do") {
       colours <- c("#5E4FA2", "#FDAE61")
     } else {
       if (type == "mean_temp") {
@@ -275,7 +275,7 @@ chopstick_slopes <- function (model,
       interaction_column = "temp_trend_scaled:mean_temp_scaled" ,
       x_variable = "temp_trend_scaled",
       species = NULL) {
-
+# browser()
   pred_dat <- model$pred_dat
   # if(is.null(imm_model)) {
     pred_dat <- pred_dat %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
@@ -289,31 +289,32 @@ chopstick_slopes <- function (model,
     pred_dat$se_p <- se$eta_p
   }
   
-    
+  if (!is.null(model$deltas)) { 
     deltas <- model$deltas %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
     deltas <- deltas %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
     
-  deltas <- deltas %>% 
-    select(species, age, type, chopstick, Estimate, `Std. Error`) %>% 
-    rename(slope_est = Estimate, slope_se = `Std. Error`)
-  
+    deltas <- deltas %>% 
+      select(species, age, type, chopstick, Estimate, `Std. Error`) %>% 
+      rename(slope_est = Estimate, slope_se = `Std. Error`)
+   
   if (is.null(model$delta_diff)) {
-  est <- as.list(model$sdr, "Estimate", report = TRUE)
-  se <- as.list(model$sdr, "Std. Error", report = TRUE)
-
-  model$delta_diff <- 
-    cbind(est$diff_delta_k, se$diff_delta_k)
-  model$delta_diff <- as.data.frame(model$delta_diff)
-  model$delta_diff$type <- type
-  model$delta_diff$species <- unique(model$deltas$species)
-  names(delta_diff) <- c("est", "se", "type", "species")
+    est <- as.list(model$sdr, "Estimate", report = TRUE)
+    se <- as.list(model$sdr, "Std. Error", report = TRUE)
+  
+    model$delta_diff <- 
+      cbind(est$diff_delta_k, se$diff_delta_k)
+    model$delta_diff <- as.data.frame(model$delta_diff)
+    model$delta_diff$type <- type
+    model$delta_diff$species <- unique(model$deltas$species)
+    names(delta_diff) <- c("est", "se", "type", "species")
   } 
   
   diffs <- model$delta_diff %>% rename(diff = est, diff_se = se) %>% 
     mutate(min_diff = abs(diff)-diff_se*1.96, sig_diff = if_else(min_diff<=0, "N", "Y"))
   diffs <-  diffs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
   diffs <- diffs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
-   
+  }
+    
   if (!is.null(species)) {
     spp <- species
     pred_dat <- filter(pred_dat, species == !!spp)
@@ -321,19 +322,30 @@ chopstick_slopes <- function (model,
   
   if (!is.null(type)) {
     pred_dat <- filter(pred_dat, type == !!type)
-    deltas <- filter(deltas, type == !!type)
-    diffs <- filter(diffs, type == !!type)
     
-    global_slopes <- filter(diffs, sig_diff == "N") %>% select(species, age)
     global_coefs <- filter(model$coefs, coefficient == !!x_variable) %>% 
       select(-species_id, -coefficient) %>% 
       rename(global_slope= Estimate, global_se = `Std. Error`)
     global_coefs <- global_coefs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
     global_coefs <- global_coefs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
+    
+    if (!is.null(model$deltas)) { 
+    diffs <- filter(diffs, type == !!type)
+    global_slopes <- filter(diffs, sig_diff == "N") %>% select(species, age)
     global <- left_join(global_slopes, global_coefs)
     diffs <- left_join(diffs, global)
-  }
-  
+    } else {
+      diffs <- filter(model$coefs, coefficient == !!interaction_column) %>% 
+        select(-species_id, -coefficient) %>% 
+        rename(diff = Estimate, diff_se = `Std. Error`) %>% 
+        mutate(min_diff = abs(diff)-diff_se*1.96, sig_diff = if_else(min_diff<=0, "N", "Y"))
+      diffs <- diffs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+      diffs <- diffs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
+      global_slopes <- filter(diffs, sig_diff == "N") %>% select(species, age)
+      global <- left_join(global_slopes, global_coefs)
+      diffs <- left_join(diffs, global)
+    }
+  }  
   slopes <- pred_dat %>% 
     rename( x = x_variable) %>% 
     group_by(species, age, type, chopstick) %>% #select(species, type, chopstick, x)
@@ -356,8 +368,14 @@ chopstick_slopes <- function (model,
     rename(SE = `Std. Error`) %>% 
     mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"), 
       species = stringr::str_replace(species, ".*mature ", ""))
-
-  slopes <- left_join(slopes, deltas) #by = c("species", "type", "chopstick")
+  
+  if (!is.null(model$deltas)) { 
+    if (!is.null(type)) {
+        deltas <- filter(deltas, type == !!type)
+      }
+    slopes <- left_join(slopes, deltas) #by = c("species", "type", "chopstick")
+  }
+  
   slopes <- left_join(slopes, diffs)
   slopes <- left_join(slopes, SE)
   slopes
@@ -400,7 +418,7 @@ plot_chopstick_slopes <- function (slopedat,
     slopedat <- slopedat %>% mutate(chopstick = paste(chopstick, type))
 
   if (is.null(colours)) {
-    if (type == "DO") {
+    if (type == "DO"|type == "do") {
       colours <- c("#5E4FA2", "#FDAE61")
     } else {
       if (type == "mean_temp") {
@@ -412,26 +430,41 @@ plot_chopstick_slopes <- function (slopedat,
   }
   }
   
+  if(is.null(slopedat$sort_var)){
+    if(!is.null(slopedat$slope_est)){
+      slopedat <- slopedat %>% mutate(sort_var = slope_est)
+    } else{
+      slopedat <- slopedat %>% mutate(sort_var = slope)
+    }
+  }
+  
 if(hack) { 
 p <- ggplot(slopedat) + 
   geom_hline(yintercept = 0, colour = "darkgray") +
-  geom_linerange(aes(forcats::fct_reorder(species, sort_var, mean, .desc=F), abs(diff),
-    ymin = (abs(diff) - diff_se*1.96),
-    ymax = (abs(diff) + diff_se*1.96),
-    shape = age), alpha=0.25, colour = "gray",
-    position = position_jitter(), #dodge.width = 1.2
-    size = 0.4, fatten = 1.5, fill = "white") +
+  # geom_linerange(aes(forcats::fct_reorder(species, sort_var, mean, .desc=F), abs(diff),
+  #   ymin = (abs(diff) - diff_se*1.96),
+  #   ymax = (abs(diff) + diff_se*1.96),
+  #   shape = age), alpha=0.25, colour = "gray",
+  #   position = position_jitter(), #dodge.width = 1.2
+  #   size = 0.4, fatten = 1.5, fill = "white") +
   scale_colour_manual(values = colours) + #, guide=T
-  geom_pointrange(aes(species,
+  geom_pointrange(aes(forcats::fct_reorder(species, sort_var, mean, .desc=F),
     slope,
     colour = chopstick, 
     shape = age,
+    alpha = sig_diff,
     ymin = (slope - SE*1.96), # use uncertainty from modeled interaction
     ymax = (slope + SE*1.96) # use uncertainty from modeled interaction
     # ymin = slope_min, # min slope possible inside CI
     # ymax = slope_max # max slope possible inside CI
   ), position = position_jitter(width=0.5), #dodge.width = 1.2
     size = 0.4, fatten = 1.5, fill = "white") +
+  geom_pointrange(aes(species,   
+    global_slope, ymin = global_slope - 1.96 * global_se, 
+    ymax = global_slope + 1.96 * global_se, linetype = age, shape = age), 
+    position = position_dodge(width=0.5), #alpha = 0.5, 3dodge.width = 0.4
+    size = 0.4, fatten = 1.5, colour="black", fill = "white", inherit.aes = F) +
+  scale_alpha_discrete(range = c(0.0, 1), guide = F) +
   coord_flip() +
   xlab("") + #ylab("") + # ggtitle("slopes") +
   gfplot:::theme_pbs() + theme(
