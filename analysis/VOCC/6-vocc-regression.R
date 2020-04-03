@@ -12,20 +12,20 @@ compile("vocc_regression.cpp")
 dyn.load(dynlib("vocc_regression"))
 source("vocc-regression-functions.R")
 
-knots <- 500
+knots <- 300
 
 # age <- "mature"
 # age <- "immature"
 age <- "both"
 
-# y_type <- "vel"
-y_type <- "trend"
+y_type <- "vel"
+# y_type <- "trend"
 
 no_chopsticks <- F
 both <- T
-# model_type <- "-vel-both"
+model_type <- "-vel-both"
 # # model_type <- "-vel-both-fishing"
-model_type <- "-trend-with-do"
+# model_type <- "-trend-with-do"
 
 # both <- F
 # model_type <- "-vel-temp"
@@ -61,6 +61,7 @@ d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
 d <- as_tibble(d) %>%
   # filter(species != "Bocaccio") %>%
   # filter(species != "Sand Sole") %>%
+  filter(species != "Shortraker Rockfish") %>%
   filter(species != "Longspine Thornyhead")
 
 # if combining adult and imm in same model
@@ -80,26 +81,30 @@ d$log_biomass_scaled2 <- d$log_biomass_scaled^2
 # hist(log(d$abs_biotic))
 # plot(log(abs_biotic)~log(sd_est), data=d, col = "#00000010")
 
-
+hist(d$DO_trend_scaled)
 #### MAKE FAKE BIOTIC VELOCITY
-hist(d$biotic_vel, breaks=100)
-hist(d$biotic_trend, breaks =100)
+hist(d$biotic_vel, breaks = 100)
+hist(d$biotic_trend, breaks = 50)
 
 if(age == "mature") {
-d$squashed_biotic_vel <- collapse_outliers(d$biotic_vel, c(0.005, 0.995))
+  d$squashed_biotic_vel <- collapse_outliers(d$biotic_vel, c(0.005, 0.995))
+  d$biotic_trend <-collapse_outliers(d$biotic_trend, c(0.00001, 0.99999))
+  hist(d$biotic_trend, breaks = 50)
 } else {
   d$squashed_biotic_vel <- collapse_outliers(d$biotic_vel, c(0.005, 0.99))
-  d$squashed_biotic_trend <- collapse_outliers(d$biotic_trend, c(0.001, 0.999))
-  }
+  d$squashed_biotic_trend <- collapse_outliers(d$biotic_trend, c(0.0001, 0.9999))
+  d$biotic_trend <-collapse_outliers(d$biotic_trend, c(0.00001, 0.99999))
+  hist(d$biotic_trend, breaks = 50)
+  hist(d$squashed_biotic_trend, breaks = 50)
+}
+
 hist(d$squashed_biotic_vel)
-hist(d$squashed_biotic_trend)
 
 d$squashed_biotic_dvocc <- collapse_outliers(d$biotic_dvocc, c(0.005, 0.995))
-
 d$fake_vel <- d$fake_trend / d$biotic_grad
-# hist(d$fake_vel)
+hist(d$fake_vel)
 d$squashed_fake_vel <- collapse_outliers(d$fake_vel, c(0.005, 0.995))
-# hist(d$squashed_fake_vel)
+hist(d$squashed_fake_vel)
 ### other possible response variables
 # hist((d$sd_est))
 # hist(log(d$sd_est))
@@ -577,7 +582,6 @@ DO_se <- as.list(DO_model$sdr, "Std. Error", report = TRUE)
 DO_model$pred_dat$est_p <- DO_est$eta_p
 DO_model$pred_dat$se_p <- DO_se$eta_p
 
-
 new_model$pred_dat <- rbind(temp_model$pred_dat, DO_model$pred_dat)
 new_model$deltas <- rbind(temp_model$deltas, DO_model$deltas)
 
@@ -620,6 +624,11 @@ saveRDS(temp_model, file = paste0("data/", y_type, "-", data_type, date, model_t
 
 saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, ".rds"))
 
+new_r <- new_model$obj$report()
+new_model$data$residual <- new_model$y_i - new_r$eta_i
+new_model$data$eta <- new_r$eta_i
+
+saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, ".rds"))
 
 paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, genus_lab, "-", knots, ".rds")
 
@@ -678,15 +687,46 @@ get_aic(model)
 ##############################
 # # 
 # # library(ggsidekick) # for fourth_root_power if gfranges not loaded
-ggplot(model$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2(trans = fourth_root_power) + gfplot::theme_pbs() +
+ggplot(model$data, aes(x, y, fill = omega_s)) + 
+  geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2(trans = fourth_root_power) + 
+  gfplot::theme_pbs() +
   facet_wrap(~species)
-#
+
 # # ggsave("figs/vel-model-omega.png", width = 12, height = 12, dpi = 300)
 # # ggsave("figs/trend-model-omega.png", width = 12, height = 12, dpi = 300)
-#
+
 r <- model$obj$report()
 model$data$residual <- model$y_i - r$eta_i
+model$data$eta <- r$eta_i
+
+
+if(y_type == "trend") {
+  
+pdf(paste0("residual-plots-trend.pdf"), width = 18, height = 12)
+  
+ggplot(model$data, aes(biotic_trend)) + geom_histogram() + 
+  facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(temp_trend, residual)) + geom_point(alpha =0.2) + 
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free") 
+ggplot(model$data, aes(DO_trend, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(mean_temp, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(mean_DO, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(mean_temp^2, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(mean_DO^2, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(log_biomass_scaled, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(log_biomass_scaled2, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(fishing_trend_scaled, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(log_effort_scaled, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
 
 model$data %>%
   mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
@@ -696,6 +736,50 @@ model$data %>%
   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
   scale_fill_gradient2() + gfplot::theme_pbs() +
   facet_wrap(~species)
+
+dev.off()
+}
+
+
+if(y_type == "vel") {
+
+pdf(paste0("residual-plots-vel.pdf"), width = 18, height = 12)
+  
+ggplot(model$data, aes(squashed_biotic_vel)) + geom_histogram() +   
+  facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(squashed_temp_vel, residual)) + geom_point(alpha =0.2) + 
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free") 
+ggplot(model$data, aes(squashed_DO_vel, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(mean_temp, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(mean_DO, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(mean_temp^2, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(mean_DO^2, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(log_biomass_scaled, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(log_biomass_scaled2, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(fishing_trend_scaled, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+ggplot(model$data, aes(log_effort_scaled, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+
+model$data %>%
+  mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
+  mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
+  mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
+  mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
+  ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2() + gfplot::theme_pbs() +
+  facet_wrap(~species)
+
+dev.off()
+}
+
 
 # # ggsave("figs/vel-model-residuals.png", width = 12, height = 12, dpi = 300)
 # # ggsave("figs/trend-model-residuals.png", width = 12, height = 12, dpi = 300)
