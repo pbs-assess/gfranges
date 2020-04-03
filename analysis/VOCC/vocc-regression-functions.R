@@ -217,8 +217,18 @@ vocc_regression <- function(dat, y_i, X_ij,
     b_re_species = b_re_species)
 }
 
-add_colours <- function(coefs, col_var = "group", species_data = stats,
-  add_spp_data = TRUE, manual_colours = FALSE, last_used = FALSE) {
+add_colours <- function(coefs, col_var = "group", 
+  species_data = stats,
+  add_spp_data = TRUE, 
+  manual_colours = FALSE, 
+  last_used = FALSE) {
+  
+  browser()
+  
+  coefs <- coefs %>% 
+    mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+  coefs <- coefs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
+  
   if (add_spp_data) {
     coefs <- left_join(coefs, species_data)
   }
@@ -336,7 +346,7 @@ add_colours <- function(coefs, col_var = "group", species_data = stats,
     }
 
     colour_key <- as_tibble(cbind(col_var, colours))
-    colour_key$col_var<- as.factor(colour_key$col_var)
+    colour_key$col_var <- as.factor(colour_key$col_var)
     out <- left_join(coefs, colour_key)
   }
   out <- arrange(out, col_var)
@@ -379,6 +389,7 @@ plot_coefs <- function(coloured_coefs,
        #forcats::fct_reorder(species, -coloured_coefs[coloured_coefs$coefficient == "do_vel", ]$Estimate),
        Estimate,
        colour = col_var,
+       shape = age,
        ymin = Estimate + qnorm(0.025) * `Std. Error`,
        ymax = Estimate + qnorm(0.975) * `Std. Error`
      )) +
@@ -387,6 +398,15 @@ plot_coefs <- function(coloured_coefs,
        geom_pointrange() +
        coord_flip() + xlab("") +
        gfplot:::theme_pbs()
+  
+  if(length(unique(coloured_coefs$age))>1) {  
+    p <- p + #scale_linetype_manual(values=c("solid", "solid"), guide = F) +
+      scale_shape_manual(values=c(21, 19), guide = F)
+  } else {
+    p <- p + #scale_linetype_manual(values=c("solid"), guide = F) +
+      scale_shape_manual(values=c(16), guide = F)
+  }
+  
   if (fixed_scales) {
     p <- p + facet_wrap(~coefficient, scales = "fixed")
   } else {

@@ -4,19 +4,18 @@ library(ggplot2)
 library(gfranges)
 
 setwd(here::here("analysis", "VOCC"))
-# compile("vocc_regression.cpp")
-# dyn.load(dynlib("vocc_regression"))
+compile("vocc_regression.cpp")
+dyn.load(dynlib("vocc_regression"))
 source("vocc-regression-functions.R")
 
 
 stats <- readRDS(paste0("data/life-history-stats.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
-stats$genus <- tolower(stats$group)
+stats <- stats %>% separate(species_science_name, " ", into = c("genus","specific"))
 stats$group[stats$group == "SHARK"] <- "DOGFISH"
 # stats$group[stats$group == "SHARK"] <- "SHARKS & SKATES"
 # stats$group[stats$group == "SKATE"] <- "SHARKS & SKATES"
 stats$group[stats$group == "HAKE"] <- "COD"
-
 
 
 ##############################
@@ -105,38 +104,85 @@ get_aic(model)
 ##############################
 #### CHECK MODEL RESIDUALS ####
 ##############################
-# # 
-# # library(ggsidekick) # for fourth_root_power if gfranges not loaded
+# # use 6-vocc-regression code to save pdf of all relevant plots
+
 ggplot(model$data, aes(x, y, fill = omega_s)) + geom_tile(width = 4, height = 4) +
   scale_fill_gradient2(trans = fourth_root_power) + gfplot::theme_pbs() +
   facet_wrap(~species)
-#
+
 # # ggsave("figs/vel-model-omega.png", width = 12, height = 12, dpi = 300)
 # # ggsave("figs/trend-model-omega.png", width = 12, height = 12, dpi = 300)
-#
+
+
+if (is.null(model$data$residual)){
 r <- model$obj$report()
 model$data$residual <- model$y_i - r$eta_i
+model$data$eta <- r$eta_i
+}
 
-model$data %>%
-  mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
-  mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
-  mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
-  mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
-  ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2() + gfplot::theme_pbs() +
-  facet_wrap(~species)
+ ggplot(model$data, aes(eta, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+  
+  ggplot(model$data, aes(biotic_trend)) + geom_histogram() + 
+    facet_wrap(~species, scales = "free")
+  
+  ggplot(model$data, aes(temp_trend, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free") 
+  
+  ggplot(model$data, aes(DO_trend, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+  
+  ggplot(model$data, aes(mean_temp, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+  
+  ggplot(model$data, aes(mean_DO, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+  
+  ggplot(model$data, aes(mean_temp^2, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+  
+  ggplot(model$data, aes(mean_DO^2, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+  
+  ggplot(model$data, aes(log_biomass_scaled, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+  
+  ggplot(model$data, aes(log_biomass_scaled2, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+  
+  ggplot(model$data, aes(fishing_trend_scaled, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+  
+  ggplot(model$data, aes(log_effort_scaled, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+  
+  model$data %>%
+    mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
+    mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
+    mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
+    mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
+    ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
+    scale_fill_gradient2() + gfplot::theme_pbs() +
+    facet_wrap(~species)
 
-# # ggsave("figs/vel-model-residuals.png", width = 12, height = 12, dpi = 300)
-# # ggsave("figs/trend-model-residuals.png", width = 12, height = 12, dpi = 300)
-#
+
+if(y_type == "vel") {
+
+  ggplot(model$data, aes(squashed_biotic_vel)) + geom_histogram() +   
+    facet_wrap(~species, scales = "free")
+  
+  ggplot(model$data, aes(squashed_temp_vel, residual)) + geom_point(alpha =0.2) + 
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free") 
+  
+  ggplot(model$data, aes(squashed_DO_vel, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+}
+
+
 norm_resids <- qres_student(model)
 norm_resids <- norm_resids[is.finite(norm_resids)]
-# # qqnorm(norm_resids)
+qqnorm(norm_resids)
 hist(norm_resids)
-
-# norm_resids <- qres_student(model_genus)
-# norm_resids <- norm_resids[is.finite(norm_resids)]
-# # hist(norm_resids)
-# 
-# # qqnorm(model$data$residual)
-# # qqline(model$data$residual)
+ 
+# qqnorm(model$data$residual)
+# qqline(model$data$residual)
