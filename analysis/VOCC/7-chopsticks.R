@@ -217,7 +217,8 @@ y_label <- "Predicted mature biomass vel"
 
 
 slopes <- chopstick_slopes(model, x_variable = "squashed_temp_vel_scaled", 
-  interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp")
+  interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp") %>% 
+  mutate(sort_var = slope_est)
 # imm_slopes <- chopstick_slopes(imm_model, x_variable = "squashed_temp_vel_scaled", 
 #   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp")
 
@@ -245,23 +246,24 @@ cowplot::plot_grid(p1,p2, rel_widths = c(1, 2))
 
 
 
-slopes <- chopstick_slopes(model, x_variable = "squashed_DO_vel_scaled", 
-  interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "do")
+do_vel_slopes <- chopstick_slopes(model, x_variable = "squashed_DO_vel_scaled", 
+  interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO") %>% 
+  mutate(sort_var = slope_est)
 # imm_slopes <- chopstick_slopes(imm_model, x_variable = "squashed_DO_vel_scaled", 
 #   interaction_column = "squashed_DO_vel_scaled:mean_temp_scaled", type = "temp")
 
 p2 <- plot_fuzzy_chopsticks(model,
-  x_variable = "squashed_DO_vel_scaled", type = "do",
+  x_variable = "squashed_DO_vel_scaled", type = "DO",
   y_label = y_label, 
   # imm_model = imm_model, imm_slopes = imm_slopes, scale_imm = 0.1,
-  slopes = slopes # if add, the global slope can be included for insig.
+  slopes = do_vel_slopes # if add, the global slope can be included for insig.
 ) + xlab("DO vel (scaled)") + theme(legend.position = "none")
 
-slopes$species[slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
+do_vel_slopes$species[do_vel_slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"	
 
-p1 <- plot_chopstick_slopes(slopes, type = "do", legend_position = c(.25,.95), 
+p1 <- plot_chopstick_slopes(do_vel_slopes, type = "DO", legend_position = c(.25,.95), 
   # imm_slopes = imm_slopes, 
-  hack=T) + 
+  hack=F) + 
   ggtitle(paste("Effect of DO vel on biomass")) + ylab("Slopes") #+
 # scale_y_continuous(trans = fourth_root_power, breaks=c(-1, -0.1, 0, 0.1,1))
 
