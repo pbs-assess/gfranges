@@ -1,4 +1,5 @@
-.rs.restartR()
+## REMEMBER TO RESTART R
+# .rs.restartR()
 library(TMB)
 library(dplyr)
 library(tidyr)
@@ -12,23 +13,22 @@ compile("vocc_regression.cpp")
 dyn.load(dynlib("vocc_regression"))
 source("vocc-regression-functions.R")
 
-knots <- 300
+knots <- 500
 
 # age <- "mature"
 # age <- "immature"
 age <- "both"
 
-y_type <- "vel"
-# y_type <- "trend"
+# y_type <- "vel"
+y_type <- "trend"
 
 no_chopsticks <- F
-both <- T
-model_type <- "-vel-both"
+# model_type <- "-vel-both"
 # # model_type <- "-vel-both-fishing"
-# model_type <- "-trend-with-do"
+model_type <- "-trend-with-do"
 
-# both <- F
 # model_type <- "-vel-temp"
+# model_type <- "-vel-do"
 # model_type <- "-trend"
 # model_type <- "-trend-grad"
 # model_type <- "-dist-vel-temp"
@@ -61,7 +61,7 @@ d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
 d <- as_tibble(d) %>%
   # filter(species != "Bocaccio") %>%
   # filter(species != "Sand Sole") %>%
-  filter(species != "Shortraker Rockfish") %>%
+  filter(species_age != "immature Shortraker Rockfish") %>%
   filter(species != "Longspine Thornyhead")
 
 # if combining adult and imm in same model
@@ -178,12 +178,9 @@ if(model_type == "-vel-temp") {
   x_type <- "vel"
 }
 
-if(model_type == "-vel-both") {
+if(model_type == "-vel-do") {
 # if (model_type == "-vel-no-fishing") {
-  formula <- ~ squashed_temp_vel_scaled + 
-    squashed_DO_vel_scaled +
-    mean_temp_scaled +  
-    squashed_temp_vel_scaled:mean_temp_scaled +
+  formula <- ~ squashed_DO_vel_scaled +
     mean_DO_scaled +  
     squashed_DO_vel_scaled:mean_DO_scaled +
     # log_effort_scaled + fishing_trend_scaled +
@@ -193,7 +190,7 @@ if(model_type == "-vel-both") {
   
   x <- model.matrix(formula, data = d)
   
-  temp_chopstick <- T
+  temp_chopstick <- F
   DO_chopstick <- T
   x_type <- "vel"
   
@@ -289,7 +286,6 @@ if(DO_chopstick){
     }
   }
   
-  
   DO_dat <- interaction_df(d, formula,
     x_variable = main_effect_column,
     split_variable = split_effect_column,
@@ -310,7 +306,6 @@ if(DO_chopstick){
     
     if (w_genus) {
       model_type <- paste0(model_type, "-genus")
-      # DO_model %<-% 
       DO_model <-  vocc_regression(d, y,
         X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
         knots = knots, group_by_genus = T, student_t = F,
@@ -319,7 +314,6 @@ if(DO_chopstick){
         split_effect_column = split_effect_column
       )
     } else {
-      # DO_model %<-% 
       DO_model <-  vocc_regression(d, y,
         X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
         knots = knots, group_by_genus = FALSE, student_t = F,
@@ -332,12 +326,10 @@ if(DO_chopstick){
   } else { 
     if (y_type == "vel") {
     #### biotic velocity (uses student_t)
-    
     if (is_null) {
       y <- d$squashed_fake_vel
     } else {
       y <- d$squashed_biotic_vel
-      
       if(model_type == "-dist-vel-temp") {
         y <- d$squashed_biotic_dvocc
         # y <- d$biotic_trend
@@ -357,7 +349,6 @@ if(DO_chopstick){
         split_effect_column = split_effect_column
       )
     } else {
-      # DO_model %<-% 
       DO_model <-  vocc_regression(d, y,
         X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
         knots = knots, group_by_genus = FALSE, student_t = T,
@@ -368,6 +359,25 @@ if(DO_chopstick){
     }
     }
   }
+  
+  DO_est <- as.list(DO_model$sdr, "Estimate", report = TRUE)
+  DO_se <- as.list(DO_model$sdr, "Std. Error", report = TRUE)
+  DO_model$pred_dat$est_p <- DO_est$eta_p
+  DO_model$pred_dat$se_p <- DO_se$eta_p
+  
+  DO_est <- as.list(DO_model$sdr, "Estimate", report = TRUE)
+  DO_se <- as.list(DO_model$sdr, "Std. Error", report = TRUE)
+  DO_model$delta_diff <- 
+    cbind(DO_est$diff_delta_k, DO_se$diff_delta_k)
+  DO_model$delta_diff <- as.data.frame(DO_model$delta_diff)
+  DO_model$delta_diff$type <- "DO"
+  DO_model$delta_diff$species <- unique(DO_model$deltas$species)
+  
+  names(DO_model$delta_diff) <- c("est", "se", "type", "species")
+  
+  date <- format(Sys.time(), "-%m-%d")
+  saveRDS(DO_model, file = paste0("data/", y_type, "-", data_type, date, 
+    model_type, null_lab, null_number, genus_lab, "-", knots, "-DO.rds"))
 }
 
 if(fishing_chopstick){
@@ -542,6 +552,26 @@ if(temp_chopstick){
       }
     }
   }
+  
+
+  temp_est <- as.list(temp_model$sdr, "Estimate", report = TRUE)
+  temp_se <- as.list(temp_model$sdr, "Std. Error", report = TRUE)
+  temp_model$pred_dat$est_p <- temp_est$eta_p
+  temp_model$pred_dat$se_p <- temp_se$eta_p
+  
+  temp_est <- as.list(temp_model$sdr, "Estimate", report = TRUE)
+  temp_se <- as.list(temp_model$sdr, "Std. Error", report = TRUE)
+  temp_model$delta_diff <- 
+    cbind(temp_est$diff_delta_k, temp_se$diff_delta_k)
+  temp_model$delta_diff <- as.data.frame(temp_model$delta_diff)
+  temp_model$delta_diff$type <- "temp"
+  temp_model$delta_diff$species <- unique(temp_model$deltas$species)
+  
+  names(temp_model$delta_diff) <- c("est", "se", "type", "species")
+  
+  date <- format(Sys.time(), "-%m-%d")
+  saveRDS(temp_model, file = paste0("data/", y_type, "-", data_type, date, model_type, 
+    null_lab, null_number, genus_lab, "-", knots, "-temp.rds"))
 }
 
 
@@ -557,58 +587,18 @@ if(temp_chopstick){
 # }
 ############################
 # Check if finished
-print(head(new_model$deltas))
+print(head(temp_model$deltas))
 print(head(DO_model$deltas))
 ############################
 
 
-date <- format(Sys.time(), "-%m-%d")
 
 if(DO_chopstick){
-  
-new_model <- temp_model
-
-# temp_model <- new_model
-# temp_model$pred_dat <- filter(new_model$pred_dat, type == "temp")
-# temp_model$deltas <- filter(new_model$deltas, type == "temp")
-
-temp_est <- as.list(temp_model$sdr, "Estimate", report = TRUE)
-temp_se <- as.list(temp_model$sdr, "Std. Error", report = TRUE)
-temp_model$pred_dat$est_p <- temp_est$eta_p
-temp_model$pred_dat$se_p <- temp_se$eta_p
-
-DO_est <- as.list(DO_model$sdr, "Estimate", report = TRUE)
-DO_se <- as.list(DO_model$sdr, "Std. Error", report = TRUE)
-DO_model$pred_dat$est_p <- DO_est$eta_p
-DO_model$pred_dat$se_p <- DO_se$eta_p
-
-new_model$pred_dat <- rbind(temp_model$pred_dat, DO_model$pred_dat)
-new_model$deltas <- rbind(temp_model$deltas, DO_model$deltas)
-
-temp_est <- as.list(temp_model$sdr, "Estimate", report = TRUE)
-temp_se <- as.list(temp_model$sdr, "Std. Error", report = TRUE)
-temp_model$delta_diff <- 
-  cbind(temp_est$diff_delta_k, temp_se$diff_delta_k)
-temp_model$delta_diff <- as.data.frame(temp_model$delta_diff)
-temp_model$delta_diff$type <- "temp"
-temp_model$delta_diff$species <- unique(temp_model$deltas$species)
-
-DO_est <- as.list(DO_model$sdr, "Estimate", report = TRUE)
-DO_se <- as.list(DO_model$sdr, "Std. Error", report = TRUE)
-DO_model$delta_diff <- 
-  cbind(DO_est$diff_delta_k, DO_se$diff_delta_k)
-DO_model$delta_diff <- as.data.frame(DO_model$delta_diff)
-DO_model$delta_diff$type <- "DO"
-DO_model$delta_diff$species <- unique(DO_model$deltas$species)
-names(temp_model$delta_diff) <- c("est", "se", "type", "species")
-names(DO_model$delta_diff) <- c("est", "se", "type", "species")
-
-new_model$delta_diff <- 
-  rbind(temp_model$delta_diff, DO_model$delta_diff)
-
-saveRDS(DO_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-DO.rds"))
-saveRDS(temp_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, "-temp.rds"))
-
+  new_model <- temp_model
+  new_model$pred_dat <- rbind(temp_model$pred_dat, DO_model$pred_dat)
+  new_model$deltas <- rbind(temp_model$deltas, DO_model$deltas)
+  new_model$delta_diff <- 
+    rbind(temp_model$delta_diff, DO_model$delta_diff)
 
 } else {
   temp_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
@@ -619,9 +609,9 @@ saveRDS(temp_model, file = paste0("data/", y_type, "-", data_type, date, model_t
   new_model$delta_diff$type <- "temp"
   new_model$delta_diff$species <- unique(new_model$deltas$species)
   names(new_model$delta_diff) <- c("est", "se", "type", "species")
-  }
+}
 
-
+date <- format(Sys.time(), "-%m-%d")
 saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, ".rds"))
 
 new_r <- new_model$obj$report()
@@ -635,27 +625,12 @@ paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number
 
 ##############################
 #### LOAD MODEL JUST BUILT
+model <- DO_model
+# model <- temp_model
 model <- new_model
 
 nrow(model$data)
 
-model2 <- add_colours(model$coefs) %>%
-  # filter(coeffZicient != "mean_DO_scaled" ) %>%
-   # filter(coefficient != "temp_grad_scaled" ) %>%
-#   filter(coefficient != "mean_temp_scaled" ) %>% 
-  filter(coefficient != "log_biomass_scaled" )
-
-# ### IF IMMATURE CAN RUN THIS TO MAKE COLOURS MATCH
-# mature <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
-# model2 <- add_colours(mmature$coefs) # must be saved as model2 for use in function below
-# model2 <- add_colours(model$coefs, last_used = TRUE)
-
-manipulate::manipulate({
-  plot_coefs(model2, fixed_scales = F, order_by = order_by) 
-  #+ ylim(-0.05,0.095)
-}, order_by = manipulate::picker( 
-  as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
-)
 
 ##############################
 #### CHECK SAMPLE SIZE AND DISTRIBUTION OF MODEL DATA
@@ -682,6 +657,11 @@ overall_betas
 
 get_aic(model)
 
+
+
+
+
+
 ##############################
 #### CHECK MODEL RESIDUALS ####
 ##############################
@@ -701,13 +681,14 @@ model$data$residual <- model$y_i - r$eta_i
 model$data$eta <- r$eta_i
 
 
-if(y_type == "trend") {
+if ( y_type == "trend" ) {
   
-pdf(paste0("residual-plots-trend.pdf"), width = 18, height = 12)
-  
+pdf(paste0("residual-plots", model_type, ".pdf"), width = 18, height = 12)
+ggplot(model$data, aes(eta, residual)) + geom_point(alpha =0.2) +
+    geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
 ggplot(model$data, aes(biotic_trend)) + geom_histogram() + 
   facet_wrap(~species, scales = "free")
-ggplot(model$data, aes(temp_trend, residual)) + geom_point(alpha =0.2) + 
+ggplot(model$data, aes(temp_trend, residual)) + geom_point(alpha =0.2) +
   geom_smooth(method= "loess") + facet_wrap(~species, scales = "free") 
 ggplot(model$data, aes(DO_trend, residual)) + geom_point(alpha =0.2) +
   geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
@@ -741,16 +722,24 @@ dev.off()
 }
 
 
+# model_type <- "-vel-do"
+# model_type <- "-vel-temp"
+
 if(y_type == "vel") {
 
-pdf(paste0("residual-plots-vel.pdf"), width = 18, height = 12)
+pdf(paste0("residual-plots", model_type, "-trans.pdf"), width = 18, height = 12)
+  
+ggplot(model$data, aes(eta, residual)) + geom_point(alpha =0.2) +
+  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
   
 ggplot(model$data, aes(squashed_biotic_vel)) + geom_histogram() +   
   facet_wrap(~species, scales = "free")
 ggplot(model$data, aes(squashed_temp_vel, residual)) + geom_point(alpha =0.2) + 
-  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free") 
+  geom_smooth(method= "loess") + scale_x_continuous(trans = fourth_root_power) + 
+  facet_wrap(~species, scales = "free")
 ggplot(model$data, aes(squashed_DO_vel, residual)) + geom_point(alpha =0.2) +
-  geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
+  geom_smooth(method= "loess") + scale_x_continuous(trans = fourth_root_power) + 
+  facet_wrap(~species, scales = "free")
 ggplot(model$data, aes(mean_temp, residual)) + geom_point(alpha =0.2) +
   geom_smooth(method= "loess") + facet_wrap(~species, scales = "free")
 ggplot(model$data, aes(mean_DO, residual)) + geom_point(alpha =0.2) +
