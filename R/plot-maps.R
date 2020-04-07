@@ -103,7 +103,7 @@ plot_vocc <- function(df,
       theme(axis.title.x = element_blank(), axis.title.y = element_blank())
   } else {
     gvocc <- ggplot2::ggplot(df, aes(x, y)) +
-      coord_fixed(xlim = range(df$x) + buffer, ylim = range(df$y) + c(-3, 3)) +
+      coord_fixed(xlim = range(df$x) + buffer_X, ylim = range(df$y) + buffer_Y) +
       gfplot::theme_pbs() + xlab("UTM") + ylab("UTM")
   }
 
@@ -122,8 +122,9 @@ plot_vocc <- function(df,
     }
 
     if (white_zero) {
+   
       gvocc <- gvocc +
-        geom_tile(aes(fill = fill), alpha = raster_alpha) +
+        geom_tile(aes(fill = fill), alpha = raster_alpha, width = raster_cell_size, height = raster_cell_size) +
         scale_fill_gradient2(
           low = low_fill, mid = mid_fill, high = high_fill, na.value = na_colour,
           trans = transform_col, breaks = breaks, labels = labels,
@@ -147,7 +148,7 @@ plot_vocc <- function(df,
       }
     } else {
       gvocc <- gvocc +
-        geom_tile(aes(fill = fill), alpha = raster_alpha) +
+        geom_tile(aes(fill = fill), alpha = raster_alpha, width = raster_cell_size, height = raster_cell_size) + #
         scale_fill_viridis_c(
           direction = viridis_dir,
           option = viridis_option, na.value = na_colour,
@@ -168,7 +169,7 @@ plot_vocc <- function(df,
           plot.background = element_rect(color = "black", fill = "black")
         )
       } else {
-        gvocc <- gvocc + theme(legend.position = legend_position)
+        gvocc <- gvocc + theme(legend.position = legend_position) 
       }
     }
   }
