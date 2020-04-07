@@ -536,6 +536,32 @@ p
 }
 
 
+#' Scatterplot of slopes against traits
+#'
+#' @param slopes_w_traits Df of slopes merged with df of species traits.
+#' @param x Variable (species trait) on x-axis.
+#' @param slope_var Varible containing slope estimate.
+#' @param col_group Varible to colour by.
+#' @param regression Logical for plotting simple linear regression line. 
+#'
+#' @export
+slope_scatterplot <- function(slopes_w_traits, x, slope_var = "slope_est", 
+  col_group = "chopstick",
+  regression = F
+){
+  
+  p <- ggplot(slopes_w_traits, aes_string(x, slope_var, colour = col_group)) 
+  if (regression) {
+    p <- p + geom_smooth(method = "lm", fill = "lightgray") 
+  }
+  p <- p + geom_point() + 
+    scale_colour_viridis_d(begin = .8 , end =.2) +
+    gfplot:::theme_pbs()
+  p
+}
+
+
+
 #' Plot raw chopsticks for vocc regression models
 #'
 #' @param model Model from vocc_regression function.
