@@ -159,6 +159,7 @@ model2$group[model2$group == "SKATE"] <- "SHARKS & SKATES"
 model2 <- model2 %>% group_by(group) %>% mutate(spp_count = length(unique(species))) %>% ungroup()
 model2 <- model2 %>% mutate(group = forcats::fct_reorder(group, Estimate, .desc=F))
 
+
 coef_scatterplot(model2, coef = "temp_trend_scaled", x = "depth", regression = T) + 
   # coord_cartesian(ylim= c(-3, 3)) + 
   facet_grid(rockfish~age, scales = "free")
@@ -187,6 +188,93 @@ coef_scatterplot(model2, coef = "mean_DO_scaled", x = "depth", regression = F) +
 # coef_scatterplot(filter(model2, group == "FLATFISH" | group == "ROCKFISH"), 
 #   coef = "mean_DO_scaled", x = "depth") + facet_grid(group~age) #+ coord_cartesian(ylim= c(-1, 1))
 
+# # Not much for interaction
+# # except that it starts showing up > 150 m
+coef_scatterplot(model2, 
+  coef = "temp_trend_scaled:mean_temp_scaled", 
+  x = "depth", group="group", regression = F) +
+  # coord_cartesian(ylim= c(-3, 3)) +
+  facet_grid(rockfish~age, scales = "free")
+
+do_inter <- coef_scatterplot(model2, 
+  coef = "DO_trend_scaled:mean_DO_scaled", 
+  x = "depth", group="age", regression = F) + 
+  scale_colour_viridis_d(begin = .8 , end =.2) +
+  guides(colour = F) +
+  # geom_point(aes(shape=age)) +
+  scale_shape_manual() + 
+  geom_vline(xintercept = 150, colour = "gray", linetype = "dashed") + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + theme(
+    axis.title.y = element_blank()
+  )
+
+temp_inter <-coef_scatterplot(model2, 
+  coef = "temp_trend_scaled:mean_temp_scaled", 
+  x = "depth", group="age", regression = F) + 
+    scale_colour_viridis_d(begin = .8 , end =.2) +
+    #geom_point(aes(shape=age)) +
+    # scale_shape_manual() + 
+  guides(colour = F) +
+    geom_vline(xintercept = 150, colour = "gray", linetype = "dashed") + 
+    geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
+  theme(#plot.margin = margin(0, 0, 0, 0, "cm"),
+    axis.text.x = element_blank(), axis.ticks.x = element_blank(), 
+    axis.title = element_blank())
+  
+
+temp_inter + do_inter + plot_layout(ncol=1) 
+
+#### interactions with depth
+ieffects <- model2 %>% 
+  filter(coefficient %in% c("temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled")) %>% 
+  transform(coefficient = factor(coefficient, levels = c("temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled"), 
+    labels = c("temperature", "DO")))
+
+i_depth <- coef_scatterplot(ieffects, 
+  coef = c("temperature", "DO"), 
+  x = "depth", group="age", regression = F) + 
+  scale_colour_viridis_d(begin = .8 , end =.2) +
+  guides(colour = F) +
+  # geom_point(aes(shape=age)) +
+  scale_shape_manual() + 
+  ylab("interaction coefficient") + 
+  geom_vline(xintercept = 125, colour = "gray", linetype = "dashed") + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
+  facet_grid(rows = vars(coefficient), scales = "free_y") +
+  theme()
+
+do_data <- readRDS(paste0("data/predicted-DO-new.rds")) %>% 
+  select(X, Y, year, depth, temp, do_est)
+do_depth <- ggplot(do_data, aes(depth, do_est)) + 
+  geom_jitter(alpha = 0.01, shape = 20, colour = "black", size=0.2) + 
+  geom_smooth(colour = "black", size = 0.5) + xlim(0,450) + ylab("mean DO (ml/L)") +
+  gfplot::theme_pbs() + theme(plot.margin = margin(0, 0.1, 0, 0, "cm"), 
+    axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank())
+
+do_depth + i_depth + plot_layout(ncol = 1, heights = c(1, 2)) 
+
+
+#### FAILED ATTEMPT TO ADD DEPTH DATA TO SPATIAL RASTER AT 4km
+# depdat <- do_data %>% select(X, Y, year, depth) %>% filter(year %in% c(2008,2010)) 
+# depth <- vocc_gradient_calc(depdat, "depth",
+#   scale_fac = 2,
+#   indices = c(1,2),
+#   quantile_cutoff = 0.05
+# )
+# depdat <- do_data %>% select(X, Y, year, depth) %>% filter(year %in% c(2009,2011)) 
+# depth <- vocc_gradient_calc(depdat, "depth",
+#   scale_fac = 2,
+#   indices = c(1,2),
+#   quantile_cutoff = 0.05
+# )
+# model <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-01-trend-with-do-1-500.rds")
+# bottom_depth <- readRDS("~/github/dfo/gfranges/analysis/VOCC/depth-even-years.rds") 
+# bottom_depth2 <- readRDS("~/github/dfo/gfranges/analysis/VOCC/depth-even-years.rds") 
+# bottom_depth <- rbind(bottom_depth,bottom_depth2)
+# bottom_depth <- bottom_depth %>% rename(mean_depth = mean)
+# dat <- left_join(model$data, bottom_depth)
+# glimpse(dat)
+
 
 #### Length at maturity
 #### MALE
@@ -195,36 +283,39 @@ coef_scatterplot(model2, coef = "temp_trend_scaled", x = "length_50_mat_m") +
   # ylim(-3, 3) +
   facet_grid(rockfish~age, scales = "free")
 
-# coef_scatterplot(model2, coef = "temp_trend_scaled", x = "length_50_mat_m") + 
-#   coord_cartesian(ylim= c(-3, 3)) + 
-#   facet_grid(~age, scales = "free")
-
-
 coef_scatterplot(model2, coef = "DO_trend_scaled", x = "length_50_mat_m", regression = F) + 
   # coord_cartesian(ylim= c(-1, 1)) +
   facet_grid(rockfish~age, scales = "free") 
 
-
-
 coef_scatterplot(model2, coef = "mean_temp_scaled", x = "length_50_mat_m") + 
   #coord_cartesian(ylim= c(-1, 1))+ 
   facet_grid(rockfish~age, scales = "free")
-
 
 coef_scatterplot(model2, coef = "mean_DO_scaled", x = "length_50_mat_m") + 
   coord_cartesian(ylim= c(-1, 1)) +
   facet_grid(rockfish~age, scales = "free")
 
 
+# for immature rockfish, much more negative interaction with larger size at maturity
+coef_scatterplot(filter(model2, depth >150, coef = "temp_trend_scaled:mean_temp_scaled", 
+  x = "length_50_mat_m", group="group", regression = T) + 
+  # coord_cartesian(ylim= c(-3, 3)) + 
+  facet_grid(rockfish~age, scales = "free")
+
+coef_scatterplot(model2, coef = "DO_trend_scaled:mean_DO_scaled", 
+  x = "length_50_mat_m", group="group" , regression = T) + 
+  # coord_cartesian(ylim= c(-3, 3)) + 
+  facet_grid(rockfish~age, scales = "free")
 
 
 #### FEMALE
-
-coef_scatterplot(model2, coef = "temp_trend_scaled", x = "length_50_mat_f", regression = F) + 
+coef_scatterplot(model2, coef = "temp_trend_scaled", x = "length_50_mat_f", 
+  regression = F) + 
   #coord_cartesian(ylim= c(-1, 1))+ 
   facet_grid(rockfish~age, scales = "free")
 
-coef_scatterplot(model2, coef = "DO_trend_scaled", x = "length_50_mat_f", regression = F) + 
+coef_scatterplot(model2, coef = "DO_trend_scaled", x = "length_50_mat_f", 
+  regression = F) + 
   #coord_cartesian(ylim= c(-1, 1))+ 
   facet_grid(rockfish~age, scales = "free")
 
@@ -249,12 +340,18 @@ coef_scatterplot(model2, coef = "temp_trend_scaled", x = "age_max", group = "gro
   scale_color_brewer(palette = "Dark2") +
   facet_grid(rockfish~age, scales = "free")
 
-
-
 coef_scatterplot(model2, coef = "DO_trend_scaled", x = "age_max", regression = F) +
   # coord_cartesian(ylim= c(-1, 1)) +
   facet_grid(~rockfish, scales = "free") 
-  
+
+# coef_scatterplot(model2, coef = "temp_trend_scaled:mean_temp_scaled", x = "age_max", group="group", regression = T) + 
+#   # coord_cartesian(ylim= c(-3, 3)) + 
+#   facet_grid(rockfish~age, scales = "free")
+# 
+# coef_scatterplot(model2, coef = "DO_trend_scaled:mean_DO_scaled", x = "age_max", group="group" , regression = T) + 
+#   # coord_cartesian(ylim= c(-3, 3)) + 
+#   facet_grid(rockfish~age, scales = "free")
+
 #### 
 
 
@@ -297,6 +394,25 @@ p_mat <- coef_scatterplot(model2, coef = c("temp_trend_scaled","DO_trend_scaled"
 
 # cowplot::plot_grid(p_depth, p_age, p_mat, nrow = 1, rel_widths = c(1, .9 , 1.75)) 
 cowplot::plot_grid(p_depth, p_age, p_mat, nrow = 1, rel_widths = c(1.1, 1.75 , 1.75)) 
+
+
+
+coefdata <- model2 %>% rename(longevity = age_max, 
+  'length at maturity' = length_50_mat_f) %>% 
+  pivot_longer(cols = c("depth", "longevity", "length at maturity"), 
+    names_to = "trait")
+
+p_do <- coef_scatterplot(coefdata, coef = c("DO_trend_scaled"), 
+  x = "value", group = "age", regression = T) + 
+  # coord_cartesian(ylim= c(-1, 1)) +
+  # geom_smooth(method = "lm") +
+  scale_colour_viridis_d(begin = .8 , end =.2) +
+  guides(colour=F) + ggtitle("ALL SPECIES") +
+  theme(plot.margin = margin(0, 0, 0, 0, "cm"), strip.background = element_blank(), 
+    strip.text = element_blank(), 
+    # axis.text.y = element_blank(), 
+    axis.ticks = element_blank()) + 
+  facet_grid(cols = vars(trait), rows = vars(rockfish), scales = "free") 
 
 
 
