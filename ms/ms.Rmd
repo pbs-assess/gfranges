@@ -218,6 +218,14 @@ Very little difference whether biotic velocity or trend are the response variabl
 
 Big difference whether temp velocity or temp trend are the predictor...
 
+<!-- TODO: figures to consider
+-   temperature and O2 maps and velocities; 4 panel
+-   coefficient plots temp + O2; add meta-analytical coefficients?
+-   some example temperature maps plus chopsticks
+-   some example O2 maps plus chopsticks
+-   plot coefficients against depth etc.... adults and immature separately?
+-->
+
 # Discussion
 
 # Acknowledgements
@@ -232,14 +240,26 @@ Big difference whether temp velocity or temp trend are the predictor...
 
 <!-- Reference this figure as: Fig. \@ref(fig:climate-maps) -->
 
-```{r climate-maps, fig.cap="Caption goes here", out.width="5in"}
-include_graphics(here("ms", "figs", "example.pdf"))
+```{r climate-maps, fig.cap="Caption goes here", out.width="6in"}
+include_graphics(here("ms", "figs", "climate-maps.pdf"))
 ```
 
 \clearpage
 
-```{r another, fig.cap="Caption goes here", out.width="5in"}
-include_graphics(here("ms", "figs", "example.pdf"))
+```{r worm-plots, fig.cap="Caption goes here", out.width="8in"}
+# include_graphics(here("ms", "figs", "worm-plots.pdf"))
+```
+
+\clearpage
+
+```{r temp-chops, fig.cap="Caption goes here", out.width="8in"}
+# include_graphics(here("ms", "figs", "temp-chops.pdf"))
+```
+
+\clearpage
+
+```{r do-chops, fig.cap="Caption goes here", out.width="8in"}
+include_graphics(here("ms", "figs", "do-chops.pdf"))
 ```
 
 \clearpage
@@ -295,6 +315,17 @@ TODO: finish and simplify
 \clearpage
 
 # Supporting Figures and Tables
+
+Supplemental figures:
+(In no particular order)
+-   flow diagram
+-   spatial residuals
+-   null model stuff
+-   all the chopstick panels
+-   other coefs plot
+-   velocity versions
+-   pairs plot of predictors
+-   plot vocc regression residuals against the main predictors... (and not in model and fitted vs. residuals plot; but don't necessarily include in paper)
 
 ```{r yet-another, fig.cap="Caption goes here", out.width="5in"}
 include_graphics(here("ms", "figs", "example.pdf"))
