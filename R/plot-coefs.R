@@ -78,7 +78,7 @@ coef_scatterplot <- function(model_coefs, x,
     p <- p + geom_smooth(method = "lm", colour = "darkgray", fill = "lightgray") 
   }
    p <- p + geom_point() + scale_color_viridis_d(direction = 1) +
-    ylab(coef) + facet_wrap(~age) + gfplot:::theme_pbs() 
+    ylab(coef) + gfplot:::theme_pbs() 
   
   p
 }
