@@ -116,7 +116,7 @@ p_mat <- coef_scatterplot(trendeffects, coef = c("temperature","DO"),
   # guides(colour=F) +
   theme(plot.margin = margin(0, 0.1, 0.1, 0, "cm"), 
     strip.background = element_blank(), 
-    legend.position = c(.75,.1),
+    legend.position = c(.75,.1), legend.title = element_blank(),
     # strip.text = element_blank(),
     axis.title.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank()) +
   facet_grid(coefficient~rockfish, scales = "free") 
@@ -126,3 +126,46 @@ ggsave(here::here("ms", "figs", "coef-scatterplots.pdf"), width = 8, height = 4)
 
 # p_depth + p_age + p_mat + plot_layout(nrow = 1, widths = c(1.1, 1.75 , 1.75)) 
 
+
+
+
+#### SLOPE SCATTERPLOTS AGAINST DEPTH
+do_data <- readRDS(paste0("data/predicted-DO-new.rds")) %>% 
+  select(X, Y, year, depth, temp, do_est)
+do_depth <- ggplot(do_data, aes(depth, do_est)) + 
+  geom_jitter(alpha = 0.01, shape = 20, colour = "black", size=0.2) + 
+  geom_smooth(colour = "black", size = 0.5) + xlim(0,450) + ylab("mean DO (ml/L)") +
+  geom_hline(yintercept = 2, colour = "black", linetype = "dashed") + 
+  gfplot::theme_pbs() + theme(plot.margin = margin(0, 0.1, 0, 0, "cm"), 
+    axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank())
+
+# temp_depth <- ggplot(do_data, aes(depth, temp)) + 
+#   geom_jitter(alpha = 0.01, shape = 20, colour = "black", size=0.2) + 
+#   geom_smooth(colour = "black", size = 0.5) + xlim(0,450) + ylab("mean temperature (ºC)") +
+#   gfplot::theme_pbs() + theme(plot.margin = margin(0, 0.1, 0, 0, "cm"), 
+#     axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank())
+
+do_slopes <- chopstick_slopes(model, x_variable = "DO_trend_scaled", 
+  interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO")
+do_slopes <- left_join(do_slopes, stats)
+do_slopes <- do_slopes %>% mutate(sort_var = slope_est)
+do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth", col_group = "age") + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
+  xlab("mean depth for species") +
+  ylab("slope at lowest DO") + guides(colour=F) + 
+  gfplot::theme_pbs() + theme(plot.margin = margin(0, 0.1, 0, 0, "cm"), 
+    axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank())
+
+temp_slopes <- chopstick_slopes(model, x_variable = "temp_trend_scaled", 
+  interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp")
+temp_slopes <- left_join(temp_slopes, stats)
+temp_slopes <- temp_slopes %>% mutate(sort_var = slope_est)
+temp_high <- slope_scatterplot(filter(temp_slopes, chopstick == "high"), "depth", col_group = "age") + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
+  # scale_y_continuous(trans = fourth_root_power) +
+  # geom_smooth(method= "lm", size = 0.5) +
+  xlab("mean depth of cell/species-maturity class") +
+  ylab("slope at highest temperature") + guides(colour=F)
+
+do_depth + do_low + temp_high + plot_layout(ncol = 1, heights = c(1,1,1)) 
+ggsave(here::here("ms", "figs", "slope-by-depth.pdf"), width = 5, height = 8)
