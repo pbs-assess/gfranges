@@ -22,19 +22,19 @@ model <- new_model
 #### ADULTS AND IMMATURE COMBINED IN ONE MODEL
 model <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-04-trend-with-do-1-500.rds")
 
-### SORT BY LIFE HISTORY STAT
-# stat <- readRDS(paste0("data/life-history-stats.rds")) %>% View()
-stat <- readRDS(paste0("data/life-history-stats.rds")) %>%
-  mutate(sort_var = -depth) %>%
-  # mutate(sort_var = depth_diff) %>%
-  # mutate(sort_var = length_99th) %>%
-  select(species, sort_var)
-### #### #### #### #### #### #### 
+# ### SORT BY SINGLE LIFE HISTORY STAT
+# # stat <- readRDS(paste0("data/life-history-stats.rds")) %>% View()
+# stats <- readRDS(paste0("data/life-history-stats.rds")) %>%
+#   mutate(sort_var = -depth) %>%
+#   # mutate(sort_var = depth_diff) %>%
+#   # mutate(sort_var = length_99th) %>%
+#   select(species, sort_var)
+# ### #### #### #### #### #### #### 
 
 
 temp_slopes <- chopstick_slopes(model, x_variable = "temp_trend_scaled", 
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp")
-temp_slopes <- left_join(temp_slopes, stat)
+temp_slopes <- left_join(temp_slopes, stats)
 temp_slopes <- temp_slopes %>% mutate(sort_var = slope_est)
 
 p2 <- plot_fuzzy_chopsticks(model,
@@ -55,7 +55,7 @@ cowplot::plot_grid(p1,p2, rel_widths = c(1, 2.5))
 
 do_slopes <- chopstick_slopes(model, x_variable = "DO_trend_scaled", 
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO")
-do_slopes <- left_join(do_slopes, stat)
+do_slopes <- left_join(do_slopes, stats)
 do_slopes <- do_slopes %>% mutate(sort_var = slope_est)
 
 p2 <- plot_fuzzy_chopsticks(model,
@@ -71,6 +71,34 @@ p1 <- plot_chopstick_slopes(do_slopes, type = "DO", #hack= T,
   ylab("Slopes") 
 
 cowplot::plot_grid(p1,p2, rel_widths = c(1, 2.5)) 
+
+####
+
+stats <- readRDS(paste0("data/life-history-stats.rds"))
+stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
+stats <- stats %>% separate(species_science_name, " ", into = c("genus","specific"))
+stats$group[stats$group == "SHARK"] <- "DOGFISH"
+stats$group[stats$group == "HAKE"] <- "COD"
+imm <- filter(stats, age == "immature") %>% mutate(depth == depth_imm) %>% select(-depth_imm)
+mat <- filter(stats, age == "mature") %>% select(-depth_imm)
+stats <- rbind(mat, imm)
+
+
+head(do_slopes)
+# do_slopes$chopstick <- as.factor(do_slopes$chopstick)
+# p <- filter(do_slopes, depth > 0) %>% 
+
+
+slope_scatterplot(do_slopes, "length_50_mat_m", col_group = "age", regression = F) + facet_grid(~chopstick) 
+# slope_scatterplot(do_slopes, "length_50_mat_m", slope_var = "global_slope", col_group = "age") 
+slope_scatterplot(do_slopes, "age_max", col_group = "age") + facet_grid(~chopstick) 
+# slope_scatterplot(do_slopes, "age_max", slope_var = "global_slope", col_group = "age") 
+slope_scatterplot(do_slopes, "depth", col_group = "age") + facet_wrap(~chopstick, nrow=2) 
+# slope_scatterplot(do_slopes, "depth", slope_var = "global_slope", col_group = "age") 
+
+
+
+
 
 
 #### INTERACTIONS WITH CLIMATE VELOCITIES

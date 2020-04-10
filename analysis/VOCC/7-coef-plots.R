@@ -297,13 +297,32 @@ coef_scatterplot(model2, coef = "mean_DO_scaled", x = "length_50_mat_m") +
 
 
 # for immature rockfish, much more negative interaction with larger size at maturity
-coef_scatterplot(filter(model2, depth >150, coef = "temp_trend_scaled:mean_temp_scaled", 
+coef_scatterplot(filter(model2, depth > 150), coef = "temp_trend_scaled:mean_temp_scaled", 
   x = "length_50_mat_m", group="group", regression = T) + 
   # coord_cartesian(ylim= c(-3, 3)) + 
   facet_grid(rockfish~age, scales = "free")
 
-coef_scatterplot(model2, coef = "DO_trend_scaled:mean_DO_scaled", 
-  x = "length_50_mat_m", group="group" , regression = T) + 
+coef_scatterplot(filter(model2, depth > 120), coef = "DO_trend_scaled:mean_DO_scaled", 
+  x = "length_50_mat_m", group="group" , regression = F) + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
+  # coord_cartesian(ylim= c(-3, 3)) + 
+  facet_grid(rockfish~age, scales = "free")
+
+coef_scatterplot(filter(model2, depth > 120), coef = "DO_trend_scaled", 
+  x = "length_50_mat_m", group="group" , regression = F) + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
+  # coord_cartesian(ylim= c(-3, 3)) + 
+  facet_grid(rockfish~age, scales = "free")
+
+coef_scatterplot(filter(model2, depth < 200), coef = "DO_trend_scaled:mean_DO_scaled", 
+  x = "length_50_mat_m", group="group" , regression = F) + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
+  # coord_cartesian(ylim= c(-3, 3)) + 
+  facet_grid(rockfish~age, scales = "free")
+
+coef_scatterplot(filter(model2, depth < 200), coef = "DO_trend_scaled", 
+  x = "length_50_mat_m", group="group" , regression = F) + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
   # coord_cartesian(ylim= c(-3, 3)) + 
   facet_grid(rockfish~age, scales = "free")
 
@@ -351,6 +370,38 @@ coef_scatterplot(model2, coef = "DO_trend_scaled", x = "age_max", regression = F
 # coef_scatterplot(model2, coef = "DO_trend_scaled:mean_DO_scaled", x = "age_max", group="group" , regression = T) + 
 #   # coord_cartesian(ylim= c(-3, 3)) + 
 #   facet_grid(rockfish~age, scales = "free")
+
+# for immature rockfish, much more negative interaction with larger size at maturity
+coef_scatterplot(filter(model2, depth > 150), coef = "temp_trend_scaled:mean_temp_scaled", 
+  x = "age_max", group="group", regression = T) + 
+  # coord_cartesian(ylim= c(-3, 3)) + 
+  facet_grid(rockfish~age, scales = "free")
+
+coef_scatterplot(filter(model2, depth > 120), coef = "DO_trend_scaled:mean_DO_scaled", 
+  x = "age_max", group="group" , regression = F) + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
+  # coord_cartesian(ylim= c(-3, 3)) + 
+  facet_grid(rockfish~age, scales = "free")
+
+coef_scatterplot(filter(model2, depth > 120), coef = "DO_trend_scaled", 
+  x = "age_max", group="group" , regression = F) + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
+  # coord_cartesian(ylim= c(-3, 3)) + 
+  facet_grid(rockfish~age, scales = "free")
+
+coef_scatterplot(filter(model2, depth < 200), coef = "DO_trend_scaled:mean_DO_scaled", 
+  x = "age_max", group="group" , regression = F) + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
+  # coord_cartesian(ylim= c(-3, 3)) + 
+  facet_grid(rockfish~age, scales = "free")
+
+coef_scatterplot(filter(model2, depth < 200), coef = "DO_trend_scaled", 
+  x = "age_max", group="group" , regression = F) + 
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") + 
+  # coord_cartesian(ylim= c(-3, 3)) + 
+  facet_grid(rockfish~age, scales = "free")
+
+
 
 #### 
 
