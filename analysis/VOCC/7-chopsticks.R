@@ -102,16 +102,18 @@ slope_scatterplot(do_slopes, "depth", col_group = "age") + facet_wrap(~chopstick
 
 
 #### INTERACTIONS WITH CLIMATE VELOCITIES
+
+model_vel_t <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/vel-all-95-all-do-04-03-vel-temp-1-200-temp.rds")
 # stat <- readRDS(paste0("data/life-history-stats.rds")) %>%
 #   mutate(sort_var = -depth) %>%
 #   select(species, sort_var)
 
-temp_vel_slopes <- chopstick_slopes(model, x_variable = "squashed_temp_vel_scaled", 
+temp_vel_slopes <- chopstick_slopes(model_vel_t , x_variable = "squashed_temp_vel_scaled", 
   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp") 
 # temp_vel_slopes <- left_join(temp_vel_slopes, stat)
 temp_vel_slopes <- temp_vel_slopes %>% mutate(sort_var = slope_est)
 
-p2 <- plot_fuzzy_chopsticks(model,
+p2 <- plot_fuzzy_chopsticks(model_vel_t ,
   x_variable = "squashed_temp_vel_scaled", type = "temp",
   y_label = "Predicted mature biomass vel", 
   slopes = temp_vel_slopes # if add, the global slope can be included for insig
@@ -127,14 +129,15 @@ p1 <- plot_chopstick_slopes(temp_vel_slopes, type = "temp", legend_position = c(
 cowplot::plot_grid(p1,p2, rel_widths = c(1, 2.5)) 
 
 #### #### #### #### #### #### #### 
+model_vel_d <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/vel-all-95-all-do-04-03-vel-do-1-200-do.rds")
 
-do_vel_slopes <- chopstick_slopes(model, x_variable = "squashed_DO_vel_scaled", 
+do_vel_slopes <- chopstick_slopes(model_vel_d, x_variable = "squashed_DO_vel_scaled", 
   interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO") %>% 
   mutate(sort_var = slope_est)
 # do_vel_slopes <- left_join(do_vel_slopes, stat) 
 do_vel_slopes <- do_vel_slopes %>% mutate(sort_var = slope_est)
 
-p2 <- plot_fuzzy_chopsticks(model,
+p2 <- plot_fuzzy_chopsticks(model_vel_d,
   x_variable = "squashed_DO_vel_scaled", type = "DO",
   y_label = "Predicted mature biomass vel", 
   slopes = do_vel_slopes # if add, the global slope can be included for insig.
