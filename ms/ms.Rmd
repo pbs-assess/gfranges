@@ -247,7 +247,8 @@ include_graphics(here("ms", "figs", "climate-maps.pdf"))
 \clearpage
 
 ```{r worm-plots, fig.cap="Caption goes here", out.width="8in"}
-# include_graphics(here("ms", "figs", "worm-plots.pdf"))
+# include_graphics(here("ms", "figs", "worm-plot-trend.pdf")) # 
+include_graphics(here("ms", "figs", "worm-plot-both.pdf"))
 ```
 
 \clearpage
@@ -259,7 +260,20 @@ include_graphics(here("ms", "figs", "climate-maps.pdf"))
 \clearpage
 
 ```{r do-chops, fig.cap="Caption goes here", out.width="8in"}
-include_graphics(here("ms", "figs", "do-chops.pdf"))
+# include_graphics(here("ms", "figs", "do-chops.pdf"))
+```
+
+\clearpage
+
+```{r slope-by-depth, fig.cap="Caption goes here", out.width="5in"}
+include_graphics(here("ms", "figs", "slope-by-depth.pdf"))
+```
+
+\clearpage
+
+
+```{r coef-scatterplots, fig.cap="Caption goes here", out.width="8in"}
+include_graphics(here("ms", "figs", "coef-scatterplots.pdf"))
 ```
 
 \clearpage
