@@ -11,6 +11,7 @@ plot_chopstick_slopes(
   legend_position = c(0.7, 0.95),
   hack = F,
   imm_slopes = NULL,
+  global_col = "gray30",
   colours = NULL
 )
 }
@@ -26,6 +27,8 @@ plot_chopstick_slopes(
 \item{hack}{Logical for comparing with hacked slope estimate w interaction SE}
 
 \item{imm_slopes}{Add immature data}
+
+\item{global_col}{Set colour for global slopes}
 
 \item{colours}{Add custom colours}
 }

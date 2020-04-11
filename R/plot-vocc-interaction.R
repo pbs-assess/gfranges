@@ -391,7 +391,9 @@ chopstick_slopes <- function (model,
 #' @param legend_position Given legend position
 #' @param hack Logical for comparing with hacked slope estimate w interaction SE
 #' @param imm_slopes Add immature data 
+#' @param global_col Set colour for global slopes
 #' @param colours Add custom colours
+
 #'
 #' @export
 plot_chopstick_slopes <- function (slopedat,
@@ -400,6 +402,7 @@ plot_chopstick_slopes <- function (slopedat,
   legend_position = c(.7, .95),
   hack = F,
   imm_slopes = NULL,
+  global_col = "gray30",
   colours = NULL) {
   
   if(!is.null(imm_slopes)) {
@@ -463,7 +466,7 @@ p <- ggplot(slopedat) +
     global_slope, ymin = global_slope - 1.96 * global_se, 
     ymax = global_slope + 1.96 * global_se, linetype = age, shape = age), 
     position = position_dodge(width=0.5), #alpha = 0.5, 3dodge.width = 0.4
-    size = 0.4, fatten = 1.5, colour="black", fill = "white", inherit.aes = F) +
+    size = 0.4, fatten = 1.5, colour= global_col, fill = "white", inherit.aes = F) +
   scale_alpha_discrete(range = c(0.0, 1), guide = F) +
   coord_flip() +
   xlab("") + #ylab("") + # ggtitle("slopes") +
@@ -506,8 +509,9 @@ if(length(unique(slopedat$age))>1) {
     geom_pointrange(aes(species,   
       global_slope, ymin = global_slope - 1.96 * global_se, 
       ymax = global_slope + 1.96 * global_se, linetype = age, shape = age), 
-      position = position_dodge(width=0.5), #alpha = 0.5, 3dodge.width = 0.4
-      size = 0.4, fatten = 1.5, colour="black", fill = "white", inherit.aes = F) +
+      # alpha = 0.5, 
+      position = position_dodge(width=0.5), #dodge.width = 0.4
+      size = 0.4, fatten = 1.5, colour = global_col, fill = "white", inherit.aes = F) +
     coord_flip() +
     xlab("") + 
     gfplot:::theme_pbs() + theme(
