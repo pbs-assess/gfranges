@@ -34,6 +34,7 @@ model_type <- "-trend-with-do"
 # model_type <- "-dist-vel-temp"
 
 w_genus <- F
+w_family <- T
 is_null <- F
 
 
@@ -57,6 +58,12 @@ null_number <- "-1"
  # null_number <- "-3"
 
 d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
+
+d$family <- gsub("\\(.*", "", d$parent_taxonomic_unit) 
+d$true_genus <- d$genus
+if(w_family){
+  d$genus <- d$family
+}
 
 d <- as_tibble(d) %>%
   # filter(species != "Bocaccio") %>%
@@ -185,8 +192,7 @@ if(model_type == "-vel-do") {
     squashed_DO_vel_scaled:mean_DO_scaled +
     # log_effort_scaled + fishing_trend_scaled +
     # fishing_trend_scaled:log_effort_scaled +
-    log_biomass_scaled #+ log_biomass_scaled2
-    #squashed_temp_vel_scaled:log_biomass_scaled 
+    log_biomass_scaled 
   
   x <- model.matrix(formula, data = d)
   
@@ -204,10 +210,9 @@ if(model_type == "-vel-both-fishing") {
     squashed_temp_vel_scaled:mean_temp_scaled +
     mean_DO_scaled +  
     squashed_DO_vel_scaled:mean_DO_scaled +
-    log_effort_scaled + fishing_trend_scaled +
+    # log_effort_scaled + fishing_trend_scaled +
     # fishing_trend_scaled:log_effort_scaled +
-    log_biomass_scaled #+ log_biomass_scaled2
-  #squashed_temp_vel_scaled:log_biomass_scaled 
+    log_biomass_scaled 
   
   x <- model.matrix(formula, data = d)
   
@@ -238,10 +243,9 @@ if (model_type == "-dist-vel-both") {
     squashed_temp_dvocc_scaled:mean_temp_scaled +
     mean_DO_scaled + 
     squashed_DO_dvocc_scaled:mean_DO_scaled +
-    log_effort_scaled + fishing_trend_scaled +
+    # log_effort_scaled + fishing_trend_scaled +
     # fishing_trend_scaled:log_effort_scaled +
-    log_biomass_scaled # + log_biomass_scaled2
-    # squashed_temp_vel_scaled:log_biomass_scaled 
+    log_biomass_scaled 
   
   x <- model.matrix(formula, data = d)
   
@@ -264,10 +268,12 @@ if (is_null) {
   null_lab <- ""
 }
 
+if (w_family) {
+  model_type <- paste0(model_type, "-family")
+} 
+
 if (w_genus) {
-  genus_lab <- "-genus"
-} else {
-  genus_lab <- ""
+  model_type <- paste0(model_type, "-genus")
 }
 
 if(DO_chopstick){
@@ -304,8 +310,7 @@ if(DO_chopstick){
     
     hist(y)
     
-    if (w_genus) {
-      model_type <- paste0(model_type, "-genus")
+    if (w_genus|w_family) {
       DO_model <-  vocc_regression(d, y,
         X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
         knots = knots, group_by_genus = T, student_t = F,
@@ -338,9 +343,8 @@ if(DO_chopstick){
     
     hist(y)  
       
-    if (w_genus) {
-      model_type <- paste0(model_type, "-genus")
-      # DO_model %<-% 
+
+    if (w_genus|w_family) {
       DO_model <- vocc_regression(d, y,
         X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
         knots = knots, group_by_genus = T, student_t = T,
@@ -377,7 +381,7 @@ if(DO_chopstick){
   
   date <- format(Sys.time(), "-%m-%d")
   saveRDS(DO_model, file = paste0("data/", y_type, "-", data_type, date, 
-    model_type, null_lab, null_number, genus_lab, "-", knots, "-DO.rds"))
+    model_type, null_lab, null_number, "-", knots, "-DO.rds"))
 }
 
 if(fishing_chopstick){
@@ -404,8 +408,7 @@ if(fishing_chopstick){
     
     hist(y)
     
-    if (w_genus) {
-      model_type <- paste0(model_type, "-genus")
+    if (w_genus|w_family) {
       fishing_model %<-%  vocc_regression(d, y,
         X_ij = x, X_pj = F_pj, pred_dat = F_dat,
         knots = knots, group_by_genus = T, student_t = F,
@@ -437,8 +440,7 @@ if(fishing_chopstick){
       
     hist(y)  
       
-    if (w_genus) {
-      model_type <- paste0(model_type, "-genus")
+    if (w_genus|w_family) {
       fishing_model %<-%  vocc_regression(d, y,
         X_ij = x, X_pj = F_pj, pred_dat = F_dat,
         knots = knots, group_by_genus = T, student_t = T,
@@ -492,9 +494,7 @@ if(temp_chopstick){
       y <- d$biotic_trend
     }
     
-    if (w_genus) {
-      model_type <- paste0(model_type, "-genus")
-      # temp_model %<-%  
+    if (w_genus|w_family) {
       temp_model <-  vocc_regression(d, y,
         X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
         knots = knots, group_by_genus = T, student_t = F,
@@ -503,7 +503,6 @@ if(temp_chopstick){
         split_effect_column = split_effect_column
       )
     } else {
-      # temp_model %<-%  
       temp_model <-  vocc_regression(d, y,
           X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
           knots = knots, group_by_genus = FALSE, student_t = F,
@@ -516,7 +515,6 @@ if(temp_chopstick){
   } else { 
     if (y_type == "vel") {
       #### biotic velocity (uses student_t)
-      
       if (is_null) {
         y <- d$squashed_fake_vel
       } else {
@@ -530,9 +528,7 @@ if(temp_chopstick){
       
       hist(y)
       
-      if (w_genus) {
-        model_type <- paste0(model_type, "-genus")
-        # temp_model %<-%  
+      if (w_genus|w_family) {
         temp_model <-  vocc_regression(d, y,
           X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
           knots = knots, group_by_genus = T, student_t = T,
@@ -541,7 +537,6 @@ if(temp_chopstick){
           split_effect_column = split_effect_column
         )
       } else {
-        # temp_model %<-%  
         temp_model <-  vocc_regression(d, y,
           X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
           knots = knots, group_by_genus = FALSE, student_t = T,
@@ -570,8 +565,8 @@ if(temp_chopstick){
   names(temp_model$delta_diff) <- c("est", "se", "type", "species")
   
   date <- format(Sys.time(), "-%m-%d")
-  saveRDS(temp_model, file = paste0("data/", y_type, "-", data_type, date, model_type, 
-    null_lab, null_number, genus_lab, "-", knots, "-temp.rds"))
+  saveRDS(temp_model, file = paste0("data/", y_type, "-", data_type, date, model_type,
+    null_lab, null_number, "-", knots, "-temp.rds"))
 }
 
 
@@ -612,15 +607,15 @@ if(DO_chopstick){
 }
 
 date <- format(Sys.time(), "-%m-%d")
-saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, ".rds"))
+saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, "-", knots, ".rds"))
 
 new_r <- new_model$obj$report()
 new_model$data$residual <- new_model$y_i - new_r$eta_i
 new_model$data$eta <- new_r$eta_i
 
-saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, ".rds"))
+saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, "-", knots, ".rds"))
 
-paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, genus_lab, "-", knots, ".rds")
+paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number, "-", knots, ".rds")
 
 
 ##############################
@@ -656,10 +651,6 @@ overall_betas <- as.data.frame(cbind(coef_names, betas, SE, lowerCI, upperCI))
 overall_betas
 
 get_aic(model)
-
-
-
-
 
 
 ##############################

@@ -6,6 +6,7 @@
 \usage{
 plot_coefs(
   coloured_coefs,
+  grouping_taxa = "species",
   order_by_trait = FALSE,
   order_by = "scale(do_vel_squashed)",
   fixed_scales = TRUE

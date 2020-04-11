@@ -6,29 +6,35 @@
 #'
 #' @export
 plot_coefs <- function(coloured_coefs,
+  grouping_taxa = "species",
   order_by_trait = FALSE,
   order_by = "scale(do_vel_squashed)",
   fixed_scales = TRUE
 ) {
-
+  
+  if(is.null(coloured_coefs$age)) {
+    coloured_coefs$age <- "both"
+  }
+  
   coloured_coefs <- filter(coloured_coefs, coefficient != "(Intercept)") %>%
     mutate(coefficient = shortener(coefficient))
   
   if (order_by_trait) {
-    order_values <- coloured_coefs %>% rename(order = !!order_by) %>% select(species, order)
+    order_values <- coloured_coefs %>% rename(order = !!order_by) %>% select(!!grouping_taxa, order)
     coloured_coefs <- inner_join(coloured_coefs, order_values)
     coloured_coefs <- filter(coloured_coefs, order != "NA")
   } else {
     order_by <- shortener(order_by)
     order_values <- filter(coloured_coefs, coefficient == !!order_by) %>%
-      select(species, Estimate) %>% rename(order = Estimate)
+      select(!!grouping_taxa, Estimate) %>% rename(order = Estimate) 
     coloured_coefs <- left_join(coloured_coefs, order_values)
   }
   coloured_coefs <- coloured_coefs %>% arrange(col_var)
   colour_list <- unique(coloured_coefs$colours)
+  coloured_coefs$group <- coloured_coefs[[grouping_taxa]]
   p <- ggplot(coloured_coefs, aes(
-    forcats::fct_reorder(species, -order), #-Estimate),
-    #forcats::fct_reorder(species, -coloured_coefs[coloured_coefs$coefficient == "do_vel", ]$Estimate),
+    forcats::fct_reorder(group, -order), #-Estimate),
+    #forcats::fct_reorder(species,, -coloured_coefs[coloured_coefs$coefficient == "do_vel", ]$Estimate),
     Estimate,
     colour = col_var,
     shape = age,
@@ -99,10 +105,12 @@ add_colours <- function(coefs, col_var = "group",
   manual_colours = FALSE, 
   last_used = FALSE
   ) {
-  
+
+  if(!is.null(coefs$species)){
   coefs <- coefs %>% 
     mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
   coefs <- coefs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
+  }
   
   if (add_spp_data) {
     coefs <- left_join(coefs, species_data)
@@ -210,14 +218,15 @@ add_colours <- function(coefs, col_var = "group",
       if (add_spp_data) {
         coefs <- left_join(coefs, species_data)
       }
-      
+
       coefs$col_var <- coefs[[col_var]]
-      
       N <- length(unique(coefs$col_var))
+      colourCount = N
       col_var <- sort(unique(coefs$col_var), decreasing = TRUE)
-      
       # colours <- gfutilities::rich.colors(n = N, alpha = 1)
-      colours <- RColorBrewer::brewer.pal(n = N, name = 'Spectral')
+      # colours <- RColorBrewer::brewer.pal(n = N, name = 'Spectral')
+      getPalette <- colorRampPalette(RColorBrewer::brewer.pal(n = N, name = 'Spectral'))
+      colours <- getPalette(colourCount)
     }
     colour_key <- as_tibble(cbind(col_var, colours))
     colour_key$col_var <- as.factor(colour_key$col_var)

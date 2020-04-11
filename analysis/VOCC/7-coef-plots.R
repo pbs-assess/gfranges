@@ -14,10 +14,10 @@ stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 stats <- stats %>% separate(species_science_name, " ", into = c("genus","specific"))
 stats$group[stats$group == "SHARK"] <- "DOGFISH"
 stats$group[stats$group == "HAKE"] <- "COD"
-imm <- filter(stats, age == "immature") %>% mutate(depth == depth_imm) %>% select(-depth_imm)
-mat <- filter(stats, age == "mature") %>% select(-depth_imm)
+imm <- mutate(stats, age = "immature") %>% mutate(depth = depth_imm) %>% select(-depth_imm)
+mat <- mutate(stats, age = "mature") %>% select(-depth_imm)
 stats <- rbind(mat, imm)
-
+stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit) 
 
 ##############################
 #### LOAD MODELS ####
@@ -47,27 +47,14 @@ manipulate::manipulate({
   as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
 )
 
-
-# manipulate::manipulate({
-#   plot_coefs(model2, order_by_trait = T, fixed_scales = F, order_by = order_by)
-# },
-# order_by = manipulate::picker(as.list(sort(names(model2[, 6:15]))))
-# )
-
-# model2a <- model2 %>%
-#   filter(coefficient != "mean_temp_scaled") %>%
-#   filter(coefficient != "mean_DO_scaled") %>%
-#   filter(coefficient != "mean_biomass_scaled") %>%
-#   filter(coefficient != "mean_temp_scaled:mean_DO_scaled") %>%
-#   filter(coefficient != "mean_DO_scaled:mean_temp_scaled")
-# manipulate::manipulate({plot_coefs(model2a, order_by = order_by)},
-#   order_by = manipulate::picker(as.list(sort(unique(shortener(model2b$coefficient))))))
-
-# model2b <- model2 %>% filter(coefficient %in%
-#    c("mean_temp_scaled", "mean_DO_scaled", "mean_biomass_scaled",
-#    "mean_temp_scaled:mean_DO_scaled", "mean_DO_scaled:mean_temp_scaled"))
-# manipulate::manipulate({plot_coefs(model2b, order_by = order_by)},
-#   order_by = manipulate::picker(as.list(sort(unique(shortener(model2b$coefficient))))))
+### GENUS COEF PLOTS
+model3 <- add_colours(model$coefs_genus, col_var = "genus", add_spp_data = F) 
+colour_list <- unique(model3$colours)
+manipulate::manipulate({
+  plot_coefs(model3, grouping_taxa = "genus", fixed_scales = F, order_by = order_by) 
+}, order_by = manipulate::picker( 
+  as.list(sort(unique(shortener(model3$coefficient))), decreasing=F))
+)
 
 ### SAVE PLOT WITH SELECTED PARAMS
 # model3 <- plot_coefs(model2, order_by = "squashed_temp_vel_scaled)")
