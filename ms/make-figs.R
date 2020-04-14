@@ -18,13 +18,41 @@ model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-12-vel-do-1-200-
 #### CLIMATE MAPS
 alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
 
+mean_do <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "mean_DO", fill_label = "ml/L ",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  axis_lables = F,
+  legend_position = c(0.15, 0.25)
+) + ggtitle("dissolved oxygen") +
+  theme(
+    plot.margin = margin(0, 0, 0, 0, "cm"),
+    axis.text = element_blank(), axis.ticks = element_blank(),
+    axis.title.x = element_blank(), axis.title.y = element_blank()
+  )
+
+mean_temp <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "mean_temp", fill_label = "ºC ",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  viridis_option = "C",
+  axis_lables = T,
+  legend_position = c(0.15, 0.25)
+) + ggtitle("temperature") +
+  ylab("mean conditions") +
+  theme(
+    plot.margin = margin(0, 0, 0, 0, "cm"),
+    axis.text = element_blank(), axis.ticks = element_blank(),
+    axis.title.x = element_blank()
+  )
+
 trend_do <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "DO_trend", fill_label = "ml/L ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
   axis_lables = F,
   legend_position = c(0.15, 0.25)
-) +  ggtitle("dissolved oxygen") +
+) + #ggtitle("dissolved oxygen") +
   theme(
     plot.margin = margin(0, 0, 0, 0, "cm"),
     axis.text = element_blank(), axis.ticks = element_blank(),
@@ -37,7 +65,7 @@ trend_temp <- plot_vocc(alldata,
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
   axis_lables = T,
   legend_position = c(0.15, 0.25)
-) +  ggtitle("temperature") +
+) + #ggtitle("temperature") +
   ylab("change per decade") +
   theme(
     plot.margin = margin(0, 0, 0, 0, "cm"),
@@ -71,8 +99,7 @@ vel_temp <- plot_vocc(alldata,
     axis.title.x = element_blank()
   )
 
-# mean_temp + mean_do + 
-  trend_temp + trend_do + vel_temp + vel_do + plot_layout(ncol = 2)
+mean_temp + mean_do +  trend_temp + trend_do + vel_temp + vel_do + plot_layout(ncol = 2)
 ggsave(here::here("ms", "figs", "climate-maps-updated.pdf"), width = 6, height = 9)
 
 
