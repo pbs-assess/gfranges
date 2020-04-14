@@ -7,7 +7,11 @@
 \alias{stat_quiver}
 \alias{StatQuiver}
 \title{Quiver plots for ggplot2}
-\format{An object of class \code{GeomQuiver} (inherits from \code{GeomSegment}, \code{Geom}, \code{ggproto}, \code{gg}) of length 2.}
+\format{
+An object of class \code{GeomQuiver} (inherits from \code{GeomSegment}, \code{Geom}, \code{ggproto}, \code{gg}) of length 2.
+
+An object of class \code{StatQuiver} (inherits from \code{Stat}, \code{ggproto}, \code{gg}) of length 3.
+}
 \usage{
 geom_quiver(
   mapping = NULL,

@@ -32,6 +32,7 @@ plot_vocc(
   raster_limits = NULL,
   raster_cell_size = 2,
   legend_position = c(0.15, 0.25),
+  make_square = TRUE,
   theme_black = FALSE
 )
 }
@@ -46,8 +47,7 @@ plot_vocc(
 
 \item{vec_aes}{Vector name for any plotting distance-based vectors.}
 
-\item{grad_vec_aes}{Vector name for plotting gradient-based vectors. 
-Default NULL for distance-based vectors.}
+\item{grad_vec_aes}{Vector name for plotting gradient-based vectors. Default NULL for distance-based vectors.}
 
 \item{arrowhead_size}{Changes head size for custom geom_quiver function.}
 
@@ -55,15 +55,13 @@ Default NULL for distance-based vectors.}
 
 \item{vec_alpha}{Vector transparency.}
 
-\item{max_vec_plotted}{Upper limit for vector lengths.
-Cells with no match less than this distance will be labeled with [NA_label].}
+\item{max_vec_plotted}{Upper limit for vector lengths. Cells with no match less than this distance will be labeled with [NA_label].}
 
 \item{min_vec_plotted}{Lower limit for vector lengths actually plotted.}
 
 \item{NA_label}{Symbol used to indicate cells with no analog. Default is "NA".}
 
-\item{white_zero}{If TRUE, will always plot on custom fill scale.
-Default will plot on this scale only if raster has negative values.}
+\item{white_zero}{If TRUE, will always plot on custom fill scale. Default will plot on this scale only if raster has negative values.}
 
 \item{low_fill}{Colour of negative values if raster values span zero.}
 
@@ -75,11 +73,9 @@ Default will plot on this scale only if raster has negative values.}
 
 \item{vec_col}{Colour of vectors.}
 
-\item{coast}{Coast polygons where (x = "X", y = "Y", group = "PID").
-If TRUE, will attempt to create them for xy values in df. Will not include if FALSE.}
+\item{coast}{Coast polygons where (x = "X", y = "Y", group = "PID"). If TRUE, will attempt to create them for xy values in df. Will not include if FALSE.}
 
-\item{contours}{Polygons of contour lines where (x = "X", y = "Y", group = "paste(PID, SID)").
-If TRUE, will attempt to create bathymetry layer for xy values in df using gfplot.}
+\item{contours}{Polygons of contour lines where (x = "X", y = "Y", group = "paste(PID, SID)"). If TRUE, will attempt to create bathymetry layer for xy values in df using gfplot.}
 
 \item{axis_lables}{Logical for inclusion of axis labels.}
 
@@ -87,20 +83,17 @@ If TRUE, will attempt to create bathymetry layer for xy values in df using gfplo
 
 \item{viridis_dir}{Option to flip scale by giving value of -1.}
 
-\item{transform_col}{Apply transformation to colour scale.
-Accepts standard options (e.g. "sqrt") or unquoted custom transformations
-defined using scales::trans_new (e.g. fourth_root_power).
-Default is to apply no transformation (no_trans).}
+\item{transform_col}{Apply transformation to colour scale. Accepts standard options (e.g. "sqrt") or unquoted custom transformations defined using scales::trans_new (e.g. fourth_root_power). Default is to apply no transformation (no_trans).}
 
-\item{raster_limits}{Range of values to plot; those in excess will be red. 
-Default of "NULL" plots full range.}
+\item{raster_limits}{Range of values to plot; those in excess will be red. Default of "NULL" plots full range.}
 
 \item{raster_cell_size}{Raster cell width. Used to centre NA_label.}
 
-\item{legend_position}{Vector of coordinates for legend placement. 
-Or "none" to remove legend.}
+\item{legend_position}{Vector of coordinates for legend placement. Or "none" to remove legend.}
 
-\item{theme_black}{}
+\item{make_square}{Logical for adding space to map to make it square}
+
+\item{theme_black}{Logical for inverting plot to white on black}
 }
 \description{
 Plot climate change vectors

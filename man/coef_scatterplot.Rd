@@ -9,6 +9,8 @@ coef_scatterplot(
   x,
   coef = c("temp_trend_scaled", "DO_trend_scaled"),
   group = "age",
+  point_size = 1,
+  point_alpha = 0.85,
   regression = T
 )
 }
@@ -20,6 +22,10 @@ coef_scatterplot(
 \item{coef}{Coefficient to plot.}
 
 \item{group}{Colour by grouping.}
+
+\item{point_size}{}
+
+\item{point_alpha}{}
 
 \item{regression}{Logical for adding regression line.}
 }

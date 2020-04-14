@@ -11,7 +11,10 @@ plot_chopstick_slopes(
   legend_position = c(0.7, 0.95),
   hack = F,
   imm_slopes = NULL,
+  add_global = T,
   global_col = "gray30",
+  point_size = 0.75,
+  alpha_range = c(0.5, 1),
   colours = NULL
 )
 }
@@ -28,7 +31,13 @@ plot_chopstick_slopes(
 
 \item{imm_slopes}{Add immature data}
 
+\item{add_global}{Logical for including global slope estimates}
+
 \item{global_col}{Set colour for global slopes}
+
+\item{point_size}{Change point size}
+
+\item{alpha_range}{Set alapha values based on slope significance}
 
 \item{colours}{Add custom colours}
 }

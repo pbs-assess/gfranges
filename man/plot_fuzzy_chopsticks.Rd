@@ -10,7 +10,11 @@ plot_fuzzy_chopsticks(
   x_variable = "temp_trend_scaled",
   type = NULL,
   colours = NULL,
-  species = NULL,
+  line_size = 0.7,
+  alpha_range = c(0.25, 0.9),
+  global_col = "gray30",
+  choose_species = NULL,
+  choose_age = NULL,
   order_var = "species",
   slopes = NULL,
   imm_model = NULL,
@@ -19,17 +23,25 @@ plot_fuzzy_chopsticks(
 )
 }
 \arguments{
-\item{model}{TMB model with X_pj and pred_dat elements.}
+\item{model}{TMB model with X_pj and pred_dat elements}
 
-\item{y_label}{Label response variable.}
+\item{y_label}{Label response variable}
 
-\item{x_variable}{Variable to plot on x axis.}
+\item{x_variable}{Variable to plot on x axis}
 
-\item{type}{Interaction type, if more than one in model.}
+\item{type}{Interaction type, if more than one in model}
 
-\item{colours}{Default NULL gives red for high and blue for low.}
+\item{colours}{Default NULL gives red for high and blue for low}
 
-\item{species}{Can plot just one species, otherwise NULL will facet.}
+\item{line_size}{Change line thickness}
+
+\item{alpha_range}{Choose alpha for non-sig and sig slopes}
+
+\item{global_col}{Set colour for global chopsticks}
+
+\item{choose_species}{Option to choose just one species}
+
+\item{choose_age}{Option to choose just one age class}
 
 \item{order_var}{Varible to order plots by}
 

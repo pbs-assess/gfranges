@@ -4,8 +4,8 @@
 #' @param fill_col Vector name for colouring raster grid cells.
 #' @param fill_label Label for legend for raster grid cell colour.
 #' @param raster_alpha Raster transparency.
-#' @param vec_aes Vector name for any plotting distance-based vectors. 
-#' @param grad_vec_aes Vector name for plotting gradient-based vectors. 
+#' @param vec_aes Vector name for any plotting distance-based vectors.
+#' @param grad_vec_aes Vector name for plotting gradient-based vectors.
 #'   Default NULL for distance-based vectors.
 #' @param vec_lwd_range Range in vector line widths.
 #' @param vec_alpha Vector transparency.
@@ -18,26 +18,25 @@
 #' @param high_fill Colour of positive values if raster values span zero.
 #' @param vec_col Colour of vectors.
 #' @param coast Coast polygons where (x = "X", y = "Y", group = "PID").
-#'    If TRUE, will attempt to create them for xy values in df. Will not include if FALSE.
+#'   If TRUE, will attempt to create them for xy values in df. Will not include if FALSE.
 #' @param contours Polygons of contour lines where (x = "X", y = "Y", group = "paste(PID, SID)").
-#'    If TRUE, will attempt to create bathymetry layer for xy values in df using gfplot.
+#'   If TRUE, will attempt to create bathymetry layer for xy values in df using gfplot.
 #' @param arrowhead_size Changes head size for custom geom_quiver function.
 #' @param axis_lables Logical for inclusion of axis labels.
 #' @param viridis_option Change between viridis colormap options available in ggplot.
 #' @param viridis_dir Option to flip scale by giving value of -1.
 #' @param transform_col Apply transformation to colour scale.
-#'    Accepts standard options (e.g. "sqrt") or unquoted custom transformations
-#'    defined using scales::trans_new (e.g. fourth_root_power).
-#'    Default is to apply no transformation (no_trans).
+#'   Accepts standard options (e.g. "sqrt") or unquoted custom transformations
+#'   defined using scales::trans_new (e.g. fourth_root_power).
+#'   Default is to apply no transformation (no_trans).
 #' @param white_zero If TRUE, will always plot on custom fill scale.
-#'    Default will plot on this scale only if raster has negative values.
-#' @param raster_limits Range of values to plot; those in excess will be red. 
-#'    Default of "NULL" plots full range.
+#'   Default will plot on this scale only if raster has negative values.
+#' @param raster_limits Range of values to plot; those in excess will be red. Default of "NULL" plots full range.
 #' @param na_colour Raster colour for values exceeding raster_limits.
 #' @param raster_cell_size Raster cell width. Used to centre NA_label.
-#' @param legend_position Vector of coordinates for legend placement. 
-#'    Or "none" to remove legend.
-#' @param theme_black
+#' @param legend_position Vector of coordinates for legend placement. Or "none" to remove legend.
+#' @param make_square Logical for adding space to map to make it square
+#' @param theme_black Logical for inverting plot to white on black
 #'
 #' @export
 #'
@@ -68,8 +67,8 @@ plot_vocc <- function(df,
                       raster_limits = NULL,
                       raster_cell_size = 2,
                       legend_position = c(0.15, 0.25),
-                      make_square = T, 
-                      theme_black = FALSE ) {
+                      make_square = TRUE,
+                      theme_black = FALSE) {
   if (!is.null(vec_aes)) {
     # order so smaller vectors are on top?
     df <- df[order(df$distance), ]
@@ -82,20 +81,20 @@ plot_vocc <- function(df,
   }
 
   if (make_square) {
-  # Set plot boundaries so that dimensions are close to square
-  width_X <- max(df$x, na.rm = TRUE) - min(df$x, na.rm = TRUE)
-  width_Y <- max(df$y, na.rm = TRUE) - min(df$y, na.rm = TRUE)
-  diffxy <- width_X - width_Y
-  if (diffxy < -6) {
-    buffer_X <- c(-(abs(diffxy) / 2), abs(diffxy) / 2)
-  } else {
-    buffer_X <- c(-3, 3)
-  }
-  if (diffxy > 6) {
-    buffer_Y <- c(-(abs(diffxy) / 2), abs(diffxy) / 2)
-  } else {
-    buffer_Y <- c(-3, 3)
-  }
+    # Set plot boundaries so that dimensions are close to square
+    width_X <- max(df$x, na.rm = TRUE) - min(df$x, na.rm = TRUE)
+    width_Y <- max(df$y, na.rm = TRUE) - min(df$y, na.rm = TRUE)
+    diffxy <- width_X - width_Y
+    if (diffxy < -6) {
+      buffer_X <- c(-(abs(diffxy) / 2), abs(diffxy) / 2)
+    } else {
+      buffer_X <- c(-3, 3)
+    }
+    if (diffxy > 6) {
+      buffer_Y <- c(-(abs(diffxy) / 2), abs(diffxy) / 2)
+    } else {
+      buffer_Y <- c(-3, 3)
+    }
   } else {
     buffer_X <- c(-3, 3)
     buffer_Y <- c(-3, 3)
@@ -112,7 +111,6 @@ plot_vocc <- function(df,
       gfplot::theme_pbs() + xlab("UTM") + ylab("UTM")
   }
 
-
   #### Add fill ####
   if (!is.null(fill_col)) {
     fill <- df[[fill_col]]
@@ -127,7 +125,6 @@ plot_vocc <- function(df,
     }
 
     if (white_zero) {
-   
       gvocc <- gvocc +
         geom_tile(aes(fill = fill), alpha = raster_alpha, width = raster_cell_size, height = raster_cell_size) +
         scale_fill_gradient2(
@@ -174,7 +171,7 @@ plot_vocc <- function(df,
           plot.background = element_rect(color = "black", fill = "black")
         )
       } else {
-        gvocc <- gvocc + theme(legend.position = legend_position) 
+        gvocc <- gvocc + theme(legend.position = legend_position)
       }
     }
   }
@@ -504,7 +501,7 @@ plot_facet_map <- function(df, column = "est",
 #' Plot gradient vocc with vectors coloured by variable
 #'
 #' @export
-#' 
+#'
 plot_gradient_vocc <- function(df,
                                vec_col = "C_per_decade",
                                col_label = "Local\nclimate trend\n(°C/decade)",

@@ -9,6 +9,7 @@ slope_scatterplot(
   x,
   slope_var = "slope_est",
   col_group = "chopstick",
+  point_size = 2,
   regression = F
 )
 }
@@ -20,6 +21,8 @@ slope_scatterplot(
 \item{slope_var}{Varible containing slope estimate.}
 
 \item{col_group}{Varible to colour by.}
+
+\item{point_size}{}
 
 \item{regression}{Logical for plotting simple linear regression line.}
 }
