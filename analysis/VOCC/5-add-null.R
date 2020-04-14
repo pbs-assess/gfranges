@@ -7,6 +7,13 @@ library(sdmTMB)
 library(gfranges)
 
 setwd(here::here("analysis", "VOCC"))
+null_number <- 1
+trim_threshold <- 0.05
+
+if (trim_threshold == 0.05) { trim_percent <- 95}
+if (trim_threshold == 0.1) { trim_percent <- 90}
+if (trim_threshold == 0.2) { trim_percent <- 80}
+if (trim_threshold == 0.5) { trim_percent <- 50}
 
 age <- "mature"
 d1 <- readRDS(paste0("data/", age, "-all-do-dvocc.rds")) %>% mutate(age = "mature")
@@ -21,13 +28,6 @@ d <- na.omit(d) %>% as_tibble() %>% mutate(species_age = paste(age, species))
 
 all_species <- unique(d$species_age)
 
-null_number <- 1
-trim_threshold <- 0.05
-
-if (trim_threshold == 0.05) { trim_percent <- 95}
-if (trim_threshold == 0.1) { trim_percent <- 90}
-if (trim_threshold == 0.2) { trim_percent <- 80}
-if (trim_threshold == 0.5) { trim_percent <- 50}
 
 #####################################
 ### SIMULATE FAKE TREND LAYER FOR EACH SPECIES
@@ -141,8 +141,8 @@ select(d, genus, species) %>%
 
 
 #### PREP TEMP VARIABLES ####
-d$squashed_temp_vel <- collapse_outliers(d$temp_vel, c(0.005, 0.995))
-
+d$squashed_temp_vel <- collapse_outliers(d$temp_vel, c(0, 0.985))
+hist(d$squashed_temp_vel, breaks = 100)
 d$squashed_temp_dvocc <- collapse_outliers(d$temp_dvocc, c(0.005, 0.995))
 # plot(squashed_do_vel ~ squashed_temp_vel, data = d, col = "#00000010")
 d$squashed_temp_vel_scaled <- scale(d$squashed_temp_vel, center = FALSE)
@@ -151,6 +151,7 @@ d$mean_temp_scaled2 <- scale(log(d$mean_temp))
 d$mean_temp_scaled <- scale((d$mean_temp))
 hist((d$mean_temp_scaled))
 hist((d$mean_temp_scaled2))
+hist(d$squashed_temp_vel_scaled, breaks = 100)
 
 # hist(d$temp_trend)
 d$temp_trend_scaled <- scale(d$temp_trend, center = FALSE)
@@ -162,8 +163,12 @@ d$temp_grad_scaled <- scale(d$temp_grad)
 
 #### PREP DO VARIABLES ####
 
-d$squashed_DO_vel <- collapse_outliers(d$DO_vel, c(0.005, 0.995))
+d$squashed_DO_vel <- collapse_outliers(d$DO_vel, c(0.01, 0.995))
+hist(d$squashed_DO_vel, breaks = 30)
+
 d$squashed_DO_vel_scaled <- scale(d$squashed_DO_vel, center = FALSE)
+hist(d$squashed_DO_vel_scaled, breaks = 30)
+
 d$DO_dvocc_scaled <- scale(d$DO_dvocc, center = F)
 d$squashed_DO_dvocc <- collapse_outliers(d$DO_dvocc, c(0.005, 0.995))
 d$squashed_DO_dvocc_scaled <- scale(d$squashed_DO_dvocc, center = FALSE)
@@ -227,6 +232,7 @@ data <- do.call(rbind, trimmed.dat)
 # saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-temp-with-null-", null_number, ".rds"))
 
 
+data <- filter(data, species_age != "immature Shortraker Rockfish") 
 data <- filter(data, species_age != "immature Curlfin Sole")
 
 # saveRDS(data, file = paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
