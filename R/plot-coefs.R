@@ -70,12 +70,16 @@ plot_coefs <- function(coloured_coefs,
 #' @param x Trait variable for x-axis.
 #' @param coef Coefficient to plot.
 #' @param group Colour by grouping.
+#' @param point_size 
+#' @param point_alpha 
 #' @param regression Logical for adding regression line.
 #'
 #' @export
 coef_scatterplot <- function(model_coefs, x, 
   coef = c("temp_trend_scaled","DO_trend_scaled") , 
   group = "age",
+  point_size = 1, 
+  point_alpha = 0.85,
   regression = T
 ){
   p <- filter(model_coefs, coefficient %in% !!coef) %>% 
@@ -83,9 +87,9 @@ coef_scatterplot <- function(model_coefs, x,
   if (regression) {
     p <- p + geom_smooth(method = "lm", colour = "darkgray", fill = "lightgray") 
   }
-   p <- p + geom_point() + scale_color_viridis_d(direction = 1) +
-    ylab(coef) + gfplot:::theme_pbs() 
-  
+    p <- p + geom_point(size = point_size, alpha = point_alpha) + 
+      scale_color_viridis_d(direction = 1) +
+      ylab(coef) + gfplot:::theme_pbs() 
   p
 }
 

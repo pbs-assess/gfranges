@@ -5,8 +5,9 @@
 #' @param species If NULL, loops through all species in raw data.
 #' @param x_variable Which variable to plot sticks on.
 #' @param split_variable Which variable to plot sticks at the min and max of.
-#' @param use_quantiles If TRUE, plots lines for 2.5th and 97.5th quantile of splitting
-#'    varible values occupied by each species. If FALSE, use min and max values occupied by each species.
+#' @param use_quantiles If TRUE, plots lines for 2.5th and 97.5th quantile of 
+#'    splitting varible values occupied by each species. 
+#'    If FALSE, use min and max values occupied by each species.
 #' @param N Number of increments
 #'
 #' @export
@@ -61,7 +62,6 @@ interaction_df <- function(
       seq(x_range[1], x_range[2], length.out = N),
       seq(x_range[1], x_range[2], length.out = N)
     )
-
     nd[[split_variable]] <- c(
       rep(split_low, length.out = N),
       rep(split_high, length.out = N)
@@ -72,25 +72,27 @@ interaction_df <- function(
         nd[[i]] <- 0
       }
     }
-
     mm <- as.data.frame(model.matrix(formula, nd))
     mm$genus <- spp_d$genus[1]
     mm$species <- spp_d$species[1]
     mm$chopstick <- nd$chopstick
     mm
   })
-
   nd_by_species
 }
 
 #' Plot interactions with confidence intervals
 #'
-#' @param model TMB model with X_pj and pred_dat elements.
-#' @param y_label Label response variable.
-#' @param x_variable Variable to plot on x axis.
-#' @param type Interaction type, if more than one in model.
-#' @param colours Default NULL gives red for high and blue for low.
-#' @param species Can plot just one species, otherwise NULL will facet.
+#' @param model TMB model with X_pj and pred_dat elements
+#' @param y_label Label response variable
+#' @param x_variable Variable to plot on x axis
+#' @param type Interaction type, if more than one in model
+#' @param colours Default NULL gives red for high and blue for low
+#' @param choose_species Option to choose just one species
+#' @param choose_age Option to choose just one age class
+#' @param alpha_range Choose alpha for non-sig and sig slopes
+#' @param line_size Change line thickness
+#' @param global_col Set colour for global chopsticks
 #' @param order_var Varible to order plots by
 #' @param slopes Df of slopes from chopstick_slopes function
 #' @param imm_model Add immature data from separate model
@@ -109,7 +111,11 @@ plot_fuzzy_chopsticks <- function(model,
                                   x_variable = "temp_trend_scaled",
                                   type = NULL,
                                   colours = NULL,
-                                  species = NULL, 
+                                  line_size = 0.7,
+                                  alpha_range = c(0.25, 0.9),
+                                  global_col = "gray30",
+                                  choose_species = NULL, 
+                                  choose_age = NULL, 
                                   order_var = "species",
                                   slopes = NULL,
                                   imm_model = NULL,
@@ -165,23 +171,19 @@ plot_fuzzy_chopsticks <- function(model,
           if_else(((abs(global_slope)-global_se*1.96)>=0), est_p, NA_real_), 
           NA_real_)) 
     }
-    
-    
   }
-  
   
   if (is.null(colours)) {
     if (type == "DO"|type == "do") {
       colours <- c("#5E4FA2", "#FDAE61")
     } else {
       if (type == "mean_temp") {
-        colours <- c("#5E4FA2", "#FDAE61")
+        colours <- c("#5E4FA2", "#FDAE61") #
       } else {
-        colours <- c("#D53E4F", "#3288BD")
+        colours <- c("#D53E4F", "#36648b")  #  ,"#3288BD") #"#FF420A" 
       }
     }
   }
-
 
   if (!is.null(type)) {
     pred_dat <- filter(pred_dat, type == !!type) %>% mutate(chopstick = paste(chopstick, type)) 
@@ -199,22 +201,25 @@ plot_fuzzy_chopsticks <- function(model,
   #     mean_se = mean(se_p) 
   #   ) 
   
-  
   if(!is.null(imm_model)) {
   imm_pred_dat$age <- "immature"
   pred_dat <- rbind(pred_dat, imm_pred_dat)
   }  
   
-  if (!is.null(species)) {
-    spp <- species
+  if (!is.null(choose_species)) {
+    spp <- choose_species
     pred_dat <- filter(pred_dat, species == !!spp)
+    if (!is.null(choose_age)) {
+      check_age <- choose_age
+      pred_dat <- filter(pred_dat, age == !!check_age)
+    }
   } else {
     pred_dat <- mutate(pred_dat, order = !!order_var)
   }
   
+  # Shorten the one very long species name...
   pred_dat$species[pred_dat$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"	
-  
-  
+
   p <- ggplot(pred_dat, aes_string(x_variable, "est_p")) +
     scale_colour_manual(values = colours) +
     scale_fill_manual(values = colours) +
@@ -227,15 +232,6 @@ plot_fuzzy_chopsticks <- function(model,
       legend.direction = "vertical",
       legend.position = "top"
     )
-  
-  if(is.null(pred_dat$sig_diff)) {
-  p <- p + geom_line(aes(colour = chopstick)) 
-  } else {
-    p <- p + geom_line(aes(alpha = sig_diff, colour = chopstick, linetype = age), size = 0.5) +
-      geom_smooth(method = lm, aes_string(x_variable, "global", linetype = "age"), size = 0.5, 
-        colour = "black", se = F, inherit.aes = F) +
-      scale_alpha_discrete(range = c(0.25, 0.9), guide=F) 
-  }
   p <- p + geom_ribbon(data = filter(pred_dat, age == "mature"), aes(
     fill = chopstick,
     ymin = est_p - 1.96 * se_p, ymax = est_p + 1.96 * se_p
@@ -245,25 +241,38 @@ plot_fuzzy_chopsticks <- function(model,
       ymin = est_p - 1.96 * se_p, ymax = est_p + 1.96 * se_p
     ), alpha = 0.2) 
   
+  if(is.null(pred_dat$sig_diff)) {
+  p <- p + geom_line(aes(colour = chopstick)) 
+  } else {
+    p <- p + geom_line(aes(alpha = sig_diff, 
+      colour = chopstick, linetype = age), size = line_size) +
+      geom_smooth(method = "lm", aes_string(x_variable, "global", 
+        linetype = "age"), size = line_size, 
+        colour = global_col, se = F, inherit.aes = F) +
+      scale_alpha_discrete(range = alpha_range, guide=F) 
+  }
+  
   if(length(unique(pred_dat$age))>1) {
   p <- p + scale_linetype_manual(values=c("dashed", "solid"), guide = F)
   # p <- p + scale_linetype_manual(values=c("dotted", "solid"), guide = F)
   }
   
-  if (is.null(species)) {
+  if (is.null(choose_species)) {
     p <- p + facet_wrap(vars(species)) #forcats::fct_reorder(species, order)
   }
  
   if(rug) {
-    
     histdat <- model$data %>% 
       mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature")) %>% 
       mutate(species = stringr::str_replace(species, ".*mature ", ""))
     
+    # Shorten the one very long species name...
     histdat$species[histdat$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"	
     
-    p <- p + geom_rug(data = filter(histdat, age == "immature"), aes_string(x_variable), alpha = 0.2, inherit.aes = F) + 
-      geom_rug(data = filter(histdat, age == "mature"), aes_string(x_variable), sides = "tl", alpha = 0.2, inherit.aes = F)
+    p <- p + geom_rug(data = filter(histdat, age == "immature"), aes_string(x_variable), 
+        alpha = 0.2, inherit.aes = F) + 
+      geom_rug(data = filter(histdat, age == "mature"), aes_string(x_variable), 
+        sides = "tl", alpha = 0.2, inherit.aes = F)
     }
   p
 }
@@ -275,7 +284,7 @@ chopstick_slopes <- function (model,
       interaction_column = "temp_trend_scaled:mean_temp_scaled" ,
       x_variable = "temp_trend_scaled",
       species = NULL) {
-# browser()
+  
   pred_dat <- model$pred_dat
   # if(is.null(imm_model)) {
     pred_dat <- pred_dat %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
@@ -391,10 +400,12 @@ chopstick_slopes <- function (model,
 #' @param legend_position Given legend position
 #' @param hack Logical for comparing with hacked slope estimate w interaction SE
 #' @param imm_slopes Add immature data 
+#' @param add_global Logical for including global slope estimates
 #' @param global_col Set colour for global slopes
+#' @param alpha_range Set alapha values based on slope significance
 #' @param colours Add custom colours
-
-#'
+#' @param point_size Change point size
+#' 
 #' @export
 plot_chopstick_slopes <- function (slopedat,
   type = NULL,
@@ -402,7 +413,10 @@ plot_chopstick_slopes <- function (slopedat,
   legend_position = c(.7, .95),
   hack = F,
   imm_slopes = NULL,
+  add_global = T,
   global_col = "gray30",
+  point_size = 0.75,
+  alpha_range = c(0.5,1),
   colours = NULL) {
   
   if(!is.null(imm_slopes)) {
@@ -460,13 +474,18 @@ p <- ggplot(slopedat) +
     ymax = (slope + SE*1.96) # use uncertainty from modeled interaction
     # ymin = slope_min, # min slope possible inside CI
     # ymax = slope_max # max slope possible inside CI
-  ), position = position_jitter(width=0.5), #dodge.width = 1.2
-    size = 0.4, fatten = 1.5, fill = "white") +
+  ), position = position_jitter(width=0.25), #dodge.width = 1.2
+    size = point_size, fatten = 1.5, fill = "white") +
   geom_pointrange(aes(species,   
-    global_slope, ymin = global_slope - 1.96 * global_se, 
-    ymax = global_slope + 1.96 * global_se, linetype = age, shape = age), 
-    position = position_dodge(width=0.5), #alpha = 0.5, 3dodge.width = 0.4
-    size = 0.4, fatten = 1.5, colour= global_col, fill = "white", inherit.aes = F) +
+    global_slope, 
+    ymin = global_slope - 1.96 * global_se, 
+    ymax = global_slope + 1.96 * global_se, 
+    linetype = age, shape = age), 
+    position = position_dodge(width=0.25), #alpha = 0.5, #dodge.width = 0.4
+    size = point_size, 
+    fatten = 1.5, 
+    colour = global_col, fill = "white", 
+    inherit.aes = F) +
   scale_alpha_discrete(range = c(0.0, 1), guide = F) +
   coord_flip() +
   xlab("") + #ylab("") + # ggtitle("slopes") +
@@ -486,9 +505,7 @@ if(length(unique(slopedat$age))>1) {
     scale_shape_manual(values=c(16), guide = F)
 }
 
-
 } else {
-
   p <- ggplot(slopedat, aes(
     forcats::fct_reorder(species, sort_var, .desc=F),
     slope_est,
@@ -500,18 +517,9 @@ if(length(unique(slopedat$age))>1) {
     ymax = (slope_est + slope_se*1.96)
   )) + 
     geom_hline(yintercept = 0, colour = "darkgray") +
-    scale_alpha_discrete(range = c(0.0, 1), guide = F) +
     scale_colour_manual(values = colours) + #, guide=T
-    
     geom_pointrange(position = position_jitter(), #dodge.width = 1.2
-      size = 0.4, fatten = 1.5, fill = "white") +
-    
-    geom_pointrange(aes(species,   
-      global_slope, ymin = global_slope - 1.96 * global_se, 
-      ymax = global_slope + 1.96 * global_se, linetype = age, shape = age), 
-      # alpha = 0.5, 
-      position = position_dodge(width=0.5), #dodge.width = 0.4
-      size = 0.4, fatten = 1.5, colour = global_col, fill = "white", inherit.aes = F) +
+      size = point_size, fatten = 1.5, fill = "white") +
     coord_flip() +
     xlab("") + 
     gfplot:::theme_pbs() + theme(
@@ -521,22 +529,35 @@ if(length(unique(slopedat$age))>1) {
       legend.text = element_text(size = 10)#,
       # legend.direction = "vertical"
     )
+    
+    if(add_global) {
+    p <- p + scale_alpha_discrete(range = c(0.0, 1), guide = F) +
+         geom_pointrange(aes(species,   
+           global_slope, ymin = global_slope - 1.96 * global_se, 
+           ymax = global_slope + 1.96 * global_se, linetype = age, shape = age), 
+           # alpha = 0.5, 
+           position = position_dodge(width=0.5), #dodge.width = 0.4
+           size = point_size, fatten = 1.5, 
+           colour = global_col, fill = "white", 
+           inherit.aes = F) 
+    } else {
+    p <- p + scale_alpha_discrete(range = alpha_range, guide = F) 
+    } 
   
   if(length(unique(slopedat$age))>1) {
     # p <- p + scale_linetype_manual(values=c("dashed", "solid"), guide = F) +
       p <- p + scale_linetype_manual(values=c("solid", "solid"), guide = F) +
-      scale_shape_manual(values=c(21, 19), guide = F)
+        scale_x_discrete(expand = expansion(mult = .02)) +
+        guides(colour = guide_legend(override.aes = list(size=0.4))) +
+        scale_shape_manual(values=c(21, 19), guide = F)
   } else {
     p <- p + scale_linetype_manual(values=c("solid"), guide = F) +
+      scale_x_discrete(expand = expansion(mult = .02)) +
+      guides(colour = guide_legend(override.aes = list(size=0.4))) +
       scale_shape_manual(values=c(16), guide = F)
   }
-  
-  
 }
-  
-  
 p
-
 }
 
 
@@ -546,11 +567,14 @@ p
 #' @param x Variable (species trait) on x-axis.
 #' @param slope_var Varible containing slope estimate.
 #' @param col_group Varible to colour by.
+#' @param point_size 
 #' @param regression Logical for plotting simple linear regression line. 
-#'
+#' 
 #' @export
-slope_scatterplot <- function(slopes_w_traits, x, slope_var = "slope_est", 
-  col_group = "chopstick",
+slope_scatterplot <- function(slopes_w_traits, x, 
+  slope_var = "slope_est", 
+  col_group = "chopstick", 
+  point_size = 2,
   regression = F
 ){
   
@@ -558,7 +582,7 @@ slope_scatterplot <- function(slopes_w_traits, x, slope_var = "slope_est",
   if (regression) {
     p <- p + geom_smooth(method = "lm", fill = "lightgray") 
   }
-  p <- p + geom_point() + 
+  p <- p + geom_point(size = point_size) + 
     scale_colour_viridis_d(begin = .8 , end =.2) +
     gfplot:::theme_pbs()
   p
@@ -573,9 +597,12 @@ slope_scatterplot <- function(slopes_w_traits, x, slope_var = "slope_est",
 #' @param species Species effect to be plotted.
 #' @param variables List which variables are interacting.
 #'
-plot_raw_chopsticks <- function(model, species = NULL,
-                                variables = c("mean_temp_scaled", "squashed_temp_vel_scaled"),
-                                choose_x = NULL) {
+plot_raw_chopsticks <- function(model, 
+  species = NULL,
+  variables = c("mean_temp_scaled", "squashed_temp_vel_scaled"),
+  choose_x = NULL
+  ) {
+  
   d <- model$data
   coefs <- model$coefs
 
