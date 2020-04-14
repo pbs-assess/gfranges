@@ -68,6 +68,7 @@ plot_vocc <- function(df,
                       raster_limits = NULL,
                       raster_cell_size = 2,
                       legend_position = c(0.15, 0.25),
+                      make_square = T, 
                       theme_black = FALSE ) {
   if (!is.null(vec_aes)) {
     # order so smaller vectors are on top?
@@ -80,6 +81,7 @@ plot_vocc <- function(df,
     }
   }
 
+  if (make_square) {
   # Set plot boundaries so that dimensions are close to square
   width_X <- max(df$x, na.rm = TRUE) - min(df$x, na.rm = TRUE)
   width_Y <- max(df$y, na.rm = TRUE) - min(df$y, na.rm = TRUE)
@@ -94,7 +96,10 @@ plot_vocc <- function(df,
   } else {
     buffer_Y <- c(-3, 3)
   }
-
+  } else {
+    buffer_X <- c(-3, 3)
+    buffer_Y <- c(-3, 3)
+  }
 
   if (isFALSE(axis_lables)) {
     gvocc <- ggplot2::ggplot(df, aes(x, y)) +
