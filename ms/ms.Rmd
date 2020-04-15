@@ -248,6 +248,8 @@ include_graphics(here("ms", "figs", "climate-maps-updated.pdf"))
 
 \clearpage
 
+<!-- TODO: can a % symbol be used in fig caption? -->
+
 ```{r worm-plots, fig.cap="Slopes of relationships between climate trends and percent change in biomasss for groundfish species. Open circles indicate patterns for immatures, while closed circles represent individuals large enough to have a 5 percent chance of being reproductively mature or belonging to species for which maturity data was not available. Black indicates overall slope where the estimated interaction with mean climate condition overlapped zero. Colours indicate slopes estimated for the low (0.025) and high (0.975) quantiles of mean climate conditions (only included when the confidence intervals on the slopes did not overlap).", out.width="6in"}
 include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
 ```
@@ -265,38 +267,33 @@ shortspine thornyhead - both temp (increasing good) and DO (increasing good)
 dogfish - increasing DO and warming both bad
 pacific cod - 
 English - warming neutral when cool, bad when warm
-Arrowtooth or Dover - warming good when it's cool, neutral when warm 
+Dover - warming good when it's cool, neutral when warm  
+(arrowtooth shows similar pattern but likely influenced strongly by fishing... could include for that reason though?)
+
 sablefish - warming good, increasing DO not
 
 -->
 
+\begin{landscape}
 
-```{r temp-chops, fig.cap="Temperature ...", out.width="6in"}
-# include_graphics(here("ms", "figs", "temp-chops.pdf"))
+```{r temp-chops, fig.cap="Temperature ...", out.width="10in"}
+include_graphics(here("ms", "figs", "temp-chops.pdf"))
 ```
 
-\clearpage
+\end{landscape}
 
 ```{r do-chops, fig.cap="Dissolved oxygen ...", out.width="6in"}
-# include_graphics(here("ms", "figs", "do-chops.pdf"))
+include_graphics(here("ms", "figs", "do-chops.pdf"))
 ```
 
-\clearpage
+\begin{landscape}
 
-```{r slope-by-depth, fig.cap="Variation in slopes across species with different mean depths of occurrence.", out.width="4in"}
-include_graphics(here("ms", "figs", "slope-by-depth.pdf"))
+```{r coef-scatterplots, fig.cap="Main effect coefficients for relationship between biotic trends and changes in climate for species with different life history strategies. Mean age and depth are calculated across all sampled individuals of each maturity class (as defined by the length at 50 percent maturity threshold) within a species. Growth rate is estimated as the length at maturity for females divide by the 0.95 quantile of ages recorded for immatures of each species.", out.width="9in"}
+include_graphics(here("ms", "figs", "coef-scatterplots.pdf"))
 ```
 
-\clearpage
+\end{landscape}
 
-<!-- TODO: May be we should change this to mean age of mature fish sampled for each species? That would make it easier to relate values to the timespan of the study. 
--->
-
-```{r coef-by-max-age.pdf, fig.cap="The maximum lifespan of the species may influence the relationships between climate trends and biomass change.", out.width="4in"}
-include_graphics(here("ms", "figs", "coef-by-max-age.pdf"))
-```
-
-\clearpage
 
 \renewcommand{\thefigure}{S\arabic{figure}}
 \renewcommand{\thetable}{S\arabic{table}}
@@ -351,14 +348,12 @@ All spatial random effects are constrained to follow a Matern covariance functio
 # Supporting Figures and Tables
 
 Supplemental figures:
-(In no particular order)
+(not yet done)
 -   flow diagram
 -   spatial residuals
 -   null model stuff
-
--   all the chopstick panels both trend and velocity
-
-<!-- TODO: change orientation to landscape? -->
+-   pairs plot of predictors
+-   plot vocc regression residuals against the main predictors... (and not in model and fitted vs. residuals plot; but don't necessarily include in paper)
 
 \begin{landscape}
 
@@ -372,20 +367,16 @@ include_graphics(here("ms", "figs", "supp-trend-chopsticks.pdf"))
 include_graphics(here("ms", "figs", "supp-vel-chopsticks.pdf"))
 ```
 
+\clearpage
+
+```{r supp-coef-scatterplots, fig.cap="Differences slope of effect of climate change on biotic change at how high and low mean conditions (columns) plotted against species life histories. Simple regression lines plotted for immature abundance only. Mean age and depth are calculated across all sampled individuals of each maturity class (as defined by the length at 50 percent maturity threshold) within a species. Growth rate is estimated as the length at maturity for females divide by the 0.95 quantile of ages recorded for immatures of each species.", out.width="8in"}
+include_graphics(here("ms", "figs", "supp-slope-scatterplots.pdf"))
+```
+
 \end{landscape}
 
--   other coefs plot
-<!-- TODO: This fig might go here instead of in results -->
-
-```{r supp-coef-scatterplots, fig.cap="Caption goes here", out.width="6in"}
-include_graphics(here("ms", "figs", "supp-coef-scatterplots.pdf"))
+```{r supp-slope-by-depth, fig.cap="Shape of relationship between estimated mean dissolved oxygen and mean depth of each 4x4 km grid cell (pattern is vary similar for temperature so not illustrated) for comparison with slopes for the environmental extremes experienced at the deeper depths showing expected tendancy towards increasing variation in strength of responses amongst species with deeper mean depth of occurrence. Outliers amongst immatures are Widow Rockfish (both DO and temperature) and Bocaccio (temperature).", out.width="4in"}
+include_graphics(here("ms", "figs", "supp-slope-by-depth.pdf"))
 ```
 
--   pairs plot of predictors
-
--   plot vocc regression residuals against the main predictors... (and not in model and fitted vs. residuals plot; but don't necessarily include in paper)
-
-```{r yet-another, fig.cap="Caption goes here", out.width="5in"}
-include_graphics(here("ms", "figs", "example.pdf"))
-```
-
+\clearpage
