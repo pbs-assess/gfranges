@@ -24,6 +24,9 @@ make_prediction_grid <- function(dat, cell_width = 2, survey = NULL,
         Y = seq(gfplot:::round_down_even(min(dat$Y)), max(dat$Y), cell_width),
         year = unique(dat$year)
       )
+      
+      shape_utm <- select(pred_grid, X, Y)
+      
     } else {
       region <- gsub(
         "SYN | OUT| N| S| FISS", "", survey) # to match names(gfplot::survey_boundaries)
@@ -36,10 +39,12 @@ make_prediction_grid <- function(dat, cell_width = 2, survey = NULL,
         )
       }
       
-      shape_utm <- gfplot:::ll2utm(gfplot::survey_boundaries[[region]],
-        utm_zone = utm_zone
-      )
+      # shape_utm <- gfplot:::ll2utm(gfplot::survey_boundaries[[region]],
+      #   utm_zone = utm_zone
+      # )
     }
+    
+    
     if (draw_boundary) {
       sp_poly <- sp::SpatialPolygons(
         list(sp::Polygons(list(sp::Polygon(shape_utm)), ID = 1))
@@ -48,24 +53,19 @@ make_prediction_grid <- function(dat, cell_width = 2, survey = NULL,
         data = data.frame(ID = 1)
       )
       pred_grid <- expand.grid(
-        X = seq(gfplot:::round_down_even(min(shape_utm$X)), max(shape_utm$X), cell_width),
-        Y = seq(gfplot:::round_down_even(min(shape_utm$Y)), max(shape_utm$Y), cell_width),
+        X = seq(round_down_even(min(shape_utm$X)), max(shape_utm$X), cell_width),
+        Y = seq(round_down_even(min(shape_utm$Y)), max(shape_utm$Y), cell_width),
         year = unique(dat$year)
       )
       cell_width <- cell_width
       cell_height <- cell_width
-      cell_area <- cell_width * cell_height
+      # cell_area <- cell_width * cell_height
       
       sp::coordinates(pred_grid) <- c("X", "Y")
       inside <- !is.na(sp::over(pred_grid, as(sp_poly_df, "SpatialPolygons")))
       pred_grid <- pred_grid[inside, ]
       pred_grid <- as.data.frame(pred_grid)
-    
-    if(ssid==1) {
-    nextY <- filter(pred_grid, Y==5836)
-    nextY$Y <- 5838 
-    pred_grid <- full_join(pred_grid, nextY)
-    }
+      
     } else {
       if (length(unique(dat$year)) > 1) stop("Must have a single year of data.")
       pred_grid <- data.frame(shape_utm, year = unique(dat$year))
@@ -89,7 +89,7 @@ make_prediction_grid <- function(dat, cell_width = 2, survey = NULL,
     
     if (!file.exists(file_name) & !is.null(region)) {
       message("Interpolating depth for prediction grid...")
-      bath <- load_bath(utm_zone = utm_zone) %>%
+      bath <- gfplot:::load_bath(utm_zone = utm_zone) %>%
         filter(
           X < max(dat$X + 20),
           X > min(dat$X - 20),
@@ -127,12 +127,12 @@ make_prediction_grid <- function(dat, cell_width = 2, survey = NULL,
     pred_grid <- filter(pred_grid, !is.na(akima_depth))
     
   } else { # end is.null(premade_grid))
-    pred_grid <- ll2utm(premade_grid$grid, utm_zone = utm_zone)
+    pred_grid <- gfplot:::ll2utm(premade_grid$grid, utm_zone = utm_zone)
     pred_grid <- rename(pred_grid, akima_depth = .data$depth)
-    cell_area <- premade_grid$cell_area
+    # cell_area <- premade_grid$cell_area
   }
   pred_grid$depth_scaled <-
     (log(pred_grid$akima_depth) - dat$depth_mean[1]) / dat$depth_sd[1]
   pred_grid$depth_scaled2 <- pred_grid$depth_scaled^2
-  list(grid = pred_grid, cell_area = cell_area)
+  list(grid = pred_grid) #, cell_area = cell_area
 }
