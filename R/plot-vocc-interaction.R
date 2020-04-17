@@ -183,7 +183,7 @@ plot_fuzzy_chopsticks <- function(model,
       if (type == "mean_temp") {
         colours <- c("#5E4FA2", "#FDAE61") #
       } else {
-        colours <- c("#D53E4F", "#36648b") #  ,"#3288BD") #"#FF420A"
+        colours <- c("#D53E4F", "#3d95cc") #"#36648b") #  ,"#3288BD") #"#FF420A"
       }
     }
   }
@@ -433,7 +433,7 @@ plot_chopstick_slopes <- function(slopedat,
                                   add_global = T,
                                   global_col = "gray30",
                                   point_size = 0.75,
-                                  alpha_range = c(0.5, 1),
+                                  alpha_range = c(0.5, 0.99),
                                   colours = NULL) {
   if (!is.null(imm_slopes)) {
     imm_slopes$age <- "immature"
@@ -457,7 +457,8 @@ plot_chopstick_slopes <- function(slopedat,
         if (type == "mean_temp") {
           colours <- c("#5E4FA2", "#FDAE61")
         } else {
-          colours <- c("#D53E4F", "#3288BD")
+          colours <- c("#D53E4F", "#3d95cc") #"#36648b") #  ,"#3288BD") #"#FF420A"  
+          # colours <- c("#D53E4F", "#3288BD")
         }
       }
     }
@@ -492,7 +493,7 @@ plot_chopstick_slopes <- function(slopedat,
         # ymax = slope_max # max slope possible inside CI
       ),
       position = position_jitter(width = 0.25), # dodge.width = 1.2
-      size = point_size, fatten = 1.5, fill = "white"
+      size = point_size, fatten = 1, fill = "white"
       ) +
       geom_pointrange(aes(species,
         global_slope,
@@ -506,7 +507,7 @@ plot_chopstick_slopes <- function(slopedat,
       colour = global_col, fill = "white",
       inherit.aes = F
       ) +
-      scale_alpha_discrete(range = c(0.0, 1), guide = F) +
+      scale_alpha_discrete(range = c(0.0, 0.99), guide = F) +
       coord_flip() +
       xlab("") + # ylab("") + # ggtitle("slopes") +
       gfplot:::theme_pbs() + theme(
@@ -539,7 +540,8 @@ plot_chopstick_slopes <- function(slopedat,
       scale_colour_manual(values = colours) + # , guide=T
       geom_pointrange(
         position = position_jitter(), # dodge.width = 1.2
-        size = point_size, fatten = 1.5, fill = "white"
+        size = point_size, fatten = 1.5, 
+        fill = "white"
       ) +
       coord_flip() +
       xlab("") +
@@ -552,7 +554,7 @@ plot_chopstick_slopes <- function(slopedat,
       )
 
     if (add_global) {
-      p <- p + scale_alpha_discrete(range = c(0.0, 1), guide = F) +
+      p <- p + scale_alpha_discrete(range = c(0.0, 0.99), guide = F) +
         geom_pointrange(aes(species,
           global_slope,
           ymin = global_slope - 1.96 * global_se,
@@ -598,14 +600,22 @@ plot_chopstick_slopes <- function(slopedat,
 slope_scatterplot <- function(slopes_w_traits, x,
                               slope_var = "slope_est",
                               col_group = "chopstick",
-                              point_size = 2,
+                              point_size = 0.75,
+                              pointrange = T,
                               regression = F) {
-  p <- ggplot(slopes_w_traits, aes_string(x, slope_var, colour = col_group))
+  p <- ggplot(slopes_w_traits, aes_string(x, slope_var, colour = col_group)) +
+    geom_hline(yintercept = 0, colour = "black", alpha = 0.75, linetype = "dashed") 
   if (regression) {
     p <- p + geom_smooth(method = "lm", fill = "lightgray")
   }
-  p <- p + geom_point(size = point_size) +
-    scale_colour_viridis_d(begin = .8, end = .2) +
+  
+  if (pointrange) {
+  p <- p + geom_pointrange(aes(ymin = (slope_est - slope_se * 1.96),
+    ymax = (slope_est + slope_se * 1.96)), alpha = 0.99, fatten = 1)
+  } else {
+    p <- p + geom_point(size = point_size) 
+  }
+  p <- p + scale_colour_viridis_d(begin = .8, end = .2) +
     gfplot:::theme_pbs()
   p
 }
