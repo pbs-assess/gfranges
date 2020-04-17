@@ -13,28 +13,28 @@ compile("vocc_regression.cpp")
 dyn.load(dynlib("vocc_regression"))
 source("vocc-regression-functions.R")
 
-knots <- 500
+knots <- 200
 
 # age <- "mature"
 # age <- "immature"
 age <- "both"
 
-# y_type <- "vel"
-y_type <- "trend"
+y_type <- "vel"
+# y_type <- "trend"
 
 no_chopsticks <- F
 # model_type <- "-vel-both"
 # # model_type <- "-vel-both-fishing"
-model_type <- "-trend-with-do"
+# model_type <- "-trend-with-do"
 
 # model_type <- "-vel-temp"
-# model_type <- "-vel-do"
+model_type <- "-vel-do"
 # model_type <- "-trend"
 # model_type <- "-trend-grad"
 # model_type <- "-dist-vel-temp"
 
 w_genus <- F
-w_family <- T
+w_family <- F
 is_null <- F
 
 
@@ -50,7 +50,9 @@ data_type <- paste0(age,"-95-all-temp")
 # data_type <- paste0(age,"-80-all-do")
 data_type <- paste0(age,"-95-all-do")
 
-if(age=="both") data_type <- paste0("all-95-all-do")
+if(age == "both") {
+  data_type <- paste0("all-95-all-do")
+  }
 
 #  null_number <- ""
 null_number <- "-1"
@@ -61,6 +63,7 @@ d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
 
 d$family <- gsub("\\(.*", "", d$parent_taxonomic_unit) 
 d$true_genus <- d$genus
+
 if(w_family){
   d$genus <- d$family
 }
@@ -98,7 +101,7 @@ if(age == "mature") {
   d$biotic_trend <-collapse_outliers(d$biotic_trend, c(0.00001, 0.99999))
   hist(d$biotic_trend, breaks = 50)
 } else {
-  d$squashed_biotic_vel <- collapse_outliers(d$biotic_vel, c(0.005, 0.99))
+  d$squashed_biotic_vel <- collapse_outliers(d$biotic_vel, c(0.01, 0.98))
   d$squashed_biotic_trend <- collapse_outliers(d$biotic_trend, c(0.0001, 0.9999))
   d$biotic_trend <-collapse_outliers(d$biotic_trend, c(0.00001, 0.99999))
   hist(d$biotic_trend, breaks = 50)
@@ -106,11 +109,12 @@ if(age == "mature") {
 }
 
 hist(d$squashed_biotic_vel)
+hist(d$squashed_temp_vel_scaled, breaks = 100)
 
 d$squashed_biotic_dvocc <- collapse_outliers(d$biotic_dvocc, c(0.005, 0.995))
 d$fake_vel <- d$fake_trend / d$biotic_grad
 hist(d$fake_vel)
-d$squashed_fake_vel <- collapse_outliers(d$fake_vel, c(0.005, 0.995))
+d$squashed_fake_vel <- collapse_outliers(d$fake_vel, c(0.005, 0.98))
 hist(d$squashed_fake_vel)
 ### other possible response variables
 # hist((d$sd_est))
@@ -596,6 +600,7 @@ if(DO_chopstick){
     rbind(temp_model$delta_diff, DO_model$delta_diff)
 
 } else {
+  new_model <- temp_model
   temp_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
   temp_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
   new_model$delta_diff <- 
@@ -621,7 +626,7 @@ paste0("data/", y_type, "-", data_type, date, model_type, null_lab,  null_number
 ##############################
 #### LOAD MODEL JUST BUILT
 model <- DO_model
-# model <- temp_model
+model <- temp_model
 model <- new_model
 
 nrow(model$data)
