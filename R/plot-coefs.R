@@ -78,17 +78,23 @@ plot_coefs <- function(coloured_coefs,
 coef_scatterplot <- function(model_coefs, x, 
   coef = c("temp_trend_scaled","DO_trend_scaled") , 
   group = "age",
-  point_size = 1, 
-  point_alpha = 0.85,
+  point_size = 0.75, 
+  point_alpha = 0.65,
+  pointrange = T,
   regression = T
 ){
   p <- filter(model_coefs, coefficient %in% !!coef) %>% 
-    ggplot(aes_string(x, "Estimate", colour = group)) 
+    ggplot(aes_string(x, "Estimate", colour = group)) +
+    geom_hline(yintercept = 0, colour = "black", alpha = 0.75, linetype = "dashed")
   if (regression) {
     p <- p + geom_smooth(method = "lm", colour = "darkgray", fill = "lightgray") 
   }
-    p <- p + geom_point(size = point_size, alpha = point_alpha) + 
-      scale_color_viridis_d(direction = 1) +
+    p <- p + geom_point(size = point_size, alpha = point_alpha) 
+    if (pointrange) {
+      p <- p + geom_pointrange(aes(ymin = (Estimate - Std..Error * 1.96),
+        ymax = (Estimate + Std..Error * 1.96)), alpha = point_alpha, fatten = 1)
+    }
+    p <- p + scale_color_viridis_d(direction = 1) +
       ylab(coef) + gfplot:::theme_pbs() 
   p
 }
