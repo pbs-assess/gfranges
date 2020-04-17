@@ -1,11 +1,26 @@
 #### SUPPLEMENTARY FIGURES
 # # if make-figs not just run
 # setwd(here::here())
+# library(TMB)
+# library(tidyverse)
 # library(patchwork)
+# library(gfranges)
 # # load appropriate final models
 # model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
 # model_vel_t <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/vel-all-95-all-do-04-03-vel-temp-1-200-temp.rds")
 # model_vel_d <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/vel-all-95-all-do-04-03-vel-do-1-200-do.rds")
+# 
+# stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats.rds"))
+# stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
+# stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
+# stats$group[stats$group == "SHARK"] <- "DOGFISH"
+# stats$group[stats$group == "HAKE"] <- "COD"
+# imm <- mutate(stats, age = "immature") %>%
+#   mutate(depth = depth_imm, age_mean = age_imm) %>%
+#   select(-depth_imm, -age_imm)
+# mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
+# stats <- rbind(mat, imm)
+# stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
 
 #### ALL TREND CHOPS
 temp_slopes <- chopstick_slopes(model,
@@ -35,13 +50,13 @@ temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Compl
 do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 p_temp_all_slopes <- plot_chopstick_slopes(temp_slopes,
-  type = "temp", add_global = F,
+  type = "temp", add_global = F, point_size = 1,
   legend_position = c(.25, .95)
 ) +
   ylab(" ")
 
 p_do_all_slopes <- plot_chopstick_slopes(do_slopes,
-  type = "DO", add_global = F,
+  type = "DO", add_global = F, point_size = 1,
   legend_position = c(.25, .95)
 ) +
   coord_flip(ylim = c(-3.1, 1.4)) + # coord_flip(ylim =c(-3,1)) +
@@ -82,7 +97,7 @@ temp_vel_slopes$species[temp_vel_slopes$species == "Rougheye/Blackspotted Rockfi
 do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 p_temp_all_vel_slopes <- plot_chopstick_slopes(temp_vel_slopes,
-  type = "temp", add_global = F,
+  type = "temp", add_global = F, point_size = 1,
   legend_position = c(.25, .95)
 ) +
   ylab(" ") +
@@ -90,7 +105,7 @@ p_temp_all_vel_slopes <- plot_chopstick_slopes(temp_vel_slopes,
   coord_flip(ylim = c(-14, 7.85))
 
 p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
-  type = "DO", add_global = F,
+  type = "DO", add_global = F, point_size = 1,
   legend_position = c(.25, .95)
 ) +
   ylab("slopes") +
@@ -100,7 +115,6 @@ p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
 
 cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes, p_do_vel_chops, ncol = 2, rel_widths = c(1, 2.5))
 ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height = 12)
-
 
 
 #### COEFFICIENT SCATTERPLOTS
@@ -114,56 +128,132 @@ ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height =
 # trendeffects <- model2 %>% filter(coefficient %in% c("temp_trend_scaled","DO_trend_scaled")) %>% transform(coefficient = factor(coefficient, levels = c("temp_trend_scaled","DO_trend_scaled"), labels = c("temperature", "DO")))
 # trendeffects <- trendeffects %>% mutate(coefficient = forcats::fct_reorder(coefficient, Estimate, .desc=F))
 
-p_depth <- coef_scatterplot(trendeffects,
+
+#### MEAN AGE
+#### when mean age is less, than negative temperature effects are more likely?
+p_age_alone <- coef_scatterplot(
+  trendeffects,
+  # filter(trendeffects, age == "immature"),
   coef = c("temperature", "DO"),
-  x = "depth", group = "age", regression = T
+  x = "age_mean", group = "age", regression = F
 ) +
-  ylab("trend coefficient") + xlab("mean depth") +
-  scale_colour_viridis_d(begin = .8, end = .2) +
-  guides(colour = F) + labs(subtitle = "all species") +
-  facet_grid(rows = vars(coefficient), scales = "free_y") +
-  # gfplot:::theme_pbs() %+replace%
+  xlab("mean age") +
+  scale_colour_viridis_d(begin = .8, end = .21) +
+  scale_y_continuous(expand = expansion(mult = .2)) +
+  # ggtitle("") +
+  guides(colour = F) +
+  geom_smooth(
+    # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
+    aes_string("age_mean", "Estimate"), method = "lm",
+    colour = "darkgray", fill = "lightgray"
+  ) +
+  geom_point(alpha = 0.5, size = 2) +
+  facet_grid(rows = vars(coefficient), scales = "free") + #cols = vars(rockfish), 
+  # theme(legend.position = c(.8,.15), legend.title = element_blank()) +
+  ylab("trend coefficient")
+p_age_alone
+ggsave(here::here("ms", "figs", "supp-coef-by-mean-age.pdf"), width = 3.5, height = 2.7)
+
+
+### investigate interaction slopes by mean age
+# temp_slopes <- left_join(temp_slopes, stats)
+# do_slopes <- left_join(do_slopes, stats)
+all_slopes <- rbind(temp_slopes, do_slopes)
+all_slopes <- rbind(temp_slopes, do_slopes) %>%  mutate(growth_rate = length_50_mat_f/age_mat)
+
+slope_age <- slope_scatterplot(all_slopes, "age_mean",
+  col_group = "age", point_size = 3
+) +
+  geom_smooth(
+    data = filter(all_slopes, age == "immature"), inherit.aes = F,
+    aes_string("age_mean", "slope_est", colour = "age"), method = "lm", size = 0.5,
+    fill = "lightgray"
+  ) +
+  # geom_smooth(method= "lm", size = 0.5, fill = "lightgray") + # formula = y ~ x + I(x^2),  colour = "gray",
+  geom_hline(yintercept = 0, colour = "black", alpha = 0.5,  linetype = "dashed") +
+  xlab("mean age") +
+  ylab("slope") + 
+  facet_grid(type~chopstick, scales = "free") +  
+  guides(colour = F) +
   theme(
-    plot.margin = margin(0.1, 0.15, 0.1, 0, "cm"),
+    plot.margin = margin(0, 0.15, 0.1, 0, "cm"),
     strip.background = element_blank(),
     strip.text.y = element_blank(),
-    plot.subtitle = element_text(hjust = 0.5, vjust = 0.4),
+    plot.subtitle = element_text(hjust = 0.5, vjust = 0.4)
     # axis.text.y = element_blank(),
-    axis.ticks = element_blank()
+    # axis.ticks = element_blank()
   )
 
-p_age <- coef_scatterplot(trendeffects,
-  coef = c("temperature", "DO"),
-  x = "age_max", group = "age", regression = T
-) +
-  xlab("maximum age") +
-  scale_colour_viridis_d(begin = .8, end = .2) +
-  guides(colour = F) +
-  # ggtitle("") +
-  theme(
-    plot.margin = margin(0, 0.25, 0.1, 0.1, "cm"), strip.background = element_blank(),
-    strip.text.y = element_blank(),
-    axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()
-  ) +
-  facet_grid(rows = vars(coefficient), cols = vars(rockfish), scales = "free_y")
 
-p_mat <- coef_scatterplot(trendeffects,
-  coef = c("temperature", "DO"),
-  x = "length_50_mat_f", group = "age", regression = T
+### investigate immature growth rate
+slope_growth <- slope_scatterplot(all_slopes, "growth_rate",
+  col_group = "age", point_size = 3
 ) +
-  xlab("length at maturity") +
-  # geom_smooth(method = "lm", alpha = 0.15) +
-  scale_colour_viridis_d(begin = .8, end = .2) +
-  # guides(colour=F) +
+  geom_smooth(
+    data = filter(all_slopes, age == "immature"), inherit.aes = F,
+    aes_string("growth_rate", "slope_est", colour = "age"), method = "lm", size = 0.5,
+    fill = "lightgray"
+  ) +
+  # geom_smooth(method= "lm", size = 0.5, fill = "lightgray") +
+  # xlab("mean age") +
+  ylab("slope") + 
+  facet_grid(type~chopstick, scales = "free") +
+  guides(colour = F) +
   theme(
     plot.margin = margin(0, 0.1, 0.1, 0, "cm"),
     strip.background = element_blank(),
-    legend.position = c(.75, .15), legend.title = element_blank(),
+    # legend.position = c(.75, .15), legend.title = element_blank(),
     # strip.text = element_blank(),
     axis.title.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank()
-  ) +
-  facet_grid(coefficient ~ rockfish, scales = "free_y")
+  )
 
-cowplot::plot_grid(p_depth, p_age, p_mat, nrow = 1, rel_widths = c(1.1, 1.75, 1.75))
-ggsave(here::here("ms", "figs", "supp-coef-scatterplots.pdf"), width = 6.5, height = 3)
-# p_depth + p_age + p_mat + plot_layout(nrow = 1, widths = c(1.1, 1.75 , 1.75))
+cowplot::plot_grid(slope_age, slope_growth, ncol = 2, rel_widths = c(1, 1))
+ggsave(here::here("ms", "figs", "supp-slope-scatterplots.pdf"), width = 8, height = 4)
+
+
+#### VARIABILITY IN COEFS INCREASES WITH DEPTH
+do_data <- readRDS(paste0("analysis/VOCC/data/predicted-DO-new.rds")) %>%
+  select(X, Y, year, depth, temp, do_est)
+do_depth <- ggplot(do_data, aes(depth, do_est)) +
+  geom_jitter(alpha = 0.01, shape = 20, colour = "black", size = 0.2) +
+  geom_smooth(colour = "black", size = 0.5) + xlim(0, 450) + ylab("mean DO (ml/L)") +
+  geom_hline(yintercept = 2, colour = "black", linetype = "dashed") +
+  gfplot::theme_pbs() + theme(
+    plot.margin = margin(0, 0.1, 0.2, 0, "cm"),
+    axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
+  )
+
+# temp_depth <- ggplot(do_data, aes(depth, temp)) +
+#   geom_jitter(alpha = 0.01, shape = 20, colour = "black", size=0.2) +
+#   geom_smooth(colour = "black", size = 0.5) + xlim(0,450) + ylab("mean temperature (ºC)") +
+#   gfplot::theme_pbs() + theme(plot.margin = margin(0, 0.1, 0, 0, "cm"),
+#     axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank())
+
+
+do_slopes <- do_slopes %>% mutate(sort_var = slope_est)
+do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth",
+  col_group = "age", point_size = 3
+) +
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") +
+  xlab("mean depth for species") +
+  ylab("slope at lowest DO") + guides(colour = F) +
+  gfplot::theme_pbs() + theme(
+    plot.margin = margin(0, 0.1, 0, 0, "cm"),
+    axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
+  )
+
+temp_slopes <- temp_slopes %>% mutate(sort_var = slope_est)
+temp_high <- slope_scatterplot(
+  filter(temp_slopes, chopstick == "high"), "depth",
+  col_group = "age", point_size = 3
+) +
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") +
+  # scale_y_continuous(trans = fourth_root_power) +
+  # geom_smooth(method= "lm", size = 0.5) +
+  xlab("mean depth of cell/species-maturity class") +
+  ylab("slope at highest temperature") +
+  theme(legend.position = c(.8, .25), legend.title = element_blank())
+
+do_depth + do_low + temp_high + plot_layout(ncol = 1, heights = c(1, 1, 1))
+ggsave(here::here("ms", "figs", "supp-slope-by-depth.png"), width = 4.5, height = 7)
+
