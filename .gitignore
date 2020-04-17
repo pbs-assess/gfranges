@@ -39,6 +39,8 @@ eg_data/
 output-cache/
 save-last-round-cv/
 resources/
+analysis/VOCC/old-code/
 cv-output/
 INLA/
 raw/
+*bathymetry-data
