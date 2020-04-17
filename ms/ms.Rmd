@@ -35,6 +35,10 @@ opts_chunk$set(
   fig.align = "center",
   fig.pos = "htb"
 )
+
+# TODO: is this where this should go?
+alldata <- readRDS(paste0("../analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
+model <- readRDS("../analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
 ```
 
 # Abstract {-}
@@ -101,9 +105,13 @@ At longer timescales it because easier to disentangle variability from overall t
 While overall population status and distribution limits are likely related (e.g. through basin model of density-dependent habitat selection), the time delay between changes in survival and/or reproductive rate and the subsequent redistribution of the population will depend on both spatial scale and species life histories.
 For example, this lag should be smaller when generation times are particularly short, or when individuals of all age classes tend to disperse greater distances.
 Likewise, changes in local abundances at finer spatial scales should occur more quickly due to shorter dispersal distances involved and *reduced homogenization of responses*.
+
 <!-- TODO: Struggling with how to describe the dilution of responses by greater conflicting processes at larger spatial scales?  -->
+
 Even at a local scale, the rate of change in overall biomass density should still be limited by species' generation times under certain conditions (e.g. when fecundity or early life history stages are most climate sensitive, and when the larger age classes are highly sedentary or territorial).
+
 <!-- TODO: Check generation time & find REF -->
+
 In order to detect the impact of climate change on species like rockfish (many of which are territorial with generation times > 20 yrs), one would require either datasets in excess of 20 years, or to contrast patterns of change between age classes.
 Indeed, responses to environmental change can be expected to differ between species, and between age classes within species, depending on the life history of species including physiological tolerances , lifespan and dispersal patterns.
 For groundfish it is well established that some species shift their depth distribution as they age [often approximated by fish length bins; e.g. @li2019].
@@ -118,6 +126,7 @@ In addition to estimates of biomass density for each species captured, data on s
 ***We use these concurrent estimates of both climate and biomass to assess the extent to which groundfish densities are changing in response to climate at the local scales most relevant to management***.
 In order to better understand the extent to which the temporal and spatial scales considered are appropriate for different species within this fish community, we also assess the concordance between the life histories and apparent sensitivities across species and maturity classes.
 Given the relatively short timescale encompassed in this survey, we expect *stronger patterns in shorter-lived, more pelagic species, and immatures.*
+
 <!-- TODO: Discuss with sean & chris rooper -->
 
 # Methods
@@ -159,7 +168,7 @@ We also tried including the proportion of muddy sediment, and proportion of sedi
 Certainly more spatially precise estimates would be possible with refined substrate variables, but likely irrelevant to this analysis given the resolution and uncertainty in our climate variables.
 Furthermore, the spatial random effects can account for spatial factors that are constant across time, like substrate type, while spatiotemporal random effects account for factors that vary from year to year spatially such as bottom temperature, water circulation patterns, species interactions, and species movement.
 
-*MODEL VALIDATION?*
+<!-- TODO: MODEL VALIDATION -->
 
 ## Estimate climate velocities
 
@@ -169,19 +178,22 @@ The approach for these models differed only be being Gaussian and by estimating 
 Because DO levels cannot be negative and are known to be influenced be both water temperature and seasonal biological processes (REF), we predict log(DO) with added fixed effects for day of year (centered and scaled) and temperature (quadratic of scaled values similar to depth).
 Bottom temperature data (but not DO) was also collected on tows prior to 2008, so this data was also included in the model in order to better inform the static spatial field component of the model.
 
-For all climate and biomass models, we then project the model predictions onto a 4 km x 4 km grid (UTM 9 projection) consisting of the particular coastal zone surveyed in each year. We then calculate both gradient-based and distance-based velocities of change, and constituent local trends and spatial gradients, for each cell.
+For all climate and biomass models, we then project the model predictions onto a 4 km x 4 km grid (UTM 9 projection) consisting of the particular coastal zone surveyed in each year. We then calculate gradient-based velocities of change, <!-- If analog included: both gradient-based and distance-based velocities of change, --> and constituent local trends and spatial gradients, for each cell.
 
-Explain ways of calculating:
+<!-- TODO: Explain calculation of gradient velocity-->
+<!-- TODO: Explain collapsing to max of 100 km ... and update code and models to do this more precisely-->
 
-- Gradient velocities
-- Analog-distance velocities <!-- TODO: Might leave out -->
+<!-- If analog included: Explain ways of calculating analog velocity and change next sentence to: Both spatial gradients (denominator for gradient-based calculation) and t~2~ conditions (distance-search method) are based on the years 2014-2019 (which correspond to the start of the "Blob", and corresponds with the warm transition in Alaskan waters---Albia et al. 2018). 
+-->
 
-Both spatial gradients (denominator for gradient-based calculation) and t~2~ conditions (distance-search method) are based on the years 2014-2019 (which correspond to the start of the "Blob", and corresponds with the warm transition in Alaskan waters---Albia et al. 2018).
+Spatial gradients (denominator for gradient-based calculation) are based on the years 2014-2019 (which correspond to the start of the "Blob", and corresponds with the warm transition in Alaskan waters---Albia et al. 2018).
 Most prior application of gradient-based VOCC use a mean spatial gradient across the entire period analyzed, which tends to result in smaller gradients due to reduced variability in means based on larger sample sizes.
 Because velocity estimates explode as gradients approach zero, estimated velocities will tend to be smaller (more conservative) when fewer estimates are averaged in the gradient calculation.
 Furthermore, the period most relevant to the actual distance travelled is end point, however given that samples were collected only once every two years and that there is variability between species in when dispersal occurs and how long it takes, we use roughly the latter half of the time period analyzed in our estimates of spatial gradients.
-<!-- TODO: Cut if analog cut: -->
-This gradient is also based on exactly the same cell values are as searched in the analog-distance algorithm.
+
+<!-- If analog included: 
+This gradient is also based on exactly the same cell values are as searched in the analog-distance algorithm. 
+-->
 
 Because locations varied in the number of years sampled ...
 
@@ -189,40 +201,49 @@ Because the space searched by the analog-distance algorithm was much larger in o
 Likewise, extremes in the gradient-based velocity estimates were collapsed to the 0.005 and 0.995 quantiles.
 As a result both estimates produce heavy-tailed distributions...
 
-<!-- TODO: Might leave out? -->
-**Control for commercial fishing effort?**
-
--   include fishing trips up to 9hrs in length
-
--   calculate mean hrs fished per year per 4x4 km grid cell
-
--   calculate % change in hrs fished between 2008-2018
+<!-- If fishing included: Control for commercial fishing effort? 
+  -   include fishing trips up to 9hrs in length
+  -   calculate mean hrs fished per year per 4x4 km grid cell
+  -   calculate % change in hrs fished between 2008-2018
+-->
 
 **Link biomass change with climate**
 
-To explore the potential for change in climate to predict local changes in biomass density, we used similar spatial GLMMs, but with independent random spatial fields for each species (and genus?)
-in order to control for spatial autocorrelation amongst cells.
+To explore the potential for change in climate to predict local percent changes in biomass density, we used similar spatial GLMMs in order to control for spatial autocorrelation amongst cells. For each maturity class of each species the model estimates an independent random spatial field was and with and without either genus or family as possible phylogenetic grouping factors. .
 For each species, only the fewest cells that encompass 95% of total mean biomass were included.
 In all models mean biomass density was included as a covariate in order to reduce the influence of changes occurring only at either the highest or lowest densities for a particular species.
 We attempt to predict change in biomass of each species as a function of local climate change (just temperature, or both temperature and DO) and an interaction between the mean climate of each cell and its local change estimate.
-We model both biomass and climate as either velocities or as raw trends (Fig. \@ref(fig:climate-maps)). In addition we attempt to assess the importance of the gradient component in velocity estimates by adding gradient to the model based on trends.
-
+We model both biomass and climate as either velocities or as raw trends<!-- TODO: should (Fig. \@ref(fig:climate-maps)) be here?-->. In addition we attempt to assess the importance of the gradient component in velocity estimates by adding gradient to the model based on trends.
 All covariates were scaled to their standard deviations.
-Covariates capturing cell means were also centered (except fishing effort---so that estimates can be interpreted as in the absence of fishing), but change variables were kept uncentred because an intercept of 0 change is more intuitive to interpret.
-In addition to checking the spatial distribution of model residuals, we simulated fake biomass trends for each species (using variance and spatial correlation parameters unique to each species) and reran each model 3 times and compared the distribution of effect sizes and number of sig effects in our simulated null models with the actual estimates.
-<!-- TODO: Maybe up to 10 times? -->
+Covariates capturing cell means were also centered <!-- If fishing included: (except fishing effort---so that estimates can be interpreted as in the absence of fishing)-->, but change variables were kept uncentred because an intercept of 0 change is more intuitive to interpret.
+Models exploring change as simple trends use Gaussian distributions, while velocities are  
+In addition to checking the spatial distribution of model residuals, we simulated fake biomass trends for each species (using variance and spatial correlation parameters unique to each species) and reran each model 3 <!-- TODO: simulated null models up to 10 times? --> times and compared the distribution of effect sizes and number of sig effects in our simulated null models with the actual estimates.
 
 In order to better understand the extent to which the temporal and spatial scales considered are appropriate for different species within this groundfish community, we also assess the concordance between the life histories and apparent sensitivities across species and maturity classes.
 
 # Results
 
-Very little difference whether biotic velocity or trend are the response variable...
+Our models suggest that over the decade spanning 2008 to 2018, seafloor temperature increased across almost the entirety of Canada's Pacific shelf region (95% interquartile range of `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[2]], digits = 2)`), with warming tending to be most pronounced in shallower areas (Fig. \@ref(fig:climate-maps)<!-- TODO: should letters be added and included here? eg. "C" -->). In contrast, change in seafloor DO was much more variable in the direction of change (95% interquartile range of `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[2]], digits = 2)`), with both the greatest increases also occurring in the shallowest areas and the greatest decreases occuring across a wide range of depths <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)D) -->. When these local changes are placed in there geographic context in the form of a gradient-based velocity estimate, the majority of the highest velocities occur in the bottom of troughs in Queen Charlotte Sound and Dixon Entrance <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)E & F) -->.  
 
-Big difference whether temp velocity or temp trend are the predictor...
 
-<!-- TODO: remaining figures to consider
--   some example temperature maps plus chopsticks
--   some example O2 maps plus chopsticks
+
+
+<!-- TODO:  Species of interest...
+
+redbanded - pretty normal response to temp and DO (sig -ve for adults only) 
+        widow rockfish  - strong interactions
+canary - not interaction, -ve temp none for DO
+shortspine thornyhead - both temp (increasing good) and DO (increasing good)
+
+
+dogfish - increasing DO and warming both bad
+pacific cod - 
+English - warming neutral when cool, bad when warm
+Dover - warming good when it's cool, neutral when warm  
+(arrowtooth shows similar pattern but likely influenced strongly by fishing... could include for that reason though?)
+
+sablefish - warming good, increasing DO not
+
 -->
 
 # Discussion
@@ -242,7 +263,7 @@ Big difference whether temp velocity or temp trend are the predictor...
 <!-- TODO: could include velocity worm plots too: include_graphics(here("ms", "figs", "worm-plot-both.pdf")) -->
 
 
-```{r climate-maps, fig.cap="Maps of predicted trends (top panels) and velocities (bottom panels) of change for bottom temperature and dissolved oxygen during the trawl surveys conducted between 2008 to 2018. Values are estimated from a spatiotemporal models of CTD sensor data collected during late spring/early summer groundfish trawl surveys.", out.width="5in"}
+```{r climate-maps, fig.cap="Maps of predicted trends (top panels) and velocities (bottom panels) of change for bottom temperature and dissolved oxygen during the trawl surveys conducted between 2008 to 2018. Values are estimated from a spatiotemporal models of CTD sensor data collected during late spring/early summer groundfish trawl surveys. Bathymetry lines at every 100 m are overlaid in shades of grey that increase with depth.", out.width="5in"}
 include_graphics(here("ms", "figs", "climate-maps-updated.pdf"))
 ```
 
@@ -254,29 +275,9 @@ include_graphics(here("ms", "figs", "climate-maps-updated.pdf"))
 include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
 ```
 
-\clearpage
-
-<!-- TODO: Species of interest...
-
-redbanded - pretty normal response to temp and DO (sig -ve for adults only) 
-        widow rockfish  - strong interactions
-canary - not interaction, -ve temp none for DO
-shortspine thornyhead - both temp (increasing good) and DO (increasing good)
-
-
-dogfish - increasing DO and warming both bad
-pacific cod - 
-English - warming neutral when cool, bad when warm
-Dover - warming good when it's cool, neutral when warm  
-(arrowtooth shows similar pattern but likely influenced strongly by fishing... could include for that reason though?)
-
-sablefish - warming good, increasing DO not
-
--->
-
 \begin{landscape}
 
-```{r temp-chops, fig.cap="Temperature ...", out.width="10in"}
+```{r temp-chops, fig.cap="Maps of biotic (top) and temperature (bottom) trends underlying the interactions (middle) where y-axis is predicted biotic trend for a given standardized change in bottom temperature (y-axis) for each . ", out.width="10in"}
 include_graphics(here("ms", "figs", "temp-chops.pdf"))
 ```
 
@@ -376,7 +377,7 @@ include_graphics(here("ms", "figs", "supp-slope-scatterplots.pdf"))
 \end{landscape}
 
 ```{r supp-slope-by-depth, fig.cap="Shape of relationship between estimated mean dissolved oxygen and mean depth of each 4x4 km grid cell (pattern is vary similar for temperature so not illustrated) for comparison with slopes for the environmental extremes experienced at the deeper depths showing expected tendancy towards increasing variation in strength of responses amongst species with deeper mean depth of occurrence. Outliers amongst immatures are Widow Rockfish (both DO and temperature) and Bocaccio (temperature).", out.width="4in"}
-include_graphics(here("ms", "figs", "supp-slope-by-depth.pdf"))
+include_graphics(here("ms", "figs", "supp-slope-by-depth.png"))
 ```
 
 \clearpage
