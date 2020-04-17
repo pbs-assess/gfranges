@@ -4,12 +4,16 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Pacific Ocean Perch" 
+    # species: "Pacific Ocean Perch" 
+    # species: "North Pacific Spiny Dogfish"
+    species: "Bocaccio"
     #species: "Redbanded Rockfish"
     region: "All synoptic surveys"
-    start_year: 2008
+    start_year: 2002
     bind_predictions: FALSE
-    covs: "-trawled-ssid-reml"
+    # covs: "-trawled-ssid-reml"
+    covs: "-tv-depth-only"
+    
     #covs: "-log-both-noAR1" #"-trawled-ssid" # covariate string used to name model rds 
 ---
 
