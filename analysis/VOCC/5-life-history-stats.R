@@ -145,7 +145,6 @@ species <- c(
   "Yelloweye Rockfish", 
   "Longspine Thornyhead",
   "Shortspine Thornyhead",
-
   "Pacific Halibut",
   "Arrowtooth Flounder",
   "Butter Sole",
@@ -214,6 +213,12 @@ life_history <- purrr::map_dfr(species, function(x) {
   small <- rbind(imm_m, imm_f)
   large_threshold <- NA
   small_threshold <- NA
+  mat_age <- mean(large$age, na.rm = TRUE)
+  imm_age <- mean(small$age, na.rm = TRUE)
+  age_mat <- round(quantile(small$age, 0.95, na.rm = TRUE))
+  age_count <- sum(!is.na(large$age))
+  age_count_imm <- sum(!is.na(small$age))
+  # browser()
 #  })
     
   } else {
@@ -224,6 +229,11 @@ life_history <- purrr::map_dfr(species, function(x) {
   small_threshold <- quantile(fish$length, 0.10, na.rm = TRUE)
   large <- filter(fish, length > large_threshold)
   small <- filter(fish, length < small_threshold)
+  mat_age <- NA
+  imm_age <- NA
+  age_mat <- NA
+  age_count <- NA
+  age_count_imm <- NA
   }
   
   # ## FOR EXPLORING SPECIAL CASES
@@ -241,7 +251,7 @@ life_history <- purrr::map_dfr(species, function(x) {
   # 
   large_depth <- mean(large$depth, na.rm = TRUE)
   small_depth <- mean(small$depth, na.rm = TRUE)
-  
+ 
   prop_pos <- NA
   try({survey_sets <- readRDS(paste0("raw/event-data-", spp, ""))
   positive_sets <- filter(survey_sets, density_kgpm2 != 0)
@@ -261,6 +271,11 @@ life_history <- purrr::map_dfr(species, function(x) {
     depth = round(large_depth),
     depth_imm = round(small_depth),
     depth_diff = round(small_depth - large_depth),
+    age_count = age_count, 
+    age_count_imm = age_count_imm,
+    age_mean = round(mat_age),
+    age_imm = round(imm_age),
+    age_mat = round(age_mat),
     age_max = round(quantile(fish$age, 0.999999, na.rm = TRUE)),
     length_max = max(fish$length, na.rm = TRUE),
     length_99th = round(quantile(fish$length, 0.9999, na.rm = TRUE)),
@@ -278,6 +293,7 @@ life_history <- purrr::map_dfr(species, function(x) {
 })
 
 View(life_history)
+
 life_history$group[is.na(life_history$group)] <- "OTHER"
 life_history$group[life_history$species=="Spotted Ratfish"] <- "RATFISH"
 life_history$group[life_history$species=="Brown Cat Shark"] <- "SHARK"
@@ -296,7 +312,10 @@ life_history$group[life_history$species=="Aleutian Skate"] <- "SKATE"
 
 life_history <- life_history %>% mutate (species_common_name = tolower(species))
 
-taxonomic_info <- gfdata::get_species() %>% select(species_common_name, species_science_name, parent_taxonomic_unit) %>% unique() %>% 	
+# spplist <- gfdata::get_species()
+spplist <- readRDS("data/allspp.rds")
+
+taxonomic_info <- spplist %>% select(species_common_name, species_science_name, parent_taxonomic_unit) %>% unique() %>% 	
   filter( species_science_name != "ophiodontinae")
 
 life_history <- inner_join(life_history, taxonomic_info) 
