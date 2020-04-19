@@ -217,7 +217,7 @@ We model both biomass and climate as either velocities or as raw trends<!-- TODO
 All covariates were scaled to their standard deviations.
 Covariates capturing cell means were also centered <!-- If fishing included: (except fishing effort---so that estimates can be interpreted as in the absence of fishing)-->, but change variables were kept uncentred because an intercept of 0 change is more intuitive to interpret.
 Models exploring change as simple trends use Gaussian distributions, while velocities are heavy-tailed and therefore modeled using a student-t (degrees of freedom fixed at 7). Trend models converged with 500 knots and both temperature and DO, while velocity models would only converge with one environment variable at a time and 200 knots. <!-- TODO: make sure knots are explained somewhere... -->
-In addition to checking the spatial distribution of model residuals, we simulated fake biomass trends for each species (using variance and spatial correlation parameters unique to each species) and reran each model 3 times <!-- TODO: simulated null models 10 times? --> and compared the distribution of effect sizes and number of sig effects in our simulated null models with the actual estimates.
+In addition to checking the spatial distribution of model residuals, we simulated fake biomass trends for each species (using variance and spatial correlation parameters unique to each species) and reran each model 3 times <!-- TODO: simulate null model 10 times? --> and compared the distribution of effect sizes and number of sig effects in our simulated null models with the actual estimates.
 
 In order to better understand the extent to which the temporal and spatial scales considered are appropriate for different species within this groundfish community, we also assess the concordance between the life histories and apparent sensitivities across species and maturity classes.
 
@@ -274,19 +274,13 @@ include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
 
 \begin{landscape}
 
-```{r temp-chops, fig.cap="Maps of biotic (top) and temperature (bottom) trends underlying the interactions (middle) where y-axis is predicted biotic trend for a given standardized change in bottom temperature (y-axis) for each . ", out.width="10in"}
-include_graphics(here("ms", "figs", "temp-chops.pdf"))
+```{r species-map-chop-panel, fig.cap="Maps of biotic (top), temperature (middle) and DO (bottom) trends underlying interaction plots (sandwiched between maps) of predicted biotic trend (y-xis) for each standard deviation in change in seafloor temperature and DO (x-axis) for sample species representing a range of taxonomic groups and response patterns.", out.width="9in"}
+include_graphics(here("ms", "figs", "species-map-chop-panel.png"))
 ```
 
-\end{landscape}
+\clearpage
 
-```{r do-chops, fig.cap="Dissolved oxygen ...", out.width="6in"}
-include_graphics(here("ms", "figs", "do-chops.pdf"))
-```
-
-\begin{landscape}
-
-```{r coef-scatterplots, fig.cap="Main effect coefficients for relationship between biotic trends and changes in climate for species with different life history strategies. Mean age and depth are calculated across all sampled individuals of each maturity class (as defined by the length at 50 percent maturity threshold) within a species. Growth rate is estimated as the length at maturity for females divide by the 0.95 quantile of ages recorded for immatures of each species.", out.width="9in"}
+```{r coef-scatterplots, fig.cap="Main effect coefficients for relationship between biotic trends and changes in climate for species with different life history strategies. Mean age and depth are calculated across all sampled individuals of each maturity class (as defined by the length at 50 percent maturity threshold) within a species. Growth rate is estimated as the length at maturity for females divide by the 0.95 quantile of ages recorded for immatures of each species.", out.width="8in"}
 include_graphics(here("ms", "figs", "coef-scatterplots.pdf"))
 ```
 

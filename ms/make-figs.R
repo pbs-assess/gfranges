@@ -309,25 +309,36 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
 }
 
 
+species_panels ("mature North Pacific Spiny Dogfish", model, "temp")
+species_panels ("mature Sablefish", model, "temp", alpha_range = c(0.25,0.9))
+species_panels ("mature Pacific Cod", model, "temp", alpha_range = c(0.25,0.9))
+
 species_panels ("mature Widow Rockfish", model, "temp")
-species_panels ("mature Widow Rockfish", model, "DO")
+species_panels ("mature Bocaccio", model, "temp") 
+species_panels ("mature Canary Rockfish", model, "temp", alpha_range = c(0.25,0.9))
+species_panels ("mature Redbanded Rockfish", model, "temp")
+species_panels ("mature Shortspine Thornyhead", model, "temp")
 
-A <- species_panels ("mature Canary Rockfish", model, "temp", temp_slopes, alpha_range = c(0.25,0.9))
-B <- species_panels ("mature Redbanded Rockfish", model, "temp")
-C <- species_panels ("mature Shortspine Thornyhead", model, "temp")
+species_panels ("mature English Sole", model, "temp")
+# species_panels ("mature Dover Sole", model, "temp")
+species_panels ("mature Flathead Sole", model, "temp")
+species_panels ("mature Arrowtooth Flounder", model, "temp")
 
-D <- species_panels ("mature English Sole", model, "temp")
-# E <- species_panels ("mature Dover Sole", model, "temp")
-E <- species_panels ("mature Flathead Sole", model, "temp")
-F <- species_panels ("mature Arrowtooth Flounder", model, "temp")
+species_panels ("mature North Pacific Spiny Dogfish", model, "DO")
 species_panels ("mature Sablefish", model, "DO")
+species_panels ("mature Pacific Cod", model, "DO")
+
+species_panels ("mature Canary Rockfish", model, "DO", alpha_range = c(0.25,0.9))
+species_panels ("mature Yelloweye Rockfish", model, "DO", alpha_range = c(0.25,0.9))
+species_panels ("mature Bocaccio", model, "DO", alpha_range = c(0.25,0.9))
+species_panels ("mature Redbanded Rockfish", model, "DO")
+species_panels ("mature Widow Rockfish", model, "DO")
 species_panels ("mature Shortspine Thornyhead", model, "DO")
-I <- species_panels ("mature North Pacific Spiny Dogfish", model, "DO")
-J <- species_panels ("mature Pacific Halibut", model, "DO")
-K <- species_panels ("mature Arrowtooth Flounder", model, "DO")
-L <- species_panels ("mature Yelloweye Rockfish", model, "DO", alpha_range = c(0.25,0.9))
-M <- species_panels ("mature Bocaccio", model, "DO", alpha_range = c(0.25,0.9))
-N <- species_panels ("mature Redbanded Rockfish", model, "DO")
+
+species_panels ("mature Pacific Halibut", model, "DO")
+species_panels ("mature English Sole", model, "DO")
+species_panels ("mature Flathead Sole", model, "DO")
+species_panels ("mature Arrowtooth Flounder", model, "DO")
 
 
 
