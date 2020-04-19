@@ -168,7 +168,7 @@ We also tried including the proportion of muddy sediment, and proportion of sedi
 Certainly more spatially precise estimates would be possible with refined substrate variables, but likely irrelevant to this analysis given the resolution and uncertainty in our climate variables.
 Furthermore, the spatial random effects can account for spatial factors that are constant across time, like substrate type, while spatiotemporal random effects account for factors that vary from year to year spatially such as bottom temperature, water circulation patterns, species interactions, and species movement.
 
-<!-- TODO: MODEL VALIDATION -->
+TODO: DESCRIBE MODEL VALIDATION FOR EACH SPECIES AND CLIMATE MODEL
 
 ## Estimate climate velocities
 
@@ -217,13 +217,25 @@ We model both biomass and climate as either velocities or as raw trends<!-- TODO
 All covariates were scaled to their standard deviations.
 Covariates capturing cell means were also centered <!-- If fishing included: (except fishing effort---so that estimates can be interpreted as in the absence of fishing)-->, but change variables were kept uncentred because an intercept of 0 change is more intuitive to interpret.
 Models exploring change as simple trends use Gaussian distributions, while velocities are heavy-tailed and therefore modeled using a student-t (degrees of freedom fixed at 7). Trend models converged with 500 knots and both temperature and DO, while velocity models would only converge with one environment variable at a time and 200 knots. <!-- TODO: make sure knots are explained somewhere... -->
-In addition to checking the spatial distribution of model residuals, we simulated fake biomass trends for each species (using variance and spatial correlation parameters unique to each species) and reran each model 3 times <!-- TODO: simulate null model 10 times? --> and compared the distribution of effect sizes and number of sig effects in our simulated null models with the actual estimates.
+In addition to checking the spatial distribution of model residuals, we simulated fake biomass trends for each species (using variance and spatial correlation parameters unique to each species) and reran each model 3 times <!-- TODO: simulate null model 10 times? --> and compared the distribution of effect sizes and number of sig effects in our simulated null models with the actual estimates. These simulated biomass trends were divided by the real spatial gradients in biomass in order to simulate biotic velocities. 
 
 In order to better understand the extent to which the temporal and spatial scales considered are appropriate for different species within this groundfish community, we also assess the concordance between the life histories and apparent sensitivities across species and maturity classes.
 
 # Results
 
-Our models suggest that from 2008 to 2018, survey season seafloor temperature increased across almost the entirety of Canada's Pacific shelf region (95% interquartile range of `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[2]], digits = 2)`), with warming tending to be most pronounced in shallower areas (Fig. \@ref(fig:climate-maps)<!-- TODO: should letters be added and included here? eg. "C" -->). In contrast, change in seafloor DO was much more variable in the direction of change (95% interquartile range of `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[2]], digits = 2)`), with both the greatest increases also occurring in the shallowest areas and the greatest decreases occuring across a wide range of depths <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)D) -->. When these local changes are placed in there geographic context in the form of a gradient-based velocity estimate, the majority of the highest velocities occur in the bottom of troughs in Queen Charlotte Sound and Dixon Entrance <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)E & F) -->.  
+Our models suggest that from 2008 to 2018, survey season seafloor temperature increased across almost the entirety of Canada's Pacific shelf region (95% interquartile range of `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[2]], digits = 2)`), with warming tending to be most pronounced in shallower areas (Fig. \@ref(fig:climate-maps)<!-- TODO: should letters be added and included here? eg. "C" -->). 
+In contrast, change in seafloor DO was much more variable in the direction of change (95% interquartile range of `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[2]], digits = 2)`), with both the greatest increases also occurring in the shallowest areas and the greatest decreases occuring across a wide range of depths <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)D) -->. 
+When these local changes are placed in their geographic context in the form of a gradient-based velocity estimate, the majority of the highest velocities occur in the bottom of troughs in Queen Charlotte Sound and Dixon Entrance <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)E & F) -->. 
+
+<!-- TODO: Figure out what to say about velocity "NULLs", if anything...
+
+This spatial pattern largely remains for simulated biotic velocities, which results in models of simulated biotic velocity that have a similar number of significant effects as the model based on real biomass changes. 
+These models often tend to show more significant effects for flatfish species, possibly due to distributions that encompass a greater proportion of flatter spatial gradients for both climate and biomass (TODO see Supplementary...). 
+Both climate variables and species distributions were modeled in response to seafloor depth ...
+
+-->
+
+
 
 <!-- TODO:  Species of interest...
 
@@ -266,10 +278,13 @@ include_graphics(here("ms", "figs", "climate-maps-updated.pdf"))
 
 \clearpage
 
-<!-- TODO: can a % symbol be used in fig caption? -->
+<!-- TODO: can I use a % symbol in fig captions? -->
 
-```{r worm-plots, fig.cap="Slopes of relationships between climate trends and percent change in biomasss for groundfish species. Open circles indicate patterns for immatures, while closed circles represent individuals large enough to have a 5 percent chance of being reproductively mature or belonging to species for which maturity data was not available. Black indicates overall slope where the estimated interaction with mean climate condition overlapped zero. Colours indicate slopes estimated for the low (0.025) and high (0.975) quantiles of mean climate conditions (only included when the confidence intervals on the slopes did not overlap).", out.width="6in"}
-include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
+```{r worm-plots, fig.cap="Slopes of relationships between climate trends and percent change in biomasss (A, controling for effect of the other climate variable) or biotic and climate velocities (B, without controling for the effect of the other climate variable) for groundfish species. Open circles indicate patterns for immatures, while closed circles represent individuals large enough to have a 5 percent chance of being reproductively mature or belonging to species for which maturity data was not available. Black indicates overall slope where the estimated interaction with mean climate condition overlapped zero. Colours indicate slopes estimated for the low (0.025) and high (0.975) quantiles of mean climate conditions (only included when the confidence intervals on the slopes did not overlap).", out.width="6in"}
+# include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
+# TODO: decide if velocity slopes belong here
+# TODO: should species be in same order on both trend and velocity panels?
+include_graphics(here("ms", "figs", "worm-plot-both.pdf")) 
 ```
 
 \begin{landscape}

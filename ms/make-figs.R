@@ -189,22 +189,47 @@ do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish C
 # ggsave(here::here("ms", "figs", "worm-plot-vel.pdf"), width = 8, height = 6)
 
 #### IF WE WANT PLOT OF BOTH TREND AND VELOCITY SLOPES TOGETHER
+p_temp_worm <- plot_chopstick_slopes(temp_slopes,
+  type = "temp",
+  legend_position = c(.25, .95)
+) + theme(plot.margin = margin(0, 0, 0.2, 0.2, "cm"),
+  axis.title.x = element_blank()) +
+  ggtitle("temperature") + 
+  xlab("% biomass change for a SD of climate change")
+p_do_worm <- plot_chopstick_slopes(do_slopes,
+  type = "DO",
+  legend_position = c(.25, .95)
+) + coord_flip(ylim = c(-3.1, 1.4)) +
+  ggtitle("DO") +
+  # ylab("slopes")
+  theme(plot.margin = margin(0, 0, 0.2, 0, "cm"),
+    axis.title.x = element_blank())
+
 p_temp_worm3 <- plot_chopstick_slopes(temp_vel_slopes,
   type = "temp",
   legend_position = c(.25, .95)
 ) + coord_flip(ylim = c(-14, 7.95)) +
-  theme(axis.title.x = element_blank())
+  theme(plot.margin = margin(0, 0, 0, 0.2, "cm"),
+    axis.title.x = element_blank(),
+    legend.position = "none") +
+  xlab("biotic velocity change for a SD increase in climate velocity")
 p_do_worm3 <- plot_chopstick_slopes(do_vel_slopes,
   type = "DO",
   legend_position = c(.25, .95)
 ) + coord_flip(ylim = c(-5.75, 3.25)) +
-  theme(axis.title.x = element_blank())
+  theme(plot.margin = margin(0, 0, 0, 0, "cm"),
+    axis.title.x = element_blank(),
+    legend.position = "none")
 
-((p_temp_worm | p_do_worm) / grid::textGrob("slope of biomass change with SD/decade of change in climate", just = 0.31) +
-  plot_layout(height = c(10, 0.25))) /
-  ((p_temp_worm3 | p_do_worm3) / grid::textGrob("slope of biomass velocity relative to a SD of climate velocity", just = 0.31) + plot_layout(height = c(10, 0.25))) +
-  plot_layout(height = c(5, 0.1, 5, 0.1))
-ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 12)
+(p_temp_worm | p_do_worm)/(p_temp_worm3 | p_do_worm3) + plot_layout(height = c(1, 1))
+
+# # with slope descriptions on bottom instead of left side
+# ((p_temp_worm | p_do_worm) / grid::textGrob("", just = 0.31) +
+#   plot_layout(height = c(10, 0.25))) /
+#   ((p_temp_worm3 | p_do_worm3) / grid::textGrob("", just = 0.31) + plot_layout(height = c(10, 0.25))) +
+#   plot_layout(height = c(5, 0.1, 5, 0.1))
+
+ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 
 
 #### EXAMPLE SPECIES CHOPSTICK PLOTS AND MAPS FROM TREND MODEL
