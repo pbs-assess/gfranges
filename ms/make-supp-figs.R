@@ -5,7 +5,8 @@
 # library(tidyverse)
 # library(patchwork)
 # library(gfranges)
-# # load appropriate final models
+#
+#### load appropriate final models and other data
 # model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
 # model_vel_t <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/vel-all-95-all-do-04-03-vel-temp-1-200-temp.rds")
 # model_vel_d <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/vel-all-95-all-do-04-03-vel-do-1-200-do.rds")
@@ -21,8 +22,138 @@
 # mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
 # stats <- rbind(mat, imm)
 # stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
+#
+# alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
 
-#### ALL TREND CHOPS
+#### Gradient maps ####
+grad_do <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "DO_grad", fill_label = "ml/L per km",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  axis_lables = F,
+  transform_col = fourth_root_power,
+  legend_position = c(0.15, 0.25)
+) + ggtitle("dissolved oxygen") + 
+  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+  theme(
+    plot.margin = margin(0, 0, 0.2, 0, "cm"),
+    axis.text = element_blank(), axis.ticks = element_blank(),
+    axis.title.x = element_blank(), axis.title.y = element_blank()
+  )
+
+grad_temp <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "temp_grad", fill_label = "ºC per km",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  viridis_option = "C",
+  axis_lables = T,
+  transform_col = fourth_root_power,
+  legend_position = c(0.15, 0.25)
+) + ggtitle("temperature") +
+  ylab("climate gradient") + 
+  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+  theme(
+    plot.margin = margin(0, 0, 0.2, 0, "cm"),
+    axis.text = element_blank(), axis.ticks = element_blank(),
+    axis.title.x = element_blank()
+  )
+
+grad_rockfish <- plot_vocc(filter(model$data, 
+  # species == "mature Widow Rockfish"),
+  # species == "mature Canary Rockfish"),
+  species == "mature Shortspine Thornyhead"),
+  vec_aes = NULL,
+  fill_col = "biotic_grad", fill_label = "% biomass \nper km",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  viridis_option = "B",
+  axis_lables = T,
+  transform_col = fourth_root_power,
+  legend_position = c(0.15, 0.25)
+) + 
+  # ggtitle("Widow Rockfish") +
+  # ggtitle("Canary Rockfish") +
+  ggtitle("Shortspine Thornyhead") +
+  ylab("biotic gradient") + 
+  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+  theme(
+    plot.margin = margin(0, 0, 0, 0, "cm"),
+    axis.text = element_blank(), axis.ticks = element_blank(),
+    axis.title.x = element_blank()
+  )
+
+grad_flatfish <- plot_vocc(filter(model$data, 
+      # species == "mature Flathead Sole"),
+      species == "mature Dover Sole"),
+  vec_aes = NULL,
+  fill_col = "biotic_grad", fill_label = "% biomass \nper km",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  viridis_option = "B",
+  axis_lables = T,
+  transform_col = fourth_root_power,
+  legend_position = c(0.15, 0.25)
+) + 
+  # ggtitle("Flathead Sole") +
+  ggtitle("Dover Sole") +
+  # # ylab("gradient") + 
+  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+  theme(
+    plot.margin = margin(0, 0, 0, 0, "cm"),
+    axis.text = element_blank(), axis.ticks = element_blank(),
+    axis.title.x = element_blank(), axis.title.y = element_blank()
+  )
+# grad_sable <- plot_vocc(filter(model$data, 
+#   species == "mature Sablefish"),
+#   vec_aes = NULL,
+#   fill_col = "biotic_grad", fill_label = "% biomass \nper km",
+#   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+#   viridis_option = "B",
+#   axis_lables = T,
+#   transform_col = fourth_root_power,
+#   legend_position = c(0.15, 0.25)
+# ) + 
+#   ggtitle("Sablefish") +
+#   # # ylab("gradient") + 
+#   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+#   theme(
+#     plot.margin = margin(0, 0, 0, 0, "cm"),
+#     axis.text = element_blank(), axis.ticks = element_blank(),
+#     axis.title.x = element_blank(), axis.title.y = element_blank()
+#   )
+grad_temp + grad_do +  grad_rockfish + grad_flatfish + plot_layout(ncol = 2)
+ggsave(here::here("ms", "figs", "supp-gradient-maps.png"), width = 6, height = 9)
+
+
+
+#### Scatterplots of coorelation between biotic gradient and temperature gradient ####
+
+ggplot(filter(model$data, age == "mature"), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) + 
+  geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") + 
+  # facet_grid(species~rockfish) +
+  facet_wrap(~forcats::fct_reorder(species_only, genus_id)) +
+  # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) + 
+  # scale_x_continuous(trans = fourth_root_power) + 
+  # scale_y_continuous(trans = fourth_root_power) +
+  gfplot::theme_pbs() 
+
+# ggplot(filter(model$data, age == "mature" & genus_id == 7), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) + 
+#   geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") + 
+#   # facet_grid(species~rockfish) +
+#   facet_wrap(~forcats::fct_reorder(species_only, genus_id)) +
+#   # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) + 
+#   # scale_x_continuous(trans = fourth_root_power) + 
+#   # scale_y_continuous(trans = fourth_root_power) +
+#   gfplot::theme_pbs() 
+# 
+# ggplot(filter(model$data, age == "mature" & genus_id == 5), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) + 
+#   geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") + 
+#   # facet_grid(species~rockfish) +
+#   facet_wrap(~species_only) +
+#   # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) + 
+#   # scale_x_continuous(trans = fourth_root_power) + 
+#   # scale_y_continuous(trans = fourth_root_power) +
+#   gfplot::theme_pbs() 
+
+#### ALL TREND CHOPS ####
 temp_slopes <- chopstick_slopes(model,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
@@ -66,7 +197,8 @@ cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops,
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 12)
 
 
-#### ALL VELOCITY CHOPS
+
+#### ALL VELOCITY CHOPS ####
 temp_vel_slopes <- chopstick_slopes(model_vel_t,
   x_variable = "squashed_temp_vel_scaled",
   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp"
@@ -117,7 +249,8 @@ cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes,
 ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height = 12)
 
 
-#### COEFFICIENT SCATTERPLOTS
+
+#### COEFFICIENT SCATTERPLOTS ####
 ## If make-figs not run first...
 # model2 <- add_colours(model$coefs, species_data = stats)
 # model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"
@@ -129,7 +262,8 @@ ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height =
 # trendeffects <- trendeffects %>% mutate(coefficient = forcats::fct_reorder(coefficient, Estimate, .desc=F))
 
 
-#### MEAN AGE
+
+#### MEAN AGE ####
 #### when mean age is less, than negative temperature effects are more likely?
 p_age_alone <- coef_scatterplot(
   trendeffects,
@@ -185,7 +319,8 @@ slope_age <- slope_scatterplot(all_slopes, "age_mean",
   )
 
 
-### investigate immature growth rate
+
+#### Investigate immature growth rate ####
 slope_growth <- slope_scatterplot(all_slopes, "growth_rate",
   col_group = "age", point_size = 3
 ) +
@@ -211,7 +346,8 @@ cowplot::plot_grid(slope_age, slope_growth, ncol = 2, rel_widths = c(1, 1))
 ggsave(here::here("ms", "figs", "supp-slope-scatterplots.pdf"), width = 8, height = 4)
 
 
-#### VARIABILITY IN COEFS INCREASES WITH DEPTH
+
+#### VARIABILITY IN COEFS INCREASES WITH DEPTH ####
 do_data <- readRDS(paste0("analysis/VOCC/data/predicted-DO-new.rds")) %>%
   select(X, Y, year, depth, temp, do_est)
 do_depth <- ggplot(do_data, aes(depth, do_est)) +
@@ -256,4 +392,5 @@ temp_high <- slope_scatterplot(
 
 do_depth + do_low + temp_high + plot_layout(ncol = 1, heights = c(1, 1, 1))
 ggsave(here::here("ms", "figs", "supp-slope-by-depth.png"), width = 4.5, height = 7)
+
 
