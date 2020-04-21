@@ -35,7 +35,7 @@
 #   transform(coefficient = factor(coefficient, levels = c("temp_trend_scaled","DO_trend_scaled"), labels = c("temperature", "DO")))
 # trendeffects <- trendeffects %>% mutate(coefficient = forcats::fct_reorder(coefficient, Estimate, .desc=F))
 
-#### EXPLORE GRADIENTS
+#### EXPLORE GRADIENTS ####
 ### Gradient maps ####
 grad_do <- plot_vocc(alldata,
   vec_aes = NULL,
@@ -164,7 +164,6 @@ ggplot(filter(model$data, age == "mature"), aes(temp_grad, biotic_grad)) + geom_
 #   # scale_y_continuous(trans = fourth_root_power) +
 #   gfplot::theme_pbs() 
 
-
 #### GLOBAL COEFS ####
 
 coef_names <- shortener(unique(model$coefs$coefficient))
@@ -215,46 +214,50 @@ filter(overall, coef_names != "intercept") %>%
   gfplot::theme_pbs()
 
 # #### add species level coefs
-# trendcoefs <-add_colours(model$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient, 
-#   levels = c("(Intercept)", "temp_trend_scaled", "mean_temp_scaled", "DO_trend_scaled", "mean_DO_scaled", 
-#     "log_biomass_scaled", "temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled" ), 
-#   labels = c("intercept", "change in T", "mean T", "change in DO", "mean DO", 
-#     "biomass", "interaction (T)", "interaction (DO)")))
-# 
-# velcoefs1 <- add_colours(model_vel_t$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient, 
-#   levels = c("(Intercept)", "squashed_temp_vel_scaled", "mean_temp_scaled", 
-#     "log_biomass_scaled", "squashed_temp_vel_scaled:mean_temp_scaled"), 
-#   labels = c("intercept", "change in T", "mean T", 
-#     "biomass", "interaction (T)")))
-# 
-# velcoefs2 <- add_colours(model_vel_d$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient, 
-#   levels = c("(Intercept)", "squashed_DO_vel_scaled", "mean_DO_scaled", 
-#     "log_biomass_scaled", "squashed_DO_vel_scaled:mean_DO_scaled"), 
-#   labels = c("intercept", "change in DO", "mean DO", 
-#     "biomass", "interaction (DO)")))
-# 
-# trendcoefs$model <- "trend"
-# velcoefs1$model <- "velocity (T only)"
-# velcoefs2$model <- "velocity (DO only)"
-# trendcoefs$model_type <- "trend"
-# velcoefs1$model_type <- "velocity"
-# velcoefs2$model_type <- "velocity"
-# 
-# allcoefs <- rbind.data.frame(trendcoefs, velcoefs1, velcoefs2)
-# head(allcoefs)
-# 
-# filter(overall, coef_names != "intercept") %>%
-#   # overall %>%
-#   ggplot(aes(coef_names, betas, colour = model)) + #forcats::fct_reorder(coef_names, )
-#   geom_point(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = model), alpha= 0.1, position = position_jitter(width = 0.15), inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
-#   geom_pointrange(aes(ymin = lowerCI, ymax = upperCI), size = 1, alpha = .9, shape = "|", position = position_jitter(width = 0.2)) + # dodge.width = 1.2) + 
-#   geom_hline(yintercept = 0, colour = "darkgray") +
-#   # scale_y_continuous(trans = fourth_root_power) +
-#   scale_colour_manual(values = c("#D53E4F", "#5E4FA2", "#3288BD")) +
-#   xlab("") +
-#   # facet_wrap(~model_type, scales = "free_y") +
-#   coord_flip(ylim = c(-10,10)) + #
-#   gfplot::theme_pbs()
+trendcoefs <-add_colours(model$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
+  levels = c("(Intercept)", "temp_trend_scaled", "mean_temp_scaled", "DO_trend_scaled", "mean_DO_scaled",
+    "log_biomass_scaled", "temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled" ),
+  labels = c("intercept", "change in T", "mean T", "change in DO", "mean DO",
+    "biomass", "interaction (T)", "interaction (DO)")))
+
+velcoefs1 <- add_colours(model_vel_t$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
+  levels = c("(Intercept)", "squashed_temp_vel_scaled", "mean_temp_scaled",
+    "log_biomass_scaled", "squashed_temp_vel_scaled:mean_temp_scaled"),
+  labels = c("intercept", "change in T", "mean T",
+    "biomass", "interaction (T)")))
+
+velcoefs2 <- add_colours(model_vel_d$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
+  levels = c("(Intercept)", "squashed_DO_vel_scaled", "mean_DO_scaled",
+    "log_biomass_scaled", "squashed_DO_vel_scaled:mean_DO_scaled"),
+  labels = c("intercept", "change in DO", "mean DO",
+    "biomass", "interaction (DO)")))
+
+trendcoefs$model <- "trend"
+velcoefs1$model <- "velocity (T only)"
+velcoefs2$model <- "velocity (DO only)"
+trendcoefs$model_type <- "trend"
+velcoefs1$model_type <- "velocity"
+velcoefs2$model_type <- "velocity"
+
+allcoefs <- rbind.data.frame(trendcoefs, velcoefs1, velcoefs2)
+head(allcoefs)
+
+filter(overall, coef_names != "intercept") %>%
+  # overall %>%
+  ggplot(aes(coef_names, betas)) + #forcats::fct_reorder(coef_names, ) #, colour = model
+  geom_point(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = age), alpha= 0.3, position = position_jitter(width = 0.15), inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
+  geom_boxplot(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = age), 
+    notch =T,
+    inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
+  geom_pointrange(aes(ymin = lowerCI, ymax = upperCI), size = 1, fatten = 3, alpha = .9) + #position = position_jitter(width = 0.2), shape = "|"
+  geom_hline(yintercept = 0, colour = "darkgray") +
+  scale_colour_viridis_d(begin = .8, end = .2) +
+  # scale_y_continuous(trans = fourth_root_power) +
+  # scale_colour_manual(values = c("#D53E4F", "#5E4FA2", "#3288BD")) + #
+  xlab("") +
+  facet_wrap(~model_type) +
+  coord_flip(ylim = c(-2,2)) + # ylim = c(-10,10)
+  gfplot::theme_pbs()
 
 ### USE DOTWHISKER
 library(dotwhisker)
@@ -268,8 +271,7 @@ dwplot(overall2) +
   gfplot::theme_pbs()
 ggsave(here::here("ms", "figs", "supp-global-coefs.pdf"), width = 4, height = 2.5)
 
-
-#### ALL CHOPSTICKS AND SLOPE WORM PLOTS
+#### ALL CHOPSTICKS AND SLOPE WORM PLOTS ####
 ### ALL TREND CHOPS ####
 temp_slopes <- chopstick_slopes(model,
   x_variable = "temp_trend_scaled",
@@ -311,7 +313,7 @@ p_do_all_slopes <- plot_chopstick_slopes(do_slopes,
   ylab("slopes")
 
 cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops, ncol = 2, rel_widths = c(1, 2.5))
-ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 12)
+ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 11)
 
 
 
@@ -363,11 +365,11 @@ p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
 
 
 cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes, p_do_vel_chops, ncol = 2, rel_widths = c(1, 2.5))
-ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height = 12)
+ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height = 11)
 
 
 
-#### SLOPE SCATTERPLOTS 
+#### SLOPE SCATTERPLOTS #### 
 ### investigate interaction slopes by mean age ####
 # temp_slopes <- left_join(temp_slopes, stats)
 # do_slopes <- left_join(do_slopes, stats)
@@ -397,7 +399,7 @@ slope_age <- slope_scatterplot(all_slopes, "age_mean",
     # axis.ticks = element_blank()
   )
 
-### Investigate immature growth rate ####
+### investigate immature growth rate ####
 slope_growth <- slope_scatterplot(all_slopes, "growth_rate",
   col_group = "age", point_size = 3
 ) +
@@ -423,7 +425,7 @@ cowplot::plot_grid(slope_age, slope_growth, ncol = 2, rel_widths = c(1, 1))
 ggsave(here::here("ms", "figs", "supp-slope-scatterplots.pdf"), width = 8, height = 4)
 
 
-#### COEFFICIENT SCATTERPLOTS
+#### COEFFICIENT SCATTERPLOTS ####
 ### investigate mean age ####
 ## when mean age is less, than negative temperature effects are more likely?
 p_age_alone <- coef_scatterplot(
