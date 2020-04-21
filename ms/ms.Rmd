@@ -159,7 +159,8 @@ We model each species and maturity class separately because although these abund
 Because biomass densities contain both zeros and positive continuous values, we modeled the response with a Tweedie distribution and a log link (TODO: Anderson et al. in press, Tweedie 1984, Dunn and Smyth 2005).
 Each model included fixed-effects for year, year-specific quadratic effects of bottom depth, spatial random effects that represent an amalgamation of spatial processes not explicitly included in the model, spatiotemporal random effects that allow these spatial random effects to differ independently between years, and an observation error component.
 The spatial components were modeled as random fields, using a triangulated mesh with vertices at 400 knots to approximate a continuous spatial field (TODO: Rue et al. 2009, Lindgren et al. 2011).
-The inclusion of year as a factor centered each of the estimated spatiotemporal fields to have mean zero. Maximum likelihood estimation was conducted in R version 3.5.3 (TODO: R Core Team 2019) with the package sdmTMB (Anderson et al. In press, Anderson 2019) which interfaces automatic differentiation in Template Model Builder (TODO: Kristensen et al. 2016) with INLA (TODO: Rue et al. 2009).
+The inclusion of year as a factor centered each of the estimated spatiotemporal fields to have mean zero. 
+Maximum likelihood estimation was conducted in R version 3.5.3 (TODO: R Core Team 2019) with the package sdmTMB (Anderson et al. In press, Anderson 2019) which interfaces automatic differentiation in Template Model Builder (TODO: Kristensen et al. 2016) with INLA (TODO: Rue et al. 2009).
 
 We modeled the effects of depth and depth squared by first standardizing the log-transformed depth covariate by subtracting its mean and scaling it by its standard deviation.
 We then calculated 'depth squared' from this centred and scaled variable.
@@ -213,11 +214,14 @@ To explore the potential for change in climate to predict local percent changes 
 For each species, only the fewest cells that encompass 95% of total mean biomass were included.
 In all models mean biomass density was included as a covariate in order to reduce the influence of changes occurring only at either the highest or lowest densities for a particular species.
 We attempt to predict change in biomass of each species as a function of local climate change (just temperature, just DO, or both temperature and DO) and an interaction between the mean climate of each cell and its local change estimate.
-We model both biomass and climate as either velocities or as raw trends<!-- TODO: should (Fig. \@ref(fig:climate-maps)) be here?-->. In addition we attempt to assess the importance of the gradient component in velocity estimates by adding gradient to the model based on trends.
+We model both biomass and climate as either velocities or as raw trends<!-- TODO: should (Fig. \@ref(fig:climate-maps)) be here?-->. 
+In addition we attempt to assess the importance of the gradient component in velocity estimates by adding gradient to the model based on trends.
 All covariates were scaled to their standard deviations.
 Covariates capturing cell means were also centered <!-- If fishing included: (except fishing effort---so that estimates can be interpreted as in the absence of fishing)-->, but change variables were kept uncentred because an intercept of 0 change is more intuitive to interpret.
-Models exploring change as simple trends use Gaussian distributions, while velocities are heavy-tailed and therefore modeled using a student-t (degrees of freedom fixed at 7). Trend models converged with 500 knots and both temperature and DO, while velocity models would only converge with one environment variable at a time and 200 knots. <!-- TODO: make sure knots are explained somewhere... -->
-In addition to checking the spatial distribution of model residuals, we simulated fake biomass trends for each species (using variance and spatial correlation parameters unique to each species) and reran each model 3 times <!-- TODO: simulate null model 10 times? --> and compared the distribution of effect sizes and number of sig effects in our simulated null models with the actual estimates. These simulated biomass trends were divided by the real spatial gradients in biomass in order to simulate biotic velocities. 
+Models exploring change as simple trends use Gaussian distributions, while velocities are heavy-tailed and therefore modeled using a student-t (degrees of freedom fixed at 7). 
+Trend models converged with 500 knots and both temperature and DO, while velocity models would only converge with one environment variable at a time and 200 knots. <!-- TODO: make sure knots are explained somewhere... -->
+In addition to checking the spatial distribution of model residuals, we simulated fake biomass trends for each species (using variance and spatial correlation parameters unique to each species) and reran each model 3 times <!-- TODO: simulate null model 10 times? --> and compared the distribution of effect sizes and number of sig effects in our simulated null models with the actual estimates. 
+These simulated biomass trends were divided by the real spatial gradients in biomass in order to simulate biotic velocities. <!-- TODO: where to report on NULL results? -->
 
 In order to better understand the extent to which the temporal and spatial scales considered are appropriate for different species within this groundfish community, we also assess the concordance between the life histories and apparent sensitivities across species and maturity classes.
 
@@ -227,37 +231,29 @@ Our models suggest that from 2008 to 2018, survey season seafloor temperature in
 In contrast, change in seafloor DO was much more variable in the direction of change (95% interquartile range of `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[2]], digits = 2)`), with both the greatest increases also occurring in the shallowest areas and the greatest decreases occuring across a wide range of depths <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)D) -->. 
 When these local changes are placed in their geographic context in the form of a gradient-based velocity estimate, the majority of the highest velocities occur in the bottom of troughs in Queen Charlotte Sound and Dixon Entrance <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)E & F) -->. 
 Separate geostatistical models exploring either trend- or velocity-based indices of change resolved similar overall interactions for both temperature and DO (TODO: cite supplementary materials <!--\@ref(fig:global-coefs)--> and (Fig. \@ref(fig:worm-plots)) if both model types included), but the overall main effects of temperature change and mean DO did differ. 
-This difference is likely due to covariation between temperature and DO within our dataset <!-- TODO: run temp only trend model to check if this is true -->, which the trend model could control for, but the the velocity one could not. Despite this difference, the qualitative patterns for most species and maturity class tended to agree between model types (TODO: cite supplementary materials <!--\@ref(fig:trend-chopsticks), \@ref(fig:vel-chopsticks)-->); 
-therefore, we will focus on interpreting the results of trend-based model (Fig. \@ref(fig:worm-plots) <!-- TODO: add A, if both models are in this plot-->). 
-Across species, the most common patterns were for 1) the impact of warming on biomass change was more likely to be negative (or at least less positive) in locations with higher mean temperatures than in cooler locations, and while controling for the effect of temperature 2) the impact of increasing DO levels was negative in locations with lower mean DO levels than in locations with higher mean DO levels. 
+This difference is likely due to covariation between temperature and DO within our dataset <!-- TODO: run temp only trend model to check if this is true -->, which the trend model could control for, but the the velocity one could not. Despite this difference, the qualitative patterns for most species and maturity class tended to agree between model types (TODO: cite supplementary materials <!--\@ref(fig:trend-chopsticks), \@ref(fig:vel-chopsticks)-->); therefore, we will focus on interpreting the results of trend-based model (Fig. \@ref(fig:worm-plots) <!-- TODO: add A, if both models are in this plot-->). 
+Across species, the most common pattern was that 1) the impact of warming on biomass change was more negative (or at least less positive) in locations with higher mean temperatures than in cooler locations (eg. Widow Rockfish, mature Shortspine Thornyhead, and mature English and Flathead Sole), 2) the impact of increasing DO levels was more negative in locations with lower mean DO levels than in locations with higher mean DO levels (eg. Dogfish, mature Sablefish, Widow Rockfish, and English and Flathead Sole), and 3) overall immature abundances were more likely than mature abundances to show negative relationships (eg. Sablefish, Widow Rockfish, and Dover Sole (\@ref(fig:trend-chopsticks)). 
+<!-- TODO: checking this with model including age as fixed effect (mature biomass as the intercept)...--> 
+There appeared to be no strong patterns of similarity amoungst species belong to the same genus or family (tested as potential random effects, but not included in the final model) as illustrated by negative at high temperatures (Canary Rockfish and English Sole) or positive at low temperatures (eg. Widow Rockfish and Flathead Sole) impacts on biotic trends being exibited by members of both the largest families represented in our analysis Sebastidae (rockfish) and Pleuronectidae (righteye flounders; Fig. \@ref(fig:species-map-chop-panel)).   
 
 
 <!-- TODO: Figure out what to say about velocity "NULLs", if anything...
-
 This spatial pattern largely remains for simulated biotic velocities, which results in models of simulated biotic velocity that have a similar number of significant effects as the model based on real biomass changes. 
 These models often tend to show more significant effects for flatfish species, possibly due to distributions that encompass a greater proportion of flatter spatial gradients for both climate and biomass (TODO see Supplementary...). 
 Both climate variables and species distributions were modeled in response to seafloor depth ...
-
 -->
 
-
-
 <!-- TODO:  Species of interest...
-
 redbanded - pretty normal response to temp and DO (sig -ve for adults only) 
         widow rockfish  - strong interactions
 canary - not interaction, -ve temp none for DO
 shortspine thornyhead - both temp (increasing good) and DO (increasing good)
-
-
 dogfish - increasing DO and warming both bad
 pacific cod - 
 English - warming neutral when cool, bad when warm
 Dover - warming good when it's cool, neutral when warm  
 (arrowtooth shows similar pattern but likely influenced strongly by fishing... could include for that reason though?)
-
 sablefish - warming good, increasing DO not
-
 -->
 
 # Discussion
@@ -294,7 +290,7 @@ include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
 
 \begin{landscape}
 
-```{r species-map-chop-panel, fig.cap="Maps of biotic (top), temperature (middle) and DO (bottom) trends underlying interaction plots (sandwiched between maps) of predicted biotic trend (y-xis) for each standard deviation in change in seafloor temperature and DO (x-axis) for sample species representing a range of taxonomic groups and response patterns.", out.width="9in"}
+```{r species-map-chop-panel, fig.cap="Maps of biotic (top), temperature (middle) and DO (bottom) trends underlying interaction plots (sandwiched between maps) of predicted biotic trend (y-xis) for each standard deviation in change in seafloor temperature and DO (x-axis) for mature populations of sample species representing a range of taxonomic groups and response patterns.", out.width="9in"}
 include_graphics(here("ms", "figs", "species-map-chop-panel.png"))
 ```
 
@@ -368,19 +364,19 @@ Supplemental figures:
 -   plot vocc regression residuals against the main predictors... (and not in model and fitted vs. residuals plot; but don't necessarily include in paper)
 
 
-```{r global-coefs, fig.cap="Overall coefficient estimates from each model.", out.width="4in"}
+```{r global-coefs, fig.cap="Overall coefficient estimates from each model. The trend model included all terms, while the velocity models only include terms involving either temperature (T) variables or DO (disolved oxygen) variables, but controling for biomass (measured as estimated local mean log(biomass) across all years) in both cases. Interactions are betweeen the the mean value and change in the climate varible indicated.", out.width="4in"}
 include_graphics(here("ms", "figs", "supp-global-coefs.pdf"))
 ```
 
 \begin{landscape}
 
-```{r trend-chopsticks, fig.cap="Caption goes here", out.width="11in"}
+```{r trend-chopsticks, fig.cap="Predicted percent change in biomass based on interactions betweeen seafloor temperature trend and mean temperature or DO trend and mean DO levels, while controling for the other interaction and mean local log(biomass). Mature and immature estmated slopes are represented by closed/solid versus open/dashed dots and lines respectively. Colours represent the highest and lowest 95th quantiles for mean climate conditions.", out.width="7.5in"}
 include_graphics(here("ms", "figs", "supp-trend-chopsticks.pdf"))
 ```
 
 \clearpage
 
-```{r vel-chopsticks, fig.cap="Caption goes here", out.width="11in"}
+```{r vel-chopsticks, fig.cap="Predicted interactions from separate models predicting biotic velocity based on seafloor temperature velocities and the mean temperature, or seaflour DO velocity and mean DO levels, while only controling for mean local log(biomass) in both cases. Colours and symbols are the same as in the previous figure.", out.width="7.5in"}
 include_graphics(here("ms", "figs", "supp-vel-chopsticks.pdf"))
 ```
 
