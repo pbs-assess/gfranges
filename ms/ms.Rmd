@@ -226,6 +226,11 @@ In order to better understand the extent to which the temporal and spatial scale
 Our models suggest that from 2008 to 2018, survey season seafloor temperature increased across almost the entirety of Canada's Pacific shelf region (95% interquartile range of `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[2]], digits = 2)`), with warming tending to be most pronounced in shallower areas (Fig. \@ref(fig:climate-maps)<!-- TODO: should letters be added and included here? eg. "C" -->). 
 In contrast, change in seafloor DO was much more variable in the direction of change (95% interquartile range of `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[2]], digits = 2)`), with both the greatest increases also occurring in the shallowest areas and the greatest decreases occuring across a wide range of depths <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)D) -->. 
 When these local changes are placed in their geographic context in the form of a gradient-based velocity estimate, the majority of the highest velocities occur in the bottom of troughs in Queen Charlotte Sound and Dixon Entrance <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)E & F) -->. 
+Separate geostatistical models exploring either trend- or velocity-based indices of change resolved similar overall interactions for both temperature and DO (TODO: cite supplementary materials <!--\@ref(fig:global-coefs)--> and (Fig. \@ref(fig:worm-plots)) if both model types included), but the overall main effects of temperature change and mean DO did differ. 
+This difference is likely due to covariation between temperature and DO within our dataset <!-- TODO: run temp only trend model to check if this is true -->, which the trend model could control for, but the the velocity one could not. Despite this difference, the qualitative patterns for most species and maturity class tended to agree between model types (TODO: cite supplementary materials <!--\@ref(fig:trend-chopsticks), \@ref(fig:vel-chopsticks)-->); 
+therefore, we will focus on interpreting the results of trend-based model (Fig. \@ref(fig:worm-plots) <!-- TODO: add A, if both models are in this plot-->). 
+Across species, the most common patterns were for 1) the impact of warming on biomass change was more likely to be negative (or at least less positive) in locations with higher mean temperatures than in cooler locations, and while controling for the effect of temperature 2) the impact of increasing DO levels  was negative in locations with lower mean DO levels than in locations with higher mean DO levels. 
+
 
 <!-- TODO: Figure out what to say about velocity "NULLs", if anything...
 
@@ -284,7 +289,7 @@ include_graphics(here("ms", "figs", "climate-maps-updated.pdf"))
 # include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
 # TODO: decide if velocity slopes belong here
 # TODO: should species be in same order on both trend and velocity panels?
-include_graphics(here("ms", "figs", "worm-plot-both.pdf")) 
+include_graphics(here("ms", "figs", "worm-plot-both.pdf"))
 ```
 
 \begin{landscape}
@@ -361,6 +366,11 @@ Supplemental figures:
 -   null model stuff
 -   pairs plot of predictors
 -   plot vocc regression residuals against the main predictors... (and not in model and fitted vs. residuals plot; but don't necessarily include in paper)
+
+
+```{r global-coefs, fig.cap="Overall coefficient estimates from each model.", out.width="4in"}
+include_graphics(here("ms", "figs", "supp-global-coefs.pdf"))
+```
 
 \begin{landscape}
 
