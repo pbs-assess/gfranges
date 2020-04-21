@@ -25,12 +25,10 @@ imm <- mutate(stats, age = "immature") %>%
 mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
 stats <- rbind(mat, imm)
 stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
-
-
-
-#### CLIMATE MAPS
 alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
 
+
+#### CLIMATE MAPS ####
 mean_do <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "mean_DO", fill_label = "ml/L ",
@@ -122,7 +120,10 @@ mean_temp + mean_do +  trend_temp + trend_do + vel_temp + vel_do + plot_layout(n
 ggsave(here::here("ms", "figs", "climate-maps-updated.pdf"), width = 6, height = 9)
 
 
-#### WORM PLOTS OF SLOP ESTIMATES FROM TREND MODEL
+
+#### SEPARATE WORM PLOTS ####
+
+### WORM PLOTS OF SLOP ESTIMATES FROM TREND MODEL 
 temp_slopes <- chopstick_slopes(model,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
@@ -155,8 +156,7 @@ ggsave(here::here("ms", "figs", "worm-plot-trend.pdf"), width = 8, height = 6)
 
 # meta-analytical coefficients? ... all span zero, but could include as appendix?
 
-
-#### WORM PLOTS OF SLOP ESTIMATES FROM VELOCITY MODELS
+### WORM PLOTS OF SLOP ESTIMATES FROM VELOCITY MODELS 
 
 temp_vel_slopes <- chopstick_slopes(model_vel_t,
   x_variable = "squashed_temp_vel_scaled",
@@ -188,7 +188,7 @@ do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish C
 #   plot_layout(height = c(10.5, 0.25))
 # ggsave(here::here("ms", "figs", "worm-plot-vel.pdf"), width = 8, height = 6)
 
-#### IF WE WANT PLOT OF BOTH TREND AND VELOCITY SLOPES TOGETHER
+#### IF WE WANT PLOT OF BOTH TREND AND VELOCITY SLOPES TOGETHER ####
 p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
   legend_position = c(.25, .95)
@@ -231,8 +231,7 @@ p_do_worm3 <- plot_chopstick_slopes(do_vel_slopes,
 
 ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 
-
-#### EXAMPLE SPECIES CHOPSTICK PLOTS AND MAPS FROM TREND MODEL
+#### EXAMPLE SPECIES CHOPSTICK PLOTS AND MAPS FROM TREND MODEL ####
 # TODO: for example species...
 # temperature maps plus chopsticks
 # O2 maps plus chopsticks
@@ -333,7 +332,6 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
   ggsave(here::here("ms", "figs", paste0("panels-", x_type, "-", species, ".pdf")), width = 4, height = 10)
 }
 
-
 species_panels ("mature North Pacific Spiny Dogfish", model, "temp")
 species_panels ("mature Sablefish", model, "temp", alpha_range = c(0.25,0.9))
 species_panels ("mature Pacific Cod", model, "temp", alpha_range = c(0.25,0.9))
@@ -365,9 +363,7 @@ species_panels ("mature English Sole", model, "DO")
 species_panels ("mature Flathead Sole", model, "DO")
 species_panels ("mature Arrowtooth Flounder", model, "DO")
 
-
-
-#### SLOPE SCATTERPLOTS AGAINST LIFE HISTORY
+#### SLOPE SCATTERPLOTS AGAINST LIFE HISTORY ####
 model2 <- add_colours(model$coefs, species_data = stats)
 model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"
 model2$group[model2$group == "SKATE"] <- "SHARKS & SKATES"
