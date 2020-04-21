@@ -229,7 +229,7 @@ When these local changes are placed in their geographic context in the form of a
 Separate geostatistical models exploring either trend- or velocity-based indices of change resolved similar overall interactions for both temperature and DO (TODO: cite supplementary materials <!--\@ref(fig:global-coefs)--> and (Fig. \@ref(fig:worm-plots)) if both model types included), but the overall main effects of temperature change and mean DO did differ. 
 This difference is likely due to covariation between temperature and DO within our dataset <!-- TODO: run temp only trend model to check if this is true -->, which the trend model could control for, but the the velocity one could not. Despite this difference, the qualitative patterns for most species and maturity class tended to agree between model types (TODO: cite supplementary materials <!--\@ref(fig:trend-chopsticks), \@ref(fig:vel-chopsticks)-->); 
 therefore, we will focus on interpreting the results of trend-based model (Fig. \@ref(fig:worm-plots) <!-- TODO: add A, if both models are in this plot-->). 
-Across species, the most common patterns were for 1) the impact of warming on biomass change was more likely to be negative (or at least less positive) in locations with higher mean temperatures than in cooler locations, and while controling for the effect of temperature 2) the impact of increasing DO levels  was negative in locations with lower mean DO levels than in locations with higher mean DO levels. 
+Across species, the most common patterns were for 1) the impact of warming on biomass change was more likely to be negative (or at least less positive) in locations with higher mean temperatures than in cooler locations, and while controling for the effect of temperature 2) the impact of increasing DO levels was negative in locations with lower mean DO levels than in locations with higher mean DO levels. 
 
 
 <!-- TODO: Figure out what to say about velocity "NULLs", if anything...
@@ -286,10 +286,10 @@ include_graphics(here("ms", "figs", "climate-maps-updated.pdf"))
 <!-- TODO: can I use a % symbol in fig captions? -->
 
 ```{r worm-plots, fig.cap="Slopes of relationships between climate trends and percent change in biomasss (A, controling for effect of the other climate variable) or biotic and climate velocities (B, without controling for the effect of the other climate variable) for groundfish species. Open circles indicate patterns for immatures, while closed circles represent individuals large enough to have a 5 percent chance of being reproductively mature or belonging to species for which maturity data was not available. Black indicates overall slope where the estimated interaction with mean climate condition overlapped zero. Colours indicate slopes estimated for the low (0.025) and high (0.975) quantiles of mean climate conditions (only included when the confidence intervals on the slopes did not overlap).", out.width="6in"}
-# include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
+include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
 # TODO: decide if velocity slopes belong here
 # TODO: should species be in same order on both trend and velocity panels?
-include_graphics(here("ms", "figs", "worm-plot-both.pdf"))
+# include_graphics(here("ms", "figs", "worm-plot-both.pdf"))
 ```
 
 \begin{landscape}
