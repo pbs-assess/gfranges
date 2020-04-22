@@ -230,19 +230,28 @@ In order to better understand the extent to which the temporal and spatial scale
 Our models suggest that from 2008 to 2018, survey season seafloor temperature increased across almost the entirety of Canada's Pacific shelf region (95% interquartile range of `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[2]], digits = 2)`), with warming tending to be most pronounced in shallower areas (Fig. \@ref(fig:climate-maps)<!-- TODO: should letters be added and included here? eg. "C" -->). 
 In contrast, change in seafloor DO was much more variable in the direction of change (95% interquartile range of `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[2]], digits = 2)`), with both the greatest increases also occurring in the shallowest areas and the greatest decreases occuring across a wide range of depths <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)D) -->. 
 When these local changes are placed in their geographic context in the form of a gradient-based velocity estimate, the majority of the highest velocities occur in the bottom of troughs in Queen Charlotte Sound and Dixon Entrance <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)E & F) -->. 
-Separate geostatistical models exploring either trend- or velocity-based indices of change resolved similar overall interactions for both temperature and DO (TODO: cite supplementary materials <!--\@ref(fig:global-coefs)--> and (Fig. \@ref(fig:worm-plots)) if both model types included), but the overall main effects of temperature change and mean DO did differ. 
-This difference is likely due to covariation between temperature and DO within our dataset <!-- TODO: run temp only trend model to check if this is true -->, which the trend model could control for, but the the velocity one could not. Despite this difference, the qualitative patterns for most species and maturity class tended to agree between model types (TODO: cite supplementary materials <!--\@ref(fig:trend-chopsticks), \@ref(fig:vel-chopsticks)-->); therefore, we will focus on interpreting the results of trend-based model (Fig. \@ref(fig:worm-plots) <!-- TODO: add A, if both models are in this plot-->). 
-Across species, the most common pattern was that 1) the impact of warming on biomass change was more negative (or at least less positive) in locations with higher mean temperatures than in cooler locations (eg. Widow Rockfish, mature Shortspine Thornyhead, and mature English and Flathead Sole), 2) the impact of increasing DO levels was more negative in locations with lower mean DO levels than in locations with higher mean DO levels (eg. Dogfish, mature Sablefish, Widow Rockfish, and English and Flathead Sole), and 3) overall immature abundances were more likely than mature abundances to show negative relationships (eg. Sablefish, Widow Rockfish, and Dover Sole (\@ref(fig:trend-chopsticks)). 
-<!-- TODO: checking this with model including age as fixed effect (mature biomass as the intercept)...--> 
-There appeared to be no strong patterns of similarity amoungst species belong to the same genus or family (tested as potential random effects, but not included in the final model) as illustrated by negative at high temperatures (Canary Rockfish and English Sole) or positive at low temperatures (eg. Widow Rockfish and Flathead Sole) impacts on biotic trends being exibited by members of both the largest families represented in our analysis Sebastidae (rockfish) and Pleuronectidae (righteye flounders; Fig. \@ref(fig:species-map-chop-panel)).   
 
+Separate geostatistical models exploring either trend- or velocity-based indices of change resolved similar overall interactions for both temperature and DO, but the overall main effects of temperature change and mean DO did differ (Fig \@ref(fig:global-coefs) TODO and \@ref(fig:worm-plots)) if both model types included). 
+This difference is likely due to covariation between temperature and DO within our dataset <!-- TODO: run temp only trend model to check if this is true -->, which the trend model could control for, but the the velocity one could not. 
+Despite this difference, the qualitative patterns for most species and maturity class tended to agree between model types (Figs. \@ref(fig:trend-chopsticks) and \@ref(fig:vel-chopsticks)); therefore, we will focus on interpreting the results of trend-based model (Fig. \@ref(fig:worm-plots) <!-- TODO: add A, if both models are in this plot-->). 
+Null models based on simulated biotic trends still showed slightly more significant relationships than would be expected by chance, but far fewer than the model based on modeled changes in abundance and all the effect sizes for parameters of interest were much nearly an order of magnitude smaller (Fig. TODO: add supplementary fig <!-- \@ref(fig:null-coefs) -->). 
+Therefore, we will explore both the overall and species-level patterns resolved, but keeping in mind that not all species-level patterns are expected to be biologically meaningful.
+
+Across species, the most common patterns were that 1) the impact of warming on biomass change was more negative (or at least less positive) in locations with higher mean temperatures than in cooler locations (e.g. Widow Rockfish, mature Shortspine Thornyhead, and mature English and Flathead Sole), 2) the impact of increasing DO levels was more negative in locations with lower mean DO levels than in locations with higher mean DO levels (e.g. Dogfish, mature Sablefish, Widow Rockfish, and English and Flathead Sole), and 3) overall immature abundances were more likely than mature abundances to show negative relationships (eg. Sablefish, Widow Rockfish, and Dover Sole (Fig. \@ref(fig:trend-chopsticks)). 
+<!-- TODO: checking this with model including age as fixed effect (mature biomass as the intercept)... --> 
+There were no strong patterns of similarity amoungst species belong to the same genus or family (
+TODO: should we mention here that they were included as random effects in trial models, but not the final model?
+) as illustrated by relationships with biotic trends that were negative at high temperatures (Canary Rockfish and English Sole) or positive at low temperatures (eg. Widow Rockfish and Flathead Sole) occuring in members of both the largest families represented in our analysis, Sebastidae (rockfish) and Pleuronectidae (righteye flounders; Fig. Fig. \@ref(fig:worm-plots and \@ref(fig:species-map-chop-panel)). 
+Likewise, most species in all families showed relatively little impact of DO change when DO levels were high, but a somewhat counter-intuitive decline in biomass if DO increased when mean DO was at it's lowest (\@ref(fig:trend-chopsticks). 
+However, several species do show increasing biomass with increasing DO across their distributions and most of these are rockfish (mature Bocaccio, Greenstripe, Redstripe, Yelloweye, Yellowmouth and Yellowtail; immature Sharpchin Rockfish; and the one exception, immature Sablefish).
+The few exceptions to these pattern include a strong positive effect of increasing DO at low mean levels for adult Splitnose Rockfish, and both maturity classes of Shortspine Thornyheads, all populations occupying some of the deeper habitats. 
+However, three species averaging even deeper in their mean occurance show the more common pattern (mature Sablefish and both maturity classes of the Rougheye/Blackspotted Rockfish complex), or no relationship at all with DO change (Shortraker Rockfish). 
 
 <!-- TODO: Figure out what to say about velocity "NULLs", if anything...
 This spatial pattern largely remains for simulated biotic velocities, which results in models of simulated biotic velocity that have a similar number of significant effects as the model based on real biomass changes. 
 These models often tend to show more significant effects for flatfish species, possibly due to distributions that encompass a greater proportion of flatter spatial gradients for both climate and biomass (TODO see Supplementary...). 
 Both climate variables and species distributions were modeled in response to seafloor depth ...
 -->
-
 <!-- TODO:  Species of interest...
 redbanded - pretty normal response to temp and DO (sig -ve for adults only) 
         widow rockfish  - strong interactions
@@ -274,7 +283,7 @@ sablefish - warming good, increasing DO not
 
 
 ```{r climate-maps, fig.cap="Maps of predicted trends (top panels) and velocities (bottom panels) of change for bottom temperature and dissolved oxygen during the trawl surveys conducted between 2008 to 2018. Values are estimated from a spatiotemporal models of CTD sensor data collected during late spring/early summer groundfish trawl surveys. Bathymetry lines at every 100 m are overlaid in shades of grey that increase with depth.", out.width="5in"}
-include_graphics(here("ms", "figs", "climate-maps-updated.pdf"))
+include_graphics(here("ms", "figs", "climate-maps-updated.png"))
 ```
 
 \clearpage
@@ -282,15 +291,15 @@ include_graphics(here("ms", "figs", "climate-maps-updated.pdf"))
 <!-- TODO: can I use a % symbol in fig captions? -->
 
 ```{r worm-plots, fig.cap="Slopes of relationships between climate trends and percent change in biomasss (A, controling for effect of the other climate variable) or biotic and climate velocities (B, without controling for the effect of the other climate variable) for groundfish species. Open circles indicate patterns for immatures, while closed circles represent individuals large enough to have a 5 percent chance of being reproductively mature or belonging to species for which maturity data was not available. Black indicates overall slope where the estimated interaction with mean climate condition overlapped zero. Colours indicate slopes estimated for the low (0.025) and high (0.975) quantiles of mean climate conditions (only included when the confidence intervals on the slopes did not overlap).", out.width="6in"}
-include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
+# include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
 # TODO: decide if velocity slopes belong here
 # TODO: should species be in same order on both trend and velocity panels?
-# include_graphics(here("ms", "figs", "worm-plot-both.pdf"))
+include_graphics(here("ms", "figs", "worm-plot-both.pdf"))
 ```
 
 \begin{landscape}
 
-```{r species-map-chop-panel, fig.cap="Maps of biotic (top), temperature (middle) and DO (bottom) trends underlying interaction plots (sandwiched between maps) of predicted biotic trend (y-xis) for each standard deviation in change in seafloor temperature and DO (x-axis) for mature populations of sample species representing a range of taxonomic groups and response patterns.", out.width="9in"}
+```{r species-map-chop-panel, fig.cap="Maps of biotic (top), temperature (middle) and DO (bottom) trends underlying interaction plots (sandwiched between maps) of predicted biotic trend (y-xis) for each standard deviation in change in seafloor temperature and DO (x-axis) for mature populations of species representing a range of taxonomic groups and response patterns. Colours and lines in the interaction plots match the slopes represented in Fig. 2, where low (0.025) and high (0.975) quantiles of mean climate conditions are respectively illustrated in blue and red for temperatures and yellow and purple for DO.", out.width="9in"}
 include_graphics(here("ms", "figs", "species-map-chop-panel.png"))
 ```
 
@@ -363,6 +372,7 @@ Supplemental figures:
 -   pairs plot of predictors
 -   plot vocc regression residuals against the main predictors... (and not in model and fitted vs. residuals plot; but don't necessarily include in paper)
 
+\clearpage
 
 ```{r global-coefs, fig.cap="Overall coefficient estimates from each model. The trend model included all terms, while the velocity models only include terms involving either temperature (T) variables or DO (disolved oxygen) variables, but controling for biomass (measured as estimated local mean log(biomass) across all years) in both cases. Interactions are betweeen the the mean value and change in the climate varible indicated.", out.width="4in"}
 include_graphics(here("ms", "figs", "supp-global-coefs.pdf"))

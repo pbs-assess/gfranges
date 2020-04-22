@@ -117,7 +117,7 @@ vel_temp <- plot_vocc(alldata,
   )
 
 mean_temp + mean_do +  trend_temp + trend_do + vel_temp + vel_do + plot_layout(ncol = 2)
-ggsave(here::here("ms", "figs", "climate-maps-updated.pdf"), width = 6, height = 9)
+ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 6, height = 9)
 
 
 
