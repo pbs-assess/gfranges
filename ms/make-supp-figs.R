@@ -7,10 +7,10 @@
 # library(gfranges)
 # library(dotwhisker)
 #### load appropriate final models and other data
-# model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
-# model_vel_t <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/vel-all-95-all-do-04-03-vel-temp-1-200-temp.rds")
-# model_vel_d <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/vel-all-95-all-do-04-03-vel-do-1-200-do.rds")
-# 
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
+model_vel_t <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/vel-all-95-all-do-04-03-vel-temp-1-200-temp.rds")
+model_vel_d <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/vel-all-95-all-do-04-03-vel-do-1-200-do.rds")
+
 # stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats.rds"))
 # stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
 # stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
@@ -22,7 +22,7 @@
 # mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
 # stats <- rbind(mat, imm)
 # stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
-#
+
 # alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
 #
 # model2 <- add_colours(model$coefs, species_data = stats)
@@ -178,6 +178,17 @@ overall_betas <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas$model <- "trend"
 ggplot(overall_betas, aes(coef_names, betas)) + geom_pointrange(aes(ymin = lowerCI, ymax = upperCI)) + coord_flip()
 
+model_temp <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-22-trend-1-500-temp.rds")
+coef_names <- shortener(unique(model_temp$coefs$coefficient))
+coef_names <- c("intercept", "change in T", "mean T", "biomass", "interaction (T)")
+betas <- signif(as.list(model_temp$sdr, "Estimate")$b_j, digits = 3)
+SE <- signif(as.list(model_temp$sdr, "Std. Error")$b_j, digits = 3)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+overall_betas_t <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
+overall_betas_t$model <- "trend (T only)"
+ggplot(overall_betas_t, aes(coef_names, betas)) + geom_pointrange(aes(ymin = lowerCI, ymax = upperCI)) + coord_flip()
+
 coef_names <- shortener(unique(model_vel_t$coefs$coefficient))
 coef_names <- c("intercept", "change in T", "mean T", 
   "biomass", "interaction (T)")
@@ -199,17 +210,18 @@ overall_betas_vel_d <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel_d$model <- "velocity (DO only)"
 
 overall_betas$model_type <- "trend"
+overall_betas_t$model_type <- "trend"
 overall_betas_vel_t$model_type <- "velocity"
 overall_betas_vel_d$model_type <- "velocity"
 
-overall <- rbind.data.frame(overall_betas, overall_betas_vel_t, overall_betas_vel_d)
+overall <- rbind.data.frame(overall_betas, overall_betas_t, overall_betas_vel_t, overall_betas_vel_d)
 
 filter(overall, coef_names != "intercept") %>%  
   # overall %>%
   ggplot(aes(forcats::fct_reorder(coef_names, betas), betas, colour = model)) + #forcats::fct_reorder(coef_names, )
   geom_pointrange(aes(ymin = lowerCI, ymax = upperCI),position = position_jitter(width = 0.25)) + # dodge.width = 1.2) + 
   geom_hline(yintercept = 0, colour = "darkgray") +
-  scale_colour_manual(values = c("#D53E4F", "#3288BD", "#5E4FA2")) +
+  scale_colour_manual(values = c("#D53E4F", "#F46D43", "#3288BD", "#5E4FA2")) +
   xlab("") +
   coord_flip() +
   gfplot::theme_pbs()
@@ -267,7 +279,7 @@ overall2 <- overall %>% rename(term = coef_names, estimate = betas, std.error = 
 dotwhisker::dwplot(overall2) +
   geom_vline(xintercept = 0, colour = "darkgray") +
   # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
-  scale_colour_manual(values = c("#D53E4F", "#3288BD", "#5E4FA2")) +
+  scale_colour_manual(values = c("#D53E4F", "#F46D43", "#3288BD", "#5E4FA2")) +
   gfplot::theme_pbs()
 ggsave(here::here("ms", "figs", "supp-global-coefs.pdf"), width = 5, height = 2.5)
 
@@ -345,6 +357,28 @@ p_do_all_slopes <- plot_chopstick_slopes(do_slopes,
 cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops, ncol = 2, rel_widths = c(1, 2.5))
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 11)
 
+
+### if just temp model... ####
+temp_slopes <- chopstick_slopes(model_temp,
+  x_variable = "temp_trend_scaled",
+  interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
+)
+temp_slopes <- left_join(temp_slopes, stats)
+p2 <- plot_fuzzy_chopsticks(model_temp,
+  x_variable = "temp_trend_scaled", type = "temp",
+  y_label = "Predicted % change in biomass", 
+  # choose_age = "mature",
+  slopes = temp_slopes  
+) + coord_cartesian(ylim=c(-11,7)) + 
+  xlab("Temperature trend (scaled)") + theme(legend.position = "none")
+
+temp_slopes$species[temp_slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"	
+p1 <- plot_chopstick_slopes(temp_slopes, type = "temp", 
+  legend_position = c(.25,.95)) + 
+  ylab("Slopes")
+
+cowplot::plot_grid(p1,p2, rel_widths = c(1, 2.5)) 
+ggsave(here::here("ms", "figs", "supp-trend-chopsticks-temp-only.pdf"), width = 14, height = 5.5)
 
 
 ### ALL VELOCITY CHOPS ####
