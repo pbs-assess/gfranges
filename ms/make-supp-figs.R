@@ -295,7 +295,8 @@ dotwhisker::dwplot(overall_betas_age,
   geom_vline(xintercept = 0, colour = "darkgray") +
   # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
   # scale_colour_manual(values = c("#D53E4F", "#3288BD", "#5E4FA2")) +
-  gfplot::theme_pbs()
+  gfplot::theme_pbs() + theme(legend.position = "none")
+ggsave(here::here("ms", "figs", "supp-global-coefs-w-age.pdf"), width = 3.5, height = 5)
 
 #########################
 #### ALL CHOPSTICKS AND SLOPE WORM PLOTS 
