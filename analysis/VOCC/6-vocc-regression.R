@@ -23,10 +23,11 @@ y_type <- "trend"
 
 no_chopsticks <- F
 
-model_type <- "-trend"
+# model_type <- "-trend"
 # model_type <- "-trend-w-age" # an experiment that lacks true chops for imm
 # model_type <- "-trend-with-do"
-# model_type <- "-trend-grad"
+model_type <- "-trend-grad"
+model_type <- "-trend-w-grad"
 
 
 # model_type <- "-vel-temp"
@@ -182,22 +183,25 @@ formula <- ~ temp_trend_scaled +
   x_type <- "trend"
 }
 
-if (model_type == "-trend-with-grad") {
+if (model_type == "-trend-w-grad") {
   
   formula <- ~ temp_trend_scaled +
     mean_temp_scaled + 
     temp_trend_scaled:mean_temp_scaled +
-    log_effort_scaled + fishing_trend_scaled +
+    # log_effort_scaled + fishing_trend_scaled +
     temp_grad_scaled +
-    DO_trend_scaled +
-    mean_DO_scaled +  
-    DO_trend_scaled:mean_DO_scaled +
+    temp_grad_scaled:mean_temp_scaled + 
+    temp_grad_scaled:temp_trend_scaled + 
+    temp_grad_scaled:mean_temp_scaled:mean_temp_scaled + 
+    # DO_trend_scaled +
+    # mean_DO_scaled +  
+    # DO_trend_scaled:mean_DO_scaled +
     log_biomass_scaled 
   
   x <- model.matrix(formula, data = d)
   
   temp_chopstick <- T
-  DO_chopstick <- T
+  DO_chopstick <- F
   x_type <- "trend"
 }
 

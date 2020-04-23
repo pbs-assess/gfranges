@@ -167,6 +167,8 @@ ggplot(filter(model$data, age == "mature"), aes(temp_grad, biotic_grad)) + geom_
 #########################
 #### GLOBAL COEFS 
 #########################
+
+# trend model
 coef_names <- shortener(unique(model$coefs$coefficient))
 coef_names <- c("intercept", "change in T", "mean T", "change in DO", "mean DO", 
   "biomass", "interaction (T)", "interaction (DO)")
@@ -178,6 +180,7 @@ overall_betas <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas$model <- "trend"
 ggplot(overall_betas, aes(coef_names, betas)) + geom_pointrange(aes(ymin = lowerCI, ymax = upperCI)) + coord_flip()
 
+# trend model with temp only
 model_temp <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-22-trend-1-500-temp.rds")
 coef_names <- shortener(unique(model_temp$coefs$coefficient))
 coef_names <- c("intercept", "change in T", "mean T", "biomass", "interaction (T)")
@@ -189,6 +192,27 @@ overall_betas_t <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_t$model <- "trend (T only)"
 ggplot(overall_betas_t, aes(coef_names, betas)) + geom_pointrange(aes(ymin = lowerCI, ymax = upperCI)) + coord_flip()
 
+# trend model with temp and gradient
+# no interaction
+model_grad <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-23-trend-grad-1-500-temp.rds")
+coef_names <- shortener(unique(model_grad$coefs$coefficient))
+coef_names <- c("intercept", "change in T", "mean T", "gradient", "biomass", "interaction (T)")
+
+# version with interactions
+model_grad <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-23-trend-w-grad-1-500.rds")
+coef_names <- shortener(unique(model_grad$coefs$coefficient))
+coef_names <- c("intercept", "change in T", "mean T", "gradient", "biomass", "interaction (T)", 
+  "mean T:gradient", "change in T:gradient", "change in T:mean:gradient")
+
+betas <- signif(as.list(model_grad$sdr, "Estimate")$b_j, digits = 3)
+SE <- signif(as.list(model_grad$sdr, "Std. Error")$b_j, digits = 3)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+overall_betas_g <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
+overall_betas_g$model <- "trend (T w gradient)"
+ggplot(overall_betas_g, aes(coef_names, betas)) + geom_pointrange(aes(ymin = lowerCI, ymax = upperCI)) + coord_flip()
+
+# temperature velocity model
 coef_names <- shortener(unique(model_vel_t$coefs$coefficient))
 coef_names <- c("intercept", "change in T", "mean T", 
   "biomass", "interaction (T)")
@@ -199,6 +223,7 @@ upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
 overall_betas_vel_t <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel_t$model <- "velocity (T only)"
 
+# DO velocity model
 coef_names <- shortener(unique(model_vel_d$coefs$coefficient))
 coef_names <- c("intercept", "change in DO", "mean DO", 
   "biomass", "interaction (DO)")
@@ -209,24 +234,110 @@ upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
 overall_betas_vel_d <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel_d$model <- "velocity (DO only)"
 
-overall_betas$model_type <- "trend"
-overall_betas_t$model_type <- "trend"
-overall_betas_vel_t$model_type <- "velocity"
-overall_betas_vel_d$model_type <- "velocity"
 
-overall <- rbind.data.frame(overall_betas, overall_betas_t, overall_betas_vel_t, overall_betas_vel_d)
+# trend model with age effect 
 
-filter(overall, coef_names != "intercept") %>%  
-  # overall %>%
-  ggplot(aes(forcats::fct_reorder(coef_names, betas), betas, colour = model)) + #forcats::fct_reorder(coef_names, )
-  geom_pointrange(aes(ymin = lowerCI, ymax = upperCI),position = position_jitter(width = 0.25)) + # dodge.width = 1.2) + 
-  geom_hline(yintercept = 0, colour = "darkgray") +
-  scale_colour_manual(values = c("#D53E4F", "#F46D43", "#3288BD", "#5E4FA2")) +
-  xlab("") +
-  coord_flip() +
-  gfplot::theme_pbs()
+# version with only 2-way interactions
+# model_age <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-22-trend-w-age-1-500-DO.rds")
+# coef_names <- shortener(unique(model_age$coefs$coefficient))
+# coef_names <- c("intercept", "immature", "change in T", "mean T", "change in DO", "mean DO", 
+  # "biomass", "interaction (T)", "interaction (DO)", "change in T:immature", "mean T:immature", "change in DO:immature", "mean DO:immature")
 
-#### add species level coefs ####
+# version with 3-way interactions
+model_age <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-22-trend-w-age-1-400-temp.rds")
+coef_names <- shortener(unique(model_age$coefs$coefficient))
+coef_names <- c("intercept", "immature", "change in T", "mean T", "change in DO", "mean DO", 
+  "biomass", "interaction (T)", "interaction (DO)", "change in T:immature", "mean T:immature", 
+  "change in DO:immature", "mean DO:immature", "interaction (T):immature", "interaction (DO):immature")
+
+betas <- signif(as.list(model_age$sdr, "Estimate")$b_j, digits = 3)
+SE <- signif(as.list(model_age$sdr, "Std. Error")$b_j, digits = 3)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+overall_betas_age <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
+overall_betas_age$model <- "trend (w maturity effect)"
+
+# overall_betas$model_type <- "trend"
+# overall_betas_t$model_type <- "trend"
+overall_betas_g$model_type <- "trend"
+# overall_betas_vel_t$model_type <- "velocity"
+# overall_betas_vel_d$model_type <- "velocity"
+# overall_betas_age$model_type <- "trend"
+
+custom_order <- c("intercept", "immature", "biomass", "gradient", 
+  "mean T", "mean T:immature", "mean T:gradient",
+  "mean DO",  "mean DO:immature",
+  "change in T",  "change in T:immature",  "change in T:gradient",
+  "change in DO", "change in DO:immature", 
+  "interaction (T)", "interaction (T):immature",  "change in T:mean:gradient",
+  "interaction (DO)", "interaction (DO):immature"
+  )
+
+# wide_betas <- overall %>% select("model", "coef_names", "betas") %>% pivot_wider(names_from = "coef_names", values_from = c("betas"))
+# wide_SE <- overall %>% select("model", "coef_names", "SE") %>% pivot_wider(names_from = "coef_names", values_from = c("SE"))
+# long_betas <- wide_betas %>% pivot_longer(-model, names_to = "coef_names", values_to = "betas")
+# long_SE <- wide_SE %>% pivot_longer(-model, names_to = "coef_names", values_to = "SE")
+# 
+# overall <- left_join(long_betas, long_SE)
+
+# filter(overall, coef_names != "intercept") %>%  
+#   # overall %>%
+#   ggplot(aes(forcats::fct_reorder(coef_names, betas), betas, colour = model)) + #forcats::fct_reorder(coef_names, )
+#   geom_pointrange(aes(ymin = lowerCI, ymax = upperCI),position = position_jitter(width = 0.25)) + # dodge.width = 1.2) + 
+#   geom_hline(yintercept = 0, colour = "darkgray") +
+#   scale_colour_manual(values = c("#D53E4F", "#F46D43","#FDAE61", "#FEE08B",
+#      "#3288BD", "#5E4FA2")) +
+#   xlab("") +
+#   coord_flip() +
+#   gfplot::theme_pbs()
+
+# allcoefs2 <- allcoefs %>% rename(term = coefficient, estimate = Estimate, std.error = Std..Error) %>% filter(term != "intercept")
+
+### compare trends and velocities
+overall <- rbind.data.frame(overall_betas, overall_betas_t, overall_betas_g, overall_betas_vel_t, overall_betas_vel_d)
+overall2 <- overall %>% rename(term = coef_names, estimate = betas, std.error = SE) #%>% filter(term != "intercept")
+overall2 <- overall2 %>% mutate(term = factor(term, levels = custom_order))
+
+# overall2[is.na(overall2)] <- 0 
+globel_vel <- dotwhisker::dwplot(overall2#, 
+  # order_vars = custom_order
+  ) + #xlim(-10,10) +
+  geom_vline(xintercept = 0, colour = "darkgray") +
+  # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
+  scale_colour_manual(values = c("#D53E4F", 
+    #"#F46D43", 
+    "#FDAE61", 
+    "#FEE08B", "#3288BD", "#5E4FA2"
+    )) +ggtitle("differences between trend and velocity models") +
+  gfplot::theme_pbs() + theme (#legend.title = element_blank(),
+    legend.position = c(0.75, 0.2))
+globel_vel
+ggsave(here::here("ms", "figs", "supp-global-coefs-vel.pdf"), width = 5, height = 4)
+
+# look for sig age effects 
+overall3 <- rbind.data.frame(overall_betas, overall_betas_age)
+overall3 <- overall3 %>% rename(term = coef_names, estimate = betas, std.error = SE) #%>% filter(term != "intercept" & term != "biomass")
+overall3 <- overall3 %>% mutate(term = factor(term, levels = custom_order))
+
+globel_age <- dotwhisker::dwplot(overall3#, 
+  # order_vars = custom_order
+) + #xlim(-10,10) +
+  geom_vline(xintercept = 0, colour = "darkgray") +
+  # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
+  scale_colour_manual(values = c("#D53E4F", "#F46D43"#, 
+    #"#FDAE61"#, "#FEE08B", "#3288BD", "#5E4FA2"
+    )) + ggtitle("test for global maturity effects") +
+  gfplot::theme_pbs() + theme (legend.title = element_blank(),
+    legend.position = c(0.25, 0.16))
+# globel_age
+# ggsave(here::here("ms", "figs", "supp-global-coefs-w-age.pdf"), width = 5, height = 4)
+
+globel_vel + globel_age + plot_layout()
+ggsave(here::here("ms", "figs", "supp-global-coefs.pdf"), width = 10, height = 5)
+
+
+
+#### experiment with species level coefs as boxplots ####
 trendcoefs <-add_colours(model$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
   levels = c("(Intercept)", "temp_trend_scaled", "mean_temp_scaled", "DO_trend_scaled", "mean_DO_scaled",
     "log_biomass_scaled", "temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled" ),
@@ -272,43 +383,8 @@ filter(overall, coef_names != "intercept") %>%
   coord_flip(ylim = c(-2,2)) + # ylim = c(-10,10)
   gfplot::theme_pbs()
 
-### USE DOTWHISKER ####
-# allcoefs2 <- allcoefs %>% rename(term = coefficient, estimate = Estimate, std.error = Std..Error) %>% filter(term != "intercept")
-overall2 <- overall %>% rename(term = coef_names, estimate = betas, std.error = SE) %>% filter(term != "intercept")
-
-dotwhisker::dwplot(overall2) +
-  geom_vline(xintercept = 0, colour = "darkgray") +
-  # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
-  scale_colour_manual(values = c("#D53E4F", "#F46D43", "#3288BD", "#5E4FA2")) +
-  gfplot::theme_pbs()
-ggsave(here::here("ms", "figs", "supp-global-coefs.pdf"), width = 5, height = 2.5)
 
 
-### check for age effect ####
-model_age <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-21-trend-w-age-1-500-temp.rds")
-model_age <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-22-trend-w-age-1-400-temp.rds")
-model_age <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-22-trend-w-age-1-500-DO.rds")
-coef_names <- shortener(unique(model_age$coefs$coefficient))
-# coef_names <- c("intercept", "change in DO", "mean DO", 
-  # "biomass", "interaction (DO)")
-betas <- signif(as.list(model_age$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model_age$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
-overall_betas_age <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
-overall_betas_age$model <- "trend (with age effect)"
-overall_betas_age <- overall_betas_age %>% 
-  rename(term = coef_names, estimate = betas, std.error = SE) %>% filter(term != "intercept")
-
-dotwhisker::dwplot(overall_betas_age, 
-  order_vars = c("Intercept", "log_biomass", "age", 
-    "temp", "temp_trend", "temp_trend:temp", "age:temp_trend",  "age:temp",  
-    "DO", "DO_trend", "DO_trend:DO", "age:DO_trend", "age:DO")) +
-  geom_vline(xintercept = 0, colour = "darkgray") +
-  # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
-  # scale_colour_manual(values = c("#D53E4F", "#3288BD", "#5E4FA2")) +
-  gfplot::theme_pbs() + theme(legend.position = "none")
-ggsave(here::here("ms", "figs", "supp-global-coefs-w-age.pdf"), width = 3.5, height = 5)
 
 #########################
 #### ALL CHOPSTICKS AND SLOPE WORM PLOTS 
@@ -358,7 +434,7 @@ cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops,
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 11)
 
 
-### if just temp model... ####
+### if just temp model... no change in chopsticks ####
 temp_slopes <- chopstick_slopes(model_temp,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
@@ -380,6 +456,27 @@ p1 <- plot_chopstick_slopes(temp_slopes, type = "temp",
 cowplot::plot_grid(p1,p2, rel_widths = c(1, 2.5)) 
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks-temp-only.pdf"), width = 14, height = 5.5)
 
+### if just temp with gradient model... no change in chopsticks ####
+temp_slopes <- chopstick_slopes(model_grad,
+  x_variable = "temp_trend_scaled",
+  interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
+)
+temp_slopes <- left_join(temp_slopes, stats)
+p2 <- plot_fuzzy_chopsticks(model_grad,
+  x_variable = "temp_trend_scaled", type = "temp",
+  y_label = "Predicted % change in biomass", 
+  # choose_age = "mature",
+  slopes = temp_slopes  
+) + coord_cartesian(ylim=c(-11,7)) + 
+  xlab("Temperature trend (scaled)") + theme(legend.position = "none")
+
+temp_slopes$species[temp_slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"	
+p1 <- plot_chopstick_slopes(temp_slopes, type = "temp", 
+  legend_position = c(.25,.95)) + 
+  ylab("Slopes")
+
+cowplot::plot_grid(p1,p2, rel_widths = c(1, 2.5)) 
+ggsave(here::here("ms", "figs", "supp-trend-chopsticks-temp-grad.pdf"), width = 14, height = 5.5)
 
 ### ALL VELOCITY CHOPS ####
 temp_vel_slopes <- chopstick_slopes(model_vel_t,

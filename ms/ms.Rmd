@@ -391,14 +391,9 @@ All spatial random effects are constrained to follow a Matern covariance functio
 
 \clearpage
 
-```{r global-coefs, fig.cap="Overall coefficient estimates from each model. The trend model included all terms, while the velocity models only include terms involving either temperature (T) variables or DO (disolved oxygen) variables, but controling for biomass (measured as estimated local mean log(biomass) across all years) in both cases. Interactions are betweeen the the mean value and change in the climate varible indicated.", out.width="4in"}
+```{r global-coefs, fig.cap="Overall coefficient estimates from a range of models. The 'trend' model included trends and interactions between trend and mean conditions for both climate variables, while the velocity models only converge when including terms involving either temperature (T) variables or DO (disolved oxygen) variables. All models control for biomass (measured as estimated local mean log(biomass) across all years). The 'T w gradient' model includes interactions between temperature variables and local spatial gradient in temperature in an effort to partition variation explained by some of the components of a velocity estimate. The model with the maturity effect has mature populations as the intercept and only clearly differs from the simplier trend model in the direction of overall estimates for mean DO.", out.width="6in"}
 include_graphics(here("ms", "figs", "supp-global-coefs.pdf"))
 ```
-
-```{r global-coefs-w-age, fig.cap="Overall coefficient estimates for model with mature as the intercept and two-way interactions with immature.", out.width="3in"}
-# include_graphics(here("ms", "figs", "supp-global-coefs-w-age.pdf"))
-```
-
 
 \begin{landscape}
 
@@ -416,6 +411,12 @@ include_graphics(here("ms", "figs", "supp-vel-chopsticks.pdf"))
 
 ```{r trend-chopsticks-temp-only, fig.cap="Trend model without DO for comparison with velocity model.", out.width="7.5in"}
 # include_graphics(here("ms", "figs", "supp-trend-chopsticks-temp-only.pdf"))
+```
+
+\clearpage
+
+```{r trend-chopsticks-temp-grad, fig.cap="Trend model without DO but with gradient for comparison with velocity model.", out.width="7.5in"}
+# include_graphics(here("ms", "figs", "supp-trend-chopsticks-temp-grad.pdf"))
 ```
 
 \clearpage
