@@ -396,7 +396,7 @@ include_graphics(here("ms", "figs", "supp-global-coefs.pdf"))
 ```
 
 ```{r global-coefs-w-age, fig.cap="Overall coefficient estimates for model with mature as the intercept and two-way interactions with immature.", out.width="3in"}
-include_graphics(here("ms", "figs", "supp-global-coefs-w-age.pdf"))
+# include_graphics(here("ms", "figs", "supp-global-coefs-w-age.pdf"))
 ```
 
 
@@ -421,13 +421,13 @@ include_graphics(here("ms", "figs", "supp-slope-scatterplots.pdf"))
 \end{landscape}
 
 ```{r mat-residuals, fig.cap="Spatial residuals of mature biomass of each species in the trend-based model of biomass change predicted by environmental change.", out.width="7in"}
-include_graphics(here("ms", "figs", "supp-mat-residuals.pdf"))
+# include_graphics(here("ms", "figs", "supp-mat-residuals.pdf"))
 ```
 
 \clearpage
 
 ```{r imm-residuals, fig.cap="Spatial residuals of immature biomass in the trend-based model of biomass change predicted by environmental change.", out.width="7in"}
-include_graphics(here("ms", "figs", "supp-imm-residuals.pdf"))
+# include_graphics(here("ms", "figs", "supp-imm-residuals.pdf"))
 ```
 
 \clearpage
