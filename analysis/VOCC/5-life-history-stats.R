@@ -167,8 +167,8 @@ species <- c(
 # species <- "Quillback Rockfish"
 # species <- "North Pacific Spiny Dogfish"
 # species <- c("Bocaccio")
-# species <- c("Shortraker Rockfish")
-# spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+species <- c("Shortraker Rockfish")
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 life_history <- purrr::map_dfr(species, function(x) {
   
@@ -208,16 +208,19 @@ life_history <- purrr::map_dfr(species, function(x) {
   
   imm_m <- filter(fish, sex == 1) %>% filter(length < length_50_mat_m)
   imm_f <- filter(fish, sex == 2) %>% filter(length < length_50_mat_f)
-  
+ 
   large <- rbind(mat_m, mat_f)
-  small <- rbind(imm_m, imm_f)
+  # small <- rbind(imm_m, imm_f) %>% mutate(growth_l = length/age, growth_m = weight/age)
   large_threshold <- NA
   small_threshold <- NA
   mat_age <- mean(large$age, na.rm = TRUE)
   imm_age <- mean(small$age, na.rm = TRUE)
-  age_mat <- round(quantile(small$age, 0.95, na.rm = TRUE))
+  age_mat <- round(quantile(imm_f$age, 0.95, na.rm = TRUE))
+  age_mat_m <- round(quantile(imm_m$age, 0.95, na.rm = TRUE))
   age_count <- sum(!is.na(large$age))
   age_count_imm <- sum(!is.na(small$age))
+  # imm_growth <- mean(small$growth_l, na.rm = TRUE)
+  # imm_growth <- mean(small$growth_m, na.rm = TRUE)
   # browser()
 #  })
     
@@ -232,6 +235,7 @@ life_history <- purrr::map_dfr(species, function(x) {
   mat_age <- NA
   imm_age <- NA
   age_mat <- NA
+  age_mat_m <- NA
   age_count <- NA
   age_count_imm <- NA
   }
@@ -276,6 +280,7 @@ life_history <- purrr::map_dfr(species, function(x) {
     age_mean = round(mat_age),
     age_imm = round(imm_age),
     age_mat = round(age_mat),
+    age_mat_m = round(age_mat_m),
     age_max = round(quantile(fish$age, 0.999999, na.rm = TRUE)),
     length_max = max(fish$length, na.rm = TRUE),
     length_99th = round(quantile(fish$length, 0.9999, na.rm = TRUE)),
