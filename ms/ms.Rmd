@@ -237,7 +237,7 @@ In contrast, change in seafloor DO was much more variable in the direction of ch
 When these local changes are placed in their geographic context in the form of a gradient-based velocity estimate, the majority of the highest velocities occur in the bottom of troughs in Queen Charlotte Sound and Dixon Entrance <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)E & F) -->. 
 
 Separate geostatistical models exploring either trend- or velocity-based indices of change resolved similar overall interactions for both temperature and DO, but the overall main effects of temperature change and mean DO did differ (Fig \@ref(fig:global-coefs) TODO and \@ref(fig:worm-plots)) if both model types included). 
-This difference is likely due to covariation between temperature and DO within our dataset <!-- TODO: run temp only trend model to check if this is true -->, which the trend model could control for, but the the velocity one could not. 
+<!-- TODO: This difference is NOT due to covariation between temperature and DO within our dataset, which the trend model could control for, but the the velocity one could not.  ... now what? -->
 Despite this difference, the qualitative patterns for most species and maturity class tended to agree between model types (Figs. \@ref(fig:trend-chopsticks) and \@ref(fig:vel-chopsticks)); therefore, we will focus on interpreting the results of trend-based model (Fig. \@ref(fig:worm-plots) <!-- TODO: add A, if both models are in this plot-->). 
 Null models based on simulated biotic trends still showed slightly more significant relationships than would be expected by chance, but far fewer than the model based on modeled changes in abundance and all the effect sizes for parameters of interest were much nearly an order of magnitude smaller (Fig. TODO: add supplementary fig <!-- \@ref(fig:null-coefs) -->). 
 Therefore, we will explore both the overall and species-level patterns resolved, but keeping in mind that not all species-level patterns are expected to be biologically meaningful.
@@ -410,6 +410,12 @@ include_graphics(here("ms", "figs", "supp-trend-chopsticks.pdf"))
 
 ```{r vel-chopsticks, fig.cap="Predicted interactions from separate models predicting biotic velocity based on seafloor temperature velocities and the mean temperature, or seaflour DO velocity and mean DO levels, while only controling for mean local log(biomass) in both cases. Colours and symbols are the same as in the previous figure.", out.width="7.5in"}
 include_graphics(here("ms", "figs", "supp-vel-chopsticks.pdf"))
+```
+
+\clearpage
+
+```{r trend-chopsticks-temp-only, fig.cap="Trend model without DO for comparison with velocity model.", out.width="7.5in"}
+# include_graphics(here("ms", "figs", "supp-trend-chopsticks-temp-only.pdf"))
 ```
 
 \clearpage
