@@ -27,7 +27,6 @@ stats <- rbind(mat, imm)
 stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
 alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
 
-
 #### CLIMATE MAPS ####
 mean_do <- plot_vocc(alldata,
   vec_aes = NULL,
@@ -363,7 +362,94 @@ species_panels ("mature English Sole", model, "DO")
 species_panels ("mature Flathead Sole", model, "DO")
 species_panels ("mature Arrowtooth Flounder", model, "DO")
 
-#### SLOPE SCATTERPLOTS AGAINST LIFE HISTORY ####
+#### SLOPE SCATTERPLOTS AGAINST DEPTH ####
+
+# prep data 
+do_data <- readRDS(paste0("analysis/VOCC/data/predicted-DO-new.rds")) %>%
+  select(X, Y, year, depth, temp, do_est)
+temp_slopes <- chopstick_slopes(model,
+  x_variable = "temp_trend_scaled",
+  interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
+)
+do_slopes <- chopstick_slopes(model,
+  x_variable = "DO_trend_scaled",
+  interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
+)
+
+temp_slopes <- left_join(temp_slopes, stats)
+temp_slopes <- temp_slopes %>% mutate(sort_var = slope_est)
+temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+
+do_slopes <- left_join(do_slopes, stats)
+do_slopes <- do_slopes %>% mutate(sort_var = slope_est)
+do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+
+do_slopes <- mutate(do_slopes, species_lab = if_else(slope_est < -0.75|depth >270, species, ""))
+temp_slopes <- mutate(temp_slopes, species_lab = if_else(slope_est < -2.25|depth >270, species, ""))
+do_slopes$species_lab <- gsub("Rockfish", "", do_slopes$species_lab)
+temp_slopes$species_lab <- gsub("Rockfish", "", temp_slopes$species_lab)
+
+# build plots
+depth <- ggplot(do_data, aes(depth, do_est)) +
+  geom_point(aes(depth, temp/2), alpha = 0.02, shape = 20, colour = "#3d95cc", size = 0.2) +
+  geom_point(aes(depth, do_est), alpha = 0.02, shape = 20, colour = "darkorchid4", size = 0.2) +
+  geom_smooth(colour = "darkorchid4", size = 0.5) + 
+  xlim(15, 450) + 
+  ylab("mean DO (ml/L)") +
+  scale_y_continuous(sec.axis = sec_axis( ~ (./2), name = "temperature (ºC)")) +  #, expand = expand_scale(mult = c(0.05, .2)
+  geom_smooth(aes(depth, temp/2), inherit.aes = F, colour = "#3d95cc", size = 0.5) + 
+  geom_hline(yintercept = 1.4, colour = "black", linetype = "dashed") +
+  xlab("mean depth") +
+  gfplot::theme_pbs() + theme(
+    plot.margin = margin(0, 0.3, 0.2, 0.2, "cm"),
+    axis.text.y.left = element_text(color = "darkorchid4"),
+    axis.text.y.right = element_text(color = "#3d95cc"),
+    axis.title.y.left = element_text(color = "darkorchid4"),
+    axis.title.y.right = element_text(color = "#3d95cc") #, vjust = -0.2
+    # axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
+  )
+
+temp_high <- slope_scatterplot(
+  filter(temp_slopes, chopstick == "high"), "depth",
+  col_group = "age",  
+  point_alpha = 0.8,
+  point_size = 1.5
+) +
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") +
+  ggrepel::geom_text_repel(aes(label=species_lab), 
+    size=2, force = 2, #nudge_y = -0.3, nudge_x = 20, 
+    na.rm = T, min.segment.length = 1) +
+  # scale_y_continuous(trans = fourth_root_power) +
+  # geom_smooth(method= "lm", size = 0.5) +
+  ylab("slope at highest temperature") +
+  xlim(15, 450) + 
+  theme(
+    plot.margin = margin(0, 0.1, 0, 0.1, "cm"),
+    legend.position = c(.85, .2), 
+    axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank(),
+    legend.title = element_blank())
+
+do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth",
+  col_group = "age", 
+  point_alpha = 0.8,
+  point_size = 1.5, 
+) +
+  geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") +
+  xlab("mean depth for species") +
+  ylab("slope at lowest DO") + guides(colour = F) +
+  xlim(15, 450) + 
+  ggrepel::geom_text_repel(aes(label=species_lab), 
+    size=2, force = 2, nudge_y = -0.35, nudge_x = 15,     
+    na.rm = T, min.segment.length = 2) +
+  gfplot::theme_pbs() + theme(
+    plot.margin = margin(0, 0.1, 0, 0.1, "cm"),
+    axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
+  )
+
+temp_high + do_low + depth + plot_layout(ncol = 1, heights = c(1, 1, 1))
+ggsave(here::here("ms", "figs", "slope-by-depth.png"), width = 4.5, height = 7)
+
+#### COEFFICIENT SCATTERPLOTS AGAINST LIFE HISTORY ####
 model2 <- add_colours(model$coefs, species_data = stats)
 model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"
 model2$group[model2$group == "SKATE"] <- "SHARKS & SKATES"
@@ -382,10 +468,11 @@ trendeffects <- model2 %>%
 trendeffects <- trendeffects %>%
   mutate(coefficient = forcats::fct_reorder(coefficient, Estimate, .desc = F))
 
+
 p_depth <- coef_scatterplot(trendeffects,
   coef = c("temperature", "DO"),
   x = "depth", group = "age", regression = F
-) +
+  ) +
   ylab("trend coefficient") + xlab("mean depth") +
   geom_smooth(
     # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
@@ -408,8 +495,14 @@ p_depth <- coef_scatterplot(trendeffects,
 
 p_age <- coef_scatterplot(trendeffects,
   coef = c("temperature", "DO"),
-  x = "age_mean", group = "age", regression = T
-) +
+  x = "age_mean", group = "age", regression = F
+  ) +
+  geom_smooth(
+    # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
+    aes_string("age_mean", "Estimate"), method = "lm",
+    # colour = "darkgray", 
+    fill = "lightgray"
+  ) +
   xlab("mean age") +
   scale_colour_viridis_d(begin = .8, end = .2) +
   guides(colour = F) +
@@ -420,13 +513,14 @@ p_age <- coef_scatterplot(trendeffects,
   ) +
   facet_grid(rows = vars(coefficient), cols = vars(rockfish), scales = "free")
 
-trendeffects <- mutate(trendeffects, growth_rate = length_50_mat_f/age_mat)
+trendeffects <- mutate(trendeffects, growth_rate = length_50_mat_f/age_mat, growth_rate_m = length_50_mat_m/age_mat_m) 
+# plot(data = trendeffects, growth_rate ~ growth_rate_m)
 p_mat <- coef_scatterplot(trendeffects,
   coef = c("temperature", "DO"),
   x = "growth_rate",
   # x = "length_50_mat_f", 
   group = "age", regression = F
-) +
+  ) +
   xlab("immature growth rate") +
   geom_smooth(
     # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
@@ -446,5 +540,3 @@ p_mat <- coef_scatterplot(trendeffects,
 
 cowplot::plot_grid(p_depth, p_age, p_mat, nrow = 1, rel_widths = c(1.1, 1.75, 1.75))
 ggsave(here::here("ms", "figs", "coef-scatterplots.pdf"), width = 8, height = 4)
-
-
