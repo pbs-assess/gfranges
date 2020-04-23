@@ -47,6 +47,33 @@ manipulate::manipulate({
   as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
 )
 
+# Just mature
+unique(model2$coefficient)
+model3 <- model2 %>% filter(age == "mature") %>%
+  filter(coefficient != "age") %>%
+  filter(coefficient != "age:temp_trend_scaled") %>%
+  filter(coefficient != "age:mean_temp_scaled" ) %>%
+  filter(coefficient != "age:DO_trend_scaled") %>%
+  filter(coefficient != "age:mean_DO_scaled"  ) %>%
+  filter(coefficient != "age:temp_trend_scaled:mean_temp_scaled" ) %>%
+  filter(coefficient != "age:DO_trend_scaled:mean_DO_scaled") %>%   
+  filter(coefficient != "log_biomass_scaled" )
+                
+manipulate::manipulate({
+  plot_coefs(model3, fixed_scales = F, order_by = order_by) 
+  #+ ylim(-0.05,0.095)
+}, order_by = manipulate::picker( 
+  as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
+)
+
+# Just immature
+manipulate::manipulate({
+  plot_coefs(filter(model2, age == "immature"), fixed_scales = F, order_by = order_by) 
+  #+ ylim(-0.05,0.095)
+}, order_by = manipulate::picker( 
+  as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
+)
+
 ### GENUS COEF PLOTS
 model3 <- add_colours(model$coefs_genus, col_var = "genus", add_spp_data = F) 
 colour_list <- unique(model3$colours)
