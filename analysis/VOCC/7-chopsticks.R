@@ -36,10 +36,11 @@ temp_slopes <- chopstick_slopes(model, x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp")
 temp_slopes <- left_join(temp_slopes, stats)
 temp_slopes <- temp_slopes %>% mutate(sort_var = slope_est)
-
+# temp_slopes <- filter(temp_slopes, age == "mature")
 p2 <- plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
   y_label = "Predicted % change in biomass", 
+  # choose_age = "mature",
   slopes = temp_slopes  # if add, the global slope can be included for insig.
 ) + coord_cartesian(ylim=c(-11,7)) + 
   xlab("Temperature trend (scaled)") + theme(legend.position = "none")
