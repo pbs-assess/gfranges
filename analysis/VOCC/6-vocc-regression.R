@@ -1,5 +1,4 @@
-## REMEMBER TO RESTART R
-# .rs.restartR()
+## REMEMBER TO RESTART R # .rs.restartR()
 library(TMB)
 library(dplyr)
 library(tidyr)
@@ -13,25 +12,28 @@ compile("vocc_regression.cpp")
 dyn.load(dynlib("vocc_regression"))
 source("vocc-regression-functions.R")
 
-knots <- 200
+knots <- 500
 
 # age <- "mature"
 # age <- "immature"
 age <- "both"
 
-y_type <- "vel"
-# y_type <- "trend"
+# y_type <- "vel"
+y_type <- "trend"
 
 no_chopsticks <- F
-# model_type <- "-vel-both"
-# # model_type <- "-vel-both-fishing"
+
+model_type <- "-trend"
+# model_type <- "-trend-w-age" # an experiment that lacks true chops for imm
 # model_type <- "-trend-with-do"
+# model_type <- "-trend-grad"
+
 
 # model_type <- "-vel-temp"
-model_type <- "-vel-do"
-# model_type <- "-trend"
-# model_type <- "-trend-grad"
+# model_type <- "-vel-do"
 # model_type <- "-dist-vel-temp"
+# model_type <- "-vel-both"
+# # model_type <- "-vel-both-fishing"
 
 w_genus <- F
 w_family <- F
@@ -68,6 +70,11 @@ if(w_family){
   d$genus <- d$family
 }
 
+# if(w_age){
+#   d$genus <- d$age
+# }
+
+
 d <- as_tibble(d) %>%
   # filter(species != "Bocaccio") %>%
   # filter(species != "Sand Sole") %>%
@@ -75,7 +82,7 @@ d <- as_tibble(d) %>%
   filter(species != "Longspine Thornyhead")
 
 # if combining adult and imm in same model
-if(age=="both") d <- mutate(d, species_only = species, species = species_age)
+if(age=="both") d <- mutate(d, species_only = species, species = species_age, age_class = age, age = if_else(age_class == "mature", 0, 1))
 
 #### PREP FISH BIOMASS VARIABLES ####
 # range(d$mean_biomass)
@@ -140,6 +147,7 @@ if (model_type == "-trend") {
   temp_chopstick <- T
   x_type <- "trend"
 }
+
   
 if (model_type == "-trend-grad") {
   formula <- ~ temp_trend_scaled +
@@ -173,6 +181,52 @@ formula <- ~ temp_trend_scaled +
   DO_chopstick <- T
   x_type <- "trend"
 }
+
+if (model_type == "-trend-with-grad") {
+  
+  formula <- ~ temp_trend_scaled +
+    mean_temp_scaled + 
+    temp_trend_scaled:mean_temp_scaled +
+    log_effort_scaled + fishing_trend_scaled +
+    temp_grad_scaled +
+    DO_trend_scaled +
+    mean_DO_scaled +  
+    DO_trend_scaled:mean_DO_scaled +
+    log_biomass_scaled 
+  
+  x <- model.matrix(formula, data = d)
+  
+  temp_chopstick <- T
+  DO_chopstick <- T
+  x_type <- "trend"
+}
+
+
+if (model_type == "-trend-w-age") {
+  formula <- ~ age + 
+    temp_trend_scaled +
+    mean_temp_scaled + 
+    temp_trend_scaled:mean_temp_scaled +
+    # temp_grad_scaled + 
+    DO_trend_scaled +
+    mean_DO_scaled +  
+    DO_trend_scaled:mean_DO_scaled +
+    age:temp_trend_scaled +
+    age:mean_temp_scaled + 
+    age:temp_trend_scaled:mean_temp_scaled +
+    age:DO_trend_scaled +
+    age:mean_DO_scaled +
+    age:DO_trend_scaled:mean_DO_scaled +
+    log_biomass_scaled #+ age:log_biomass_scaled 
+  
+  x <- model.matrix(formula, data = d)
+  
+  temp_chopstick <- T
+  DO_chopstick <- T
+  x_type <- "trend"
+}
+
+
 
 ############################
 # #### VELOCITY VARIABLES
