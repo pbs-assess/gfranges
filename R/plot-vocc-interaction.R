@@ -218,6 +218,10 @@ plot_fuzzy_chopsticks <- function(model,
     }
   } else {
     pred_dat <- mutate(pred_dat, order = !!order_var)
+    if (!is.null(choose_age)) {
+      check_age <- choose_age
+      pred_dat <- filter(pred_dat, age == !!check_age)
+    }
   }
 
   # Shorten the one very long species name...
@@ -601,6 +605,7 @@ slope_scatterplot <- function(slopes_w_traits, x,
                               slope_var = "slope_est",
                               col_group = "chopstick",
                               point_size = 0.75,
+                              point_alpha = 0.99,
                               pointrange = T,
                               regression = F) {
   p <- ggplot(slopes_w_traits, aes_string(x, slope_var, colour = col_group)) +
@@ -611,9 +616,9 @@ slope_scatterplot <- function(slopes_w_traits, x,
   
   if (pointrange) {
   p <- p + geom_pointrange(aes(ymin = (slope_est - slope_se * 1.96),
-    ymax = (slope_est + slope_se * 1.96)), alpha = 0.99, fatten = 1)
+    ymax = (slope_est + slope_se * 1.96)), alpha = point_alpha, fatten = 1)
   } else {
-    p <- p + geom_point(size = point_size) 
+    p <- p + geom_point(size = point_size, alpha = point_alpha) 
   }
   p <- p + scale_colour_viridis_d(begin = .8, end = .2) +
     gfplot:::theme_pbs()
