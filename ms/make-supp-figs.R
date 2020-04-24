@@ -587,8 +587,8 @@ slope_age <- slope_scatterplot(all_slopes, "age_mean",
   ) +
   # geom_smooth(method= "lm", size = 0.5, fill = "lightgray") + # formula = y ~ x + I(x^2),  colour = "gray",
   geom_hline(yintercept = 0, colour = "black", alpha = 0.5,  linetype = "dashed") +
-  xlab("mean age") +
-  ylab("slope") + 
+  xlab("Mean age") +
+  ylab("Slope") + 
   facet_grid(type~chopstick, scales = "free") +  
   guides(colour = F) +
   theme(
@@ -610,7 +610,7 @@ slope_growth <- slope_scatterplot(all_slopes, "growth_rate",
     fill = "lightgray"
   ) +
   # geom_smooth(method= "lm", size = 0.5, fill = "lightgray") +
-  # xlab("mean age") +
+  # xlab("Mean age") +
   ylab("slope") + 
   facet_grid(type~chopstick, scales = "free") +
   guides(colour = F) +
@@ -638,7 +638,7 @@ p_age_alone <- coef_scatterplot(
   coef = c("temperature", "DO"),
   x = "age_mean", group = "age", regression = F
 ) +
-  xlab("mean age") +
+  xlab("Mean age") +
   scale_colour_viridis_d(begin = .8, end = .21) +
   scale_y_continuous(expand = expansion(mult = .2)) +
   # ggtitle("") +
@@ -651,7 +651,7 @@ p_age_alone <- coef_scatterplot(
   geom_point(alpha = 0.5, size = 2) +
   facet_grid(rows = vars(coefficient), scales = "free") + #cols = vars(rockfish), 
   # theme(legend.position = c(.8,.15), legend.title = element_blank()) +
-  ylab("trend coefficient")
+  ylab("Trend coefficient")
 p_age_alone
 ggsave(here::here("ms", "figs", "supp-coef-by-mean-age.pdf"), width = 3.5, height = 2.7)
 

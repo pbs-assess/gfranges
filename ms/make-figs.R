@@ -473,7 +473,7 @@ p_depth <- coef_scatterplot(trendeffects,
   coef = c("temperature", "DO"),
   x = "depth", group = "age", regression = F
   ) +
-  ylab("trend coefficient") + xlab("mean depth") +
+  ylab("Trend coefficient") + xlab("Mean depth") +
   geom_smooth(
     # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
     aes_string("depth", "Estimate"), method = "lm",
@@ -503,7 +503,7 @@ p_age <- coef_scatterplot(trendeffects,
     # colour = "darkgray", 
     fill = "lightgray"
   ) +
-  xlab("mean age") +
+  xlab("Mean age") +
   scale_colour_viridis_d(begin = .8, end = .2) +
   guides(colour = F) +
   theme(
@@ -521,7 +521,7 @@ p_mat <- coef_scatterplot(trendeffects,
   # x = "length_50_mat_f", 
   group = "age", regression = F
   ) +
-  xlab("immature growth rate") +
+  xlab("Immature growth rate") +
   geom_smooth(
     # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
     aes_string("growth_rate", "Estimate"), method = "lm",
