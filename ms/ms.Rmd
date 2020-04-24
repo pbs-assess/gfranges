@@ -307,7 +307,11 @@ include_graphics(here("ms", "figs", "climate-maps-updated.png"))
 
 <!-- SA: "only included when the confidence intervals on the slopes did not overlap" <- can we always include the CIs? -->
 
-```{r worm-plots, fig.cap="Slopes of relationships between climate trends and percent change in biomasss (A; controling for effect of the other climate variable) or biotic and climate velocities (B; without controling for the effect of the other climate variable) for groundfish species. Open circles indicate patterns for immatures, while closed circles represent individuals large enough to have a 5\\% chance of being reproductively mature or belonging to species for which maturity data was not available. Black indicates the overall effect when the 95\\% CI of the estimated interaction with mean climate condition overlapped zero. Colours indicate slopes estimated for the low (0.025) and high (0.975) quantiles of mean climate conditions (only included when the confidence intervals on the slopes did not overlap).", out.width="5.5in"}
+<!-- SA: Am I reading it right that Bocaccio really don't like it warming? That's interesting considering they've had one of the biggest recruitment events ever seen for rockfish in this warming decade. -->
+
+<!-- SA: Point of discussion: if I'm reading it right, Pacific Cod don't like it warming. Tie into collapse in Alaska with warm blob -->
+
+```{r worm-plots, fig.cap="Slopes of relationships between climate trends and percent change in biomasss (A; controling for effect of the other climate variable) or biotic and climate velocities (B; without controling for the effect of the other climate variable) for groundfish species. Open circles indicate patterns for immatures, while closed circles represent individuals large enough to have a 5\\% chance of being reproductively mature or belonging to species for which maturity data was not available. Black indicates the overall effect when the 95\\% CI of the estimated interaction with mean climate condition overlapped zero. Colours indicate slopes estimated for the low (0.025) and high (0.975) quantiles of mean climate conditions (only included when the confidence intervals on the slopes did not overlap). Coefficients are ordered by TODO within each panel.", out.width="5.5in"}
 # include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
 # TODO: decide if velocity slopes belong here
 # TODO: should species be in same order on both trend and velocity panels?
@@ -318,6 +322,7 @@ include_graphics(here("ms", "figs", "worm-plot-both.pdf"))
 <!-- SA: writing out the caption like this lets us reference other figures or citations -->
 
 (ref:chop-panel) Maps of biotic (top), temperature (middle), and DO (bottom) trends underlying interaction plots (between map rows) of predicted biotic trend (y-xis) for each standard deviation change in seafloor temperature and DO (x-axis) for mature populations of species representing a range of taxonomic groups and response patterns. Colours and lines in the interaction plots match the slopes represented in Fig. \@ref(fig:worm-plots), where low (0.025) and high (0.975) quantiles of mean climate conditions are illustrated in blue and red for temperatures and yellow and purple for DO.
+For example, for Widow Rockfish, TODO: walk through the temperature panels.
 
 \begin{landscape}
 
@@ -327,7 +332,7 @@ include_graphics(here("ms", "figs", "species-map-chop-panel.png"))
 
 \end{landscape}
 
-```{r slope-by-depth, fig.cap="Slopes of the relationship between changes in biomass and climate for the environmental extremes expected to have the greatest physiological impact---highest temperatures (A) and lowest DO (B)---plotted against each species' mean depth of occurrence. Smoothed (solid lines represent a GAM) relationship between estimated temperature (right axis; blue) and DO (left axis; purple) with mean depth in each 4x4 km survey grid cell (dots). An increase in variablity of slopes for changes in DO occurs for species whose mean depth is at or below depths where estimated mean DO levels approach hypoxic conditions (dashed line at <1.4 ml/L).", out.width="4in"}
+```{r slope-by-depth, fig.cap="Slopes of the relationship between changes in biomass and climate for the environmental extremes expected to have the greatest physiological impact---(A) highest temperatures and (B) lowest DO---plotted against each species' mean depth of occurrence. (C) Smoothed (solid lines represent a GAM) relationship between estimated temperature (right axis; blue) and DO (left axis; purple) with mean depth in each 4x4 km survey grid cell (dots). An increase in variablity of slopes for changes in DO occurs for species whose mean depth is at or below depths where estimated mean DO levels approach hypoxic conditions (dashed line at <1.4 ml/L in panel C).", out.width="4in"}
 include_graphics(here("ms", "figs", "slope-by-depth.png"))
 ```
 
@@ -335,6 +340,14 @@ include_graphics(here("ms", "figs", "slope-by-depth.png"))
 SA: can we spell out what a negative (or positive) slope means here again to remind people?
 Negative slope means that...
 easy to lose the thread
+
+and add panel letters obviously
+
+am I reading it correctly that negative slopes mean that as DO goes up, biomass goes down? Can we spell that out again?
+
+if so, does that mean that the slopes in the bottom right of panel B are particularly perplexing? near to hypoxic conditions and seemed to like it more hypoxic?
+
+I guess that points to hypoxia not being the main driver and just that these really deep species may be more O2 driven as a proxy for other things?
 -->
 
 \begin{landscape}
@@ -342,6 +355,8 @@ easy to lose the thread
 ```{r coef-scatterplots, fig.cap="Main effect coefficients of the relationship between biotic trends and changes in climate for species with different life history strategies. Mean age and depth are calculated across all sampled individuals of each maturity class (as defined by the length at 50\\% maturity) within a species. Growth rate is estimated as the length at maturity for females divided by the 0.95 quantile of all otolith or fin-ray ages from immature females of each species. Separate regression slopes are plotted for each maturity class except in relation to mean age given that maturity is largely a function of age.", out.width="8in"}
 include_graphics(here("ms", "figs", "coef-scatterplots.pdf"))
 ```
+
+\end{landscape}
 
 <!-- SA: I went into the code and capitalized the xlab and ylabs for this plot. Can you also do the facet labels? 
 E.g.
@@ -352,11 +367,7 @@ firstup <- function(x){
 Same for other figures (at least the main paper ones; supplement doesn't matter as much)
 --> 
 
-\end{landscape}
-
 <!-- SA: I'm not sure I follow the intent of the immature growth rate calculation -->
-<!-- SA: I'm not sure I follow the intent of the immature growth rate calculation -->
-
 
 \renewcommand{\thefigure}{S\arabic{figure}}
 \renewcommand{\thetable}{S\arabic{table}}
