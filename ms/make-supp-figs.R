@@ -43,8 +43,7 @@ model_vel_d <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/vel-all-95-all-
 #########################
 #########################
 #########################
-#### EXPLORE GRADIENTS ####
-#########################
+#### EXPLORE GRADIENTS 
 ###
 ### Gradient maps ####
 grad_do <- plot_vocc(alldata,
@@ -335,6 +334,7 @@ globel_age <- dotwhisker::dwplot(overall3#,
   scale_colour_manual(values = c("#D53E4F", "#F46D43", 
     "#FDAE61"#, "#FEE08B", "#3288BD", "#5E4FA2"
     )) + ggtitle("test for global maturity effects") +
+  scale_y_discrete(position = "right") +
   gfplot::theme_pbs() + theme (legend.title = element_blank(),
     legend.position = c(0.25, 0.16))
 # globel_age
