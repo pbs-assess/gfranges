@@ -7,18 +7,19 @@ author: |
      philina.english@dfo-mpo.gc.ca\
 output:
   bookdown::pdf_document2:
-    number_sections: yes
+    number_sections: no
     toc: no
 fontfamily: libertine
 fontsize: 12pt
 header-includes:
   - \usepackage{setspace}
-  - \onehalfspacing
+#  - \onehalfspacing
   - \usepackage{lineno}
   - \usepackage{fullpage}
   - \usepackage{pdflscape}
-  - \linenumbers
-  - \modulolinenumbers[2]
+#  - \linenumbers
+#  - \modulolinenumbers[2]
+abstract: TODO
 geometry: "left=2.64cm, right=2.64cm, top=2.54cm, bottom=2.54cm"
 bibliography: "refs.bib"
 csl: "ecology.csl"
@@ -35,15 +36,14 @@ opts_chunk$set(
   fig.align = "center",
   fig.pos = "htb"
 )
+```
 
-# TODO: is this where this should go?
+```{r data, cache=TRUE}
 alldata <- readRDS(paste0("../analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
 model <- readRDS("../analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
 ```
 
-# Abstract {-}
-
-# **Introduction**
+# Introduction
 
 -   **Why study species responses to climate (Ecological and management perspectives)?**
 
@@ -130,22 +130,22 @@ Need to add mention of growth rates?
 Do I need why?
 Discuss further with sean & chris rooper -->
 
-# **Methods**
+# Methods
 
 <!-- TODO: Consider starting the methods with one short paragraph giving an overview of the methods -->
 
-## *Survey data*
+## Survey data
 
-We analyze abundance, distribution, and morphometric data for 36 species of Pacific groundfish most regularly encountered on fisheries-independent bottom trawl surveys and relatively widely distributed within Canadian waters. 
-Surveys are stratified within four separate regions two of which are surveyed each year since 2005 (with surveys also conducted in some regions in 2003 & 2004): Hecate Strait and Queen Charlotte Sound (odd years) and West Coast Vancouver Island and West Coast Haida Gwaii (even years). 
-Each region is sampled over the same month long period between late May and early August each year.
-Combined these surveys cover most of the upper continental slope and shelf in Canada and share the same random depth stratified design, fishing gear, and fishing protocols (TODO: Sinclair et al. 2003).
-Only successful tows of 15--20 min duration are included in analyses and total biomass of each species captured was converted to a biomass density estimate based on the speed, distance covered and net opening.
-Catches of between 10--50 individuals are weighed and measured individually, while larger catches are subsampled and for commercially important species data on maturity and age are also collected.
+We analyze abundance, distribution, and morphometric data for 36 species of Pacific groundfish that are regularly encountered on fisheries-independent bottom trawl surveys and widely distributed within western Canadian waters. 
+The surveys are stratified within four regions, two of which are generally surveyed each year since 2003: Hecate Strait and Queen Charlotte Sound (odd years) and West Coast Vancouver Island and West Coast Haida Gwaii (even years). 
+Each region is sampled over the same month-long period between late May and early August each year.
+Combined, these surveys cover most of the upper continental slope and shelf in western Canada and share the same random depth-stratified design, fishing gear, and fishing protocols (TODO: Sinclair et al. 2003).
+We only include successful tows of 15--20 min duration in analyses and convert total biomass of each species to a biomass density based on the speed, distance covered, and net opening.
+Catches of between 10--50 individuals are weighed and measured individually, while larger catches are subsampled and, for commercially important species, data on maturity and age are collected.
 
-## *Estimate spatiotemporal variation in adult and immature biomass densities*
+## Estimate spatiotemporal variation in adult and immature biomass densities
 
-Because ontogenetic shifts in habitat, particularly depth, are well documented in groundfish species [@mindel2016; @barbeaux2018; @li2019], we estimate biomass densities separately for mature and immature size classes whenever possible (maturity is not assessed for certain Chondrichthians, or when catches are particularly low).
+Because ontogenetic shifts in habitat, particularly depth, are well documented in groundfish species [e.g., @mindel2016; @barbeaux2018; @li2019], we estimate biomass densities separately for mature and immature size classes whenever possible (maturity is not assessed for certain Chondrichthians, or when catches are particularly low).
 To do this, we first estimate length at 50% maturity (defined by gonadal development stages of immature or maturing vs. mature, ripe, or spent) using ogives fit as sex-specific logistic regressions to individual specimens.
 When sufficient samples were available in all years, a random effect of year was included to allow for temporal change in size at maturity (TODO: REF) and these year specific thresholds were used to split observed catches.
 For those species lacking maturity data in some years, a random effect of tow id was included instead, but catches were split based on the global estimate.
@@ -171,7 +171,7 @@ Furthermore, the spatial random effects can account for spatial factors that are
 
 <!-- TODO: DESCRIBE MODEL VALIDATION FOR EACH SPECIES AND CLIMATE MODEL -->
 
-## *Estimate climate velocities*
+## Estimate climate velocities
 
 We modeled bottom temperature and DO levels from sensor data collected by Seabird Electronics 19plus conductivity, temperature, and depth recorder (CTD) with dissolved oxygen (DO) sensor was successfully deployed on most survey tows since 2008. Our modeling approach was similar to that used for biomass densities except that the distribution was Gaussian and we estimated the spatiotemporal random fields using an AR1 process.
 Because DO levels cannot be negative and are known to be influenced be both water temperature and seasonal biological processes (REF), we predicted log(DO) with fixed effects for day of year (centered and scaled) and temperature (quadratic of scaled values similar to depth).
@@ -206,7 +206,7 @@ As a result both estimates produce heavy-tailed distributions...
   -   calculate % change in hrs fished between 2008-2018
 -->
 
-## *Link biomass change with climate*
+## Link biomass change with climate
 
 To explore the potential for change in climate to predict local percent changes in biomass density, we used similar spatial GLMMs in order to control for spatial autocorrelation amongst cells. For each maturity class of each species the model estimates an independent random spatial field was and with and without either genus or family as possible phylogenetic grouping factors. .
 For each species, only the fewest cells that encompass 95% of total mean biomass were included.
@@ -227,7 +227,7 @@ For all immatures and adults sampled for each species, we calculated the average
 A similar value was calculated for immature males, but it only differed substantially for a couple of the fastest growing species and did not change any overall patterns. 
 
 
-# **Results**
+# Results
 
 Our models suggest that from 2008 to 2018, survey season seafloor temperature increased across almost the entirety of Canada's Pacific shelf region (95% interquartile range of `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[2]], digits = 2)`), with warming tending to be most pronounced in shallower areas (Fig. \@ref(fig:climate-maps) <!-- TODO: should letters be added and included here? eg. "C" -->). 
 In contrast, change in seafloor DO was much more variable in the direction of change (95% interquartile range of `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[2]], digits = 2)`), with both the greatest increases also occurring in the shallowest areas and the greatest decreases occuring across a wide range of depths <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)D) -->. 
