@@ -322,7 +322,13 @@ include_graphics(here("ms", "figs", "worm-plot-both.pdf"))
 <!-- SA: writing out the caption like this lets us reference other figures or citations -->
 
 (ref:chop-panel) Maps of biotic (top), temperature (middle), and DO (bottom) trends underlying interaction plots (between map rows) of predicted biotic trend (y-xis) for each standard deviation change in seafloor temperature and DO (x-axis) for mature populations of species representing a range of taxonomic groups and response patterns. Colours and lines in the interaction plots match the slopes represented in Fig. \@ref(fig:worm-plots), where low (0.025) and high (0.975) quantiles of mean climate conditions are illustrated in blue and red for temperatures and yellow and purple for DO.
-For example, for Widow Rockfish, TODO: walk through the temperature panels.
+Black lines are shown when TODO.
+As an example, for Widow Rockfish, we estimate that biomass density has increased with increasing temperatures in cooler regions and decreased with increasing temperatures in warmer regions.
+
+<!-- SA: I almost wonder if we should show these chopstick plots before the moderately overwhelming slopes for all the species. Not sure, I can see an argument either way. Maybe at least allude in the caption for the coefficient plot that this next plot exists and may help with interpretation.
+
+The alternative would be to help the reader along by giving some examples like in this chopstick plot, and then zooming out to show the coefficients for all the species.
+-->
 
 \begin{landscape}
 
