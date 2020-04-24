@@ -150,7 +150,7 @@ p_do_worm <- plot_chopstick_slopes(do_slopes,
   # ylab("slopes")
   theme(axis.title.x = element_blank())
 
-(p_temp_worm | p_do_worm) / grid::textGrob("slope of biomass trend with a SD change in climate", just = 0.31, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
+(p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.31, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 ggsave(here::here("ms", "figs", "worm-plot-trend.pdf"), width = 8, height = 6)
 
 # meta-analytical coefficients? ... all span zero, but could include as appendix?
@@ -453,6 +453,9 @@ ggsave(here::here("ms", "figs", "slope-by-depth.png"), width = 4.5, height = 7)
 model2 <- add_colours(model$coefs, species_data = stats)
 model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"
 model2$group[model2$group == "SKATE"] <- "SHARKS & SKATES"
+model2$rockfish[model2$rockfish == "rockfish"] <- "Rockfish"
+model2$rockfish[model2$rockfish == "other fishes"] <- "Other fishes"
+
 model2 <- model2 %>%
   group_by(group) %>%
   mutate(spp_count = length(unique(species))) %>%
@@ -463,14 +466,16 @@ trendeffects <- model2 %>%
   filter(coefficient %in% c("temp_trend_scaled", "DO_trend_scaled")) %>%
   transform(coefficient = factor(coefficient,
     levels = c("temp_trend_scaled", "DO_trend_scaled"),
-    labels = c("temperature", "DO")
+    labels = c("Temperature", "DO")
   ))
+
 trendeffects <- trendeffects %>%
   mutate(coefficient = forcats::fct_reorder(coefficient, Estimate, .desc = F))
+# trendeffects <- mutate(trendeffects, rockfish = firstup(rockfish) # didn't work
 
 
 p_depth <- coef_scatterplot(trendeffects,
-  coef = c("temperature", "DO"),
+  coef = c("Temperature", "DO"),
   x = "depth", group = "age", regression = F
   ) +
   ylab("Trend coefficient") + xlab("Mean depth") +
@@ -481,7 +486,8 @@ p_depth <- coef_scatterplot(trendeffects,
     fill = "lightgray"
   ) +
   scale_colour_viridis_d(begin = .8, end = .2) +
-  guides(colour = F) + labs(subtitle = "all species") +
+  guides(colour = F) + 
+  labs(subtitle = "All species") +
   facet_grid(rows = vars(coefficient), scales = "free_y") +
   # gfplot:::theme_pbs() %+replace%
   theme(
@@ -494,7 +500,7 @@ p_depth <- coef_scatterplot(trendeffects,
   )
 
 p_age <- coef_scatterplot(trendeffects,
-  coef = c("temperature", "DO"),
+  coef = c("Temperature", "DO"),
   x = "age_mean", group = "age", regression = F
   ) +
   geom_smooth(
@@ -516,7 +522,7 @@ p_age <- coef_scatterplot(trendeffects,
 trendeffects <- mutate(trendeffects, growth_rate = length_50_mat_f/age_mat, growth_rate_m = length_50_mat_m/age_mat_m) 
 # plot(data = trendeffects, growth_rate ~ growth_rate_m)
 p_mat <- coef_scatterplot(trendeffects,
-  coef = c("temperature", "DO"),
+  coef = c("Temperature", "DO"),
   x = "growth_rate",
   # x = "length_50_mat_f", 
   group = "age", regression = F
