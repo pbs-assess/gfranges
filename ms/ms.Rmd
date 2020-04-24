@@ -45,37 +45,25 @@ model <- readRDS("../analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-
 
 # **Introduction**
 
-**Question framing notes:**
+-   **Why study species responses to climate (Ecological and management perspectives)?**
 
--   *Groundfish*
-
-    -   *occupy a relatively homogenous thermal environment*
-
-        -   *predict less tendency to move in response to climate*
-
-    -   *many migrate and school*
-
-    -   *high possibility of movement in response to climate*
-
--   *Stock assessments assume stationary distributions*
-
--   *Choices of marine protected areas*
-
--   *Approaches used often consider the whole of species ranges and apply forward projections assuming that species responses to climate variables will remain the same through time.*
+    -   Stock assessments assume stationary distributions
+    -   Choices of marine protected areas
 
 **Spatial scales of biotic responses to climate change**
 
--   **Range boundaries** ...
+Approaches used often consider the whole of species ranges and apply forward projections assuming that species responses to climate variables will remain the same through time.
 
--   **Center of gravity** -- commonly used to assess responses...
+-   ***Range boundaries*** ...
+-   ***Center of gravity*** -- commonly used to assess responses...
 
--   suggests that fishing pressure is more important than average bottom temperature on annual (maybe seasonal?) basis for predicting COG for entire stocks [@adams2018] however a relatively higher influence of bottom temperature on inertia (variance in biomass relative to COG) suggests that is spatial variability in temperature (or responses to temperature) that aren't captured in COG
+    -   suggests that fishing pressure is more important than average bottom temperature on annual (maybe seasonal?) basis for predicting COG for entire stocks [@adams2018] however a relatively higher influence of bottom temperature on inertia (variance in biomass relative to COG) suggests that is spatial variability in temperature (or responses to temperature) that aren't captured in COG
 
--   Because population density often increases faster than area occupied, and organisms likely move towards preferred habitat as populations decline( the basin model of density-dependent habitat selection theory)... populations merit cautious management during population declines, because a compressed range may increase the efficiency of harvest. ... [@thorson2016b]
+    -   Because population density often increases faster than area occupied, and organisms likely move towards preferred habitat as populations decline( the basin model of density-dependent habitat selection theory)... populations merit cautious management during population declines, because a compressed range may increase the efficiency of harvest. ... [@thorson2016b]
 
--   ... Could complicate interpretation of indices such as COG?
-
--   **Local climate velocities** are one way of quantifying these changes at finer spatial scales.
+    -  Could complicate interpretation of indices such as COG?
+    
+-   ***Local climate velocities*** are one way of quantifying these changes at finer spatial scales.
 
 **Measuring biotic responses in terms of density**
 
@@ -94,7 +82,7 @@ Like SDMs, most previous applications of biotic velocities have focused on habit
 
 However, changes in climate may cause shifts carrying capacity long before range shifts are clearly detectable. Therefore, we will extend the application of biotic velocities to estimates of change in fish biomass densities rather than probability of presence.
 
-*DO I need to talk about trends here, if trend analysis is included?*
+<!-- TODO: DO I need to talk about trends here, if trend analysis is included? -->
 
 **Time-scales of change depend on life history**
 
@@ -111,6 +99,16 @@ Likewise, changes in local abundances at finer spatial scales should occur more 
 Even at a local scale, the rate of change in overall biomass density should still be limited by species' generation times under certain conditions (e.g. when fecundity or early life history stages are most climate sensitive, and when the larger age classes are highly sedentary or territorial).
 
 <!-- TODO: Check generation time & find REF -->
+
+- 	**Why groundfish in BC are a good case study / application**
+
+    -   occupy a relatively homogenous thermal environment
+        -   predict less tendency to move in response to climate
+    -   many migrate and school
+    -   high possibility of movement in response to climate
+
+- 	**Past work on VOCC in BC groundfish, prevailing hypotheses, limitations/unanswered questions**
+
 
 In order to detect the impact of climate change on species like rockfish (many of which are territorial with generation times > 20 yrs), one would require either datasets in excess of 20 years, or to contrast patterns of change between age classes.
 Indeed, responses to environmental change can be expected to differ between species, and between age classes within species, depending on the life history of species including physiological tolerances , lifespan and dispersal patterns.
@@ -134,19 +132,20 @@ Discuss further with sean & chris rooper -->
 
 # **Methods**
 
+<!-- TODO: Consider starting the methods with one short paragraph giving an overview of the methods -->
+
 ## *Survey data*
 
-Fisheries and Oceans Canada conducts fishery-independent bottom trawl surveys with biennial coverage of the continental shelf and upper slope of most of the BC coast.
-These surveys follow a random depth stratified design and use the same bottom trawl fishing gear and fishing protocols (TODO: Sinclair et al. 2003).
-Surveys are stratified within four separate regions two of which are surveyed each year since 2005 (with surveys also conducted in some regions in 2003 & 2004): Hecate Strait and Queen Charlotte Sound (odd years) and West Coast Vancouver Island and West Coast Haida Gwaii (even years).
+We analyze abundance, distribution, and morphometric data for 36 species of Pacific groundfish most regularly encountered on fisheries-independent bottom trawl surveys and relatively widely distributed within Canadian waters. 
+Surveys are stratified within four separate regions two of which are surveyed each year since 2005 (with surveys also conducted in some regions in 2003 & 2004): Hecate Strait and Queen Charlotte Sound (odd years) and West Coast Vancouver Island and West Coast Haida Gwaii (even years). 
 Each region is sampled over the same month long period between late May and early August each year.
+Combined these surveys cover most of the upper continental slope and shelf in Canada and share the same random depth stratified design, fishing gear, and fishing protocols (TODO: Sinclair et al. 2003).
 Only successful tows of 15--20 min duration are included in analyses and total biomass of each species captured was converted to a biomass density estimate based on the speed, distance covered and net opening.
 Catches of between 10--50 individuals are weighed and measured individually, while larger catches are subsampled and for commercially important species data on maturity and age are also collected.
 
 ## *Estimate spatiotemporal variation in adult and immature biomass densities*
 
-We chose 36 species of Pacific groundfish most regularly encountered on fisheries-independent bottom trawl surveys and relatively widely distributed within Canadian waters.
-Because ontogenetic shifts in habitat, particularly depth, are well documented in groundfish species [@mindel2016; @barbeaux2018; @li2019], we estimate biomass densities separately for mature and immature size classes whenever possible (maturity is not assessed for certain Chondrichthians, or when catches are particularly low)
+Because ontogenetic shifts in habitat, particularly depth, are well documented in groundfish species [@mindel2016; @barbeaux2018; @li2019], we estimate biomass densities separately for mature and immature size classes whenever possible (maturity is not assessed for certain Chondrichthians, or when catches are particularly low).
 To do this, we first estimate length at 50% maturity (defined by gonadal development stages of immature or maturing vs. mature, ripe, or spent) using ogives fit as sex-specific logistic regressions to individual specimens.
 When sufficient samples were available in all years, a random effect of year was included to allow for temporal change in size at maturity (TODO: REF) and these year specific thresholds were used to split observed catches.
 For those species lacking maturity data in some years, a random effect of tow id was included instead, but catches were split based on the global estimate.
@@ -174,10 +173,8 @@ Furthermore, the spatial random effects can account for spatial factors that are
 
 ## *Estimate climate velocities*
 
-A Seabird Electronics 19plus conductivity, temperature, and depth recorder (CTD) with dissolved oxygen (DO) sensor has also been successfully deployed on most tows since 2008.
-Therefore, we modeled bottom temperature and DO levels from CTD sensor data collected on each survey tow using a similar geostatistical model as for biomass.
-The approach for these models differed only be being Gaussian and by estimating the spatiotemporal random fields using an AR1 process.
-Because DO levels cannot be negative and are known to be influenced be both water temperature and seasonal biological processes (REF), we predict log(DO) with added fixed effects for day of year (centered and scaled) and temperature (quadratic of scaled values similar to depth).
+We modeled bottom temperature and DO levels from sensor data collected by Seabird Electronics 19plus conductivity, temperature, and depth recorder (CTD) with dissolved oxygen (DO) sensor was successfully deployed on most survey tows since 2008. Our modeling approach was similar to that used for biomass densities except that the distribution was Gaussian and we estimated the spatiotemporal random fields using an AR1 process.
+Because DO levels cannot be negative and are known to be influenced be both water temperature and seasonal biological processes (REF), we predicted log(DO) with fixed effects for day of year (centered and scaled) and temperature (quadratic of scaled values similar to depth).
 Bottom temperature data (but not DO) was also collected on tows prior to 2008, so this data was also included in the model in order to better inform the static spatial field component of the model.
 
 For all climate and biomass models, we then project the model predictions onto a 4 km x 4 km grid (UTM 9 projection) consisting of the particular coastal zone surveyed in each year. We then calculate gradient-based velocities of change, <!-- If analog included: both gradient-based and distance-based velocities of change, --> and constituent local trends and spatial gradients, for each cell.
@@ -248,9 +245,13 @@ These models often tend to show more significant effects for flatfish species, p
 Both climate variables and species distributions were modeled in response to seafloor depth ...
 -->
 
-Across species, the most common patterns were that 1) the impact of warming on biomass change was more negative (or at least less positive) in locations with higher mean temperatures than in cooler locations (e.g. Widow Rockfish, mature Shortspine Thornyhead, and mature English and Flathead Sole), 2) the impact of increasing DO levels was more negative in locations with lower mean DO levels than in locations with higher mean DO levels (e.g. Dogfish, mature Sablefish, Widow Rockfish, and English and Flathead Sole), and 3) overall immature abundances were more likely than mature abundances to show negative relationships (eg. Sablefish, Widow Rockfish, and Dover Sole (Fig. \@ref(fig:trend-chopsticks)). 
-<!-- TODO: checking this with model including age as fixed effect (mature biomass as the intercept)... --> 
-There were no strong patterns of similarity amoungst species belong to the same genus or family (TODO: should we mention here that they were included as random effects in trial models, but not the final model?) as illustrated by relationships with biotic trends that were negative at high temperatures (Canary Rockfish and English Sole) or positive at low temperatures (eg. Widow Rockfish and Flathead Sole) occuring in members of both the largest families represented in our analysis, Sebastidae (rockfish) and Pleuronectidae (righteye flounders; Fig. Fig. \@ref(fig:worm-plots and \@ref(fig:species-map-chop-panel)). 
+TODO: Add comment on significant negative global effects of both temperature and DO change, and negative interact for temperature. Maybe also add a simplier version of (Fig. \@ref(fig:supp-global-coefs)) to paper?
+
+Across species, the most common patterns were that 
+1) the impact of warming on biomass change was more negative (or at least less positive) in locations with higher mean temperatures than in cooler locations (e.g. Widow Rockfish, mature Shortspine Thornyhead, and mature English and Flathead Sole), 
+2) the impact of increasing DO levels was more negative in locations with lower mean DO levels than in locations with higher mean DO levels (e.g. Dogfish, mature Sablefish, Widow Rockfish, and English and Flathead Sole) <!-- Note that negative effect of DO change is sig overall, but not interaction... so may change this? -->, and 
+3) overall immature abundances showed a tendency to respond more positively to both mean DO and changes in DO (Fig. \@ref(fig:supp-global-coefs)). 
+There were no strong patterns of similarity amoungst species belonging to the same genus or family (TODO: should we mention here that they were included as random effects in trial models, but not the final model?) as illustrated by relationships with biotic trends that were negative at high temperatures (Canary Rockfish and English Sole) or positive at low temperatures (eg. Widow Rockfish and Flathead Sole) occuring in members of both the largest families represented in our analysis, Sebastidae (rockfish) and Pleuronectidae (righteye flounders; Fig. Fig. \@ref(fig:worm-plots and \@ref(fig:species-map-chop-panel)). 
 Likewise, most species in all families showed relatively little impact of DO change when DO levels were high, but a potentially counter-intuitive decline in biomass if DO increased when mean DO was at it's lowest (\@ref(fig:trend-chopsticks). 
 However, several species, mostly rockfish, do show increasing biomass with increasing DO across their distributions (mature Bocaccio, Greenstripe, Redstripe, Yelloweye, Yellowmouth and Yellowtail Rockfishes, and immature Sharpchin Rockfish and Sablefish).
 The few exceptions to these pattern include a strong positive effect of increasing DO at low mean levels for adult Splitnose Rockfish, and both maturity classes of Shortspine Thornyheads, all groups occupying some of the deeper habitats (Fig. \@ref(fig:slope-by-depth)). 
