@@ -300,22 +300,20 @@ include_graphics(here("ms", "figs", "climate-maps-updated.png"))
 
 \clearpage
 
-<!-- TODO: can I use a % symbol in fig captions? -->
-<!-- SA: yes, need to escape it with \\ -->
-
-<!-- SA: we may need to choose one here for the main paper (presumably trend) and include this version or just the velocity version in the supplement. -->
-
 <!-- SA: "only included when the confidence intervals on the slopes did not overlap" <- can we always include the CIs? -->
+
+<!-- PE: The line you quote was meant to convey something different, so I've edited it to make its intent clearer. The CI have always been included, so those that don't show up are too small to extend outside the dots...
+-->
 
 <!-- SA: Am I reading it right that Bocaccio really don't like it warming? That's interesting considering they've had one of the biggest recruitment events ever seen for rockfish in this warming decade. -->
 
 <!-- SA: Point of discussion: if I'm reading it right, Pacific Cod don't like it warming. Tie into collapse in Alaska with warm blob -->
 
-```{r worm-plots, fig.cap="Slopes of relationships between climate trends and percent change in biomasss (A; controling for effect of the other climate variable) or biotic and climate velocities (B; without controling for the effect of the other climate variable) for groundfish species. Open circles indicate patterns for immatures, while closed circles represent individuals large enough to have a 5\\% chance of being reproductively mature or belonging to species for which maturity data was not available. Black indicates the overall effect when the 95\\% CI of the estimated interaction with mean climate condition overlapped zero. Colours indicate slopes estimated for the low (0.025) and high (0.975) quantiles of mean climate conditions (only included when the confidence intervals on the slopes did not overlap). Coefficients are ordered by TODO within each panel.", out.width="5.5in"}
-# include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
-# TODO: decide if velocity slopes belong here
+```{r worm-plots, fig.cap="Slopes of relationships between climate trends and percent change in biomasss controling for effect of the other climate variable for groundfish species. Open circles indicate patterns for immatures, while closed circles represent individuals large enough to have a 5\\% chance of being reproductively mature or belonging to species for which maturity data was not available. Black indicates the overall effect when the 95\\% CI of the estimated interaction with mean climate condition overlapped zero. Colours in legends indicate slopes estimated for the low (0.025) and high (0.975) quantiles of mean climate conditions. Black indicates global slopes when the confidence intervals of the low and high slopes were found to overlap. Coefficients are ordered by mean slope for each species within each panel.", out.width="5.5in"}
+include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
+# TODO: decide if velocity slopes belong here, removed them for now (04-23)
 # TODO: should species be in same order on both trend and velocity panels?
-include_graphics(here("ms", "figs", "worm-plot-both.pdf"))
+# include_graphics(here("ms", "figs", "worm-plot-both.pdf"))
 ```
 
 <!-- SA: probably need to reduce the number of examples for the main figures in the next one -->
@@ -329,6 +327,8 @@ As an example, for Widow Rockfish, we estimate that biomass density has increase
 
 The alternative would be to help the reader along by giving some examples like in this chopstick plot, and then zooming out to show the coefficients for all the species.
 -->
+<!-- PE: I like the idea of putting the chops first... I'll see how that works... -->
+
 
 \begin{landscape}
 
@@ -365,13 +365,10 @@ include_graphics(here("ms", "figs", "coef-scatterplots.pdf"))
 \end{landscape}
 
 <!-- SA: I went into the code and capitalized the xlab and ylabs for this plot. Can you also do the facet labels? 
-E.g.
-firstup <- function(x){
-  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
-  x
-}
 Same for other figures (at least the main paper ones; supplement doesn't matter as much)
 --> 
+
+<!-- PE: Titles in main figures have capitals now.  Should legend groups like "high temp" and "immature" be capitals too? I think not, but... -->
 
 <!-- SA: I'm not sure I follow the intent of the immature growth rate calculation -->
 
