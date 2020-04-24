@@ -192,7 +192,7 @@ if (model_type == "-trend-w-grad") {
     temp_grad_scaled +
     temp_grad_scaled:mean_temp_scaled + 
     temp_grad_scaled:temp_trend_scaled + 
-    temp_grad_scaled:mean_temp_scaled:mean_temp_scaled + 
+    temp_grad_scaled:mean_temp_scaled:temp_trend_scaled + 
     # DO_trend_scaled +
     # mean_DO_scaled +  
     # DO_trend_scaled:mean_DO_scaled +
