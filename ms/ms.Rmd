@@ -62,7 +62,7 @@ Approaches used often consider the whole of species ranges and apply forward pro
     -   Because population density often increases faster than area occupied, and organisms likely move towards preferred habitat as populations decline( the basin model of density-dependent habitat selection theory)... populations merit cautious management during population declines, because a compressed range may increase the efficiency of harvest. ... [@thorson2016b]
 
     -  Could complicate interpretation of indices such as COG?
-    
+
 -   ***Local climate velocities*** are one way of quantifying these changes at finer spatial scales.
 
 **Measuring biotic responses in terms of density**
@@ -92,7 +92,7 @@ At longer timescales it because easier to disentangle variability from overall t
 
 While overall population status and distribution limits are likely related (e.g. through basin model of density-dependent habitat selection), the time delay between changes in survival and/or reproductive rate and the subsequent redistribution of the population will depend on both spatial scale and species life histories.
 For example, this lag should be smaller when generation times are particularly short, or when individuals of all age classes tend to disperse greater distances.
-Likewise, changes in local abundances at finer spatial scales should occur more quickly due to shorter dispersal distances involved and *reduced homogenization of responses*. 
+Likewise, changes in local abundances at finer spatial scales should occur more quickly due to shorter dispersal distances involved and *reduced homogenization of responses*.
 
 <!-- TODO: Struggling with how to describe the dilution of responses by greater conflicting processes at larger spatial scales?  -->
 
@@ -125,7 +125,7 @@ In addition to estimates of biomass density for each species captured, data on s
 In order to better understand the extent to which the temporal and spatial scales considered are appropriate for different species within this fish community, we also assess the concordance between the life histories and climate sensitivities across species and maturity classes.
 Given the relatively short timescale encompassed in this survey, we expect *stronger patterns in shorter-lived, more pelagic species (TODO: how do I assess this?), and immatures.*
 
-<!-- TODO: need an index of pelagic-ness? 
+<!-- TODO: need an index of pelagic-ness?
 Need to add mention of growth rates?
 Do I need why?
 Discuss further with sean & chris rooper -->
@@ -136,8 +136,8 @@ Discuss further with sean & chris rooper -->
 
 ## Survey data
 
-We analyze abundance, distribution, and morphometric data for 36 species of Pacific groundfish that are regularly encountered on fisheries-independent bottom trawl surveys and widely distributed within western Canadian waters. 
-The surveys are stratified within four regions, two of which are generally surveyed each year since 2003: Hecate Strait and Queen Charlotte Sound (odd years) and West Coast Vancouver Island and West Coast Haida Gwaii (even years). 
+We analyze abundance, distribution, and morphometric data for 36 species of Pacific groundfish that are regularly encountered on fisheries-independent bottom trawl surveys and widely distributed within western Canadian waters.
+The surveys are stratified within four regions, two of which are generally surveyed each year since 2003: Hecate Strait and Queen Charlotte Sound (odd years) and West Coast Vancouver Island and West Coast Haida Gwaii (even years).
 Each region is sampled over the same month-long period between late May and early August each year.
 Combined, these surveys cover most of the upper continental slope and shelf in western Canada and share the same random depth-stratified design, fishing gear, and fishing protocols (TODO: Sinclair et al. 2003).
 We only include successful tows of 15--20 min duration in analyses and convert total biomass of each species to a biomass density based on the speed, distance covered, and net opening.
@@ -159,7 +159,7 @@ We model each species and maturity class separately because although these abund
 Because biomass densities contain both zeros and positive continuous values, we modeled the response with a Tweedie distribution and a log link (TODO: Anderson et al. in press, Tweedie 1984, Dunn and Smyth 2005).
 Each model included fixed-effects for year, year-specific quadratic effects of bottom depth, spatial random effects that represent an amalgamation of spatial processes not explicitly included in the model, spatiotemporal random effects that allow these spatial random effects to differ independently between years, and an observation error component.
 The spatial components were modeled as random fields, using a triangulated mesh with vertices at 400 knots to approximate a continuous spatial field (TODO: Rue et al. 2009, Lindgren et al. 2011).
-The inclusion of year as a factor centered each of the estimated spatiotemporal fields to have mean zero. 
+The inclusion of year as a factor centered each of the estimated spatiotemporal fields to have mean zero.
 Maximum likelihood estimation was conducted in R version 3.5.3 (TODO: R Core Team 2019) with the package sdmTMB (Anderson et al. In press, Anderson 2019) which interfaces automatic differentiation in Template Model Builder (TODO: Kristensen et al. 2016) with INLA (TODO: Rue et al. 2009).
 
 We modeled the effects of depth and depth squared by first standardizing the log-transformed depth covariate by subtracting its mean and scaling it by its standard deviation.
@@ -173,7 +173,7 @@ Furthermore, the spatial random effects can account for spatial factors that are
 
 ## Estimate climate velocities
 
-We modeled bottom temperature and DO levels from sensor data collected by Seabird Electronics 19plus conductivity, temperature, and depth recorder (CTD) with dissolved oxygen (DO) sensor was successfully deployed on most survey tows since 2008. Our modeling approach was similar to that used for biomass densities except that the distribution was Gaussian and we estimated the spatiotemporal random fields using an AR1 process.
+We modeled bottom temperature and DO levels from sensor data collected by Seabird Electronics 19, plus conductivity, temperature, and depth recorder (CTD) with dissolved oxygen (DO) sensor was successfully deployed on most survey tows since 2008. Our modeling approach was similar to that used for biomass densities except that the distribution was Gaussian and we estimated the spatiotemporal random fields using an AR1 process.
 Because DO levels cannot be negative and are known to be influenced be both water temperature and seasonal biological processes (REF), we predicted log(DO) with fixed effects for day of year (centered and scaled) and temperature (quadratic of scaled values similar to depth).
 Bottom temperature data (but not DO) was also collected on tows prior to 2008, so this data was also included in the model in order to better inform the static spatial field component of the model.
 
@@ -182,7 +182,7 @@ For all climate and biomass models, we then project the model predictions onto a
 <!-- TODO: Explain calculation of gradient velocity -->
 <!-- TODO: Explain collapsing to max of 100 km ... and update code and models to do this more precisely-->
 
-<!-- If analog included: Explain ways of calculating analog velocity and change next sentence to: Both spatial gradients (denominator for gradient-based calculation) and t~2~ conditions (distance-search method) are based on the years 2014-2019 (which correspond to the start of the "Blob", and corresponds with the warm transition in Alaskan waters---Albia et al. 2018). 
+<!-- If analog included: Explain ways of calculating analog velocity and change next sentence to: Both spatial gradients (denominator for gradient-based calculation) and t~2~ conditions (distance-search method) are based on the years 2014-2019 (which correspond to the start of the "Blob", and corresponds with the warm transition in Alaskan waters---Albia et al. 2018).
 -->
 
 Spatial gradients (denominator for gradient-based calculation) are based on the years 2014-2019 (which correspond to the start of the "Blob", and corresponds with the warm transition in Alaskan waters--- TODO: Albia et al. 2018).
@@ -190,8 +190,8 @@ Most prior application of gradient-based VOCC use a mean spatial gradient across
 Because velocity estimates explode as gradients approach zero, estimated velocities will tend to be smaller (more conservative) when fewer estimates are averaged in the gradient calculation.
 Furthermore, the period most relevant to the actual distance travelled is end point, however given that samples were collected only once every two years and that there is variability between species in when dispersal occurs and how long it takes, we use roughly the latter half of the time period analyzed in our estimates of spatial gradients.
 
-<!-- If analog included: 
-This gradient is also based on exactly the same cell values are as searched in the analog-distance algorithm. 
+<!-- If analog included:
+This gradient is also based on exactly the same cell values are as searched in the analog-distance algorithm.
 -->
 
 Because locations varied in the number of years sampled ...
@@ -200,7 +200,7 @@ Because the space searched by the analog-distance algorithm was much larger in o
 Likewise, extremes in the gradient-based velocity estimates were collapsed to the 0.005 and 0.995 quantiles.
 As a result both estimates produce heavy-tailed distributions...
 
-<!-- If fishing included: Control for commercial fishing effort? 
+<!-- If fishing included: Control for commercial fishing effort?
   -   include fishing trips up to 9hrs in length
   -   calculate mean hrs fished per year per 4x4 km grid cell
   -   calculate % change in hrs fished between 2008-2018
@@ -208,70 +208,70 @@ As a result both estimates produce heavy-tailed distributions...
 
 ## Link biomass change with climate
 
-To explore the potential for change in climate to predict local percent changes in biomass density, we used similar spatial GLMMs in order to control for spatial autocorrelation amongst cells. For each maturity class of each species the model estimates an independent random spatial field was and with and without either genus or family as possible phylogenetic grouping factors. .
+To explore the potential for change in climate to predict local percent changes in biomass density, we used similar spatial GLMMs in order to control for spatial autocorrelation amongst cells. For each maturity class of each species the model estimates an independent random spatial field was and with and without either genus or family as possible phylogenetic grouping factors.
 For each species, only the fewest cells that encompass 95% of total mean biomass were included.
 In all models mean biomass density was included as a covariate in order to reduce the influence of changes occurring only at either the highest or lowest densities for a particular species.
 We attempt to predict change in biomass of each species as a function of local climate change (just temperature, just DO, or both temperature and DO) and an interaction between the mean climate of each cell and its local change estimate.
-We model both biomass and climate as either velocities or as raw trends <!-- TODO: should (Fig. \@ref(fig:climate-maps)) be here?-->. 
+We model both biomass and climate as either velocities or as raw trends <!-- TODO: should (Fig. \@ref(fig:climate-maps)) be here?-->.
 In addition we attempt to assess the importance of the gradient component in velocity estimates by adding gradient to the model based on trends.
 All covariates were scaled to their standard deviations.
 Covariates capturing cell means were also centered <!-- If fishing included: (except fishing effort---so that estimates can be interpreted as in the absence of fishing)-->, but change variables were kept uncentred because an intercept of 0 change is more intuitive to interpret.
-Models exploring change as simple trends use Gaussian distributions, while velocities are heavy-tailed and therefore modeled using a student-t (degrees of freedom fixed at 7). 
+Models exploring change as simple trends use Gaussian distributions, while velocities are heavy-tailed and therefore modeled using a student-t (degrees of freedom fixed at 7).
 Trend models converged with 500 knots and both temperature and DO, while velocity models would only converge with one environment variable at a time and 200 knots. <!-- TODO: make sure knots are explained somewhere... -->
-In addition to checking the spatial distribution of model residuals, we simulated fake biomass trends for each species (using variance and spatial correlation parameters unique to each species) and reran each model 3 times <!-- TODO: simulate null model 10 times? --> and compared the distribution of effect sizes and number of sig effects in our simulated null models with the actual estimates. 
+In addition to checking the spatial distribution of model residuals, we simulated fake biomass trends for each species (using variance and spatial correlation parameters unique to each species) and reran each model 3 times <!-- TODO: simulate null model 10 times? --> and compared the distribution of effect sizes and number of sig effects in our simulated null models with the actual estimates.
 These simulated biomass trends were divided by the real spatial gradients in biomass in order to simulate biotic velocities. <!-- TODO: where to report on NULL results? -->
 
 In order to better understand the extent to which the temporal and spatial scales considered are appropriate for different species within this groundfish community, we also assess the concordance between the life histories and climate sensitivities across species and maturity classes.
-Life history parameters were estimated from all individual fish measured in these same trawl surveys. 
-For all immatures and adults sampled for each species, we calculated the average depth at which they were captured, the average age estimated from otoliths or fin clips, and an approximation of immature female growth rates as the length at maturity for females divided by the 0.95 quantile of the ages of immature females. 
-A similar value was calculated for immature males, but it only differed substantially for a couple of the fastest growing species and did not change any overall patterns. 
+Life history parameters were estimated from all individual fish measured in these same trawl surveys.
+For all immatures and adults sampled for each species, we calculated the average depth at which they were captured, the average age estimated from otoliths or fin clips, and an approximation of immature female growth rates as the length at maturity for females divided by the 0.95 quantile of the ages of immature females.
+A similar value was calculated for immature males, but it only differed substantially for a couple of the fastest growing species and did not change any overall patterns.
 
 
 # Results
 
-Our models suggest that from 2008 to 2018, survey season seafloor temperature increased across almost the entirety of Canada's Pacific shelf region (95% interquartile range of `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[2]], digits = 2)`), with warming tending to be most pronounced in shallower areas (Fig. \@ref(fig:climate-maps) <!-- TODO: should letters be added and included here? eg. "C" -->). 
-In contrast, change in seafloor DO was much more variable in the direction of change (95% interquartile range of `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[2]], digits = 2)`), with both the greatest increases also occurring in the shallowest areas and the greatest decreases occuring across a wide range of depths <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)D) -->. 
-When these local changes are placed in their geographic context in the form of a gradient-based velocity estimate, the majority of the highest velocities occur in the bottom of troughs in Queen Charlotte Sound and Dixon Entrance <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)E & F) -->. 
+Our models suggest that from 2008 to 2018, survey season seafloor temperature increased across almost the entirety of Canada's Pacific shelf region (95% interquartile range of `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[2]], digits = 2)`), with warming tending to be most pronounced in shallower areas (Fig. \@ref(fig:climate-maps) <!-- TODO: should letters be added and included here? eg. "C" -->).
+In contrast, change in seafloor DO was much more variable in the direction of change (95% interquartile range of `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[2]], digits = 2)`), with both the greatest increases also occurring in the shallowest areas and the greatest decreases occuring across a wide range of depths <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)D) -->.
+When these local changes are placed in their geographic context in the form of a gradient-based velocity estimate, the majority of the highest velocities occur in the bottom of troughs in Queen Charlotte Sound and Dixon Entrance <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)E & F) -->.
 
-Separate geostatistical models exploring either trend- or velocity-based indices of change resolved similar overall interactions for both temperature and DO, but the overall main effects of temperature change and mean DO did differ (Fig \@ref(fig:global-coefs) TODO and \@ref(fig:worm-plots)) if both model types included). 
+Separate geostatistical models exploring either trend- or velocity-based indices of change resolved similar overall interactions for both temperature and DO, but the overall main effects of temperature change and mean DO did differ (Fig \@ref(fig:global-coefs) TODO and \@ref(fig:worm-plots)) if both model types included).
 <!-- TODO: This difference is NOT due to covariation between temperature and DO within our dataset, which the trend model could control for, but the the velocity one could not.  ... now what? -->
-Despite this difference, the qualitative patterns for most species and maturity class tended to agree between model types (Figs. \@ref(fig:trend-chopsticks) and \@ref(fig:vel-chopsticks)); therefore, we will focus on interpreting the results of trend-based model (Fig. \@ref(fig:worm-plots) <!-- TODO: add A, if both models are in this plot-->). 
-Null models based on simulated biotic trends still showed slightly more significant relationships than would be expected by chance, but far fewer than the model based on modeled changes in abundance and all the effect sizes for parameters of interest were much nearly an order of magnitude smaller (Fig. TODO: add supplementary fig <!-- \@ref(fig:null-coefs) -->). 
+Despite this difference, the qualitative patterns for most species and maturity class tended to agree between model types (Figs. \@ref(fig:trend-chopsticks) and \@ref(fig:vel-chopsticks)); therefore, we will focus on interpreting the results of trend-based model (Fig. \@ref(fig:worm-plots) <!-- TODO: add A, if both models are in this plot-->).
+Null models based on simulated biotic trends still showed slightly more significant relationships than would be expected by chance, but far fewer than the model based on modeled changes in abundance and all the effect sizes for parameters of interest were much nearly an order of magnitude smaller (Fig. TODO: add supplementary fig <!-- \@ref(fig:null-coefs) -->).
 Therefore, we will explore both the overall and species-level patterns resolved, but keeping in mind that not all species-level patterns are expected to be biologically meaningful.
 
 <!-- TODO: Figure out what to say about velocity "NULLs", if anything...
-This spatial pattern largely remains for simulated biotic velocities, which results in models of simulated biotic velocity that have a similar number of significant effects as the model based on real biomass changes. 
-These models often tend to show more significant effects for flatfish species, possibly due to distributions that encompass a greater proportion of flatter spatial gradients for both climate and biomass (TODO see Supplementary...). 
+This spatial pattern largely remains for simulated biotic velocities, which results in models of simulated biotic velocity that have a similar number of significant effects as the model based on real biomass changes.
+These models often tend to show more significant effects for flatfish species, possibly due to distributions that encompass a greater proportion of flatter spatial gradients for both climate and biomass (TODO see Supplementary...).
 Both climate variables and species distributions were modeled in response to seafloor depth ...
 -->
 
 TODO: Add comment on significant negative global effects of both temperature and DO change, and negative interact for temperature. Maybe also add a simplier version of (Fig. \@ref(fig:supp-global-coefs)) to paper?
 
-Across species, the most common patterns were that 
-1) the impact of warming on biomass change was more negative (or at least less positive) in locations with higher mean temperatures than in cooler locations (e.g. Widow Rockfish, mature Shortspine Thornyhead, and mature English and Flathead Sole), 
-2) the impact of increasing DO levels was more negative in locations with lower mean DO levels than in locations with higher mean DO levels (e.g. Dogfish, mature Sablefish, Widow Rockfish, and English and Flathead Sole) <!-- Note that negative effect of DO change is sig overall, but not interaction... so may change this? -->, and 
-3) overall immature abundances showed a tendency to respond more positively to both mean DO and changes in DO (Fig. \@ref(fig:supp-global-coefs)). 
-There were no strong patterns of similarity amoungst species belonging to the same genus or family (TODO: should we mention here that they were included as random effects in trial models, but not the final model?) as illustrated by relationships with biotic trends that were negative at high temperatures (Canary Rockfish and English Sole) or positive at low temperatures (eg. Widow Rockfish and Flathead Sole) occuring in members of both the largest families represented in our analysis, Sebastidae (rockfish) and Pleuronectidae (righteye flounders; Fig. Fig. \@ref(fig:worm-plots and \@ref(fig:species-map-chop-panel)). 
-Likewise, most species in all families showed relatively little impact of DO change when DO levels were high, but a potentially counter-intuitive decline in biomass if DO increased when mean DO was at it's lowest (\@ref(fig:trend-chopsticks). 
+Across species, the most common patterns were that
+1) the impact of warming on biomass change was more negative (or at least less positive) in locations with higher mean temperatures than in cooler locations (e.g. Widow Rockfish, mature Shortspine Thornyhead, and mature English and Flathead Sole),
+2) the impact of increasing DO levels was more negative in locations with lower mean DO levels than in locations with higher mean DO levels (e.g. Dogfish, mature Sablefish, Widow Rockfish, and English and Flathead Sole) <!-- Note that negative effect of DO change is sig overall, but not interaction... so may change this? -->, and
+3) overall immature abundances showed a tendency to respond more positively to both mean DO and changes in DO (Fig. \@ref(fig:supp-global-coefs)).
+There were no strong patterns of similarity amoungst species belonging to the same genus or family (TODO: should we mention here that they were included as random effects in trial models, but not the final model?) as illustrated by relationships with biotic trends that were negative at high temperatures (Canary Rockfish and English Sole) or positive at low temperatures (eg. Widow Rockfish and Flathead Sole) occuring in members of both the largest families represented in our analysis, Sebastidae (rockfish) and Pleuronectidae (righteye flounders; Fig. \@ref(fig:worm-plots) and \@ref(fig:species-map-chop-panel)).
+Likewise, most species in all families showed relatively little impact of DO change when DO levels were high, but a potentially counter-intuitive decline in biomass if DO increased when mean DO was at it's lowest (\@ref(fig:trend-chopsticks).
 However, several species, mostly rockfish, do show increasing biomass with increasing DO across their distributions (mature Bocaccio, Greenstripe, Redstripe, Yelloweye, Yellowmouth and Yellowtail Rockfishes, and immature Sharpchin Rockfish and Sablefish).
-The few exceptions to these pattern include a strong positive effect of increasing DO at low mean levels for adult Splitnose Rockfish, and both maturity classes of Shortspine Thornyheads, all groups occupying some of the deeper habitats (Fig. \@ref(fig:slope-by-depth)). 
-However, three species with deeper mean occurence show the more common pattern (mature Sablefish and all of the Rougheye/Blackspotted Rockfish complex), or no relationship at all with DO change (Shortraker Rockfish). 
+The few exceptions to these pattern include a strong positive effect of increasing DO at low mean levels for adult Splitnose Rockfish, and both maturity classes of Shortspine Thornyheads, all groups occupying some of the deeper habitats (Fig. \@ref(fig:slope-by-depth)).
+However, three species with deeper mean occurence show the more common pattern (mature Sablefish and all of the Rougheye/Blackspotted Rockfish complex), or no relationship at all with DO change (Shortraker Rockfish).
 
-Overall climate sensitivities did correlate with life history traits and were strongest for the youngest populations (Fig. \@ref(fig:coef-scatterplots)). 
-This included overall more negative responses to both warming and increasing DO in populations with mean age less than ten years (Fig. \@ref(fig:coef-scatterplots) TODO: add panel letters?). 
-Consistent with this, the strongest negative effects of warming (estimated for the warmest parts of a species distribution) were in species occurring at intermediate depths, while most species with mean encounter depths beyond 290 m appeared to increase in abundance with greater warming (Fig. \@ref(fig:slope-by-depth) TODO: add panel letter A). 
-In contrast, both strong negative and positive responses to changes in DO occur across a range of depth preferences, although increasing DO in the lowest DO locations is mostly negative for species averaging shallower than 150 m (Fig. \@ref(fig:slope-by-depth) TODO: add panel letter B).   
+Overall climate sensitivities did correlate with life history traits and were strongest for the youngest populations (Fig. \@ref(fig:coef-scatterplots)).
+This included overall more negative responses to both warming and increasing DO in populations with mean age less than ten years (Fig. \@ref(fig:coef-scatterplots) TODO: add panel letters?).
+Consistent with this, the strongest negative effects of warming (estimated for the warmest parts of a species distribution) were in species occurring at intermediate depths, while most species with mean encounter depths beyond 290 m appeared to increase in abundance with greater warming (Fig. \@ref(fig:slope-by-depth) TODO: add panel letter A).
+In contrast, both strong negative and positive responses to changes in DO occur across a range of depth preferences, although increasing DO in the lowest DO locations is mostly negative for species averaging shallower than 150 m (Fig. \@ref(fig:slope-by-depth) TODO: add panel letter B).
 Finally, species with faster growth rates in immature females (cm/year) tended to have more negative responses to increases in temperature or DO (Fig. \@ref(fig:coef-scatterplots) TODO: add panel letters?).
 
 <!-- TODO:  Species of interest...
-redbanded - pretty normal response to temp and DO (sig -ve for adults only) 
+redbanded - pretty normal response to temp and DO (sig -ve for adults only)
         widow rockfish  - strong interactions
 canary - not interaction, -ve temp none for DO
 shortspine thornyhead - both temp (increasing good) and DO (increasing good)
 dogfish - increasing DO and warming both bad
-pacific cod - 
+pacific cod -
 English - warming neutral when cool, bad when warm
-Dover - warming good when it's cool, neutral when warm  
+Dover - warming good when it's cool, neutral when warm
 (arrowtooth shows similar pattern but likely influenced strongly by fishing... could include for that reason though?)
 sablefish - warming good, increasing DO not
 -->
@@ -386,7 +386,7 @@ All spatial random effects are constrained to follow a Matern covariance functio
 -   flow diagram
 -   null model stuff
 -   pairs plot of predictors
--   plot vocc regression residuals against the main predictors... 
+-   plot vocc regression residuals against the main predictors...
 -   fitted vs. residuals plot
 -->
 
