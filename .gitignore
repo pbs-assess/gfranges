@@ -44,3 +44,6 @@ cv-output/
 INLA/
 raw/
 *bathymetry-data
+ms.md
+ms.tex
+*_cache*
