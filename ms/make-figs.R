@@ -150,7 +150,7 @@ p_do_worm <- plot_chopstick_slopes(do_slopes,
   # ylab("slopes")
   theme(axis.title.x = element_blank())
 
-(p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.31, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
+(p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.31, gp = grid::gpar(fontsize = 10)) + plot_layout(height = c(10, 0.02))
 ggsave(here::here("ms", "figs", "worm-plot-trend.pdf"), width = 8, height = 6)
 
 # meta-analytical coefficients? ... all span zero, but could include as appendix?
