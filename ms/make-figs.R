@@ -34,7 +34,7 @@ mean_do <- plot_vocc(alldata,
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
   axis_lables = F,
   legend_position = c(0.15, 0.25)
-) + ggtitle("dissolved oxygen") + 
+) + ggtitle("Dissolved oxygen (DO)") + 
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
     plot.margin = margin(0, 0, 0, 0, "cm"),
@@ -49,8 +49,8 @@ mean_temp <- plot_vocc(alldata,
   viridis_option = "C",
   axis_lables = T,
   legend_position = c(0.15, 0.25)
-) + ggtitle("temperature") +
-  ylab("mean conditions") + 
+) + ggtitle("Temperature (temp)") +
+  ylab("Mean conditions") + 
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
     plot.margin = margin(0, 0, 0, 0, "cm"),
@@ -80,7 +80,7 @@ trend_temp <- plot_vocc(alldata,
   legend_position = c(0.15, 0.25)
 ) + #ggtitle("temperature") + 
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-  ylab("change per decade") +
+  ylab("Change per decade") +
   theme(
     plot.margin = margin(0, 0, 0, 0, "cm"),
     axis.text = element_blank(), axis.ticks = element_blank(),
@@ -107,7 +107,7 @@ vel_temp <- plot_vocc(alldata,
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
   axis_lables = T,
   legend_position = c(0.15, 0.25)
-) + ylab("velocities per decade") + 
+) + ylab("Velocities per decade") + 
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
     plot.margin = margin(0, 0, 0, 0, "cm"),
@@ -122,7 +122,7 @@ ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 6, height =
 
 #### SEPARATE WORM PLOTS ####
 
-### WORM PLOTS OF SLOP ESTIMATES FROM TREND MODEL 
+### WORM PLOTS OF SLOP ESTIMATES FROM TREND MODEL ####
 temp_slopes <- chopstick_slopes(model,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
@@ -141,21 +141,21 @@ p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
   legend_position = c(.25, .95)
 ) + theme(axis.title.x = element_blank()) +
-  ggtitle("temperature")
+  ggtitle("A. Temperature")
 p_do_worm <- plot_chopstick_slopes(do_slopes,
   type = "DO",
   legend_position = c(.25, .95)
 ) + coord_flip(ylim = c(-3.1, 1.4)) +
-  ggtitle("DO") +
+  ggtitle("B. DO") +
   # ylab("slopes")
   theme(axis.title.x = element_blank())
 
-(p_temp_worm | p_do_worm) / grid::textGrob("slope of biomass trend with a SD change in climate", just = 0.31) + plot_layout(height = c(10.5, 0.25))
+(p_temp_worm | p_do_worm) / grid::textGrob("slope of biomass trend with a SD change in climate", just = 0.31, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 ggsave(here::here("ms", "figs", "worm-plot-trend.pdf"), width = 8, height = 6)
 
 # meta-analytical coefficients? ... all span zero, but could include as appendix?
 
-### WORM PLOTS OF SLOP ESTIMATES FROM VELOCITY MODELS 
+### WORM PLOTS OF SLOP ESTIMATES FROM VELOCITY MODELS  ####
 
 temp_vel_slopes <- chopstick_slopes(model_vel_t,
   x_variable = "squashed_temp_vel_scaled",
@@ -193,7 +193,7 @@ p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   legend_position = c(.25, .95)
 ) + theme(plot.margin = margin(0, 0, 0.2, 0.2, "cm"),
   axis.title.x = element_blank()) +
-  ggtitle("temperature") + 
+  ggtitle("Temperature") + 
   xlab("% biomass change for a SD of climate change")
 p_do_worm <- plot_chopstick_slopes(do_slopes,
   type = "DO",
@@ -395,11 +395,11 @@ depth <- ggplot(do_data, aes(depth, do_est)) +
   geom_point(aes(depth, do_est), alpha = 0.02, shape = 20, colour = "darkorchid4", size = 0.2) +
   geom_smooth(colour = "darkorchid4", size = 0.5) + 
   xlim(15, 450) + 
-  ylab("mean DO (ml/L)") +
-  scale_y_continuous(sec.axis = sec_axis( ~ (./2), name = "temperature (ºC)")) +  #, expand = expand_scale(mult = c(0.05, .2)
+  ylab("Mean DO (ml/L)") +
+  scale_y_continuous(sec.axis = sec_axis( ~ (./2), name = "Temperature (ºC)")) +  #, expand = expand_scale(mult = c(0.05, .2)
   geom_smooth(aes(depth, temp/2), inherit.aes = F, colour = "#3d95cc", size = 0.5) + 
   geom_hline(yintercept = 1.4, colour = "black", linetype = "dashed") +
-  xlab("mean depth") +
+  xlab("Mean depth") +
   gfplot::theme_pbs() + theme(
     plot.margin = margin(0, 0.3, 0.2, 0.2, "cm"),
     axis.text.y.left = element_text(color = "darkorchid4"),
@@ -421,7 +421,7 @@ temp_high <- slope_scatterplot(
     na.rm = T, min.segment.length = 1) +
   # scale_y_continuous(trans = fourth_root_power) +
   # geom_smooth(method= "lm", size = 0.5) +
-  ylab("slope at highest temperature") +
+  ylab("Slope at highest temperature") +
   xlim(15, 450) + 
   theme(
     plot.margin = margin(0, 0.1, 0, 0.1, "cm"),
@@ -435,8 +435,8 @@ do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth",
   point_size = 1.5, 
 ) +
   geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") +
-  xlab("mean depth for species") +
-  ylab("slope at lowest DO") + guides(colour = F) +
+  xlab("Mean depth for species") +
+  ylab("Slope at lowest DO") + guides(colour = F) +
   xlim(15, 450) + 
   ggrepel::geom_text_repel(aes(label=species_lab), 
     size=2, force = 2, nudge_y = -0.35, nudge_x = 15,     
