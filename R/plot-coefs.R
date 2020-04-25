@@ -260,3 +260,10 @@ shortener <- function(string) {
   #out <- gsub("_", "", out)
   out
 }
+
+#' Add capitals to start of strings
+#' @export
+firstup <- function(x){
+  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+  x
+}
