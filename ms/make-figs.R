@@ -139,7 +139,7 @@ do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"]
 
 p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
-  legend_position = c(.25, .95)
+  legend_position = c(.3, .95)
 ) + theme(axis.title.x = element_blank()) +
   ggtitle("A. Temperature")
 p_do_worm <- plot_chopstick_slopes(do_slopes,
@@ -148,10 +148,11 @@ p_do_worm <- plot_chopstick_slopes(do_slopes,
 ) + coord_flip(ylim = c(-3.1, 1.4)) +
   ggtitle("B. DO") +
   # ylab("slopes")
+  scale_x_discrete(position = "top") +
   theme(axis.title.x = element_blank())
 
-(p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.31, gp = grid::gpar(fontsize = 10)) + plot_layout(height = c(10, 0.02))
-ggsave(here::here("ms", "figs", "worm-plot-trend.pdf"), width = 8, height = 6)
+(p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
+ggsave(here::here("ms", "figs", "worm-plot-trend.pdf"), width = 7.5, height = 6)
 
 # meta-analytical coefficients? ... all span zero, but could include as appendix?
 
