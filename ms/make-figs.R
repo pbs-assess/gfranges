@@ -32,8 +32,8 @@ mean_do <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "mean_DO", fill_label = "ml/L ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
-  axis_lables = F,
-  legend_position = c(0.15, 0.25)
+  axis_lables = F,  tag_text = "b.",
+  legend_position = c(0.15, 0.3)
 ) + ggtitle("Dissolved oxygen (DO)") + 
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
@@ -47,8 +47,8 @@ mean_temp <- plot_vocc(alldata,
   fill_col = "mean_temp", fill_label = "ºC ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
   viridis_option = "C",
-  axis_lables = T,
-  legend_position = c(0.15, 0.25)
+  axis_lables = T, tag_text = "a.",
+  legend_position = c(0.15, 0.3)
 ) + ggtitle("Temperature (temp)") +
   ylab("Mean conditions") + 
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
@@ -62,8 +62,8 @@ trend_do <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "DO_trend", fill_label = "ml/L ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
-  axis_lables = F,
-  legend_position = c(0.15, 0.25)
+  axis_lables = F,   tag_text = "d.",
+  legend_position = c(0.15, 0.3)
 ) + #ggtitle("dissolved oxygen") + 
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
@@ -76,8 +76,8 @@ trend_temp <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "temp_trend", fill_label = "ºC ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE, 
-  axis_lables = T,
-  legend_position = c(0.15, 0.25)
+  axis_lables = T,  tag_text = "c.",
+  legend_position = c(0.15, 0.3)
 ) + #ggtitle("temperature") + 
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   ylab("Change per decade") +
@@ -92,8 +92,8 @@ vel_do <- plot_vocc(alldata,
   fill_col = "squashed_DO_vel", fill_label = "km",
   raster_cell_size = 4,
   na_colour = "lightgrey", white_zero = TRUE,
-  axis_lables = F,
-  legend_position = c(0.15, 0.25)
+  axis_lables = F,   tag_text = "f.",
+  legend_position = c(0.15, 0.3)
 ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) + 
   theme(
   plot.margin = margin(0, 0, 0, 0, "cm"),
@@ -105,8 +105,8 @@ vel_temp <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "squashed_temp_vel", fill_label = "km",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
-  axis_lables = T,
-  legend_position = c(0.15, 0.25)
+  axis_lables = T, tag_text = "e.",
+  legend_position = c(0.15, 0.3)
 ) + ylab("Velocities per decade") + 
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
@@ -116,8 +116,9 @@ vel_temp <- plot_vocc(alldata,
   )
 
 mean_temp + mean_do +  trend_temp + trend_do + vel_temp + vel_do + plot_layout(ncol = 2)
-ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 6, height = 9)
 
+# ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 6, height = 9)
+ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 5, height = 7.5)
 
 
 #### SEPARATE WORM PLOTS ####
@@ -141,17 +142,17 @@ p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
   legend_position = c(.3, .95)
 ) + theme(axis.title.x = element_blank()) +
-  ggtitle("A. Temperature")
+  ggtitle("a. Temperature")
 p_do_worm <- plot_chopstick_slopes(do_slopes,
   type = "DO",
   legend_position = c(.25, .95)
 ) + coord_flip(ylim = c(-3.1, 1.4)) +
-  ggtitle("B. DO") +
+  ggtitle("b. DO") +
   # ylab("slopes")
   scale_x_discrete(position = "top") +
   theme(axis.title.x = element_blank())
 
-(p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
+(p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02)) #+ plot_annotation(tag_levels = "a")
 ggsave(here::here("ms", "figs", "worm-plot-trend.pdf"), width = 7.5, height = 6)
 
 # meta-analytical coefficients? ... all span zero, but could include as appendix?
@@ -232,6 +233,7 @@ p_do_worm3 <- plot_chopstick_slopes(do_vel_slopes,
 ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 
 #### EXAMPLE SPECIES CHOPSTICK PLOTS AND MAPS FROM TREND MODEL ####
+
 # TODO: for example species...
 # temperature maps plus chopsticks
 # O2 maps plus chopsticks
@@ -363,6 +365,7 @@ species_panels ("mature English Sole", model, "DO")
 species_panels ("mature Flathead Sole", model, "DO")
 species_panels ("mature Arrowtooth Flounder", model, "DO")
 
+
 #### SLOPE SCATTERPLOTS AGAINST DEPTH ####
 
 # prep data 
@@ -405,7 +408,7 @@ depth <- ggplot(do_data, aes(depth, do_est)) +
     plot.margin = margin(0, 0.3, 0.2, 0.2, "cm"),
     axis.text.y.left = element_text(color = "darkorchid4"),
     axis.text.y.right = element_text(color = "#3d95cc"),
-    axis.title.y.left = element_text(color = "darkorchid4"),
+    axis.title.y.left = element_text(color = "darkorchid4", vjust = 0.2),
     axis.title.y.right = element_text(color = "#3d95cc") #, vjust = -0.2
     # axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
   )
@@ -418,15 +421,20 @@ temp_high <- slope_scatterplot(
 ) +
   geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") +
   ggrepel::geom_text_repel(aes(label=species_lab), 
-    size=2, force = 2, #nudge_y = -0.3, nudge_x = 20, 
+    size = 3, 
+    force = 3, 
+    # nudge_y = 0.1, 
+    nudge_x = -5,
     na.rm = T, min.segment.length = 1) +
   # scale_y_continuous(trans = fourth_root_power) +
   # geom_smooth(method= "lm", size = 0.5) +
   ylab("Slope at highest temperature") +
-  xlim(15, 450) + 
+  scale_y_continuous(breaks = c(3, 0, -3, -6, -9)) +
+  coord_cartesian(ylim = c(-11, 4.2), xlim = c(15, 450)) + 
   theme(
-    plot.margin = margin(0, 0.1, 0, 0.1, "cm"),
+    plot.margin = margin(0, 0.1, 0, 0.2, "cm"),
     legend.position = c(.85, .2), 
+    axis.title.y.left = element_text(vjust = 0.2),
     axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank(),
     legend.title = element_blank())
 
@@ -440,17 +448,31 @@ do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth",
   ylab("Slope at lowest DO") + guides(colour = F) +
   xlim(15, 450) + 
   ggrepel::geom_text_repel(aes(label=species_lab), 
-    size=2, force = 2, nudge_y = -0.35, nudge_x = 15,     
+    size = 3, force = 3, nudge_y = -0.35, nudge_x = 15,     
     na.rm = T, min.segment.length = 2) +
   gfplot::theme_pbs() + theme(
-    plot.margin = margin(0, 0.1, 0, 0.1, "cm"),
+    plot.margin = margin(0, 0.1, 0, 0.2, "cm"),
+    axis.title.y.left = element_text(vjust = 0.2),
     axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
   )
 
-temp_high + do_low + depth + plot_layout(ncol = 1, heights = c(1, 1, 1))
-ggsave(here::here("ms", "figs", "slope-by-depth.png"), width = 4.5, height = 7)
+# add plot tags
+temp_high2 <- temp_high %>% egg::tag_facet(open = "", close = ".", tag_pool = c("a"), 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+do_low2 <- do_low %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b"), 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+depth2 <- depth %>% egg::tag_facet(open = "", close = ".", tag_pool = c("c"), 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+
+# combine and save
+temp_high2 + do_low2 + depth2 + plot_layout(ncol = 1, heights = c(1, 1, 1)) 
+# + plot_annotation(tag_levels = "a", tag_suffix = ". ")
+# ggsave(here::here("ms", "figs", "slope-by-depth.png"), width = 4.5, height = 7)
+ggsave(here::here("ms", "figs", "slope-by-depth2.png"), width = 5.5, height = 8)
+
 
 #### COEFFICIENT SCATTERPLOTS AGAINST LIFE HISTORY ####
+
 model2 <- add_colours(model$coefs, species_data = stats)
 model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"
 model2$group[model2$group == "SKATE"] <- "SHARKS & SKATES"
@@ -473,7 +495,7 @@ trendeffects <- model2 %>%
 trendeffects <- trendeffects %>%
   mutate(coefficient = forcats::fct_reorder(coefficient, Estimate, .desc = F))
 # trendeffects <- mutate(trendeffects, rockfish = firstup(rockfish) # didn't work
-
+trendeffects$allspp <- "All species"
 
 p_depth <- coef_scatterplot(trendeffects,
   coef = c("Temperature", "DO"),
@@ -488,8 +510,7 @@ p_depth <- coef_scatterplot(trendeffects,
   ) +
   scale_colour_viridis_d(begin = .8, end = .2) +
   guides(colour = F) + 
-  labs(subtitle = "All species") +
-  facet_grid(rows = vars(coefficient), scales = "free_y") +
+  facet_grid(rows = vars(coefficient), cols= vars(allspp), scales = "free_y") +
   # gfplot:::theme_pbs() %+replace%
   theme(
     plot.margin = margin(0.1, 0.15, 0.1, 0, "cm"),
@@ -514,7 +535,7 @@ p_age <- coef_scatterplot(trendeffects,
   scale_colour_viridis_d(begin = .8, end = .2) +
   guides(colour = F) +
   theme(
-    plot.margin = margin(0, 0.25, 0.1, 0.1, "cm"), strip.background = element_blank(),
+    plot.margin = margin(0.1, 0.25, 0.1, 0.1, "cm"), strip.background = element_blank(),
     strip.text.y = element_blank(),
     axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()
   ) +
@@ -537,7 +558,7 @@ p_mat <- coef_scatterplot(trendeffects,
   ) +
   scale_colour_viridis_d(begin = .8, end = .2) +
   theme(
-    plot.margin = margin(0, 0.1, 0.1, 0, "cm"),
+    plot.margin = margin(0.1, 0.1, 0.1, 0, "cm"),
     strip.background = element_blank(),
     legend.position = c(.75, .15), legend.title = element_blank(),
     # strip.text = element_blank(),
@@ -545,5 +566,20 @@ p_mat <- coef_scatterplot(trendeffects,
   ) +
   facet_grid(coefficient ~ rockfish, scales = "free")
 
-cowplot::plot_grid(p_depth, p_age, p_mat, nrow = 1, rel_widths = c(1.1, 1.75, 1.75))
-ggsave(here::here("ms", "figs", "coef-scatterplots.pdf"), width = 8, height = 4)
+## left side tags
+# p_depth2 <- p_depth %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("a","f"))
+# p_age2 <- p_age %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("b", "c", "g", "h"))
+# p_mat2 <- p_mat %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("d", "e", "i", "j"))
+
+## right side tags
+p_depth2 <- p_depth %>% egg::tag_facet(open = "", close = ".", tag_pool = c("a","f"), 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+p_age2 <- p_age %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b", "c", "g", "h"), 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+p_mat2 <- p_mat %>% egg::tag_facet(open = "", close = ".", tag_pool = c("d", "e", "i", "j"), 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+
+
+cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 1.75, 1.75)) 
+
+ggsave(here::here("ms", "figs", "coef-scatterplots.pdf"), width = 8, height = 3.5)
