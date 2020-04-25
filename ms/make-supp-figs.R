@@ -302,8 +302,12 @@ custom_order <- c("intercept", "immature", "biomass",
 
 ### compare trends and velocities
 overall <- rbind.data.frame(overall_betas, overall_betas_t, overall_betas_g, overall_betas_vel_t, overall_betas_vel_d)
-overall2 <- overall %>% rename(term = coef_names, estimate = betas, std.error = SE) #%>% filter(term != "intercept")
-overall2 <- overall2 %>% mutate(term = factor(term, levels = custom_order))
+overall <- mutate(overall, term = firstup(as.character(coef_names)))
+overall2 <- overall %>% rename(
+  estimate = betas, std.error = SE) #%>% filter(term != "intercept")
+overall2 <- overall2 %>% mutate(term = factor(term, 
+  levels = firstup(as.character(custom_order))), 
+  model = firstup(as.character(model)))
 
 # overall2[is.na(overall2)] <- 0 
 globel_vel <- dotwhisker::dwplot(overall2#, 
@@ -311,11 +315,12 @@ globel_vel <- dotwhisker::dwplot(overall2#,
   ) + #xlim(-10,10) +
   geom_vline(xintercept = 0, colour = "darkgray") +
   # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
-  scale_colour_manual(values = c("#D53E4F", 
+  scale_colour_manual(name = "Models", 
+    values = c("#D53E4F", 
     #"#F46D43", 
     "#FDAE61", 
     "#FEE08B", "#3288BD", "#5E4FA2"
-    )) +ggtitle("differences between trend and velocity models") +
+    )) + ggtitle("a. Trend versus velocity models") +
   gfplot::theme_pbs() + theme (#legend.title = element_blank(),
     legend.position = c(0.75, 0.2))
 globel_vel
@@ -323,20 +328,23 @@ ggsave(here::here("ms", "figs", "supp-global-coefs-vel.pdf"), width = 5, height 
 
 # look for sig age effects 
 overall3 <- rbind.data.frame(overall_betas, overall_betas_age2, overall_betas_age)
-overall3 <- overall3 %>% rename(term = coef_names, estimate = betas, std.error = SE) #%>% filter(term != "intercept" & term != "biomass")
-overall3 <- overall3 %>% mutate(term = factor(term, levels = custom_order))
+overall3 <- overall3 %>% mutate(term = firstup(as.character(coef_names))) %>% rename(
+  estimate = betas, std.error = SE) %>% mutate(term = factor(term, 
+  levels = firstup(as.character(custom_order))), 
+  model = firstup(as.character(model)))
 
 globel_age <- dotwhisker::dwplot(overall3#, 
   # order_vars = custom_order
 ) + #xlim(-10,10) +
   geom_vline(xintercept = 0, colour = "darkgray") +
   # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
-  scale_colour_manual(values = c("#D53E4F", "#F46D43", 
+  scale_colour_manual(name = "Models", 
+    values = c("#D53E4F", "#F46D43", 
     "#FDAE61"#, "#FEE08B", "#3288BD", "#5E4FA2"
-    )) + ggtitle("test for global maturity effects") +
+    )) + ggtitle("b. Global maturity effects") +
   scale_y_discrete(position = "right") +
   gfplot::theme_pbs() + theme (legend.title = element_blank(),
-    legend.position = c(0.25, 0.16))
+    legend.position = c(0.25, 0.145))
 # globel_age
 # ggsave(here::here("ms", "figs", "supp-global-coefs-w-age.pdf"), width = 5, height = 4)
 
