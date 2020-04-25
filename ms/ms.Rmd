@@ -309,7 +309,7 @@ include_graphics(here("ms", "figs", "climate-maps-updated.png"))
 
 <!-- SA: Point of discussion: if I'm reading it right, Pacific Cod don't like it warming. Tie into collapse in Alaska with warm blob -->
 
-```{r worm-plots, fig.cap="Slopes of relationships between climate trends and percent change in biomasss controling for effect of the other climate variable for groundfish species. Open circles indicate patterns for immatures, while closed circles represent individuals large enough to have a 5\\% chance of being reproductively mature or belonging to species for which maturity data was not available. Black indicates the overall effect when the 95\\% CI of the estimated interaction with mean climate condition overlapped zero. Colours in legends indicate slopes estimated for the low (0.025) and high (0.975) quantiles of mean climate conditions. Black indicates global slopes when the confidence intervals of the low and high slopes were found to overlap. Coefficients are ordered by mean slope for each species within each panel.", out.width="5.5in"}
+```{r worm-plots, fig.cap="Slopes of relationships between climate trends and percent change in biomasss controling for effect of the other climate variable for groundfish species. Open circles indicate patterns for immatures, while closed circles represent individuals large enough to have a 5\\% chance of being reproductively mature or belonging to species for which maturity data was not available. Black indicates the overall effect when the 95\\% CI of the estimated interaction with mean climate condition overlapped zero. Colours in legends indicate slopes estimated for the low (0.025) and high (0.975) quantiles of mean climate conditions. Coefficients are ordered by mean slope for each species within each panel.", out.width="5.2in"}
 include_graphics(here("ms", "figs", "worm-plot-trend.pdf"))
 # TODO: decide if velocity slopes belong here, removed them for now (04-23)
 # TODO: should species be in same order on both trend and velocity panels?
@@ -332,7 +332,7 @@ The alternative would be to help the reader along by giving some examples like i
 
 \begin{landscape}
 
-```{r species-map-chop-panel, fig.cap="(ref:chop-panel)", out.width="9in"}
+```{r species-map-chop-panel, fig.cap="(ref:chop-panel)", out.width="8.2in"}
 include_graphics(here("ms", "figs", "species-map-chop-panel.png"))
 ```
 
@@ -356,13 +356,13 @@ if so, does that mean that the slopes in the bottom right of panel B are particu
 I guess that points to hypoxia not being the main driver and just that these really deep species may be more O2 driven as a proxy for other things?
 -->
 
-\begin{landscape}
+<!-- \begin{landscape} -->
 
-```{r coef-scatterplots, fig.cap="Main effect coefficients of the relationship between biotic trends and changes in climate for species with different life history strategies. Mean age and depth are calculated across all sampled individuals of each maturity class (as defined by the length at 50\\% maturity) within a species. Growth rate is estimated as the length at maturity for females divided by the 0.95 quantile of all otolith or fin-ray ages from immature females of each species. Separate regression slopes are plotted for each maturity class except in relation to mean age given that maturity is largely a function of age.", out.width="8in"}
+```{r coef-scatterplots, fig.cap="Main effect coefficients of the relationship between biotic trends and changes in climate for species with different life history strategies. Mean age and depth are calculated across all sampled individuals of each maturity class (as defined by the length at 50\\% maturity) within a species. Growth rate is estimated as the length at maturity for females divided by the 0.95 quantile of all otolith or fin-ray ages from immature females of each species. Separate regression slopes are plotted for each maturity class except in relation to mean age given that maturity is largely a function of age.", out.width="\\textwidth"}
 include_graphics(here("ms", "figs", "coef-scatterplots.pdf"))
 ```
 
-\end{landscape}
+<!-- \end{landscape} -->
 
 <!-- SA: I went into the code and capitalized the xlab and ylabs for this plot. Can you also do the facet labels? 
 Same for other figures (at least the main paper ones; supplement doesn't matter as much)
@@ -434,19 +434,29 @@ All spatial random effects are constrained to follow a Matern covariance functio
 
 \clearpage
 
-```{r global-coefs, fig.cap="Overall coefficient estimates from a range of models. The 'trend' model included trends and interactions between trend and mean conditions for both climate variables, while the velocity models only converge when including terms involving either temperature (T) variables or DO (disolved oxygen) variables. All models control for biomass (measured as estimated local mean log(biomass) across all years). The 'T w gradient' model includes interactions between temperature variables and local spatial gradient in temperature in an effort to partition variation explained by some of the components of a velocity estimate. The model with the maturity effect has mature populations as the intercept and only clearly differs from the simplier trend model in the direction of overall estimates for mean DO.", out.width="6in"}
+<!-- SA: can you reduce the saved size of this figure so that the text is bigger? -->
+
+(ref:fig-global-coefs) Overall coefficient estimates from a range of models. The 'trend' model included trends and interactions between trend and mean conditions for both climate variables, while the velocity models only converge when including terms involving either temperature (T) variables or DO (disolved oxygen) variables. All models control for biomass (measured as estimated local mean log(biomass) across all years). The 'T w gradient' model includes interactions between temperature variables and local spatial gradient in temperature in an effort to partition variation explained by some of the components of a velocity estimate. The model with the maturity effect has mature populations as the intercept and only clearly differs from the simplier trend model in the direction of overall estimates for mean DO.
+
+```{r global-coefs, fig.cap="(ref:fig-global-coefs)", out.width="\\textwidth"}
 include_graphics(here("ms", "figs", "supp-global-coefs.pdf"))
 ```
 
 \begin{landscape}
 
-```{r trend-chopsticks, fig.cap="Predicted percent change in biomass based on interactions betweeen seafloor temperature trend and mean temperature or DO trend and mean DO levels, while controling for the other interaction and mean local log(biomass). Mature and immature estmated slopes are represented by closed/solid versus open/dashed dots and lines respectively. Colours represent the highest and lowest 95th quantiles for mean climate conditions.", out.width="7.5in"}
+```{r trend-chopsticks, fig.cap="Predicted percent change in biomass based on interactions betweeen seafloor temperature trend and mean temperature or DO trend and mean DO levels, while controlling for the other interaction and mean local log(biomass). Mature and immature estmated slopes are represented by closed/solid versus open/dashed dots and lines respectively. Colours represent the highest and lowest 95th quantiles for mean climate conditions.", out.width="7.5in"}
 include_graphics(here("ms", "figs", "supp-trend-chopsticks.pdf"))
 ```
 
+\end{landscape}
+
 \clearpage
 
-```{r vel-chopsticks, fig.cap="Predicted interactions from separate models predicting biotic velocity based on seafloor temperature velocities and the mean temperature, or seaflour DO velocity and mean DO levels, while only controling for mean local log(biomass) in both cases. Colours and symbols are the same as in the previous figure.", out.width="7.5in"}
+(ref:fig-vel-chopsticks) Predicted interactions from separate models predicting biotic \textbf{velocity} based on seafloor temperature \textbf{velocity} and the mean temperature, or seaflour DO \textbf{velocity} and mean DO levels, while only controlling for mean local log(biomass) in both cases. Colours and symbols are the same as in Fig. \@ref(fig:trend-chopsticks).
+
+\begin{landscape}
+
+```{r vel-chopsticks, fig.cap="(ref:fig-vel-chopsticks)", out.width="7.5in"}
 include_graphics(here("ms", "figs", "supp-vel-chopsticks.pdf"))
 ```
 
@@ -464,7 +474,7 @@ include_graphics(here("ms", "figs", "supp-vel-chopsticks.pdf"))
 
 \clearpage
 
-```{r supp-coef-scatterplots, fig.cap="Differences slope of effect of climate change on biotic change at how high and low mean conditions (columns) plotted against species life histories. Simple regression lines plotted for immature abundance only. Mean age and depth are calculated across all sampled individuals of each maturity class (as defined by the length at 50 percent maturity threshold) within a species. Growth rate is estimated as the length at maturity for females divide by the 0.95 quantile of ages recorded for immatures of each species.", out.width="8in"}
+```{r supp-coef-scatterplots, fig.cap="Differences slope of effect of climate change on biotic change at how high and low mean conditions (columns) plotted against species life histories. Simple regression lines plotted for immature abundance only. Mean age and depth are calculated across all sampled individuals of each maturity class (as defined by the length at 50\\% maturity threshold) within a species. Growth rate is estimated as the length at maturity for females divide by the 0.95 quantile of ages recorded for immatures of each species.", out.width="8in"}
 include_graphics(here("ms", "figs", "supp-slope-scatterplots.pdf"))
 ```
 
