@@ -67,6 +67,7 @@ plot_vocc <- function(df,
                       raster_limits = NULL,
                       raster_cell_size = 2,
                       legend_position = c(0.15, 0.25),
+                      tag_text = NULL,
                       make_square = TRUE,
                       theme_black = FALSE) {
   if (!is.null(vec_aes)) {
@@ -158,7 +159,7 @@ plot_vocc <- function(df,
           limits = raster_limits
         ) +
         labs(fill = fill_label)
-
+      
       if (theme_black) {
         gvocc <- gvocc + theme(
           legend.position = legend_position,
@@ -332,6 +333,10 @@ plot_vocc <- function(df,
       guides(colour = "none", size = "none")
   }
 
+  if (!is.null(tag_text)) {
+    gvocc <- gvocc + annotate(geom = 'text', label = tag_text, x = Inf, y = Inf, hjust = 2, vjust = 2)
+  }
+  
   gvocc
 }
 
