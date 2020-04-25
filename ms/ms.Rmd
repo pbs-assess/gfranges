@@ -36,6 +36,7 @@ opts_chunk$set(
   fig.align = "center",
   fig.pos = "htb"
 )
+options(tinytex.clean = FALSE) # keep TeX auxiliary files for faster compiling
 ```
 
 ```{r data, cache=TRUE}
@@ -229,15 +230,20 @@ A similar value was calculated for immature males, but it only differed substant
 
 # Results
 
-Our models suggest that from 2008 to 2018, survey season seafloor temperature increased across almost the entirety of Canada's Pacific shelf region (95% interquartile range of `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[2]], digits = 2)`), with warming tending to be most pronounced in shallower areas (Fig. \@ref(fig:climate-maps) <!-- TODO: should letters be added and included here? eg. "C" -->).
-In contrast, change in seafloor DO was much more variable in the direction of change (95% interquartile range of `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[2]], digits = 2)`), with both the greatest increases also occurring in the shallowest areas and the greatest decreases occuring across a wide range of depths <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)D) -->.
-When these local changes are placed in their geographic context in the form of a gradient-based velocity estimate, the majority of the highest velocities occur in the bottom of troughs in Queen Charlotte Sound and Dixon Entrance <!-- TODO: should letters be added and included here? eg. (Fig. \@ref(fig:climate-maps)E & F) -->.
+Our models suggest that from 2008 to 2018, seafloor temperature from late May to early August increased across almost the entirety of Canada's Pacific shelf region (95% interquantile range of `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$temp_trend, c(0.025, 0.975))[[2]], digits = 2)`), with warming tending to be most pronounced in shallower areas (Fig. \@ref(fig:climate-maps)C).
+<!-- TODO: should letters be added and included here? eg. "C" -->
+<!-- SA: yeah, might be helpful for referring to specific panels here-->
+In contrast, change in seafloor DO was much more variable in the direction of change (95% interquantile range of `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[1]], digits = 2)` to `r signif(quantile(alldata$DO_trend, c(0.025, 0.975))[[2]], digits = 2)`), with the greatest increases also occurring in the shallowest areas and the greatest decreases occuring across a wide range of depths (Fig. \@ref(fig:climate-maps)D).
+When these local changes are placed in their geographic context in the form of a gradient-based velocity estimate, the majority of the highest velocities occur in the bottom of troughs in Queen Charlotte Sound and Dixon Entrance (Fig. \@ref(fig:climate-maps)E, F).
 
-Separate geostatistical models exploring either trend- or velocity-based indices of change resolved similar overall interactions for both temperature and DO, but the overall main effects of temperature change and mean DO did differ (Fig \@ref(fig:global-coefs) TODO and \@ref(fig:worm-plots)) if both model types included).
+Geostatistical models exploring either trend- or velocity-based indices of change resolved similar overall interactions for both temperature and DO, but the overall main effects of temperature change and mean DO differed (Fig \@ref(fig:global-coefs) TODO and \@ref(fig:worm-plots)) if both model types included).
 <!-- TODO: This difference is NOT due to covariation between temperature and DO within our dataset, which the trend model could control for, but the the velocity one could not.  ... now what? -->
-Despite this difference, the qualitative patterns for most species and maturity class tended to agree between model types (Figs. \@ref(fig:trend-chopsticks) and \@ref(fig:vel-chopsticks)); therefore, we will focus on interpreting the results of trend-based model (Fig. \@ref(fig:worm-plots) <!-- TODO: add A, if both models are in this plot-->).
-Null models based on simulated biotic trends still showed slightly more significant relationships than would be expected by chance, but far fewer than the model based on modeled changes in abundance and all the effect sizes for parameters of interest were much nearly an order of magnitude smaller (Fig. TODO: add supplementary fig <!-- \@ref(fig:null-coefs) -->).
-Therefore, we will explore both the overall and species-level patterns resolved, but keeping in mind that not all species-level patterns are expected to be biologically meaningful.
+Despite this difference, the qualitative patterns for most species and maturity class tended to agree between model types (Figs. \@ref(fig:trend-chopsticks) and \@ref(fig:vel-chopsticks)); therefore, we focus on interpreting the results of the trend-based model (Fig. \@ref(fig:worm-plots) <!-- TODO: add A, if both models are in this plot-->).
+Null models based on simulated biotic trends showed slightly more significant relationships than would be expected by chance, but far fewer than the model based on modeled changes in abundance
+<!-- SA: what is this "modeled changes in abundance"? you mean density? even still I'm not sure -->
+and all the effect sizes for parameters of interest were much nearly an order of magnitude smaller (Fig. TODO: add supplementary fig).
+<!-- \@ref(fig:null-coefs) -->
+Therefore, we explore both the overall and species-level patterns, but keep in mind that a slightly higher percentage than the stated alpha level of 0.05 (TODO %) may be spurious.
 
 <!-- TODO: Figure out what to say about velocity "NULLs", if anything...
 This spatial pattern largely remains for simulated biotic velocities, which results in models of simulated biotic velocity that have a similar number of significant effects as the model based on real biomass changes.
@@ -246,21 +252,28 @@ Both climate variables and species distributions were modeled in response to sea
 -->
 
 TODO: Add comment on significant negative global effects of both temperature and DO change, and negative interact for temperature. Maybe also add a simplier version of (Fig. \@ref(fig:supp-global-coefs)) to paper?
+<!-- SA: I think it's fine to leave the gnarly complicated thing in the supplement; maybe we can just add the global effect to the overall coefficient plot at the bottom? maybe emphasized with something fancy like a diamond?-->
 
+<!-- SA: I wonder if each of these main findings should be split off into its own paragraph with the point as a topic sentence? This is a super dense results paragraph -->
 Across species, the most common patterns were that
-1) the impact of warming on biomass change was more negative (or at least less positive) in locations with higher mean temperatures than in cooler locations (e.g. Widow Rockfish, mature Shortspine Thornyhead, and mature English and Flathead Sole),
-2) the impact of increasing DO levels was more negative in locations with lower mean DO levels than in locations with higher mean DO levels (e.g. Dogfish, mature Sablefish, Widow Rockfish, and English and Flathead Sole) <!-- Note that negative effect of DO change is sig overall, but not interaction... so may change this? -->, and
-3) overall immature abundances showed a tendency to respond more positively to both mean DO and changes in DO (Fig. \@ref(fig:supp-global-coefs)).
-There were no strong patterns of similarity amoungst species belonging to the same genus or family (TODO: should we mention here that they were included as random effects in trial models, but not the final model?) as illustrated by relationships with biotic trends that were negative at high temperatures (Canary Rockfish and English Sole) or positive at low temperatures (eg. Widow Rockfish and Flathead Sole) occuring in members of both the largest families represented in our analysis, Sebastidae (rockfish) and Pleuronectidae (righteye flounders; Fig. \@ref(fig:worm-plots) and \@ref(fig:species-map-chop-panel)).
+(1) the impact of warming on biomass change was more negative (or less positive) in locations with higher mean temperatures than in cooler locations (e.g., Widow Rockfish, mature Shortspine Thornyhead, and mature English and Flathead Sole),
+(2) the impact of increasing DO levels was more negative in locations with lower mean DO levels than in locations with higher mean DO levels (e.g., Dogfish, mature Sablefish, Widow Rockfish, and English and Flathead Sole), 
+<!-- Note that negative effect of DO change is sig overall, but not interaction... so may change this? -->
+and (3) overall immature abundances showed a tendency to respond more positively to both mean DO and changes in DO (Fig. \@ref(fig:supp-global-coefs)).
+There were no strong patterns of similarity amoungst species belonging to the same genus or family
+<!-- (TODO: should we mention here that they were included as random effects in trial models, but not the final model?)  -->
+<!-- SA: yeah, we should probably mention it in the methods -->
+as illustrated by relationships with biotic trends that were negative at high temperatures (Canary Rockfish and English Sole) or positive at low temperatures (e.g., Widow Rockfish and Flathead Sole) occuring in members of both the largest families represented in our analysis, Sebastidae (rockfish) and Pleuronectidae (righteye flounders; Fig. \@ref(fig:worm-plots) and \@ref(fig:species-map-chop-panel)).
+<!-- SA: it occurs to me that we need to get the latin names and for all the species and that will make the text get kind of ridiculous. I wonder if we should have a table with all the species in latin names and just refer to that? -->
 Likewise, most species in all families showed relatively little impact of DO change when DO levels were high, but a potentially counter-intuitive decline in biomass if DO increased when mean DO was at it's lowest (\@ref(fig:trend-chopsticks).
 However, several species, mostly rockfish, do show increasing biomass with increasing DO across their distributions (mature Bocaccio, Greenstripe, Redstripe, Yelloweye, Yellowmouth and Yellowtail Rockfishes, and immature Sharpchin Rockfish and Sablefish).
 The few exceptions to these pattern include a strong positive effect of increasing DO at low mean levels for adult Splitnose Rockfish, and both maturity classes of Shortspine Thornyheads, all groups occupying some of the deeper habitats (Fig. \@ref(fig:slope-by-depth)).
 However, three species with deeper mean occurence show the more common pattern (mature Sablefish and all of the Rougheye/Blackspotted Rockfish complex), or no relationship at all with DO change (Shortraker Rockfish).
 
-Overall climate sensitivities did correlate with life history traits and were strongest for the youngest populations (Fig. \@ref(fig:coef-scatterplots)).
+Overall climate sensitivities correlated with life-history traits and were strongest for the youngest populations (Fig. \@ref(fig:coef-scatterplots)).
 This included overall more negative responses to both warming and increasing DO in populations with mean age less than ten years (Fig. \@ref(fig:coef-scatterplots) TODO: add panel letters?).
-Consistent with this, the strongest negative effects of warming (estimated for the warmest parts of a species distribution) were in species occurring at intermediate depths, while most species with mean encounter depths beyond 290 m appeared to increase in abundance with greater warming (Fig. \@ref(fig:slope-by-depth) TODO: add panel letter A).
-In contrast, both strong negative and positive responses to changes in DO occur across a range of depth preferences, although increasing DO in the lowest DO locations is mostly negative for species averaging shallower than 150 m (Fig. \@ref(fig:slope-by-depth) TODO: add panel letter B).
+Consistent with this finding, the strongest negative effects of warming (estimated for the warmest parts of a species distribution) were for species occurring at intermediate depths, whereas most species with mean encounter depths deeper than 290 m appeared to increase in density with greater warming (Fig. \@ref(fig:slope-by-depth) TODO: add panel letter A).
+In contrast, both strong negative and positive responses to changes in DO occurred across a range of depth preferences, although increasing DO in the lowest DO locations is mostly negative for species averaging shallower than 150 m (Fig. \@ref(fig:slope-by-depth) TODO: add panel letter B).
 Finally, species with faster growth rates in immature females (cm/year) tended to have more negative responses to increases in temperature or DO (Fig. \@ref(fig:coef-scatterplots) TODO: add panel letters?).
 
 <!-- TODO:  Species of interest...
