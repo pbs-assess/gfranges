@@ -12,55 +12,59 @@ compile("vocc_regression.cpp")
 dyn.load(dynlib("vocc_regression"))
 source("vocc-regression-functions.R")
 
-knots <- 500
+
+### main modeling choices ###
+
 
 # age <- "mature"
 # age <- "immature"
 age <- "both"
 
-# y_type <- "vel"
-y_type <- "trend"
-
 no_chopsticks <- F
-
-# model_type <- "-trend"
-# model_type <- "-trend-w-age" # an experiment that lacks true chops for imm
-# model_type <- "-trend-with-do"
-model_type <- "-trend-grad"
-model_type <- "-trend-w-grad"
-
-
-# model_type <- "-vel-temp"
-# model_type <- "-vel-do"
-# model_type <- "-dist-vel-temp"
-# model_type <- "-vel-both"
-# # model_type <- "-vel-both-fishing"
-
 w_genus <- F
 w_family <- F
 is_null <- F
 
+null_number <- "-1"
+# null_number <- "-2"
+# null_number <- "-3"
 
-#### LOAD MATURE VOCC DATA
-# data_type <- "multi-spp-biotic-vocc-mature"
-# d <- readRDS(paste0("data/", data_type, "-with-fished.rds"))
 
-data_type <- paste0(age,"-95-all-temp")
+### for trends ###
+# knots <- 500
+# y_type <- "trend"
+
+# model_type <- "-trend" # just temp
+# model_type <- "-trend-w-age" # an experiment that lacks true chops for imm
+# model_type <- "-trend-with-do"
+# model_type <- "-trend-grad"
+# model_type <- "-trend-w-grad"
+
+
+### for velocities ###
+knots <- 200
+y_type <- "vel"
+
+# model_type <- "-vel-temp"
+# model_type <- "-vel-do"
+# model_type <- "-dist-vel-temp"
+model_type <- "-vel-both"
+
+
+### LOAD VOCC DATA
+if(age != "both") {
+# data_type <- paste0(age,"-95-all-temp")
 # data_type <- paste0(age,"-90-all-temp")
 # data_type <- paste0(age,"-80-all-temp")
 # data_type <- paste0(age,"-50-all-temp")
 # data_type <- paste0(age,"-90-all-do")
 # data_type <- paste0(age,"-80-all-do")
 data_type <- paste0(age,"-95-all-do")
+}
 
 if(age == "both") {
   data_type <- paste0("all-95-all-do")
   }
-
-#  null_number <- ""
-null_number <- "-1"
- # null_number <- "-2"
- # null_number <- "-3"
 
 d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
 
@@ -70,11 +74,6 @@ d$true_genus <- d$genus
 if(w_family){
   d$genus <- d$family
 }
-
-# if(w_age){
-#   d$genus <- d$age
-# }
-
 
 d <- as_tibble(d) %>%
   # filter(species != "Bocaccio") %>%
@@ -264,7 +263,7 @@ if(model_type == "-vel-do") {
   
 }
 
-if(model_type == "-vel-both-fishing") {
+if(model_type == "-vel-both") {
   # if (model_type == "-vel-no-fishing") {
   formula <- ~ squashed_temp_vel_scaled + 
     squashed_DO_vel_scaled +
