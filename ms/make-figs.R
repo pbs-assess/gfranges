@@ -7,12 +7,17 @@ library(gfranges)
 
 # load appropriate final models
 model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-27-vel-both-1-200.rds")
 
-# model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-03-vel-temp-1-200-temp.rds")
-# model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-03-vel-do-1-200-do.rds")
-
-model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-12-vel-temp-1-200-temp.rds")
-model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-12-vel-do-1-200-DO.rds")
+## Maybe just for supplementary
+# # model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-03-vel-temp-1-200-temp.rds")
+# # model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-03-vel-do-1-200-do.rds")
+# model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-12-vel-temp-1-200-temp.rds")
+# model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-12-vel-do-1-200-DO.rds")
+# 
+# model_temp <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-22-trend-1-500-temp.rds")
+# model_grad <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-23-trend-w-grad-1-500-temp.rds")
+# # model_do <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-22-trend-do-only-1-500.rds")
 
 stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
@@ -119,6 +124,133 @@ mean_temp + mean_do +  trend_temp + trend_do + vel_temp + vel_do + plot_layout(n
 
 # ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 6, height = 9)
 ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 5, height = 7.5)
+
+
+
+#### GLOBAL COEFS 
+###
+## trend model ####
+coef_names <- shortener(unique(model$coefs$coefficient))
+coef_names <- c("intercept", "change in T", "mean T", "change in DO", "mean DO", 
+  "biomass", "interaction (T)", "interaction (DO)")
+betas <- signif(as.list(model$sdr, "Estimate")$b_j, digits = 3)
+SE <- signif(as.list(model$sdr, "Std. Error")$b_j, digits = 3)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+overall_betas <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
+overall_betas$model <- "Trend"
+
+# ## velocity model ####
+coef_names <- shortener(unique(model_vel$coefs$coefficient))
+coef_names <- c("intercept", "change in T", "change in DO", "mean T", "mean DO",
+  "biomass", "interaction (T)", "interaction (DO)")
+betas <- signif(as.list(model_vel$sdr, "Estimate")$b_j, digits = 3)
+SE <- signif(as.list(model_vel$sdr, "Std. Error")$b_j, digits = 3)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+overall_betas_vel <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
+overall_betas_vel$model <- "Velocity"
+
+
+## add trend model with gradients and or fishing? ####
+# model_grad <- readRDS("analysis/VOCC/data/")
+# coef_names <- shortener(unique(model_grad$coefs$coefficient))
+# coef_names <- c("intercept", "change in T", "mean T", 
+#   "gradient", "biomass", "interaction (T)",
+#   "mean T:gradient",  "change in T:gradient", "interaction (T):gradient")
+# 
+# betas <- signif(as.list(model_grad$sdr, "Estimate")$b_j, digits = 3)
+# SE <- signif(as.list(model_grad$sdr, "Std. Error")$b_j, digits = 3)
+# lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
+# upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+# overall_betas_b <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
+# overall_betas_b$model <- "trend (T w gradient)"
+
+
+custom_order <- c("intercept", "immature", "biomass", "gradient",
+  "mean T", "mean T:immature", "mean T:gradient",
+  "change in T",  "change in T:immature",  "change in T:gradient",
+  "interaction (T)", "interaction (T):immature",  "interaction (T):gradient",
+  "mean DO",  "mean DO:immature",
+  "change in DO", "change in DO:immature", 
+  "interaction (DO)", "interaction (DO):immature"
+)
+
+### compare trends and velocities
+overall <- rbind.data.frame(overall_betas, overall_betas_vel)
+overall <- mutate(overall, term = firstup(as.character(coef_names)))
+overall2 <- overall %>% rename(
+  estimate = betas, std.error = SE) #%>% filter(term != "intercept")
+overall2 <- overall2 %>% mutate(term = factor(term, #model = firstup(as.character(model)),
+  levels = firstup(as.character(custom_order))))
+
+global_coefs <- dotwhisker::dwplot(overall2#, 
+  # order_vars = custom_order
+) + #xlim(-10,10) +
+  geom_vline(xintercept = 0, colour = "darkgray") +
+  xlab("Coeficieant estimate with 95% CI") +
+  # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, 
+  #   position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
+  scale_colour_manual(name = "Model", 
+    values = c("#D53E4F", # "#F46D43", 
+       # "#FDAE61" 
+      "#ABDDA4"
+      # "#5E4FA2"
+    )) + # ggtitle("a. Trend versus velocity models") +
+  gfplot::theme_pbs() + theme (legend.title = element_blank(),
+    legend.position = c(0.75, 0.275))
+global_coefs
+ggsave(here::here("ms", "figs", "global-coefs.pdf"), width = 4, height = 2.5)
+
+
+#########################
+#### experiment with species level coefs as boxplots ####
+trendcoefs <-add_colours(model$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
+  levels = c("(Intercept)", "temp_trend_scaled", "mean_temp_scaled", "DO_trend_scaled", "mean_DO_scaled",
+    "log_biomass_scaled", "temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled" ),
+  labels = c("intercept", "change in T", "mean T", "change in DO", "mean DO",
+    "biomass", "interaction (T)", "interaction (DO)")))
+
+velcoefs1 <- add_colours(model_vel_t$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
+  levels = c("(Intercept)", "squashed_temp_vel_scaled", "mean_temp_scaled",
+    "log_biomass_scaled", "squashed_temp_vel_scaled:mean_temp_scaled"),
+  labels = c("intercept", "change in T", "mean T",
+    "biomass", "interaction (T)")))
+
+velcoefs2 <- add_colours(model_vel_d$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
+  levels = c("(Intercept)", "squashed_DO_vel_scaled", "mean_DO_scaled",
+    "log_biomass_scaled", "squashed_DO_vel_scaled:mean_DO_scaled"),
+  labels = c("intercept", "change in DO", "mean DO",
+    "biomass", "interaction (DO)")))
+
+trendcoefs$model <- "trend"
+velcoefs1$model <- "velocity (T only)"
+velcoefs2$model <- "velocity (DO only)"
+trendcoefs$model_type <- "trend"
+velcoefs1$model_type <- "velocity"
+velcoefs2$model_type <- "velocity"
+
+allcoefs <- rbind.data.frame(trendcoefs, velcoefs1, velcoefs2)
+head(allcoefs)
+
+filter(overall, coef_names != "intercept") %>%
+  # overall %>%
+  ggplot(aes(coef_names, betas)) + #forcats::fct_reorder(coef_names, ) #, colour = model
+  geom_point(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = age), alpha= 0.3, position = position_jitter(width = 0.15), inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
+  geom_boxplot(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = age), 
+    notch =T,
+    inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
+  geom_pointrange(aes(ymin = lowerCI, ymax = upperCI), size = 1, fatten = 3, alpha = .9) + #position = position_jitter(width = 0.2), shape = "|"
+  geom_hline(yintercept = 0, colour = "darkgray") +
+  scale_colour_viridis_d(begin = .8, end = .2) +
+  # scale_y_continuous(trans = fourth_root_power) +
+  # scale_colour_manual(values = c("#D53E4F", "#5E4FA2", "#3288BD")) + #
+  xlab("") +
+  facet_wrap(~model_type) +
+  coord_flip(ylim = c(-2,2)) + # ylim = c(-10,10)
+  gfplot::theme_pbs()
+
+
 
 
 #### SEPARATE WORM PLOTS ####
