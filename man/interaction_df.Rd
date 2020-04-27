@@ -25,8 +25,8 @@ interaction_df(
 
 \item{split_variable}{Which variable to plot sticks at the min and max of.}
 
-\item{use_quantiles}{If TRUE, plots lines for 2.5th and 97.5th quantile of 
-splitting varible values occupied by each species. 
+\item{use_quantiles}{If TRUE, plots lines for 2.5th and 97.5th quantile of
+splitting varible values occupied by each species.
 If FALSE, use min and max values occupied by each species.}
 
 \item{N}{Number of increments}

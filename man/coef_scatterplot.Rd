@@ -9,8 +9,9 @@ coef_scatterplot(
   x,
   coef = c("temp_trend_scaled", "DO_trend_scaled"),
   group = "age",
-  point_size = 1,
-  point_alpha = 0.85,
+  point_size = 0.75,
+  point_alpha = 0.65,
+  pointrange = T,
   regression = T
 )
 }

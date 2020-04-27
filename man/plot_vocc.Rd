@@ -18,7 +18,7 @@ plot_vocc(
   min_vec_plotted = 4,
   NA_label = "NA",
   white_zero = min(fill, na.rm = TRUE) < 0,
-  low_fill = "Steel Blue 4",
+  low_fill = "#3d95cc",
   mid_fill = "white",
   high_fill = "Red 3",
   na_colour = "red",
@@ -32,6 +32,7 @@ plot_vocc(
   raster_limits = NULL,
   raster_cell_size = 2,
   legend_position = c(0.15, 0.25),
+  tag_text = NULL,
   make_square = TRUE,
   theme_black = FALSE
 )
@@ -47,7 +48,8 @@ plot_vocc(
 
 \item{vec_aes}{Vector name for any plotting distance-based vectors.}
 
-\item{grad_vec_aes}{Vector name for plotting gradient-based vectors. Default NULL for distance-based vectors.}
+\item{grad_vec_aes}{Vector name for plotting gradient-based vectors.
+Default NULL for distance-based vectors.}
 
 \item{arrowhead_size}{Changes head size for custom geom_quiver function.}
 
@@ -55,13 +57,15 @@ plot_vocc(
 
 \item{vec_alpha}{Vector transparency.}
 
-\item{max_vec_plotted}{Upper limit for vector lengths. Cells with no match less than this distance will be labeled with [NA_label].}
+\item{max_vec_plotted}{Upper limit for vector lengths.
+Cells with no match less than this distance will be labeled with [NA_label].}
 
 \item{min_vec_plotted}{Lower limit for vector lengths actually plotted.}
 
 \item{NA_label}{Symbol used to indicate cells with no analog. Default is "NA".}
 
-\item{white_zero}{If TRUE, will always plot on custom fill scale. Default will plot on this scale only if raster has negative values.}
+\item{white_zero}{If TRUE, will always plot on custom fill scale.
+Default will plot on this scale only if raster has negative values.}
 
 \item{low_fill}{Colour of negative values if raster values span zero.}
 
@@ -73,9 +77,11 @@ plot_vocc(
 
 \item{vec_col}{Colour of vectors.}
 
-\item{coast}{Coast polygons where (x = "X", y = "Y", group = "PID"). If TRUE, will attempt to create them for xy values in df. Will not include if FALSE.}
+\item{coast}{Coast polygons where (x = "X", y = "Y", group = "PID").
+If TRUE, will attempt to create them for xy values in df. Will not include if FALSE.}
 
-\item{contours}{Polygons of contour lines where (x = "X", y = "Y", group = "paste(PID, SID)"). If TRUE, will attempt to create bathymetry layer for xy values in df using gfplot.}
+\item{contours}{Polygons of contour lines where (x = "X", y = "Y", group = "paste(PID, SID)").
+If TRUE, will attempt to create bathymetry layer for xy values in df using gfplot.}
 
 \item{axis_lables}{Logical for inclusion of axis labels.}
 
@@ -83,7 +89,10 @@ plot_vocc(
 
 \item{viridis_dir}{Option to flip scale by giving value of -1.}
 
-\item{transform_col}{Apply transformation to colour scale. Accepts standard options (e.g. "sqrt") or unquoted custom transformations defined using scales::trans_new (e.g. fourth_root_power). Default is to apply no transformation (no_trans).}
+\item{transform_col}{Apply transformation to colour scale.
+Accepts standard options (e.g. "sqrt") or unquoted custom transformations
+defined using scales::trans_new (e.g. fourth_root_power).
+Default is to apply no transformation (no_trans).}
 
 \item{raster_limits}{Range of values to plot; those in excess will be red. Default of "NULL" plots full range.}
 
