@@ -591,13 +591,12 @@ plot_chopstick_slopes <- function(slopedat,
   }
   
   if(add_grey_bars) {
-    browser()
-    d <- ggplot2::ggplot_build(p)$data[[3]] %>% dplyr::filter(.data$PANEL == 1)
-    a <- abs(sort(unique(round(diff(d$x), 9))))
+    .n <- length(unique(slopedat$species))
+    .w <- 0.5
     p <- p + annotate(
-        geom = "rect", xmin = d$x - a[[1]] / 2, xmax = d$x + a[[1]] / 2,
-        ymin = -Inf, ymax = Inf, fill = "grey75", alpha = 0.1
-      )
+      geom = "rect", xmin = seq(1, .n, by = 2) - .w, xmax = seq(1, .n, by = 2) + .w,
+      ymin = -Inf, ymax = Inf, fill = "grey70", alpha = 0.2
+    )
   }
   p
 }
