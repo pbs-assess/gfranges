@@ -439,6 +439,7 @@ plot_chopstick_slopes <- function(slopedat,
                                   global_col = "gray30",
                                   point_size = 0.75,
                                   alpha_range = c(0.5, 0.99),
+                                  add_grey_bars = F,
                                   colours = NULL) {
   if (!is.null(imm_slopes)) {
     imm_slopes$age <- "immature"
@@ -587,6 +588,16 @@ plot_chopstick_slopes <- function(slopedat,
         guides(colour = guide_legend(override.aes = list(size = 0.4))) +
         scale_shape_manual(values = c(16), guide = F)
     }
+  }
+  
+  if(add_grey_bars) {
+    browser()
+    d <- ggplot2::ggplot_build(p)$data[[3]] %>% dplyr::filter(.data$PANEL == 1)
+    a <- abs(sort(unique(round(diff(d$x), 9))))
+    p <- p + annotate(
+        geom = "rect", xmin = d$x - a[[1]] / 2, xmax = d$x + a[[1]] / 2,
+        ymin = -Inf, ymax = Inf, fill = "grey75", alpha = 0.1
+      )
   }
   p
 }
