@@ -309,9 +309,9 @@ overall_betas_age2$model_type <- "trend"
 
 custom_order <- c("intercept", "immature", "biomass", 
   "gradient",
-  "mean T", "mean T:immature", "mean T:gradient",
-  "change in T",  "change in T:immature",  "change in T:gradient",
-  "interaction (T)", "interaction (T):immature",  "interaction (T):gradient",
+  "mean T", "mean T:immature", "mean T:Gradient",
+  "change in T",  "change in T:immature",  "change in T:Gradient",
+  "interaction (T)", "interaction (T):immature",  "interaction (T):Gradient",
   "mean DO",  "mean DO:immature",
   "change in DO", "change in DO:immature", 
   "interaction (DO)", "interaction (DO):immature"
