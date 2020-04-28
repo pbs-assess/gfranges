@@ -125,9 +125,7 @@ mean_temp + mean_do +  trend_temp + trend_do + vel_temp + vel_do + plot_layout(n
 # ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 6, height = 9)
 ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 5, height = 7.5)
 
-
-
-#### GLOBAL COEFS 
+#### GLOBAL COEFS ####
 ###
 ## trend model ####
 coef_names <- shortener(unique(model$coefs$coefficient))
@@ -184,7 +182,7 @@ overall2 <- overall %>% rename(
 overall2 <- overall2 %>% mutate(term = factor(term, #model = firstup(as.character(model)),
   levels = firstup(as.character(custom_order))))
 
-global_coefs <- dotwhisker::dwplot(overall2#, 
+global_coefs <- dotwhisker::dwplot(overall2, dot_args = list(size=2) 
   # order_vars = custom_order
 ) + #xlim(-10,10) +
   geom_vline(xintercept = 0, colour = "darkgray") +
@@ -192,10 +190,12 @@ global_coefs <- dotwhisker::dwplot(overall2#,
   # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, 
   #   position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
   scale_colour_manual(name = "Model", 
-    values = c("#D53E4F", # "#F46D43", 
+    values = c(
+      "#D53E4F", 
+      # "#F46D43", 
        # "#FDAE61" 
-      "#ABDDA4"
-      # "#5E4FA2"
+      # "#ABDDA4"
+      "#5E4FA2"
     )) + # ggtitle("a. Trend versus velocity models") +
   gfplot::theme_pbs() + theme (legend.title = element_blank(),
     legend.position = c(0.75, 0.275))
@@ -204,56 +204,61 @@ ggsave(here::here("ms", "figs", "global-coefs.pdf"), width = 4, height = 2.5)
 
 
 #########################
-#### experiment with species level coefs as boxplots ####
-trendcoefs <-add_colours(model$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
-  levels = c("(Intercept)", "temp_trend_scaled", "mean_temp_scaled", "DO_trend_scaled", "mean_DO_scaled",
-    "log_biomass_scaled", "temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled" ),
-  labels = c("intercept", "change in T", "mean T", "change in DO", "mean DO",
-    "biomass", "interaction (T)", "interaction (DO)")))
-
-velcoefs1 <- add_colours(model_vel_t$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
-  levels = c("(Intercept)", "squashed_temp_vel_scaled", "mean_temp_scaled",
-    "log_biomass_scaled", "squashed_temp_vel_scaled:mean_temp_scaled"),
-  labels = c("intercept", "change in T", "mean T",
-    "biomass", "interaction (T)")))
-
-velcoefs2 <- add_colours(model_vel_d$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
-  levels = c("(Intercept)", "squashed_DO_vel_scaled", "mean_DO_scaled",
-    "log_biomass_scaled", "squashed_DO_vel_scaled:mean_DO_scaled"),
-  labels = c("intercept", "change in DO", "mean DO",
-    "biomass", "interaction (DO)")))
-
-trendcoefs$model <- "trend"
-velcoefs1$model <- "velocity (T only)"
-velcoefs2$model <- "velocity (DO only)"
-trendcoefs$model_type <- "trend"
-velcoefs1$model_type <- "velocity"
-velcoefs2$model_type <- "velocity"
-
-allcoefs <- rbind.data.frame(trendcoefs, velcoefs1, velcoefs2)
-head(allcoefs)
-
-filter(overall, coef_names != "intercept") %>%
-  # overall %>%
-  ggplot(aes(coef_names, betas)) + #forcats::fct_reorder(coef_names, ) #, colour = model
-  geom_point(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = age), alpha= 0.3, position = position_jitter(width = 0.15), inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
-  geom_boxplot(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = age), 
-    notch =T,
-    inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
-  geom_pointrange(aes(ymin = lowerCI, ymax = upperCI), size = 1, fatten = 3, alpha = .9) + #position = position_jitter(width = 0.2), shape = "|"
-  geom_hline(yintercept = 0, colour = "darkgray") +
-  scale_colour_viridis_d(begin = .8, end = .2) +
-  # scale_y_continuous(trans = fourth_root_power) +
-  # scale_colour_manual(values = c("#D53E4F", "#5E4FA2", "#3288BD")) + #
-  xlab("") +
-  facet_wrap(~model_type) +
-  coord_flip(ylim = c(-2,2)) + # ylim = c(-10,10)
-  gfplot::theme_pbs()
-
-
+# #### experiment with species level coefs as boxplots ####
+# trendcoefs <-add_colours(model$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
+#   levels = c("(Intercept)", "temp_trend_scaled", "mean_temp_scaled", "DO_trend_scaled", "mean_DO_scaled",
+#     "log_biomass_scaled", "temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled" ),
+#   labels = c("intercept", "change in T", "mean T", "change in DO", "mean DO",
+#     "biomass", "interaction (T)", "interaction (DO)")))
+# 
+# velcoefs1 <- add_colours(model_vel_t$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
+#   levels = c("(Intercept)", "squashed_temp_vel_scaled", "mean_temp_scaled",
+#     "log_biomass_scaled", "squashed_temp_vel_scaled:mean_temp_scaled"),
+#   labels = c("intercept", "change in T", "mean T",
+#     "biomass", "interaction (T)")))
+# 
+# velcoefs2 <- add_colours(model_vel_d$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
+#   levels = c("(Intercept)", "squashed_DO_vel_scaled", "mean_DO_scaled",
+#     "log_biomass_scaled", "squashed_DO_vel_scaled:mean_DO_scaled"),
+#   labels = c("intercept", "change in DO", "mean DO",
+#     "biomass", "interaction (DO)")))
+# 
+# trendcoefs$model <- "trend"
+# velcoefs1$model <- "velocity (T only)"
+# velcoefs2$model <- "velocity (DO only)"
+# trendcoefs$model_type <- "trend"
+# velcoefs1$model_type <- "velocity"
+# velcoefs2$model_type <- "velocity"
+# 
+# allcoefs <- rbind.data.frame(trendcoefs, velcoefs1, velcoefs2)
+# head(allcoefs)
+# 
+# filter(overall, coef_names != "intercept") %>%
+#   # overall %>%
+#   ggplot(aes(coef_names, betas)) + #forcats::fct_reorder(coef_names, ) #, colour = model
+#   geom_point(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = age), alpha= 0.3, position = position_jitter(width = 0.15), inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
+#   geom_boxplot(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = age), 
+#     notch =T,
+#     inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
+#   geom_pointrange(aes(ymin = lowerCI, ymax = upperCI), size = 1, fatten = 3, alpha = .9) + #position = position_jitter(width = 0.2), shape = "|"
+#   geom_hline(yintercept = 0, colour = "darkgray") +
+#   scale_colour_viridis_d(begin = .8, end = .2) +
+#   # scale_y_continuous(trans = fourth_root_power) +
+#   # scale_colour_manual(values = c("#D53E4F", "#5E4FA2", "#3288BD")) + #
+#   xlab("") +
+#   facet_wrap(~model_type) +
+#   coord_flip(ylim = c(-2,2)) + # ylim = c(-10,10)
+#   gfplot::theme_pbs()
 
 
 #### SEPARATE WORM PLOTS ####
+
+lowerT <- overall_betas %>% filter(coef_names == "change in T") %>% select(lowerCI)
+upperT <- overall_betas %>% filter(coef_names == "change in T") %>% select(upperCI)
+lowerD <- overall_betas %>% filter(coef_names == "change in DO") %>% select(lowerCI)
+upperD <- overall_betas %>% filter(coef_names == "change in DO") %>% select(upperCI)
+estT <- overall_betas %>% filter(coef_names == "change in T") %>% select(betas)
+estD <- overall_betas %>% filter(coef_names == "change in DO") %>% select(betas)
 
 ### WORM PLOTS OF SLOP ESTIMATES FROM TREND MODEL ####
 temp_slopes <- chopstick_slopes(model,
@@ -273,25 +278,38 @@ do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"]
 p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
   legend_position = c(.3, .95)
-) + theme(axis.title.x = element_blank()) +
+) + 
+  annotate("rect", ymin = lowerT[[1]], ymax = upperT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
+  geom_hline(yintercept = estT[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
+  theme(axis.title.x = element_blank()) +
   ggtitle("a. Temperature")
 p_do_worm <- plot_chopstick_slopes(do_slopes,
   type = "DO",
   legend_position = c(.25, .95)
 ) + coord_flip(ylim = c(-3.1, 1.4)) +
+  annotate("rect", ymin = lowerD[[1]], ymax = upperD[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
+  geom_hline(yintercept = estD[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   ggtitle("b. DO") +
   # ylab("slopes")
   scale_x_discrete(position = "top") +
   theme(axis.title.x = element_blank())
 
-(p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02)) #+ plot_annotation(tag_levels = "a")
+(p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02)) 
 ggsave(here::here("ms", "figs", "worm-plot-trend.pdf"), width = 7.5, height = 6)
 
 # meta-analytical coefficients? ... all span zero, but could include as appendix?
 
 ### WORM PLOTS OF SLOP ESTIMATES FROM VELOCITY MODELS  ####
 
-temp_vel_slopes <- chopstick_slopes(model_vel_t,
+lowervT <- overall_betas_vel %>% filter(coef_names == "change in T") %>% select(lowerCI)
+uppervT <- overall_betas_vel %>% filter(coef_names == "change in T") %>% select(upperCI)
+lowervD <- overall_betas_vel %>% filter(coef_names == "change in DO") %>% select(lowerCI)
+uppervD <- overall_betas_vel %>% filter(coef_names == "change in DO") %>% select(upperCI)
+estvT <- overall_betas_vel %>% filter(coef_names == "change in T") %>% select(betas)
+estvD <- overall_betas_vel %>% filter(coef_names == "change in DO") %>% select(betas)
+
+
+temp_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_temp_vel_scaled",
   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled",
   type = "temp"
@@ -300,7 +318,7 @@ temp_vel_slopes <- chopstick_slopes(model_vel_t,
 temp_vel_slopes <- temp_vel_slopes %>% mutate(sort_var = slope_est)
 temp_vel_slopes$species[temp_vel_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
-do_vel_slopes <- chopstick_slopes(model_vel_d,
+do_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_DO_vel_scaled",
   interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
 )
@@ -325,15 +343,19 @@ do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish C
 p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
   legend_position = c(.25, .95)
-) + theme(plot.margin = margin(0, 0, 0.2, 0.2, "cm"),
+) + annotate("rect", ymin = lowerT[[1]], ymax = upperT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
+  geom_hline(yintercept = estT[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
+  theme(plot.margin = margin(0, 0, 0.2, 0.2, "cm"),
   axis.title.x = element_blank()) +
-  ggtitle("Temperature") + 
+  ggtitle("a. Temperature") + 
   xlab("% biomass change for a SD of climate change")
 p_do_worm <- plot_chopstick_slopes(do_slopes,
   type = "DO",
   legend_position = c(.25, .95)
 ) + coord_flip(ylim = c(-3.1, 1.4)) +
-  ggtitle("DO") +
+  annotate("rect", ymin = lowerD[[1]], ymax = upperD[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
+  geom_hline(yintercept = estD[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
+  ggtitle("b. DO") +
   # ylab("slopes")
   theme(plot.margin = margin(0, 0, 0.2, 0, "cm"),
     axis.title.x = element_blank())
@@ -342,25 +364,25 @@ p_temp_worm3 <- plot_chopstick_slopes(temp_vel_slopes,
   type = "temp",
   legend_position = c(.25, .95)
 ) + coord_flip(ylim = c(-14, 7.95)) +
-  theme(plot.margin = margin(0, 0, 0, 0.2, "cm"),
+  annotate("rect", ymin = lowervT[[1]], ymax = uppervT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
+  geom_hline(yintercept = estvT[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
+  ggtitle("c.") +
+  theme(plot.margin = margin(0.2, 0, 0, 0.2, "cm"),
     axis.title.x = element_blank(),
     legend.position = "none") +
-  xlab("biotic velocity change for a SD increase in climate velocity")
+  xlab("Biotic velocity change for a SD increase in climate velocity")
 p_do_worm3 <- plot_chopstick_slopes(do_vel_slopes,
   type = "DO",
   legend_position = c(.25, .95)
 ) + coord_flip(ylim = c(-5.75, 3.25)) +
-  theme(plot.margin = margin(0, 0, 0, 0, "cm"),
+  geom_hline(yintercept = estvD[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
+  annotate("rect", ymin = lowervD[[1]], ymax = uppervD[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
+  ggtitle("d.") +
+  theme(plot.margin = margin(0.2, 0, 0, 0, "cm"),
     axis.title.x = element_blank(),
     legend.position = "none")
 
-(p_temp_worm | p_do_worm)/(p_temp_worm3 | p_do_worm3) + plot_layout(height = c(1, 1))
-
-# # with slope descriptions on bottom instead of left side
-# ((p_temp_worm | p_do_worm) / grid::textGrob("", just = 0.31) +
-#   plot_layout(height = c(10, 0.25))) /
-#   ((p_temp_worm3 | p_do_worm3) / grid::textGrob("", just = 0.31) + plot_layout(height = c(10, 0.25))) +
-#   plot_layout(height = c(5, 0.1, 5, 0.1))
+(p_temp_worm | p_do_worm)/(p_temp_worm3 | p_do_worm3) + plot_layout(height = c(1, 1)) #+ plot_annotation(tag_levels = "a")
 
 ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 
