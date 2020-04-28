@@ -314,7 +314,8 @@ chopstick_slopes <- function(model,
   }
 
   if (!is.null(model$deltas)) {
-    deltas <- model$deltas %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+    deltas <- model$deltas %>% 
+      mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
     deltas <- deltas %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
 
     deltas <- deltas %>%
@@ -478,7 +479,7 @@ plot_chopstick_slopes <- function(slopedat,
 
   if (hack) {
     p <- ggplot(slopedat) +
-      geom_hline(yintercept = 0, colour = "darkgray") +
+      geom_hline(yintercept = 0, colour = "black", alpha = 0.7) +
       # geom_linerange(aes(forcats::fct_reorder(species, sort_var, mean, .desc=F), abs(diff),
       #   ymin = (abs(diff) - diff_se*1.96),
       #   ymax = (abs(diff) + diff_se*1.96),
@@ -540,7 +541,7 @@ plot_chopstick_slopes <- function(slopedat,
       ymin = (slope_est - slope_se * 1.96),
       ymax = (slope_est + slope_se * 1.96)
     )) +
-      geom_hline(yintercept = 0, colour = "darkgray") +
+      geom_hline(yintercept = 0, colour = "black", alpha = 0.7) +
       scale_colour_manual(values = colours) + # , guide=T
       geom_pointrange(
         position = position_jitter(), # dodge.width = 1.2
