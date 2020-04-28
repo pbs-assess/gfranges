@@ -217,20 +217,16 @@ overall_betas_d <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_d$model <- "trend (DO only)"
 
 ## trend model with temp and gradient ####
-# no interaction
-# model_grad <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-23-trend-grad-1-500-temp.rds")
-# coef_names <- shortener(unique(model_grad$coefs$coefficient))
-# coef_names <- c("intercept", "change in T", "mean T", "gradient", "biomass", "interaction (T)")
 # # version with 2-way interactions
 # model_grad <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-23-trend-w-grad-1-500-temp-2-way.rds")
 # coef_names <- shortener(unique(model_grad$coefs$coefficient))
-# coef_names <- c("intercept", "change in T", "mean T", "gradient", "biomass", "interaction (T)",  "mean T:gradient",  "change in T:gradient") 
+# coef_names <- c("intercept", "change in T", "mean T", "gradient", "biomass", "interaction (T)",  "mean T:Gradient",  "change in T:Gradient") 
 
 # # version with 3-way interaction
 coef_names <- shortener(unique(model_grad$coefs$coefficient))
 coef_names <- c("intercept", "change in T", "mean T", 
   "gradient", "biomass", "interaction (T)",
-  "mean T:gradient",  "change in T:gradient", "interaction (T):gradient")
+  "mean T:Gradient",  "change in T:Gradient", "interaction (T):Gradient")
 
 betas <- signif(as.list(model_grad$sdr, "Estimate")$b_j, digits = 3)
 SE <- signif(as.list(model_grad$sdr, "Std. Error")$b_j, digits = 3)
@@ -238,7 +234,6 @@ lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
 upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
 overall_betas_g <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_g$model <- "trend (T w gradient)"
-
 
 ## velocity model ####
 coef_names <- shortener(unique(model_vel$coefs$coefficient))
@@ -301,6 +296,7 @@ overall_betas_age2 <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_age2$model <- "trend (w maturity effect)"
 
 ### plot global coefs for multiple models #### 
+
 overall_betas$model_type <- "trend"
 overall_betas_t$model_type <- "trend"
 overall_betas_d$model_type <- "trend"
@@ -333,12 +329,10 @@ overall2 <- overall2 %>% mutate(term = factor(term,
   levels = firstup(as.character(custom_order))), 
   model = firstup(as.character(model)))
 
-# overall2[is.na(overall2)] <- 0 
-global_vel <- dotwhisker::dwplot(overall2#, 
-  # order_vars = custom_order
-  ) + #xlim(-10,10) +
+global_vel <- dotwhisker::dwplot(overall2) + #xlim(-10,10) +
   geom_vline(xintercept = 0, colour = "darkgray", alpha=0.5) +
-  # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
+  # geom_point(aes(term, estimate,  colour = model), 
+  #    alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
   scale_colour_manual(name = "Models", 
     values = c("#D53E4F", 
     "#F46D43", 
@@ -346,7 +340,10 @@ global_vel <- dotwhisker::dwplot(overall2#,
     "#FEE08B",
     "#ABDDA4",  "#3288BD", "#5E4FA2"
     )) + ggtitle("a. Trend versus velocity models") +
-  gfplot::theme_pbs() + theme (#legend.title = element_blank(),
+  gfplot::theme_pbs() + theme (
+    # plot.margin = margin(0.1, 0, 0, 0, "cm"), 
+    axis.title = element_blank(),
+    #legend.title = element_blank(),
     legend.position = c(0.75, 0.25))
 global_vel
 ggsave(here::here("ms", "figs", "supp-global-coefs-vel.pdf"), width = 5, height = 4)
@@ -358,30 +355,32 @@ overall3 <- overall3 %>% mutate(term = firstup(as.character(coef_names))) %>% re
   levels = firstup(as.character(custom_order))), 
   model = firstup(as.character(model)))
 
-global_age <- dotwhisker::dwplot(overall3#, 
-  # order_vars = custom_order
-) + #xlim(-10,10) +
+global_age <- dotwhisker::dwplot(overall3) + #xlim(-10,10) +
   geom_vline(xintercept = 0, colour = "darkgray") +
-  # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
   scale_colour_manual(name = "Models", 
     values = c("#D53E4F", "#F46D43", 
-    "#FDAE61"#, "#FEE08B", "#3288BD", "#5E4FA2"
+    "#FDAE61" #, "#FEE08B", "#3288BD", "#5E4FA2"
     )) + ggtitle("b. Global maturity effects") +
   scale_y_discrete(position = "right") +
-  gfplot::theme_pbs() + theme (legend.title = element_blank(),
+  gfplot::theme_pbs() + theme (
+    # plot.margin = margin(0.1, 0, 0, 0, "cm"), 
+    axis.title = element_blank(),
+    legend.title = element_blank(),
     legend.position = c(0.25, 0.145))
 # globel_age
 # ggsave(here::here("ms", "figs", "supp-global-coefs-w-age.pdf"), width = 5, height = 4)
 
-global_vel + global_age + plot_layout()
+(global_vel|global_age)/ grid::textGrob("Coeficieant estimate with 95% CI", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02)) 
 ggsave(here::here("ms", "figs", "supp-global-coefs.pdf"), width = 10, height = 5)
 
 
 #########################
 #### experiment with species level coefs as boxplots ####
 trendcoefs <-add_colours(model$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
-  levels = c("(Intercept)", "temp_trend_scaled", "mean_temp_scaled", "DO_trend_scaled", "mean_DO_scaled",
-    "log_biomass_scaled", "temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled" ),
+  levels = c("(Intercept)", "temp_trend_scaled", "mean_temp_scaled", 
+    "DO_trend_scaled", "mean_DO_scaled",
+    "log_biomass_scaled", 
+    "temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled" ),
   labels = c("intercept", "change in T", "mean T", "change in DO", "mean DO",
     "biomass", "interaction (T)", "interaction (DO)")))
 
@@ -414,7 +413,8 @@ filter(overall, coef_names != "intercept") %>%
   geom_boxplot(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = age), 
     notch =T,
     inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
-  geom_pointrange(aes(ymin = lowerCI, ymax = upperCI), size = 1, fatten = 3, alpha = .9) + #position = position_jitter(width = 0.2), shape = "|"
+  geom_pointrange(aes(ymin = lowerCI, ymax = upperCI), size = 1, fatten = 3, alpha = .9) + 
+        # position = position_jitter(width = 0.2), shape = "|"
   geom_hline(yintercept = 0, colour = "darkgray") +
   scale_colour_viridis_d(begin = .8, end = .2) +
   # scale_y_continuous(trans = fourth_root_power) +
@@ -423,8 +423,6 @@ filter(overall, coef_names != "intercept") %>%
   facet_wrap(~model_type) +
   coord_flip(ylim = c(-2,2)) + # ylim = c(-10,10)
   gfplot::theme_pbs()
-
-
 
 
 #########################
@@ -474,7 +472,10 @@ p_do_all_slopes <- plot_chopstick_slopes(do_slopes,
   coord_flip(ylim = c(-3.1, 1.4)) + # coord_flip(ylim =c(-3,1)) +
   ylab("slopes")
 
-cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops, ncol = 2, rel_widths = c(1, 2.5))
+cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops, 
+  # labels = c("a.", "b.", "c.", "d."), label_size = 12,
+  labels = c("a.", "", "b.", ""), label_size = 11,
+  ncol = 2, rel_widths = c(1, 2.5)) 
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 11)
 
 
@@ -509,7 +510,6 @@ temp_slopes <- left_join(temp_slopes, stats)
 p2 <- plot_fuzzy_chopsticks(model_grad,
   x_variable = "temp_trend_scaled", type = "temp",
   y_label = "Predicted % change in biomass", 
-  # choose_age = "mature",
   slopes = temp_slopes  
 ) + coord_cartesian(ylim=c(-11,7)) + 
   xlab("Temperature trend (scaled)") + theme(legend.position = "none")
