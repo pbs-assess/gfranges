@@ -746,3 +746,68 @@ data %>% filter(age_class == "immature") %>%
   facet_wrap(~species_only, strip.position = "bottom") + 
   ggtitle("Immature fish biomass trend residuals")
 ggsave(here::here("ms", "figs", "supp-imm-vel-residuals.pdf"), width = 7, height = 6)
+
+#########################
+#########################
+#########################
+#### NULL MODELS
+###
+null01 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-1-500-DO.rds")
+null02 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-2-500-DO.rds")
+null03 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-3-500-DO.rds")
+null04 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-4-500-DO.rds")
+null05 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-5-500-DO.rds")
+
+model$coefs$model <- "true"
+null01$coefs$model <- "null01"
+null02$coefs$model <- "null02"
+null03$coefs$model <- "null03"
+null04$coefs$model <- "null04"
+null05$coefs$model <- "null05"
+# null06$coefs$model <- "null06"
+# null07$coefs$model <- "null07"
+# null08$coefs$model <- "null08"
+# null09$coefs$model <- "null09"
+# null10$coefs$model <- "null10"
+
+nulls <- rbind(model$coefs, null01$coefs, null02$coefs,
+  null03$coefs, null04$coefs, null05$coefs) %>% mutate(term = factor(shortener(coefficient), 
+    levels = as.character(custom_order)), std.error = `Std. Error`, type = if_else(model == "true", "true model", "null models")) %>% 
+  rename(estimate = Estimate)
+
+custom_order <- c("Intercept", "log_biomass",  
+  "temp", "temp_trend", "temp_trend:temp", 
+  "DO", "DO_trend", "DO_trend:DO")
+
+null_coefs <-  ggplot(nulls, aes(estimate, term, 
+    # fill = type, 
+    colour = type)) +
+  # ggplot(filter(nulls, model == "true"), aes(estimate, term), fill = "Red 3") +
+  geom_vline(xintercept = 0, colour = "darkgray") +
+  xlab("Coefficient estimate with 95% CI") + ylab("") +
+  # geom_split_violin() +
+  # geom_violin(scale = "width") +
+  geom_violin( #aes(estimate, term), inherit.aes = F ,
+    scale = "width", fill= "white",
+    data = filter(nulls, model == "true")) +
+  geom_violin(#aes(estimate, term), inherit.aes = F ,
+    # scale = "area",
+    scale = "width",
+    # scale = "count",
+    data = filter(nulls, model != "true")) +
+  scale_y_discrete(limits = rev(unique(sort(nulls$term)))) +
+  # scale_fill_manual(name = "Model type",
+    # values = c("#D53E4F",
+    #   # "#F46D43",  # "#FDAE61"   # "#ABDDA4"
+    #   "#5E4FA2"
+    # )) +  guides(fill = F) +
+  scale_colour_manual(name = "Model type",
+    values = c( "#D53E4F", # "#F46D43",  # "#FDAE61"   # "#ABDDA4"
+      "#5E4FA2"
+    )) +
+  gfplot::theme_pbs() + theme(axis.title = element_text(size = 10),
+    legend.title = element_blank(),
+    legend.position = c(0.3, 0.15))
+null_coefs
+ggsave(here::here("ms", "figs", "supp-null-spp-violin.pdf"), width = 4, height = 3.5)
+# ggsave(here::here("ms", "figs", "supp-null-spp-violin-count.pdf"), width = 4, height = 3.5)
