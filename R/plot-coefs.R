@@ -9,6 +9,8 @@ plot_coefs <- function(coloured_coefs,
   grouping_taxa = "species",
   order_by_trait = FALSE,
   order_by = "scale(do_vel_squashed)",
+  grid_facets = F,
+  add_grey_bars = F,
   fixed_scales = TRUE
 ) {
   
@@ -16,8 +18,12 @@ plot_coefs <- function(coloured_coefs,
     coloured_coefs$age <- "both"
   }
   
-  coloured_coefs <- filter(coloured_coefs, coefficient != "(Intercept)") %>%
-    mutate(coefficient = shortener(coefficient))
+  coloured_coefs <- coloured_coefs %>% #filter(coefficient != "(Intercept)") %>% 
+    mutate(coefficient = shortener(coefficient)) %>%
+    mutate(coefficient = factor(coefficient, levels = c("Intercept", "log_biomass", 
+      "temp", "temp_trend", "temp_trend:temp", 
+      "DO", "DO_trend", "DO_trend:DO")), 
+      age = factor(age, levels = c("mature", "immature"))) 
   
   if (order_by_trait) {
     order_values <- coloured_coefs %>% rename(order = !!order_by) %>% select(!!grouping_taxa, order)
@@ -33,34 +39,48 @@ plot_coefs <- function(coloured_coefs,
   colour_list <- unique(coloured_coefs$colours)
   coloured_coefs$group <- coloured_coefs[[grouping_taxa]]
   p <- ggplot(coloured_coefs, aes(
-    forcats::fct_reorder(group, -order), #-Estimate),
+    forcats::fct_reorder(group, order), #-Estimate),
     #forcats::fct_reorder(species,, -coloured_coefs[coloured_coefs$coefficient == "do_vel", ]$Estimate),
     Estimate,
     colour = col_var,
     shape = age,
     ymin = Estimate + qnorm(0.025) * `Std. Error`,
     ymax = Estimate + qnorm(0.975) * `Std. Error`
-  )) +
-    geom_hline(yintercept = 0, colour = "darkgray") +
-    scale_colour_manual(values = colour_list) +
-    geom_pointrange() +
-    coord_flip() + xlab("") +
-    gfplot:::theme_pbs()
+  )) + scale_colour_manual(values = colour_list, name = "Group") +
+    geom_hline(yintercept = 0, colour = "darkgray") + geom_pointrange() +
+    coord_flip() + xlab("") + 
+    gfplot:::theme_pbs()  
   
-  if(length(unique(coloured_coefs$age))>1) {  
-    p <- p + #scale_linetype_manual(values=c("solid", "solid"), guide = F) +
-      scale_shape_manual(values=c(21, 19), guide = F)
-  } else {
-    p <- p + #scale_linetype_manual(values=c("solid"), guide = F) +
-      scale_shape_manual(values=c(16), guide = F)
+  if(add_grey_bars) {
+    .n <- length(unique(coloured_coefs$species))
+    .w <- 0.5
+    p <- p + annotate(
+      geom = "rect", xmin = seq(1, .n, by = 2) - .w, xmax = seq(1, .n, by = 2) + .w,
+      ymin = -Inf, ymax = Inf, fill = "grey70", alpha = 0.15
+    )
   }
   
+  
+  if (grid_facets) {
+    p <- p + facet_grid(age~coefficient, scales = "free_x") +
+      scale_shape_manual(values=c(16, 16), guide = F)
+  } else {
+    
+    if(length(unique(coloured_coefs$age))>1) {  
+      p <- p + #scale_linetype_manual(values=c("solid", "solid"), guide = F) +
+        scale_shape_manual(values=c(21, 19), guide = F)
+    } else {
+      p <- p + #scale_linetype_manual(values=c("solid"), guide = F) +
+        scale_shape_manual(values=c(16), guide = F)
+    }  
+    
   if (fixed_scales) {
     p <- p + facet_wrap(~coefficient, scales = "fixed")
   } else {
     p <- p + facet_wrap(~coefficient, scales = "free_x")
   }
-  p
+  }  
+  p 
 }
 
 
