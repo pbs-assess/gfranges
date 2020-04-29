@@ -542,8 +542,18 @@ plot_chopstick_slopes <- function(slopedat,
       ymin = (slope_est - slope_se * 1.96),
       ymax = (slope_est + slope_se * 1.96)
     )) +
-      geom_hline(yintercept = 0, colour = "black", alpha = 0.7) +
-      scale_colour_manual(values = colours) + # , guide=T
+      geom_hline(yintercept = 0, colour = "black", alpha = 0.7) 
+    
+    if(add_grey_bars) {
+      .n <- length(unique(slopedat$species))
+      .w <- 0.5
+      p <- p + annotate(
+        geom = "rect", xmin = seq(1, .n, by = 2) - .w, xmax = seq(1, .n, by = 2) + .w,
+        ymin = -Inf, ymax = Inf, fill = "grey70", alpha = 0.2
+      )
+    }
+    
+    p <- p + scale_colour_manual(values = colours) + # , guide=T
       geom_pointrange(
         position = position_jitter(), # dodge.width = 1.2
         size = point_size, fatten = 1.5, 
@@ -590,14 +600,6 @@ plot_chopstick_slopes <- function(slopedat,
     }
   }
   
-  if(add_grey_bars) {
-    .n <- length(unique(slopedat$species))
-    .w <- 0.5
-    p <- p + annotate(
-      geom = "rect", xmin = seq(1, .n, by = 2) - .w, xmax = seq(1, .n, by = 2) + .w,
-      ymin = -Inf, ymax = Inf, fill = "grey70", alpha = 0.2
-    )
-  }
   p
 }
 
