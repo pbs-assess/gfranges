@@ -54,7 +54,7 @@ mean_temp <- plot_vocc(alldata,
   viridis_option = "C",
   axis_lables = T, tag_text = "a.",
   legend_position = c(0.15, 0.3)
-) + ggtitle("Temperature (temp)") +
+) + ggtitle("Temperature") +
   ylab("Mean conditions") + 
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
@@ -164,7 +164,7 @@ overall_betas_vel$model <- "Velocity"
 # overall_betas_b <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 # overall_betas_b$model <- "trend (T w gradient)"
 
-
+## make global coefs plot ###
 custom_order <- c("intercept", "immature", "biomass", "gradient",
   "mean T", "mean T:immature", "mean T:gradient",
   "change in T",  "change in T:immature",  "change in T:gradient",
@@ -186,7 +186,7 @@ global_coefs <- dotwhisker::dwplot(overall2, dot_args = list(size=2)
   # order_vars = custom_order
 ) + #xlim(-10,10) +
   geom_vline(xintercept = 0, colour = "darkgray") +
-  xlab("Coeficieant estimate with 95% CI") +
+  xlab("Coefficient estimate with 95% CI") +
   # geom_point(aes(term, estimate,  colour = model), alpha= 0.1, 
   #   position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
   scale_colour_manual(name = "Model", 
@@ -253,6 +253,8 @@ ggsave(here::here("ms", "figs", "global-coefs.pdf"), width = 4, height = 2.5)
 
 #### SEPARATE WORM PLOTS ####
 
+
+### WORM PLOTS OF SLOP ESTIMATES FROM TREND MODEL ####
 lowerT <- overall_betas %>% filter(coef_names == "change in T") %>% select(lowerCI)
 upperT <- overall_betas %>% filter(coef_names == "change in T") %>% select(upperCI)
 lowerD <- overall_betas %>% filter(coef_names == "change in DO") %>% select(lowerCI)
@@ -260,7 +262,6 @@ upperD <- overall_betas %>% filter(coef_names == "change in DO") %>% select(uppe
 estT <- overall_betas %>% filter(coef_names == "change in T") %>% select(betas)
 estD <- overall_betas %>% filter(coef_names == "change in DO") %>% select(betas)
 
-### WORM PLOTS OF SLOP ESTIMATES FROM TREND MODEL ####
 temp_slopes <- chopstick_slopes(model,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
@@ -277,17 +278,19 @@ do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"]
 
 p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
-  legend_position = c(.3, .95)
-) + 
-  annotate("rect", ymin = lowerT[[1]], ymax = upperT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
+  legend_position = c(.3, .95),
+  add_grey_bars = T
+) + coord_flip(ylim = c(-6, 5)) +
+  # annotate("rect", ymin = lowerT[[1]], ymax = upperT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
   geom_hline(yintercept = estT[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   theme(axis.title.x = element_blank()) +
   ggtitle("a. Temperature")
 p_do_worm <- plot_chopstick_slopes(do_slopes,
   type = "DO",
-  legend_position = c(.25, .95)
-) + coord_flip(ylim = c(-3.1, 1.4)) +
-  annotate("rect", ymin = lowerD[[1]], ymax = upperD[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
+  legend_position = c(.25, .95),
+  add_grey_bars = T
+) + coord_flip(ylim = c(-3, 1.4)) +
+  # annotate("rect", ymin = lowerD[[1]], ymax = upperD[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
   geom_hline(yintercept = estD[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   ggtitle("b. DO") +
   # ylab("slopes")
@@ -342,41 +345,47 @@ do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish C
 #### IF WE WANT PLOT OF BOTH TREND AND VELOCITY SLOPES TOGETHER ####
 p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
-  legend_position = c(.25, .95)
-) + annotate("rect", ymin = lowerT[[1]], ymax = upperT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
+  legend_position = c(.25, .95),
+  add_grey_bars = T
+) + coord_flip(ylim = c(-10, 4.5)) +
+  annotate("rect", ymin = lowerT[[1]], ymax = upperT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
   geom_hline(yintercept = estT[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
-  theme(plot.margin = margin(0, 0, 0.2, 0.2, "cm"),
+  theme(plot.margin = margin(0, 0.2, 0.2, 0.2, "cm"),
   axis.title.x = element_blank()) +
   ggtitle("a. Temperature") + 
   xlab("% biomass change for a SD of climate change")
 p_do_worm <- plot_chopstick_slopes(do_slopes,
   type = "DO",
-  legend_position = c(.25, .95)
+  legend_position = c(.25, .95),
+  add_grey_bars = T
 ) + coord_flip(ylim = c(-3.1, 1.4)) +
   annotate("rect", ymin = lowerD[[1]], ymax = upperD[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
   geom_hline(yintercept = estD[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   ggtitle("b. DO") +
-  # ylab("slopes")
+  scale_x_discrete(position = "top") + # ylab("slopes")
   theme(plot.margin = margin(0, 0, 0.2, 0, "cm"),
     axis.title.x = element_blank())
 
 p_temp_worm3 <- plot_chopstick_slopes(temp_vel_slopes,
   type = "temp",
-  legend_position = c(.25, .95)
-) + coord_flip(ylim = c(-14, 7.95)) +
+  legend_position = c(.25, .95),
+  add_grey_bars = T
+) + coord_flip(ylim = c(-10, 7.95)) +
   annotate("rect", ymin = lowervT[[1]], ymax = uppervT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
   geom_hline(yintercept = estvT[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   ggtitle("c.") +
-  theme(plot.margin = margin(0.2, 0, 0, 0.2, "cm"),
+  theme(plot.margin = margin(0.2, 0.2, 0, 0.2, "cm"),
     axis.title.x = element_blank(),
     legend.position = "none") +
   xlab("Biotic velocity change for a SD increase in climate velocity")
 p_do_worm3 <- plot_chopstick_slopes(do_vel_slopes,
   type = "DO",
-  legend_position = c(.25, .95)
+  legend_position = c(.25, .95),
+  add_grey_bars = T
 ) + coord_flip(ylim = c(-5.75, 3.25)) +
   geom_hline(yintercept = estvD[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   annotate("rect", ymin = lowervD[[1]], ymax = uppervD[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
+  scale_x_discrete(position = "top") +
   ggtitle("d.") +
   theme(plot.margin = margin(0.2, 0, 0, 0, "cm"),
     axis.title.x = element_blank(),
