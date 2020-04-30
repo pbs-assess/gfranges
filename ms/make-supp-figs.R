@@ -752,13 +752,20 @@ ggsave(here::here("ms", "figs", "supp-imm-vel-residuals.pdf"), width = 7, height
 #########################
 #### NULL MODELS
 ###
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-27-vel-both-1-200.rds")
+
+
 null01 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-1-500-DO.rds")
 null02 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-2-500-DO.rds")
 null03 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-3-500-DO.rds")
 null04 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-4-500-DO.rds")
 null05 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-5-500-DO.rds")
 
-model$coefs$model <- "true"
+vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-1-200-DO.rds")
+vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-2-200-DO.rds")
+
+model$coefs$model <- "trend"
 null01$coefs$model <- "null01"
 null02$coefs$model <- "null02"
 null03$coefs$model <- "null03"
@@ -770,44 +777,107 @@ null05$coefs$model <- "null05"
 # null09$coefs$model <- "null09"
 # null10$coefs$model <- "null10"
 
-nulls <- rbind(model$coefs, null01$coefs, null02$coefs,
-  null03$coefs, null04$coefs, null05$coefs) %>% mutate(term = factor(shortener(coefficient), 
-    levels = as.character(custom_order)), std.error = `Std. Error`, type = if_else(model == "true", "true model", "null models")) %>% 
+model_vel$coefs$model <- "velocity"
+vnull01$coefs$model <- "vnull01"
+vnull02$coefs$model <- "vnull02"
+# vnull03$coefs$model <- "vnull03"
+# vnull04$coefs$model <- "vnull04"
+# vnull05$coefs$model <- "vnull05"
+
+custom_order <- c("Intercept", "log_biomass", 
+  "temp", "temp_trend", "temp_vel",  "temp_trend:temp", "temp_vel:temp", 
+  "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO")
+
+nulls <- rbind(model$coefs, null01$coefs , null02$coefs, null03$coefs, null04$coefs, null05$coefs
+  ) %>% mutate(term = factor(shortener(coefficient),
+    levels = as.character(custom_order)), std.error = `Std. Error`, change_var = "trend",
+    type = if_else(model == "trend", "True trend", "Null trend")) %>% 
   rename(estimate = Estimate)
 
-custom_order <- c("Intercept", "log_biomass",  
-  "temp", "temp_trend", "temp_trend:temp", 
-  "DO", "DO_trend", "DO_trend:DO")
+vnulls <- rbind(model_vel$coefs, vnull01$coefs, vnull02$coefs) %>% mutate(term = factor(shortener(coefficient),
+    levels = as.character(custom_order)), std.error = `Std. Error`, change_var = "velocity",
+    type = if_else(model == "velocity", "True velocity", "Partial-null velocity")) %>% 
+  rename(estimate = Estimate)
 
-null_coefs <-  ggplot(nulls, aes(estimate, term, 
-    # fill = type, 
-    colour = type)) +
-  # ggplot(filter(nulls, model == "true"), aes(estimate, term), fill = "Red 3") +
-  geom_vline(xintercept = 0, colour = "darkgray") +
+coef_names <- shortener(unique(model$coefs$coefficient))
+betas <- signif(as.list(model$sdr, "Estimate")$b_j, digits = 3)
+SE <- signif(as.list(model$sdr, "Std. Error")$b_j, digits = 3)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+overall_t <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
+overall_t$type <- "True trend" 
+# ## velocity model ####
+coef_names <- shortener(unique(model_vel$coefs$coefficient))
+betas <- signif(as.list(model_vel$sdr, "Estimate")$b_j, digits = 3)
+SE <- signif(as.list(model_vel$sdr, "Std. Error")$b_j, digits = 3)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+overall_v <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
+overall_v$type <- "True velocity" 
+# nulls <- rbind(nulls, vnulls)
+
+null_coefs <-  ggplot(nulls, aes(estimate, term, fill = type, colour = type)) +
   xlab("Coefficient estimate with 95% CI") + ylab("") +
-  # geom_split_violin() +
   # geom_violin(scale = "width") +
-  geom_violin( #aes(estimate, term), inherit.aes = F ,
-    scale = "width", fill= "white",
-    data = filter(nulls, model == "true")) +
-  geom_violin(#aes(estimate, term), inherit.aes = F ,
-    # scale = "area",
-    scale = "width",
-    # scale = "count",
-    data = filter(nulls, model != "true")) +
+  geom_violin( #aes(estimate, term), inherit.aes = F , scale = "width", 
+    alpha = 0.1, #fill= "white", 
+    data = filter(nulls, model == "trend")) +
+  # geom_violin(#aes(estimate, term), inherit.aes = F ,
+  #   scale = "width", # scale = "area", # scale = "count",
+  #   data = filter(nulls, model != "trend")) +
+  geom_violin(scale = "width", 
+    alpha = 0.1, data = filter(nulls, model == "null01")) +
+  geom_violin(scale = "width", 
+    alpha = 0.1, data = filter(nulls, model == "null02")) +
+  geom_violin(scale = "width", 
+    alpha = 0.1, data = filter(nulls, model == "null03")) +
+  geom_violin(scale = "width", 
+    alpha = 0.1, data = filter(nulls, model == "null04")) +
+  geom_violin(scale = "width", 
+    alpha = 0.1, data = filter(nulls, model == "null05")) +
   scale_y_discrete(limits = rev(unique(sort(nulls$term)))) +
-  # scale_fill_manual(name = "Model type",
-    # values = c("#D53E4F",
-    #   # "#F46D43",  # "#FDAE61"   # "#ABDDA4"
-    #   "#5E4FA2"
-    # )) +  guides(fill = F) +
-  scale_colour_manual(name = "Model type",
-    values = c( "#D53E4F", # "#F46D43",  # "#FDAE61"   # "#ABDDA4"
-      "#5E4FA2"
-    )) +
-  gfplot::theme_pbs() + theme(axis.title = element_text(size = 10),
+  scale_fill_manual(name = "Model type", values = c( "#D53E4F", "#FDAE61"  )) + # guides(fill = F) +
+  scale_colour_manual(name = "Model type", values = c( "#D53E4F", "#FDAE61", "#FDAE61")) +
+  geom_vline(xintercept = 0, colour = "darkgray") +
+  geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI), size = 0.5, shape = "|", fatten = 5,
+    inherit.aes = F, 
+    data = overall_t) +
+  ggtitle("b. Trend-based models") +
+  gfplot::theme_pbs() + theme( axis.title = element_blank(), #element_text(size = 10),
     legend.title = element_blank(),
     legend.position = c(0.3, 0.15))
-null_coefs
-ggsave(here::here("ms", "figs", "supp-null-spp-violin.pdf"), width = 4, height = 3.5)
+
+
+vnull_coefs <-  ggplot(vnulls, aes(estimate, term, fill = type, 
+  colour = type)) +
+  xlab("Coefficient estimate with 95% CI") + ylab("") +
+  geom_violin( #aes(estimate, term), inherit.aes = F , scale = "width", 
+    scale = "count",
+    alpha = 0.1, #fill= "white",
+    data = filter(vnulls, model == "velocity")) +
+  # geom_violin(#aes(estimate, term), inherit.aes = F ,
+  #   scale = "width", # scale = "count", # scale = "area",
+  #   alpha = 0.1, data = filter(vnulls, model != "velocity")) +
+  geom_violin(scale = "width", 
+    alpha = 0.1, data = filter(vnulls, model == "vnull01")) +
+  geom_violin(scale = "width", 
+    scale = "count",
+    alpha = 0.1, data = filter(vnulls, model == "vnull02")) +
+  scale_y_discrete(limits = rev(unique(sort(vnulls$term)))) +
+  scale_fill_manual(name = "Model type", values = c("#5E4FA2", "#ABDDA4")) + # guides(fill = F) +
+  scale_colour_manual(name = "Model type", values = c("#5E4FA2", "#ABDDA4")) +
+  geom_vline(xintercept = 0, colour = "darkgray") +
+  geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI), size = 0.5, shape = "|", fatten = 5,
+    inherit.aes = F, 
+    data = overall_v) +
+  # xlim(-30, 15) +
+  ggtitle("b. Velocity-based models") +
+  gfplot::theme_pbs() + theme(
+    axis.title = element_blank(), #element_text(size = 10),
+    legend.title = element_blank(),
+    legend.position = c(0.3, 0.15))
+
+(null_coefs | vnull_coefs )/ grid::textGrob("Species-specific coefficient estimates", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02)) 
+
+ggsave(here::here("ms", "figs", "supp-null-spp-violin.pdf"), width = 8, height = 3.5)
 # ggsave(here::here("ms", "figs", "supp-null-spp-violin-count.pdf"), width = 4, height = 3.5)
