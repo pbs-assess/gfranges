@@ -21,8 +21,8 @@ plot_coefs <- function(coloured_coefs,
   coloured_coefs <- coloured_coefs %>% #filter(coefficient != "(Intercept)") %>% 
     mutate(coefficient = shortener(coefficient)) %>%
     mutate(coefficient = factor(coefficient, levels = c("Intercept", "log_biomass", 
-      "temp", "temp_trend", "temp_trend:temp", 
-      "DO", "DO_trend", "DO_trend:DO")), 
+      "temp", "temp_trend", "temp_vel",  "temp_trend:temp", "temp_vel:temp", 
+      "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO")), 
       age = factor(age, levels = c("mature", "immature"))) 
   
   if (order_by_trait) {
@@ -62,7 +62,7 @@ plot_coefs <- function(coloured_coefs,
   
   
   if (grid_facets) {
-    p <- p + facet_grid(age~coefficient, scales = "free_x") +
+    p <- p + facet_grid(age~coefficient, scales = "free") +
       scale_shape_manual(values=c(16, 16), guide = F)
   } else {
     

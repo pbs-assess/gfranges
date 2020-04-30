@@ -2,7 +2,6 @@ library(TMB)
 library(dplyr)
 library(ggplot2)
 library(gfranges)
-
 setwd(here::here("analysis", "VOCC"))
 compile("vocc_regression.cpp")
 dyn.load(dynlib("vocc_regression"))
@@ -10,14 +9,16 @@ source("vocc-regression-functions.R")
 
 
 stats <- readRDS(paste0("data/life-history-stats.rds"))
-stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
-stats <- stats %>% separate(species_science_name, " ", into = c("genus","specific"))
+stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
+stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
 stats$group[stats$group == "SHARK"] <- "DOGFISH"
 stats$group[stats$group == "HAKE"] <- "COD"
-imm <- mutate(stats, age = "immature") %>% mutate(depth = depth_imm) %>% select(-depth_imm)
-mat <- mutate(stats, age = "mature") %>% select(-depth_imm)
+imm <- mutate(stats, age = "immature") %>%
+  mutate(depth = depth_imm, age_mean = age_imm) %>%
+  select(-depth_imm, -age_imm)
+mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
 stats <- rbind(mat, imm)
-stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit) 
+stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
 
 ##############################
 #### LOAD MODELS ####
@@ -25,15 +26,68 @@ model <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-0
 #### ONE JUST BUILT
 model <- new_model
 
+# null
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-1-500-DO.rds")
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-2-500-DO.rds")
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-3-500-DO.rds")
+
+model <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-1-200-DO.rds")
+model <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-2-200-DO.rds")
+
 nrow(model$data)
 
-model2 <- add_colours(model$coefs) %>%
-  # filter(coefficient != "mean_DO_scaled" ) %>%
-  # filter(coefficient != "temp_grad_scaled" ) %>%
-  #   filter(coefficient != "mean_temp_scaled" ) %>% 
-  filter(coefficient != "log_biomass_scaled" )
+model2 <- add_colours(model$coefs) 
+model2$species[model2$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
-colour_list <- unique(model2$colours)
+manipulate::manipulate({
+  plot_coefs(model2, grid_facets = T, fixed_scales = F, #add_grey_bars = T, 
+    order_by = order_by) #+ ylim(-0.05,0.095)
+}, order_by = manipulate::picker( 
+  as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
+)
+
+ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null6nb.pdf"), width = 12.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null5nb.pdf"), width = 12.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null4nb.pdf"), width = 12.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null3nb.pdf"), width = 12.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
+
+
+ggsave(here::here("ms", "figs", "supp-all-trend-coefs.pdf"), width = 12.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null3nb.pdf"), width = 12.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
+
+
+
+coef_names <- shortener(unique(model$coefs$coefficient))
+betas <- signif(as.list(model$sdr, "Estimate")$b_j, digits = 3)
+SE <- signif(as.list(model$sdr, "Std. Error")$b_j, digits = 3)
+lowerCI <- signif(betas + SE * qnorm(0.025), digits = 3)
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+overall_betas <- as.data.frame(cbind(coef_names, betas, SE, lowerCI, upperCI))
+overall_betas
+
+get_aic(model)
+
+
+r <- model$obj$report()
+model$data$residual <- model$y_i - r$eta_i
+model$data$eta <- r$eta_i
+
+ggplot(model$data, aes(eta, residual)) + geom_point(alpha = 0.2) +
+  geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+
+
+model$data %>%
+  mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
+  mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
+  mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
+  mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
+  ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2() + gfplot::theme_pbs() +
+  facet_wrap(~species)
 
 # ### IF IMMATURE CAN RUN THIS TO MAKE COLOURS MATCH
 # mature <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
@@ -65,14 +119,21 @@ manipulate::manipulate({
 }, order_by = manipulate::picker( 
   as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
 )
+ggsave(here::here("ms", "figs", "supp-coefs-mat.pdf"), width = 8, height = 10)
+
 
 # Just immature
+model4 <- model2 %>% filter(coefficient != "log_biomass_scaled" )
+
 manipulate::manipulate({
-  plot_coefs(filter(model2, age == "immature"), fixed_scales = F, order_by = order_by) 
+  plot_coefs(filter(model4, age == "immature"), grid_facets = T, fixed_scales = F, order_by = order_by) 
   #+ ylim(-0.05,0.095)
 }, order_by = manipulate::picker( 
   as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
 )
+ggsave(here::here("ms", "figs", "supp-coefs-imm.pdf"), width = 8, height = 10)
+
+
 
 ### GENUS COEF PLOTS
 model3 <- add_colours(model$coefs_genus, col_var = "genus", add_spp_data = F) 

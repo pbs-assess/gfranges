@@ -23,23 +23,21 @@ age <- "both"
 no_chopsticks <- F
 w_genus <- F
 w_family <- F
-is_null <- F
+is_null <- T
 
-null_number <- "-1"
-# null_number <- "-2"
-# null_number <- "-3"
-
+null_number <- "-6"
 
 ### for trends ###
 # knots <- 500
 # y_type <- "trend"
-
-# model_type <- "-trend" # just temp
-# model_type <- "-trend-w-age" # an experiment that lacks true chops for imm
+# 
+# # model_type <- "-trend" # just temp
+# # model_type <- "-trend-do-only" # just DO
+# # model_type <- "-trend-w-age" # an experiment that lacks true chops for imm
+# # model_type <- "-trend-grad"
+# # model_type <- "-trend-w-grad"
 # model_type <- "-trend-with-do"
-# model_type <- "-trend-grad"
-# model_type <- "-trend-w-grad"
-
+# 
 
 ### for velocities ###
 knots <- 200
@@ -148,6 +146,17 @@ if (model_type == "-trend") {
   x_type <- "trend"
 }
 
+if (model_type == "-trend-do-only") {
+  formula <- ~ DO_trend_scaled +
+    mean_DO_scaled +
+    DO_trend_scaled:mean_DO_scaled +
+    log_biomass_scaled 
+  
+  x <- model.matrix(formula, data = d)
+  
+  DO_chopstick <- T
+  x_type <- "trend"
+}
 
 if (model_type == "-trend-grad") {
   formula <- ~ temp_trend_scaled +

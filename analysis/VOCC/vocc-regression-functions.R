@@ -25,8 +25,8 @@ vocc_regression <- function(dat, y_i, X_ij,
   interaction_column,
   main_effect_column,
   split_effect_column,
-  nlminb_loops = 2,
-  newton_steps = 0,
+  nlminb_loops = 3,
+  newton_steps = 2,
   par_init = NULL
   ) {
 
