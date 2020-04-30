@@ -25,6 +25,8 @@ vocc_regression <- function(dat, y_i, X_ij,
   interaction_column,
   main_effect_column,
   split_effect_column,
+  nlminb_loops = 2,
+  newton_steps = 0,
   par_init = NULL
   ) {
 
@@ -156,15 +158,44 @@ vocc_regression <- function(dat, y_i, X_ij,
     obj <- MakeADFun(tmb_data, tmb_param, DLL = "vocc_regression",
       random = c("omega_sk", "b_re"), map = tmb_map)
   }
+  
   if (!is.null(par_init)) {
     nlminb_start <- par_init
   } else {
     nlminb_start <- obj$par
   }
-  opt <- nlminb(nlminb_start, obj$fn, obj$gr,
+  
+  opt <- stats::nlminb(
+    start = nlminb_start, objective = obj$fn, gradient = obj$gr,
     control = list(eval.max = 1e4, iter.max = 1e4))
-  sdr <- sdreport(obj)
+  
+  if (nlminb_loops > 1) {
+    for (i in seq(2, nlminb_loops, length = max(0, nlminb_loops - 1))) {
+      temp <-  opt[c("iterations", "evaluations")]
+      opt <- stats::nlminb(
+        start = nlminb_start, objective = obj$fn, gradient = obj$gr,
+        control = list(eval.max = 1e4, iter.max = 1e4))
+       opt[["iterations"]] <-  opt[["iterations"]] + temp[["iterations"]]
+       opt[["evaluations"]] <-  opt[["evaluations"]] + temp[["evaluations"]]
+    }
+  } else {
+    
+    opt <- nlminb(nlminb_start, obj$fn, obj$gr,
+      control = list(eval.max = 1e4, iter.max = 1e4))
+    
+  }
 
+  if (newton_steps > 0) {
+    for (i in seq_len(newton_steps)) {
+      g <- as.numeric(obj$gr( opt$par))
+      h <- optimHess(opt$par, fn =  obj$fn, gr =  obj$gr)
+       opt$par <- opt$par - solve(h, g)
+       opt$objective <-  obj$fn( opt$par)
+    }
+  }
+  
+  sdr <- sdreport(obj)
+  
   s <- summary(sdr)
 
   ids_unique <- distinct(select(dat, species, species_id)) %>% arrange(species_id)
@@ -200,8 +231,6 @@ vocc_regression <- function(dat, y_i, X_ij,
   d_ids[["chopstick"]] <- rep(colnames(tmb_data$X_k2), each = n_pred)
   deltas <- as.data.frame(s[grep("^delta_k$", row.names(s)), , drop = FALSE])
   deltas <- bind_cols(d_ids, deltas)
-
-  
   
   r <- obj$report()
   nd <- dat
@@ -215,6 +244,7 @@ vocc_regression <- function(dat, y_i, X_ij,
     X_pj = X_pj, pred_dat = pred_dat,  
     deltas = deltas,
     b_re_species = b_re_species)
+  
 }
 
 
