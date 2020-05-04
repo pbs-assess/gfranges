@@ -12,8 +12,8 @@
 # library(dotwhisker)
 
 #### load appropriate final models and other data
-# model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-27-vel-both-1-200.rds")
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-27-vel-both-1-200.rds")
 
 model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-03-vel-temp-1-200-temp.rds")
 model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-03-vel-do-1-200-do.rds")
@@ -346,7 +346,7 @@ global_vel <- dotwhisker::dwplot(overall2) + #xlim(-10,10) +
     #legend.title = element_blank(),
     legend.position = c(0.75, 0.25))
 global_vel
-ggsave(here::here("ms", "figs", "supp-global-coefs-vel.pdf"), width = 5, height = 4)
+# ggsave(here::here("ms", "figs", "supp-global-coefs-vel.pdf"), width = 5, height = 4)
 
 # look for sig age effects 
 overall3 <- rbind.data.frame(overall_betas, overall_betas_age2, overall_betas_age)
@@ -370,7 +370,7 @@ global_age <- dotwhisker::dwplot(overall3) + #xlim(-10,10) +
 # globel_age
 # ggsave(here::here("ms", "figs", "supp-global-coefs-w-age.pdf"), width = 5, height = 4)
 
-(global_vel|global_age)/ grid::textGrob("Coeficieant estimate with 95% CI", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02)) 
+(global_vel|global_age)/ grid::textGrob("Coefficient estimate with 95% CI", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02)) 
 ggsave(here::here("ms", "figs", "supp-global-coefs.pdf"), width = 10, height = 5)
 
 
@@ -819,7 +819,8 @@ overall_v$type <- "True velocity"
 null_coefs <-  ggplot(nulls, aes(estimate, term, fill = type, colour = type)) +
   xlab("Coefficient estimate with 95% CI") + ylab("") +
   # geom_violin(scale = "width") +
-  geom_violin( #aes(estimate, term), inherit.aes = F , scale = "width", 
+  geom_violin( #aes(estimate, term), inherit.aes = F , 
+    scale = "width", 
     alpha = 0.1, #fill= "white", 
     data = filter(nulls, model == "trend")) +
   # geom_violin(#aes(estimate, term), inherit.aes = F ,
@@ -851,8 +852,8 @@ null_coefs <-  ggplot(nulls, aes(estimate, term, fill = type, colour = type)) +
 vnull_coefs <-  ggplot(vnulls, aes(estimate, term, fill = type, 
   colour = type)) +
   xlab("Coefficient estimate with 95% CI") + ylab("") +
-  geom_violin( #aes(estimate, term), inherit.aes = F , scale = "width", 
-    scale = "count",
+  geom_violin( #aes(estimate, term), inherit.aes = F , 
+    scale = "width", 
     alpha = 0.1, #fill= "white",
     data = filter(vnulls, model == "velocity")) +
   # geom_violin(#aes(estimate, term), inherit.aes = F ,
@@ -861,7 +862,6 @@ vnull_coefs <-  ggplot(vnulls, aes(estimate, term, fill = type,
   geom_violin(scale = "width", 
     alpha = 0.1, data = filter(vnulls, model == "vnull01")) +
   geom_violin(scale = "width", 
-    scale = "count",
     alpha = 0.1, data = filter(vnulls, model == "vnull02")) +
   scale_y_discrete(limits = rev(unique(sort(vnulls$term)))) +
   scale_fill_manual(name = "Model type", values = c("#5E4FA2", "#ABDDA4")) + # guides(fill = F) +
