@@ -5,6 +5,11 @@ library(tidyverse)
 library(patchwork)
 library(gfranges)
 
+write_tex <- function(x, macro, ...) {
+  paste0("\\newcommand{\\", macro, "}{", x, "}") %>%
+    readr::write_lines("ms/values.tex", append = TRUE)
+}
+
 # load appropriate final models
 model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
 model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-27-vel-both-1-200.rds")
@@ -30,7 +35,18 @@ imm <- mutate(stats, age = "immature") %>%
 mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
 stats <- rbind(mat, imm)
 stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
+
+
 alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
+
+#### SAVE TEX VALUES FOR INTERQUANTILE RANGES ####
+# temperature
+write_tex(signif(quantile(alldata$temp_trend, 0.025), digits = 2), "lowTquantile")
+write_tex(signif(quantile(alldata$temp_trend, 0.975), digits = 2), "highTquantile")
+# DO
+write_tex(signif(quantile(alldata$DO_trend, 0.025), digits = 2), "lowDOquantile")
+write_tex(signif(quantile(alldata$DO_trend, 0.975), digits = 2), "highDOquantile")
+
 
 #### CLIMATE MAPS ####
 mean_do <- plot_vocc(alldata,
@@ -138,6 +154,12 @@ upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
 overall_betas <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas$model <- "Trend"
 
+### SAVE TEX VALUES FOR TEMPERATURE TREND ESTIMATES ###
+write_tex(signif(overall_betas$betas[overall_betas$coef_names == "change in T"], 2), "betaTtrend")
+write_tex(signif(abs(overall_betas$betas[overall_betas$coef_names == "change in T"]), 2), "ABSbetaTtrend")
+write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "change in T"], 2), "lowerTtrend")
+write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "change in T"], 2), "upperTtrend")
+
 # ## velocity model ####
 coef_names <- shortener(unique(model_vel$coefs$coefficient))
 coef_names <- c("intercept", "change in T", "change in DO", "mean T", "mean DO",
@@ -148,6 +170,12 @@ lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
 upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
 overall_betas_vel <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel$model <- "Velocity"
+
+### SAVE TEX VALUES FOR TEMPERATURE VELOCITY ESTIMATES ###
+write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"], 2), "betaTvel")
+write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
+write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTvel")
+write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTvel")
 
 
 ## add trend model with gradients and or fishing? ####
@@ -164,7 +192,7 @@ overall_betas_vel$model <- "Velocity"
 # overall_betas_b <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 # overall_betas_b$model <- "trend (T w gradient)"
 
-## make global coefs plot ###
+## make global coefs plot ####
 custom_order <- c("intercept", "immature", "biomass", "gradient",
   "mean T", "mean T:immature", "mean T:gradient",
   "change in T",  "change in T:immature",  "change in T:gradient",
