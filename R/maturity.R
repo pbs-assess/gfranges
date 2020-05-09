@@ -67,6 +67,7 @@ fit_mat_ogive_re <- function(dat,
       year, age, length, weight,
       maturity_code, sex,
       maturity_convention_code,
+      # survey_series_id,
       specimen_id, sample_id, trip_start_date
     )
 
@@ -99,10 +100,13 @@ fit_mat_ogive_re <- function(dat,
     warning("No data")
     return(NA)
   }
-#browser()
+# browser()
   if (sample_id_re) {
     if (year_re) {
-      m <- glmmTMB::glmmTMB(mature ~ age_or_length * female + (1 | sample_id) + (1 | year),
+      m <- glmmTMB::glmmTMB(mature ~ age_or_length * female   + 
+          (1 | sample_id) +
+          # (1 | survey_series_id) + 
+          (1 | year),
         data = .d, family = binomial
       )
       b <- glmmTMB::fixef(m)[[1L]]
@@ -144,7 +148,7 @@ fit_mat_ogive_re <- function(dat,
   year <- unique(.d$year)
 
   nd <- expand.grid(
-    age_or_length = age_or_length, sample_id = s_ids, year = year,
+    age_or_length = age_or_length, sample_id = s_ids, year = year, #survey_series_id = unique(.d$survey_series_id),
     female = c(0L, 1L), stringsAsFactors = FALSE
   )
 
@@ -387,11 +391,11 @@ plot_mat_ogive <- function(object,
 
       if (rug) {
         if (nrow(object$data) > rug_n) {
-          temp <- object$data[sample(seq_len(nrow(object$data)), rug_n), , drop = FALSE]
+          temp <- object$data[sample(seq_along(nrow(object$data)), rug_n), , drop = FALSE]
         } else {
           temp <- object$data
         }
-        position <- "jitter" # if (object$type == "age") "jitter" else "identity"
+        position <- if (object$type == "age") "jitter" else "identity"
         g <- g + ggplot2::geom_rug(
           data = filter(temp, mature == 0L),
           sides = "b", position = position, alpha = 0.5, lty = 1, lwd = 2,
@@ -429,7 +433,7 @@ plot_mat_ogive <- function(object,
 
       if (rug) {
         if (nrow(object$data) > rug_n) {
-          temp <- object$data[sample(seq_len(nrow(object$data)), rug_n), , drop = FALSE]
+          temp <- object$data[sample(seq_along(nrow(object$data)), rug_n), , drop = FALSE]
         } else {
           temp <- object$data
         }
