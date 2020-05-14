@@ -224,6 +224,7 @@ plot_mat_ogive <- function(object,
                              if (object$type[[1]] == "age") "Age at maturity" else "Length at maturity",
                            rug = TRUE, rug_n = 1500, x_max = 1.75,
                            prediction_type = c("all", "male", "female", "none")) {
+  
   if (object$sample_id_re) {
     if (object$year_re) {
       b <- glmmTMB::fixef(object$model)[[1L]]
@@ -359,7 +360,7 @@ plot_mat_ogive <- function(object,
   nd_re$sex <- factor(nd_re$sex, levels = c("F", "M"))
   labs$sex <- factor(labs$sex, levels = c("F", "M"))
   labs$sex <- factor(labs$sex, levels = c("F", "M"))
-
+# browser()
   # add prediction curve
   if (prediction_type != "none") {
 
@@ -391,7 +392,7 @@ plot_mat_ogive <- function(object,
 
       if (rug) {
         if (nrow(object$data) > rug_n) {
-          temp <- object$data[sample(seq_along(nrow(object$data)), rug_n), , drop = FALSE]
+          temp <- object$data[sample(seq_len(nrow(object$data)), rug_n), , drop = FALSE]
         } else {
           temp <- object$data
         }
@@ -433,7 +434,7 @@ plot_mat_ogive <- function(object,
 
       if (rug) {
         if (nrow(object$data) > rug_n) {
-          temp <- object$data[sample(seq_along(nrow(object$data)), rug_n), , drop = FALSE]
+          temp <- object$data[sample(seq_len(nrow(object$data)), rug_n), , drop = FALSE]
         } else {
           temp <- object$data
         }
