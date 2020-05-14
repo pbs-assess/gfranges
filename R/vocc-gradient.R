@@ -29,12 +29,13 @@ vocc_gradient_calc <- function(data,
                                divisor = 10,
                                latlon = FALSE,
                                log_space = FALSE,
+                               use_VoCC = F, # this is not working yet
                                quantile_cutoff = 0.05) {
 
   # # devtools::install_github("seananderson/vocc")
   # # install.package(ggnewscale)
   # # install.package(gfplot)
-
+# browser()
   # make raster brick
   rbrick <- make_gradient_brick(data, layer,
     scale_fac = scale_fac,
@@ -110,11 +111,21 @@ vocc_gradient_calc <- function(data,
   } else {
     # must use y_dist = res(rx) if data is in UTMs or other true distance grid
     spatx <- vocc::spatialgrad(gradraster, y_dist = raster::res(gradraster), y_diff = NA)
+    
+    if(use_VoCC){ 
+      # not working yet, may be wrong kind of raster as current input...
+      spatgrad <- VoCC::spatGrad(gradraster, projected = T)
+    }
+    
   }
   
   # Now we can calculate the VoCC:
   velodf <- vocc::calcvelocity(spatx, slopedat, y_dist = 1)
-
+  if(use_VoCC){
+    # not working yet
+    trenddat <- VoCC::tempTrend(rbrick, 2)
+    velodf <- VoCC::gVoCC(trenddat, spatgrad)
+  }
   # Mapping it again is straightforward:
   rtrend <- rgrad_lon <- rgrad_lat <- rvocc <- rgrad <- angle <- magn <- raster::raster(rbrick)
   rgrad_lat[spatx$icell] <- spatx$NS # latitude shift, NS
