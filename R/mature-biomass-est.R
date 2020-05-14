@@ -25,6 +25,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
                                  survey = c("SYN HS", "SYN QCS"),
                                  years = NULL,
                                  year_re = TRUE,
+                                 sample_id_re = FALSE, 
                                  cutoff_quantile = 0.9995,
                                  p_threshold = 0.5,
                                  plot = FALSE) {
@@ -114,7 +115,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
       }
     } else {
       if (year_re) {
-      m <- fit_mat_ogive_re(fish, type = "length", sample_id_re = FALSE, year_re = TRUE)
+      m <- fit_mat_ogive_re(fish, type = "length", sample_id_re = sample_id_re, year_re = TRUE)
       if(p_threshold == 0.5) {
       f_fish$threshold <- lapply(f_fish$year_f, function(x) m$mat_perc[[x]]$f.p0.5)
       m_fish$threshold <- lapply(m_fish$year_f, function(x) m$mat_perc[[x]]$m.p0.5)
@@ -129,6 +130,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
       }
       } else {
         m <- fit_mat_ogive_re(fish, type = "length", sample_id_re = TRUE, year_re = FALSE)
+        # apply global estimates to all catches
         if(p_threshold == 0.5) {
         f_fish$threshold <- m$mat_perc$f.p0.5
         m_fish$threshold <- m$mat_perc$m.p0.5
@@ -141,6 +143,19 @@ split_catch_maturity <- function(survey_sets, fish, bath,
           f_fish$threshold <- m$mat_perc$f.p0.95
           m_fish$threshold <- m$mat_perc$m.p0.95
         }
+        # # or could choose to save sample_id estimates and apply them like this 
+        # if(p_threshold == 0.5) {
+        #   f_fish$threshold <- lapply(f_fish$sample_id, function(x) m$mat_perc[[x]]$f.p0.5)
+        #   m_fish$threshold <- lapply(m_fish$sample_id, function(x) m$mat_perc[[x]]$m.p0.5)
+        # }
+        # if(p_threshold == 0.05) {
+        #   f_fish$threshold <- lapply(f_fish$sample_id, function(x) m$mat_perc[[x]]$f.p0.05)
+        #   m_fish$threshold <- lapply(m_fish$sample_id, function(x) m$mat_perc[[x]]$m.p0.05)
+        # }
+        # if(p_threshold == 0.95) {
+        #   f_fish$threshold <- lapply(f_fish$sample_id, function(x) m$mat_perc[[x]]$f.p0.95)
+        #   m_fish$threshold <- lapply(m_fish$sample_id, function(x) m$mat_perc[[x]]$m.p0.95)
+        # }
       }
     }
 
