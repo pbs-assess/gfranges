@@ -8,86 +8,6 @@ setwd(here::here("analysis", "VOCC"))
 # setwd(here::here("/analysis/VOCC"))
 # env <- new.env() #parent = baseenv()
 
-
-# species <- c(
-#   "Arrowtooth Flounder",
-#   "Canary Rockfish",
-#   "Curlfin Sole",
-#   "Darkblotched Rockfish",
-#   "Dover Sole",
-#   "English Sole",
-#   "Flathead Sole",
-#   "Greenstriped Rockfish",
-#   "Lingcod",
-#   "Longspine Thornyhead",
-#   "North Pacific Spiny Dogfish",
-#   "Pacific Cod",
-#   "Pacific Halibut",
-#   "Pacific Ocean Perch",
-#   "Petrale Sole",
-#   "Quillback Rockfish",
-#   "Redbanded Rockfish",
-#   "Rex Sole",
-#   "Sablefish",
-#   "Sand Sole",
-#   "Sharpchin Rockfish",
-#   "Shortspine Thornyhead",
-#   "Silvergray Rockfish",
-#   "Southern Rock Sole",
-#   "Splitnose Rockfish",
-#   "Walleye Pollock",
-#   "Widow Rockfish",
-#   "Yelloweye Rockfish",
-#   "Yellowmouth Rockfish",
-#   "Yellowtail Rockfish",
-#   "Big Skate",
-#   "Longnose Skate",
-#   "Spotted Ratfish",
-#   "Bocaccio",
-#   "Redstripe Rockfish",
-#   "Rougheye/Blackspotted Rockfish Complex",
-#   "Shortraker Rockfish",
-#   "Shortbelly Rockfish",
-#   
-#   ### NEW ADDITIONS FOR SOPO #1
-#     "Pacific Hake",
-#     "Pacific Tomcod",
-#     "Rosethorn Rockfish",
-#     "Slender Sole",
-#     "Pacific Sanddab",
-#     "Harlequin Rockfish",
-#     "Copper Rockfish" ,
-#     "Shortbelly Rockfish",
-#     "Sandpaper Skate",
-#     "Brown Cat Shark",
-#     "Sand Sole",
-#     "Butter Sole",
-#     "Starry Flounder",
-#   
-#   ### NEW ADDITIONS FOR SOPO #2
-#  "Buffalo Sculpin",
-#  "Cabezon",
-#  # "Pacifc Staghorn Sculpin",
-#  "Threadfin Sculpin",
-#  "Red Irish Lord",
-#  "Sturgeon Poacher",
-#  "Bigmouth Sculpin",
-#  "Kelp Greenling",
-#   "Aleutian Skate",
-#   "Bigfin Eelpout",
-#   "Black Eelpout",
-#   "Wattled Eelpout",
-#   "Blackbelly Eelpout",
-#   "Shiner Perch",
-#   "Snake Prickleback",
-#   #Wolf Eel
-#   "Pacific Sand Lance",
-#   "Dusky Rockfish",
-#   "Chilipepper",
-#   "Pygmy Rockfish",
-#   "C-O Sole"
-# )
-
 species <- c(
   "Aleutian Skate",
   "Big Skate",
@@ -162,14 +82,16 @@ species <- c(
   "Starry Flounder"
 )
 
-
+### test run choices ####
 # species <- c("Spotted Ratfish")
 # species <- "Quillback Rockfish"
 # species <- "North Pacific Spiny Dogfish"
 # species <- c("Bocaccio")
-species <- c("Shortraker Rockfish")
-spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+# species <- c("Shortraker Rockfish")
+# spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
+
+#####
 life_history <- purrr::map_dfr(species, function(x) {
   
   spp <- gsub(" ", "-", gsub("\\/", "-", tolower(x)))
@@ -186,7 +108,7 @@ life_history <- purrr::map_dfr(species, function(x) {
   fish <- left_join(fish, depth)
   
   rm(maturity)
-  
+  # browser()
   try({
     maturity <- readRDS(paste0("data/", spp, 
     "/maturity-ogive-", spp, "-1n3n4n16.rds"))
@@ -210,7 +132,7 @@ life_history <- purrr::map_dfr(species, function(x) {
   imm_f <- filter(fish, sex == 2) %>% filter(length < length_50_mat_f)
  
   large <- rbind(mat_m, mat_f)
-  # small <- rbind(imm_m, imm_f) %>% mutate(growth_l = length/age, growth_m = weight/age)
+  small <- rbind(imm_m, imm_f) #%>% mutate(growth_l = length/age, growth_m = weight/age)
   large_threshold <- NA
   small_threshold <- NA
   mat_age <- mean(large$age, na.rm = TRUE)
@@ -268,7 +190,10 @@ life_history <- purrr::map_dfr(species, function(x) {
     spp, "-1n3n4n16.rds"))
   
   if(nrow(biomass)<3000) { rerun <- TRUE} else { rerun <- FALSE}
-  
+  fish_count <- nrow(fish)
+  event_count <- sum(!is.na(unique(fish$fishing_event_id)))
+  # per_event <- fish %>% group_by(fishing_event_id) %>% tally()
+  # range(per_event$n)
   
   list(
     species = x, group = group[1],
@@ -293,11 +218,13 @@ life_history <- purrr::map_dfr(species, function(x) {
     small_threshold = small_threshold[[1]],
     prop_pos_sets = prop_pos,
     total_kg_2019 = weight_2019,
+    total_fish = fish_count,
+    total_events = event_count,
     rerun = rerun
   )
 })
 
-View(life_history)
+# View(life_history)
 
 life_history$group[is.na(life_history$group)] <- "OTHER"
 life_history$group[life_history$species=="Spotted Ratfish"] <- "RATFISH"
@@ -327,4 +254,4 @@ life_history <- inner_join(life_history, taxonomic_info)
 
 life_history$parent_taxonomic_unit[life_history$parent_taxonomic_unit=="bathyraja"] <- "rajidae(skates)"
 
-saveRDS(life_history, file = "data/life-history-stats.rds")
+saveRDS(life_history, file = "data/life-history-stats2.rds")
