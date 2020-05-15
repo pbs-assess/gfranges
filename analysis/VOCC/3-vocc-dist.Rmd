@@ -284,7 +284,10 @@ gf2 <- vocc_gradient_calc(d, "temp",
 
 gf2 <- gf2 %>%
   mutate(
-    trend_per_year = trend,
+    ## these are only relevant if divisor = 1 
+    # trend_per_year = trend,
+    # trend_per_decade = trend_per_year * 10,
+    trend_per_year = trend/10,
     trend_per_decade = trend_per_year * 10,
     velocity = velocity
   ) %>%
@@ -320,7 +323,7 @@ dvocc_t <- make_vector_data(d,
   round_fact = 10
 )
 
-dvocc_t <- dvocc_t %>% mutate(dvocc = if_else(slope < 0, -km_per_decade, km_per_decade), trend=slope)
+dvocc_t <- dvocc_t %>% mutate(dvocc = if_else(slope < 0, -km_per_decade, km_per_decade), trend = slope)
 dvocc_t <- dvocc_t %>% mutate(dvocc = if_else(dvocc > (max_dist_all_years/ year_range)*10, 
   (max_dist_all_years/ year_range)*10, dvocc))
 dvocc_t <- mutate(dvocc_t, dvocc = if_else(dvocc < -(max_dist_all_years / year_range)*10,
@@ -420,7 +423,10 @@ gf0 <- vocc_gradient_calc(d, "do_est",
 
 gf0 <- gf0 %>%
   mutate(
-    trend_per_year = trend,
+        ## these are only relevant if divisor = 1 
+    # trend_per_year = trend,
+    # trend_per_decade = trend_per_year * 10,
+    trend_per_year = trend/10,
     trend_per_decade = trend_per_year * 10,
     velocity = velocity
   ) %>%
@@ -469,7 +475,7 @@ dvocc_d <- make_vector_data(d,
 )
 
 # glimpse(dvocc_d)
-dvocc_d <- dvocc_d %>% mutate(dvocc = if_else(slope < 0, -km_per_decade, km_per_decade), trend= slope)
+dvocc_d <- dvocc_d %>% mutate(dvocc = if_else(slope < 0, -km_per_decade, km_per_decade), trend = slope)
 
 dvocc_d <- dvocc_d %>% mutate(dvocc = if_else(dvocc > (max_dist_all_years/ year_range)*10, 
   (max_dist_all_years/ year_range)*10, dvocc))
@@ -512,7 +518,7 @@ dvocc_td <- make_vector_data(list(d, d),
 )
 
 # glimpse(dvocc_d)
-dvocc_td <- dvocc_td %>% mutate(dvocc = if_else(do_est.slope < 0, -km_per_decade, km_per_decade), trend= do_est.slope)
+dvocc_td <- dvocc_td %>% mutate(dvocc = if_else(do_est.slope < 0, -km_per_decade, km_per_decade), trend = do_est.slope)
 
 dvocc_td <- dvocc_td %>% mutate(dvocc = if_else(dvocc > (max_dist_all_years/ year_range)*10, 
   (max_dist_all_years/ year_range)*10, dvocc))
@@ -625,8 +631,12 @@ gf3 <- gf3 %>%
     CV_formula = sqrt(exp(cv^2) - 1),
     CV = sd / exp(mean),
     mean_biomass = exp(mean) * 10000,
-    # trend_per_year = exp(trend),
-    # trend_per_decade = trend_per_year * 10,
+    ## these are only relevant if divisor = 1 
+      # trend_per_year = trend,
+      # trend_per_decade = trend_per_year * 10,
+    ## if default of divisor = 10
+      trend_per_year = exp(trend/10),
+      trend_per_decade = trend_per_year * 10,
     velocity = velocity
   ) %>%
   dplyr::mutate(X = x, Y = y)
