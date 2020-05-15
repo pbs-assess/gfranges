@@ -4,12 +4,12 @@
 #########################
 #########################
 # # if make-figs not just run
-# setwd(here::here())
-# library(TMB)
-# library(tidyverse)
-# library(patchwork)
-# library(gfranges)
-# library(dotwhisker)
+setwd(here::here())
+library(TMB)
+library(tidyverse)
+library(patchwork)
+library(gfranges)
+library(dotwhisker)
 
 #### load appropriate final models and other data
 model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
@@ -23,19 +23,19 @@ model_grad <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-23-trend-w-grad
 model_do <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-27-trend-do-only-1-500-DO.rds")
 model_age <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-22-trend-w-age-1-400-temp.rds")
 
-# stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats.rds"))
-# stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
-# stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
-# stats$group[stats$group == "SHARK"] <- "DOGFISH"
-# stats$group[stats$group == "HAKE"] <- "COD"
-# imm <- mutate(stats, age = "immature") %>%
-#   mutate(depth = depth_imm, age_mean = age_imm) %>%
-#   select(-depth_imm, -age_imm)
-# mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
-# stats <- rbind(mat, imm)
-# stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
-# alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
-# 
+stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats.rds"))
+stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
+stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
+stats$group[stats$group == "SHARK"] <- "DOGFISH"
+stats$group[stats$group == "HAKE"] <- "COD"
+imm <- mutate(stats, age = "immature") %>%
+  mutate(depth = depth_imm, age_mean = age_imm) %>%
+  select(-depth_imm, -age_imm)
+mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
+stats <- rbind(mat, imm)
+stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
+alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
+
 # model2 <- add_colours(model$coefs, species_data = stats)
 # model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"
 # model2$group[model2$group == "SKATE"] <- "SHARKS & SKATES"
@@ -764,6 +764,9 @@ null05 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-si
 
 vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-1-200-DO.rds")
 vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-2-200-DO.rds")
+vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-3-200-DO.rds")
+vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-4-200-DO.rds")
+vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-30-vel-both-sim-5-200-DO.rds")
 
 model$coefs$model <- "trend"
 null01$coefs$model <- "null01"
@@ -780,9 +783,9 @@ null05$coefs$model <- "null05"
 model_vel$coefs$model <- "velocity"
 vnull01$coefs$model <- "vnull01"
 vnull02$coefs$model <- "vnull02"
-# vnull03$coefs$model <- "vnull03"
-# vnull04$coefs$model <- "vnull04"
-# vnull05$coefs$model <- "vnull05"
+vnull03$coefs$model <- "vnull03"
+vnull04$coefs$model <- "vnull04"
+vnull05$coefs$model <- "vnull05"
 
 custom_order <- c("Intercept", "log_biomass", 
   "temp", "temp_trend", "temp_vel",  "temp_trend:temp", "temp_vel:temp", 
@@ -794,7 +797,8 @@ nulls <- rbind(model$coefs, null01$coefs , null02$coefs, null03$coefs, null04$co
     type = if_else(model == "trend", "True trend", "Null trend")) %>% 
   rename(estimate = Estimate)
 
-vnulls <- rbind(model_vel$coefs, vnull01$coefs, vnull02$coefs) %>% mutate(term = factor(shortener(coefficient),
+vnulls <- rbind(model_vel$coefs, vnull01$coefs, vnull02$coefs, vnull03$coefs, vnull04$coefs, vnull05$coefs
+  ) %>% mutate(term = factor(shortener(coefficient),
     levels = as.character(custom_order)), std.error = `Std. Error`, change_var = "velocity",
     type = if_else(model == "velocity", "True velocity", "Partial-null velocity")) %>% 
   rename(estimate = Estimate)
@@ -836,17 +840,21 @@ null_coefs <-  ggplot(nulls, aes(estimate, term, fill = type, colour = type)) +
     alpha = 0.1, data = filter(nulls, model == "null04")) +
   geom_violin(scale = "width", 
     alpha = 0.1, data = filter(nulls, model == "null05")) +
-  scale_y_discrete(limits = rev(unique(sort(nulls$term)))) +
+  scale_y_discrete(limits = rev(unique(sort(nulls$term))), 
+    labels = c("DO interaction", "DO trend", "Mean DO", 
+      "T interaction", "T trend", "Mean T", "Biomass", "Intercept")) +
   scale_fill_manual(name = "Model type", values = c( "#D53E4F", "#FDAE61"  )) + # guides(fill = F) +
   scale_colour_manual(name = "Model type", values = c( "#D53E4F", "#FDAE61", "#FDAE61")) +
   geom_vline(xintercept = 0, colour = "darkgray") +
-  geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI), size = 0.5, shape = "|", fatten = 5,
+  geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI), size = 0.75, shape = "|", fatten = 6,
     inherit.aes = F, 
     data = overall_t) +
+  coord_cartesian(xlim = c(-3, 2.75)) +
   ggtitle("b. Trend-based models") +
   gfplot::theme_pbs() + theme( axis.title = element_blank(), #element_text(size = 10),
     legend.title = element_blank(),
-    legend.position = c(0.3, 0.15))
+    legend.justification = c("left", "bottom"),
+    legend.position = c(0.025, 0.018))
 
 
 vnull_coefs <-  ggplot(vnulls, aes(estimate, term, fill = type, 
@@ -863,21 +871,29 @@ vnull_coefs <-  ggplot(vnulls, aes(estimate, term, fill = type,
     alpha = 0.1, data = filter(vnulls, model == "vnull01")) +
   geom_violin(scale = "width", 
     alpha = 0.1, data = filter(vnulls, model == "vnull02")) +
-  scale_y_discrete(limits = rev(unique(sort(vnulls$term)))) +
+  geom_violin(scale = "width", 
+    alpha = 0.1, data = filter(vnulls, model == "vnull03")) +
+  geom_violin(scale = "width", 
+    alpha = 0.1, data = filter(vnulls, model == "vnull04")) +
+  geom_violin(scale = "width", 
+    alpha = 0.1, data = filter(vnulls, model == "vnull05")) +
+  scale_y_discrete(limits = rev(unique(sort(vnulls$term))), 
+    labels = c("DO interaction", "DO velocity", "Mean DO", 
+      "T interaction", "T velocity", "Mean T", "Biomass", "Intercept")) +
   scale_fill_manual(name = "Model type", values = c("#5E4FA2", "#ABDDA4")) + # guides(fill = F) +
   scale_colour_manual(name = "Model type", values = c("#5E4FA2", "#ABDDA4")) +
   geom_vline(xintercept = 0, colour = "darkgray") +
-  geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI), size = 0.5, shape = "|", fatten = 5,
+  geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI), size = 0.75, shape = "|", fatten = 6,
     inherit.aes = F, 
     data = overall_v) +
-  # xlim(-30, 15) +
+  coord_cartesian(xlim = c(-15, 13)) +
   ggtitle("b. Velocity-based models") +
-  gfplot::theme_pbs() + theme(
-    axis.title = element_blank(), #element_text(size = 10),
+  gfplot::theme_pbs() + theme(axis.title = element_blank(), #element_text(size = 10),
     legend.title = element_blank(),
-    legend.position = c(0.3, 0.15))
+    legend.justification = c("left", "bottom"),
+    legend.position = c(0.025, 0.018))
 
 (null_coefs | vnull_coefs )/ grid::textGrob("Species-specific coefficient estimates", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02)) 
 
-ggsave(here::here("ms", "figs", "supp-null-spp-violin.pdf"), width = 8, height = 3.5)
+ggsave(here::here("ms", "figs", "null-spp-violin.pdf"), width = 8, height = 3.5)
 # ggsave(here::here("ms", "figs", "supp-null-spp-violin-count.pdf"), width = 4, height = 3.5)
