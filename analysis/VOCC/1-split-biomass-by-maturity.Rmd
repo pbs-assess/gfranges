@@ -105,6 +105,7 @@ if (!exists("biomass")) {
     survey = survey,
     years = years,
     year_re = TRUE,
+    # sample_id_re = TRUE,
     cutoff_quantile = c(.9995),
     p_threshold = threshold,
     plot = TRUE)
@@ -115,6 +116,7 @@ if (!exists("biomass")) {
     survey = c("SYN QCS","SYN HS","SYN WCVI","SYN WCHG"),
     years = years,
     year_re = TRUE,
+    # sample_id_re = TRUE,
     cutoff_quantile = c(.9995),
     p_threshold = threshold,
     plot = TRUE
