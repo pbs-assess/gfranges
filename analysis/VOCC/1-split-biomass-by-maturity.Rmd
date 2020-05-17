@@ -108,6 +108,7 @@ if (!exists("biomass")) {
     # sample_id_re = TRUE,
     cutoff_quantile = c(.9995),
     p_threshold = threshold,
+    # use_median_ratio = TRUE,
     plot = TRUE)
    })
   
@@ -118,6 +119,7 @@ if (!exists("biomass")) {
     year_re = TRUE,
     # sample_id_re = TRUE,
     cutoff_quantile = c(.9995),
+    # use_median_ratio = TRUE,
     p_threshold = threshold,
     plot = TRUE
   )

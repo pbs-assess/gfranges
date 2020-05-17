@@ -28,6 +28,7 @@ split_catch_maturity <- function(survey_sets, fish, bath,
                                  sample_id_re = FALSE, 
                                  cutoff_quantile = 0.9995,
                                  p_threshold = 0.5,
+                                 use_median_ratio = FALSE,
                                  plot = FALSE) {
 
   if (is.null(years)) years <- unique(survey_sets[["year"]])
@@ -203,7 +204,12 @@ split_catch_maturity <- function(survey_sets, fish, bath,
 
 # browser()
     # chose value to use when a sample mass ratio is not available
-    na_value <- mean(sets_w_ratio$mass_ratio_mature, na.rm = TRUE)
+    if (use_median_ratio) {
+      na_value <- median(sets_w_ratio$mass_ratio_mature, na.rm = TRUE)
+      } else {
+      na_value <- mean(sets_w_ratio$mass_ratio_mature, na.rm = TRUE)
+      }
+    
     sets_w_ratio$mass_ratio_mature[is.na(sets_w_ratio$mass_ratio_mature)] <- na_value
 
     # add column to check for discrepencies between total catch weight and biological sample weights
