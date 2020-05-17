@@ -192,8 +192,22 @@ life_history <- purrr::map_dfr(species, function(x) {
   if(nrow(biomass)<3000) { rerun <- TRUE} else { rerun <- FALSE}
   fish_count <- nrow(fish)
   event_count <- sum(!is.na(unique(fish$fishing_event_id)))
-  # per_event <- fish %>% group_by(fishing_event_id) %>% tally()
-  # range(per_event$n)
+ 
+  ### calculate proportion of positive events without maturity ratio estimate
+  prop_mean_ratio <- NA
+  mean_ratio_mature <- NA
+  rm(mean_ratios)
+  try({
+    mean_ratios <- filter(biomass, present == 1) %>% filter(is.na(sample_n) ) 
+    aprox_density <- sum(mean_ratios$density)
+    prop_mean_ratio <- aprox_density/sum(biomass$density)
+    # pos_sets <- filter(biomass, present == 1) %>% tally() 
+    # count_mean_ratios <- filter(biomass, present == 1) %>% 
+    #    filter(is.na(sample_n)) %>% tally()
+    # count_prop_mean_ratio <- count_mean_ratios/pos_sets
+    # true_ratios <- filter(biomass, present == 1) %>% filter(!is.na(sample_n))
+    mean_ratio_mature <- mean(biomass$mass_ratio_mature, na.rm = T)
+  })
   
   list(
     species = x, group = group[1],
@@ -217,6 +231,8 @@ life_history <- purrr::map_dfr(species, function(x) {
     large_threshold = large_threshold[[1]],
     small_threshold = small_threshold[[1]],
     prop_pos_sets = prop_pos,
+    mean_ratio_mature = mean_ratio_mature,
+    density_mean_split = prop_mean_ratio,
     total_kg_2019 = weight_2019,
     total_fish = fish_count,
     total_events = event_count,
@@ -254,4 +270,4 @@ life_history <- inner_join(life_history, taxonomic_info)
 
 life_history$parent_taxonomic_unit[life_history$parent_taxonomic_unit=="bathyraja"] <- "rajidae(skates)"
 
-saveRDS(life_history, file = "data/life-history-stats2.rds")
+saveRDS(life_history, file = "data/life-history-stats3.rds")
