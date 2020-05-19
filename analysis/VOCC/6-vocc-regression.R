@@ -23,13 +23,13 @@ age <- "both"
 no_chopsticks <- F
 w_genus <- F
 w_family <- F
-is_null <- T
+is_null <- F
 
-null_number <- "-6"
+null_number <- "-1"
 
-### for trends ###
-# knots <- 500
-# y_type <- "trend"
+## for trends ###
+knots <- 500
+y_type <- "trend"
 # 
 # # model_type <- "-trend" # just temp
 # # model_type <- "-trend-do-only" # just DO
@@ -37,17 +37,18 @@ null_number <- "-6"
 # # model_type <- "-trend-grad"
 # # model_type <- "-trend-w-grad"
 # model_type <- "-trend-with-do"
+model_type <- "-trend-w-fishing"
+
+
+# ### for velocities ###
+# knots <- 200
+# y_type <- "vel"
 # 
-
-### for velocities ###
-knots <- 200
-y_type <- "vel"
-
-# model_type <- "-vel-temp"
-# model_type <- "-vel-do"
-# model_type <- "-dist-vel-temp"
-model_type <- "-vel-both"
-
+# # model_type <- "-vel-temp"
+# # model_type <- "-vel-do"
+# # model_type <- "-dist-vel-temp"
+# model_type <- "-vel-both"
+# 
 
 ### LOAD VOCC DATA
 if (age != "both") {
@@ -211,7 +212,6 @@ if (model_type == "-trend-w-grad") {
   x_type <- "trend"
 }
 
-
 if (model_type == "-trend-w-age") {
   formula <- ~ age +
     temp_trend_scaled +
@@ -237,6 +237,23 @@ if (model_type == "-trend-w-age") {
 }
 
 
+if (model_type == "-trend-w-fishing") {
+  formula <- ~ temp_trend_scaled +
+    mean_temp_scaled +
+    temp_trend_scaled:mean_temp_scaled +
+    log_effort_scaled + fishing_trend_scaled +
+    log_effort_scaled:fishing_trend_scaled +
+    DO_trend_scaled +
+    mean_DO_scaled +
+    DO_trend_scaled:mean_DO_scaled +
+    log_biomass_scaled
+  
+  x <- model.matrix(formula, data = d)
+  
+  temp_chopstick <- T
+  DO_chopstick <- T
+  x_type <- "trend"
+}
 
 ############################
 # #### VELOCITY VARIABLES
