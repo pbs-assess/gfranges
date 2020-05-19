@@ -418,7 +418,7 @@ chopstick_slopes <- function(model,
 #'
 #' @param slopedat Df from chopstick_slopes function
 #' @param type Select type if more than one interaction in model
-#' @param x_variable
+#' @param x_variable Which variable on x-axis
 #' @param legend_position Given legend position
 #' @param hack Logical for comparing with hacked slope estimate w interaction SE
 #' @param imm_slopes Add immature data
@@ -427,6 +427,7 @@ chopstick_slopes <- function(model,
 #' @param alpha_range Set alapha values based on slope significance
 #' @param colours Add custom colours
 #' @param point_size Change point size
+#' @param add_grey_bars Add grey stripes to alternating species
 #'
 #' @export
 plot_chopstick_slopes <- function(slopedat,
@@ -610,7 +611,9 @@ plot_chopstick_slopes <- function(slopedat,
 #' @param x Variable (species trait) on x-axis.
 #' @param slope_var Varible containing slope estimate.
 #' @param col_group Varible to colour by.
-#' @param point_size
+#' @param point_size Set point size
+#' @param point_alpha Set point alpha
+#' @param pointrange Logical for adding 95% CI bars to points. Default T
 #' @param regression Logical for plotting simple linear regression line.
 #'
 #' @export
@@ -646,6 +649,7 @@ slope_scatterplot <- function(slopes_w_traits, x,
 #'    Requires only named data element and coefs table.
 #' @param species Species effect to be plotted.
 #' @param variables List which variables are interacting.
+#' @param choose_x Which varible from list is on x-axis (either 1 or 2)
 #'
 plot_raw_chopsticks <- function(model,
                                 species = NULL,

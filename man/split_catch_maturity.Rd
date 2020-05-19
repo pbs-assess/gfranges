@@ -11,8 +11,10 @@ split_catch_maturity(
   survey = c("SYN HS", "SYN QCS"),
   years = NULL,
   year_re = TRUE,
+  sample_id_re = FALSE,
   cutoff_quantile = 0.9995,
   p_threshold = 0.5,
+  use_median_ratio = FALSE,
   plot = FALSE
 )
 }

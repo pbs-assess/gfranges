@@ -18,6 +18,8 @@ Requires only named data element and coefs table.}
 \item{species}{Species effect to be plotted.}
 
 \item{variables}{List which variables are interacting.}
+
+\item{choose_x}{Which varible from list is on x-axis (either 1 or 2)}
 }
 \description{
 Plot raw chopsticks for vocc regression models

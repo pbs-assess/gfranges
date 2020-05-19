@@ -24,6 +24,12 @@ slope_scatterplot(
 
 \item{col_group}{Varible to colour by.}
 
+\item{point_size}{Set point size}
+
+\item{point_alpha}{Set point alpha}
+
+\item{pointrange}{Logical for adding 95% CI bars to points. Default T}
+
 \item{regression}{Logical for plotting simple linear regression line.}
 }
 \description{

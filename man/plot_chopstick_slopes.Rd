@@ -15,6 +15,7 @@ plot_chopstick_slopes(
   global_col = "gray30",
   point_size = 0.75,
   alpha_range = c(0.5, 0.99),
+  add_grey_bars = F,
   colours = NULL
 )
 }
@@ -22,6 +23,8 @@ plot_chopstick_slopes(
 \item{slopedat}{Df from chopstick_slopes function}
 
 \item{type}{Select type if more than one interaction in model}
+
+\item{x_variable}{Which variable on x-axis}
 
 \item{legend_position}{Given legend position}
 
@@ -36,6 +39,8 @@ plot_chopstick_slopes(
 \item{point_size}{Change point size}
 
 \item{alpha_range}{Set alapha values based on slope significance}
+
+\item{add_grey_bars}{Add grey stripes to alternating species}
 
 \item{colours}{Add custom colours}
 }

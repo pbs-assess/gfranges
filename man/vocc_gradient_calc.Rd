@@ -14,6 +14,7 @@ vocc_gradient_calc(
   divisor = 10,
   latlon = FALSE,
   log_space = FALSE,
+  use_VoCC = F,
   quantile_cutoff = 0.05
 )
 }
