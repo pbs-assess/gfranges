@@ -59,6 +59,22 @@ ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null3nb.pdf"), width = 12.
 ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
 ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
 
+# fishing model
+
+model2 <- add_colours(model$coefs) %>%   
+  filter(coefficient %in% c("log_effort_scaled", "fishing_trend_scaled","log_effort_scaled:fishing_trend_scaled"))
+
+model2$species[model2$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+
+manipulate::manipulate({
+  plot_coefs(model2, grid_facets = T, fixed_scales = F, #add_grey_bars = T, 
+    order_by = order_by) #+ ylim(-0.05,0.095)
+}, order_by = manipulate::picker( 
+  as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
+)
+
+ggsave(here::here("ms", "figs", "supp-fishing-coefs.pdf"), width = 8.5, height = 8.5)
+
 
 
 coef_names <- shortener(unique(model$coefs$coefficient))
@@ -111,6 +127,7 @@ model3 <- model2 %>% filter(age == "mature") %>%
   filter(coefficient != "age:mean_DO_scaled"  ) %>%
   filter(coefficient != "age:temp_trend_scaled:mean_temp_scaled" ) %>%
   filter(coefficient != "age:DO_trend_scaled:mean_DO_scaled") %>%   
+  filter(coefficient != "log_biomass_scaled" ) %>%   
   filter(coefficient != "log_biomass_scaled" )
                 
 manipulate::manipulate({

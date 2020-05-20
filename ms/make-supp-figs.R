@@ -6,10 +6,10 @@
 # # if make-figs not just run
 setwd(here::here())
 library(TMB)
-library(tidyverse)
 library(patchwork)
 library(gfranges)
 library(dotwhisker)
+library(tidyverse)
 
 #### load appropriate final models and other data
 model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
@@ -23,7 +23,7 @@ model_grad <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-23-trend-w-grad
 model_do <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-27-trend-do-only-1-500-DO.rds")
 model_age <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-22-trend-w-age-1-400-temp.rds")
 
-stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats.rds"))
+stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats3.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
 stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
 stats$group[stats$group == "SHARK"] <- "DOGFISH"
@@ -431,6 +431,9 @@ filter(overall, coef_names != "intercept") %>%
 #### ALL CHOPSTICKS AND SLOPE WORM PLOTS 
 ###
 ### ALL TREND CHOPS ####
+# if model controling for fishing effort desired...
+# model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-05-19-trend-w-fishing-1-500.rds")
+
 temp_slopes <- chopstick_slopes(model,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
@@ -477,6 +480,7 @@ cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops,
   labels = c("a.", "", "b.", ""), label_size = 11,
   ncol = 2, rel_widths = c(1, 2.5)) 
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 11)
+# ggsave(here::here("ms", "figs", "supp-trend-chopsticks-fishing.pdf"), width = 14, height = 11)
 
 
 ### if just temp model... no change in chopsticks ####

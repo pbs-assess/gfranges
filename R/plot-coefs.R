@@ -22,7 +22,8 @@ plot_coefs <- function(coloured_coefs,
     mutate(coefficient = shortener(coefficient)) %>%
     mutate(coefficient = factor(coefficient, levels = c("Intercept", "log_biomass", 
       "temp", "temp_trend", "temp_vel",  "temp_trend:temp", "temp_vel:temp", 
-      "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO")), 
+      "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO",
+      "log_effort", "fishing_trend", "log_effort:fishing_trend")), 
       age = factor(age, levels = c("mature", "immature"))) 
   
   if (order_by_trait) {
