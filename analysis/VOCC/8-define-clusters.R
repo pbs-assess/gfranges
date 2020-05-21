@@ -5,14 +5,16 @@ library(tidyverse)
 library(clusterthat)
 library(gfranges)
 source("vocc-regression-functions.R")
-source("plot-clusters.R")
+# source("plot-clusters.R")
 
 # model <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
 # model <- readRDS("data/trend_by_vel_01-16-multi-spp-biotic-vocc-mature.rds")
 
 model <- readRDS(("data/trend_by_all_temp_w_fishing_01-23-all-temp-mature.rds"))
+model <- readRDS("data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
 
-stats <- readRDS(paste0("data/life-history-stats.rds"))
+
+stats <- readRDS(paste0("data/life-history-stats3.rds"))
 
 model2 <- add_colours(model$coefs, species_data = stats)
 # ### IF IMMATURE CAN RUN THIS TO MAKE COLOURS MATCH
@@ -25,21 +27,17 @@ manipulate::manipulate({
 )
 
 
-coefs <- model2 %>% select(species, group, depth, age_max, 
+coefs <- model2 %>% select(species, age, group, depth, age_max, 
     length_99th, weight_99th, coefficient, Estimate) %>% 
   pivot_wider(names_from = coefficient, values_from = Estimate) %>% 
-  mutate(status = if_else(`(Intercept)`< 0, "negative", "stable"))
+  mutate(status = if_else(`(Intercept)`< 0, "negative", "stable")) 
 
-glimpse(coefs) 
 
+### subset options ###
 # coefs <- filter(coefs, status != "negative")
 # coefs <- filter(coefs, status == "negative")
+coefs <- filter(coefs_all, age == "mature") %>% ungroup()
 
-coefs <- coefs[ order(row.names(coefs)), ]
-names(coefs)
-all_coefs <- select(coefs, -species, -group, -depth, -age_max, -length_99th, -weight_99th, -status) %>% scale()
-
-# 
 # all_coefs <- select(coefs,
 #   `(Intercept)`, 
 #   mean_DO_scaled, DO_trend_scaled, 
@@ -63,100 +61,184 @@ colnames(all_coefs) <- gsub("mean_", "", colnames(all_coefs))
 #   `scale(mean_temp):scale(squashed_temp_vel, center = F)`) %>% scale()
 
 
-temp_coefs <- select(coefs, `(Intercept)`, 
-  temp_grad_scaled, 
-  # `temp_trend_scaled:temp_grad_scaled`, 
-  mean_temp_scaled, temp_trend_scaled, 
-  `temp_trend_scaled:mean_temp_scaled`) %>% 
-  rename(intercept = `(Intercept)`, 
-    `mean temp` = mean_temp_scaled, 
-    `temp trend`= temp_trend_scaled, 
-    `trend x mean` = `temp_trend_scaled:mean_temp_scaled`, 
-    # `trend x grad` = `temp_trend_scaled:temp_grad_scaled`, 
-    gradient = temp_grad_scaled ) %>% 
-  scale()
+#### USE SLOPES INSTEAD OF COEFICIENTS ####
+status <- coefs %>% select(species, age, status, `(Intercept)`)
+status$species[status$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 
-# do_coefs <- select(coefs, `(Intercept)`, 
-#   mean_DO_scaled, DO_trend_scaled, 
-#   `mean_DO_scaled:DO_trend_scaled`) %>% scale()
-# 
-# 
-# glimpse(do_coefs) 
+coef_slope_t <- temp_slopes %>% select(species, age, type, chopstick, slope, depth, age_mean, length_50_mat_f) %>% 
+  pivot_wider(names_from = c(type, chopstick), values_from = slope) 
+coef_slope_d <- do_slopes %>% select(species, age, type, chopstick, slope) %>% 
+  pivot_wider(names_from = c(type, chopstick), values_from = slope) 
+
+coefs <- left_join(coef_slope_t, coef_slope_d)
+coefs_all <- left_join(coefs, status) %>% rename (intercept = `(Intercept)`)
+
+# coefs <- filter(coefs, status != "negative")
+# coefs <- filter(coefs, status == "negative")
+coefs <- filter(coefs_all, age == "mature") %>% ungroup()
+
+coefs <- coefs[ order(row.names(coefs)), ]
+names(coefs)
+
+coefs$temp_high <- collapse_outliers(coefs$temp_high, c(0.025, 0.975))
+coefs$DO_high <- collapse_outliers(coefs$DO_high, c(0.025, 0.975))
+coefs$temp_low <- collapse_outliers(coefs$temp_high, c(0.025, 0.975))
+coefs$DO_low <- collapse_outliers(coefs$DO_high, c(0.025, 0.975))
+
+hist(coefs$temp_high)
+hist(coefs$temp_low)
+hist(coefs$DO_low)
+hist(coefs$DO_high)
+
+all_coefs <- coefs  %>% select( -species, -age, -depth, -age_mean, -length_50_mat_f, -status) %>% scale()
+
+
+
+#### PLOTTING ####
+
+all_coefs <- all_coefs[, c(2:3, 5)]
+all_coefs <- all_coefs[, c(2:3)]
+all_coefs <- all_coefs[, c(1:4)]
+
 
 factoextra::fviz_nbclust(all_coefs, kmeans, method = "silhouette",
-  k.max = 15)
+  k.max = 10)
 
 factoextra::fviz_nbclust(all_coefs, cluster::pam, method = "silhouette",
   k.max = 10)
 
 
+m_kmeans <- kmeans(all_coefs, 2)
+m_kmeans <- kmeans(all_coefs, 3)
+m_kmeans <- kmeans(all_coefs, 4)
+m_kmeans <- kmeans(all_coefs, 5)
+m_kmeans <- kmeans(all_coefs, 6)
+m_kmeans <- kmeans(all_coefs, 7)
+
+gfranges::plot_clusters(
+  m_kmeans,
+  data = all_coefs,  text_label = coefs$species,
+  colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = fourth_root_power) 
+# + 
+#   scale_y_continuous(trans = fourth_root_power) + scale_x_continuous(trans = fourth_root_power)
+
+gfranges::plot_clusters(
+  m_kmeans,
+  data = all_coefs,  text_label = coefs$species,
+  # colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = log10) 
+  colour_vector = (coefs$intercept), colour_label = "intercept") + scale_color_viridis_c(direction = -1) 
+
+gfranges::plot_clusters(
+  m_kmeans,
+  data = all_coefs,  text_label = coefs$species,
+  # colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = log10) 
+  colour_vector = (coefs$temp_high), colour_label = "temp_high") + scale_color_viridis_c(direction = -1) 
+
+gfranges::plot_clusters(
+  m_kmeans,
+  data = all_coefs,  text_label = coefs$species,
+  # colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = log10) 
+  colour_vector = (coefs$DO_low), colour_label = "DO_low") + scale_color_viridis_c(direction = -1) 
+
+
+
+
+m_pam <- cluster::pam(all_coefs, k = 3)
+m_pam <- cluster::pam(all_coefs, k = 4)
+m_pam <- cluster::pam(all_coefs, k = 5)
+m_pam <- cluster::pam(all_coefs, k = 6)
+gfranges::plot_clusters(
+  m_pam,
+  data = all_coefs,
+  text_label = coefs$species, #shape_by_group = T,
+  colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = fourth_root_power)
+  # colour_vector = (coefs$intercept), colour_label = "intercept") + scale_color_viridis_c(direction = -1) 
+
+m_pam_manhattan <- cluster::pam(all_coefs, k = 3, metric = "manhattan")
+m_pam_manhattan <- cluster::pam(all_coefs, k = 4, metric = "manhattan")
+m_pam_manhattan <- cluster::pam(all_coefs, k = 5, metric = "manhattan")
+m_pam_manhattan <- cluster::pam(all_coefs, k = 8, metric = "manhattan")
+
+gfranges::plot_clusters(
+  m_pam_manhattan,
+  data = all_coefs,
+  text_label = coefs$species, #shape_by_group = T,
+  colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = fourth_root_power)
+# colour_vector = (coefs$intercept), colour_label = "intercept") + scale_color_viridis_c(direction = -1) 
+
+
+
+#### TEMP ONLY #### 
+# # temp_coefs <- select(coefs, `(Intercept)`, 
+# #   temp_grad_scaled, 
+# #   # `temp_trend_scaled:temp_grad_scaled`, 
+# #   mean_temp_scaled, temp_trend_scaled, 
+# #   `temp_trend_scaled:mean_temp_scaled`) %>% 
+# #   rename(intercept = `(Intercept)`, 
+# #     `mean temp` = mean_temp_scaled, 
+# #     `temp trend`= temp_trend_scaled, 
+# #     `trend x mean` = `temp_trend_scaled:mean_temp_scaled`, 
+# #     # `trend x grad` = `temp_trend_scaled:temp_grad_scaled`, 
+# #     gradient = temp_grad_scaled ) %>% 
+# #   scale()
+# 
+# if actually slopes
+temp_coefs <- all_coefs[, c(1:2,5)]
+
 factoextra::fviz_nbclust(temp_coefs, kmeans, method = "silhouette",
   k.max = 10)
-
 factoextra::fviz_nbclust(temp_coefs, cluster::pam, method = "silhouette",
   k.max = 10)
 
 
-factoextra::fviz_nbclust(do_coefs, kmeans, method = "silhouette",
-  k.max = 10)
-
-factoextra::fviz_nbclust(do_coefs, cluster::pam, method = "silhouette",
-  k.max = 10)
-
-
-m_kmeans <- kmeans(all_coefs, 3)
-m_pam <- cluster::pam(all_coefs, k = 4)
-m_pam_manhattan <- cluster::pam(all_coefs, k = 7, metric = "manhattan")
-
-plot_clusters(
- m_kmeans,
-  # m_pam,
-  # m_pam_manhattan, 
-  data = all_coefs, 
-  colour_vector = (coefs$depth),
-  text_label = coefs$species, shape_by_group = T,
-  colour_label = "Depth"
-) + scale_color_viridis_c(direction = -1, trans = log10) 
-
-m_kmeans <- kmeans(temp_coefs, 3)
-#m_kmeans <- kmeans(temp_coefs, 3)
 m_kmeans <- kmeans(temp_coefs, 4)
-m_kmeans <- kmeans(temp_coefs, 5)
-
-plot_clusters(m_kmeans, data = temp_coefs,
+gfranges::plot_clusters(m_kmeans, data = temp_coefs,
   colour_vector = (coefs$depth), text_label = coefs$species,
-  colour_label = "Depth") + 
-  scale_color_viridis_c(direction = -1, trans = log10) 
+  colour_label = "Depth") +
+  scale_color_viridis_c(direction = -1, trans = log10)
 
-m_pam <- cluster::pam(temp_coefs, k = 3L)
+m_pam <- cluster::pam(temp_coefs, k = 2L)
 m_pam_manhattan <- cluster::pam(temp_coefs, k = 2L, metric = "manhattan")
 
-plot_clusters(
+gfranges::plot_clusters(
   #m_kmeans,
   m_pam,
-  # m_pam_manhattan, 
+  # m_pam_manhattan,
   data = temp_coefs,
   colour_vector = (coefs$depth),
   text_label = coefs$species,
   colour_label = "Depth"
-) + scale_color_viridis_c(direction = -1, trans = log10) 
+) + scale_color_viridis_c(direction = -1, trans = log10)
 
+ 
 
-m_kmeans <- kmeans(do_coefs, 2)
-m_pam <- cluster::pam(do_coefs, k = 4)
-m_pam_manhattan <- cluster::pam(do_coefs, k = 4, metric = "manhattan")
-
-plot_clusters(
-  m_kmeans,
-#  m_pam, 
-#  m_pam_manhattan, 
-  data = do_coefs,
-  colour_vector = (coefs$depth),
-  text_label = coefs$species,
-  colour_label = "Depth"
-) + scale_color_viridis_c(direction = -1, trans = log10) 
-
+#### DO ONLY #### 
+# 
+# # do_coefs <- select(coefs, `(Intercept)`, 
+# #   mean_DO_scaled, DO_trend_scaled, 
+# #   `mean_DO_scaled:DO_trend_scaled`) %>% scale()
+#
+# ## if actually slopes 
+# do_coefs <- all_coefs[, 3:4]
+# factoextra::fviz_nbclust(do_coefs, kmeans, method = "silhouette",
+#   k.max = 10)
+# factoextra::fviz_nbclust(do_coefs, cluster::pam, method = "silhouette",
+#   k.max = 10)
+# m_kmeans <- kmeans(do_coefs, 2)
+# m_pam <- cluster::pam(do_coefs, k = 4)
+# m_pam_manhattan <- cluster::pam(do_coefs, k = 4, metric = "manhattan")
+# 
+# plot_clusters(
+#   m_kmeans,
+# #  m_pam, 
+# #  m_pam_manhattan, 
+#   data = do_coefs,
+#   colour_vector = (coefs$depth),
+#   text_label = coefs$species,
+#   colour_label = "Depth"
+# ) + scale_color_viridis_c(direction = -1, trans = log10) 
+# 
 
 
 #### nMDS ordination ####
