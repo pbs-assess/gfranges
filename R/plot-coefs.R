@@ -9,6 +9,7 @@ plot_coefs <- function(coloured_coefs,
   grouping_taxa = "species",
   order_by_trait = FALSE,
   order_by = "scale(do_vel_squashed)",
+  increasing = F,
   grid_facets = F,
   add_grey_bars = F,
   fixed_scales = TRUE
@@ -40,7 +41,7 @@ plot_coefs <- function(coloured_coefs,
   colour_list <- unique(coloured_coefs$colours)
   coloured_coefs$group <- coloured_coefs[[grouping_taxa]]
   p <- ggplot(coloured_coefs, aes(
-    forcats::fct_reorder(group, order), #-Estimate),
+    forcats::fct_reorder(group, order, .desc = increasing), #-Estimate),
     #forcats::fct_reorder(species,, -coloured_coefs[coloured_coefs$coefficient == "do_vel", ]$Estimate),
     Estimate,
     colour = col_var,

@@ -59,7 +59,7 @@ ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null3nb.pdf"), width = 12.
 ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
 ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
 
-# fishing model
+#### fishing model ####
 
 model2 <- add_colours(model$coefs) %>%   
   filter(coefficient %in% c("log_effort_scaled", "fishing_trend_scaled","log_effort_scaled:fishing_trend_scaled"))
@@ -76,7 +76,25 @@ manipulate::manipulate({
 ggsave(here::here("ms", "figs", "supp-fishing-coefs.pdf"), width = 8.5, height = 8.5)
 
 
+#### sort by traits ####
+model2 <- add_colours(model$coefs) %>%   
+  filter(coefficient %in% c("temp_trend_scaled", "DO_trend_scaled", "temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled"))
 
+model2$species[model2$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+
+plot_coefs(model2, grid_facets = T, fixed_scales = F, #add_grey_bars = T, 
+    order_by = "depth") 
+
+manipulate::manipulate({
+  plot_coefs(model2, grid_facets = T, fixed_scales = F, #add_grey_bars = T, 
+    order_by_trait = T,
+    increasing = T,
+    order_by = order_by) #+ ylim(-0.05,0.095)
+}, order_by = manipulate::picker(as.list(names(model2)[8:20])))
+
+
+
+#### GLOBAL COEFS ####
 coef_names <- shortener(unique(model$coefs$coefficient))
 betas <- signif(as.list(model$sdr, "Estimate")$b_j, digits = 3)
 SE <- signif(as.list(model$sdr, "Std. Error")$b_j, digits = 3)
@@ -87,7 +105,7 @@ overall_betas
 
 get_aic(model)
 
-
+#### RESIDUALS ####
 r <- model$obj$report()
 model$data$residual <- model$y_i - r$eta_i
 model$data$eta <- r$eta_i
@@ -105,7 +123,7 @@ model$data %>%
   scale_fill_gradient2() + gfplot::theme_pbs() +
   facet_wrap(~species)
 
-# ### IF IMMATURE CAN RUN THIS TO MAKE COLOURS MATCH
+#### IF IMMATURE CAN RUN THIS TO MAKE COLOURS MATCH  ####
 # mature <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
 # model2 <- add_colours(mmature$coefs) # must be saved as model2 for use in function below
 # model2 <- add_colours(model$coefs, last_used = TRUE)
@@ -152,7 +170,7 @@ ggsave(here::here("ms", "figs", "supp-coefs-imm.pdf"), width = 8, height = 10)
 
 
 
-### GENUS COEF PLOTS
+#### GENUS COEF PLOTS ####
 model3 <- add_colours(model$coefs_genus, col_var = "genus", add_spp_data = F) 
 colour_list <- unique(model3$colours)
 manipulate::manipulate({
@@ -171,7 +189,7 @@ manipulate::manipulate({
 # ggsave("figs/worm-plot-imm-temp-trend-sort.png", width = 10, height = 10, dpi = 300
 
 
-#### CONTRAST COEFFICIENTS WITH LIFE HISTORY
+#### CONTRAST COEFFICIENTS WITH LIFE HISTORY ####
 
 manipulate::manipulate({filter(model2, coefficient == x) %>%
     ggplot(aes(depth, Estimate)) + geom_point() + 
