@@ -23,18 +23,19 @@ model_grad <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-23-trend-w-grad
 model_do <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-27-trend-do-only-1-500-DO.rds")
 model_age <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-22-trend-w-age-1-400-temp.rds")
 
-stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats3.rds"))
+stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats4.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
 stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
 stats$group[stats$group == "SHARK"] <- "DOGFISH"
 stats$group[stats$group == "HAKE"] <- "COD"
 imm <- mutate(stats, age = "immature") %>%
-  mutate(depth = depth_imm, age_mean = age_imm) %>%
+  mutate(depth = depth_imm, age_mean = age_imm, depth25 = depth_imm_dens_25, depth75 = depth_imm_dens_75, depth_iqr = depth_imm_iqr) %>%
   select(-depth_imm, -age_imm)
-mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
+mat <- mutate(stats, age = "mature") %>%
+  select(-depth_imm, -age_imm) %>%
+  mutate(depth25 = depth_mat_dens_25, depth75 = depth_mat_dens_75, depth_iqr = depth_mat_iqr)
 stats <- rbind(mat, imm)
 stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
-alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
 
 # model2 <- add_colours(model$coefs, species_data = stats)
 # model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"
@@ -49,7 +50,7 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
 #########################
 #########################
 #########################
-#### EXPLORE GRADIENTS 
+#### EXPLORE GRADIENTS
 ###
 ### Gradient maps ####
 grad_do <- plot_vocc(alldata,
@@ -59,7 +60,7 @@ grad_do <- plot_vocc(alldata,
   axis_lables = F,
   transform_col = fourth_root_power,
   legend_position = c(0.15, 0.25)
-) + ggtitle("dissolved oxygen") + 
+) + ggtitle("dissolved oxygen") +
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
     plot.margin = margin(0, 0, 0.2, 0, "cm"),
@@ -76,7 +77,7 @@ grad_temp <- plot_vocc(alldata,
   transform_col = fourth_root_power,
   legend_position = c(0.15, 0.25)
 ) + ggtitle("temperature") +
-  ylab("climate gradient") + 
+  ylab("climate gradient") +
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
     plot.margin = margin(0, 0, 0.2, 0, "cm"),
@@ -84,22 +85,24 @@ grad_temp <- plot_vocc(alldata,
     axis.title.x = element_blank()
   )
 
-grad_rockfish <- plot_vocc(filter(model$data, 
+grad_rockfish <- plot_vocc(filter(
+  model$data,
   # species == "mature Widow Rockfish"),
   # species == "mature Canary Rockfish"),
-  species == "mature Shortspine Thornyhead"),
-  vec_aes = NULL,
-  fill_col = "biotic_grad", fill_label = "% biomass \nper km",
-  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
-  viridis_option = "B",
-  axis_lables = T,
-  transform_col = fourth_root_power,
-  legend_position = c(0.15, 0.25)
-) + 
+  species == "mature Shortspine Thornyhead"
+),
+vec_aes = NULL,
+fill_col = "biotic_grad", fill_label = "% biomass \nper km",
+raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+viridis_option = "B",
+axis_lables = T,
+transform_col = fourth_root_power,
+legend_position = c(0.15, 0.25)
+) +
   # ggtitle("Widow Rockfish") +
   # ggtitle("Canary Rockfish") +
   ggtitle("Shortspine Thornyhead") +
-  ylab("biotic gradient") + 
+  ylab("biotic gradient") +
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
     plot.margin = margin(0, 0, 0, 0, "cm"),
@@ -107,27 +110,29 @@ grad_rockfish <- plot_vocc(filter(model$data,
     axis.title.x = element_blank()
   )
 
-grad_flatfish <- plot_vocc(filter(model$data, 
-      # species == "mature Flathead Sole"),
-      species == "mature Dover Sole"),
-  vec_aes = NULL,
-  fill_col = "biotic_grad", fill_label = "% biomass \nper km",
-  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
-  viridis_option = "B",
-  axis_lables = T,
-  transform_col = fourth_root_power,
-  legend_position = c(0.15, 0.25)
-) + 
+grad_flatfish <- plot_vocc(filter(
+  model$data,
+  # species == "mature Flathead Sole"),
+  species == "mature Dover Sole"
+),
+vec_aes = NULL,
+fill_col = "biotic_grad", fill_label = "% biomass \nper km",
+raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+viridis_option = "B",
+axis_lables = T,
+transform_col = fourth_root_power,
+legend_position = c(0.15, 0.25)
+) +
   # ggtitle("Flathead Sole") +
   ggtitle("Dover Sole") +
-  # # ylab("gradient") + 
+  # # ylab("gradient") +
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
     plot.margin = margin(0, 0, 0, 0, "cm"),
     axis.text = element_blank(), axis.ticks = element_blank(),
     axis.title.x = element_blank(), axis.title.y = element_blank()
   )
-# grad_sable <- plot_vocc(filter(model$data, 
+# grad_sable <- plot_vocc(filter(model$data,
 #   species == "mature Sablefish"),
 #   vec_aes = NULL,
 #   fill_col = "biotic_grad", fill_label = "% biomass \nper km",
@@ -136,59 +141,61 @@ grad_flatfish <- plot_vocc(filter(model$data,
 #   axis_lables = T,
 #   transform_col = fourth_root_power,
 #   legend_position = c(0.15, 0.25)
-# ) + 
+# ) +
 #   ggtitle("Sablefish") +
-#   # # ylab("gradient") + 
+#   # # ylab("gradient") +
 #   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
 #   theme(
 #     plot.margin = margin(0, 0, 0, 0, "cm"),
 #     axis.text = element_blank(), axis.ticks = element_blank(),
 #     axis.title.x = element_blank(), axis.title.y = element_blank()
 #   )
-grad_temp + grad_do +  grad_rockfish + grad_flatfish + plot_layout(ncol = 2)
+grad_temp + grad_do + grad_rockfish + grad_flatfish + plot_layout(ncol = 2)
 ggsave(here::here("ms", "figs", "supp-gradient-maps.png"), width = 6, height = 9)
 
 
 
 ### Scatterplots of coorelation btw biotic & temperature gradients ####
 
-ggplot(filter(model$data, age == "mature"), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) + 
-  geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") + 
+ggplot(filter(model$data, age == "mature"), aes(temp_grad, biotic_grad)) + geom_point(alpha = .1) +
+  geom_smooth(method = "lm", alpha = 0.5, colour = "darkgray") +
   # facet_grid(species~rockfish) +
-  facet_wrap(~forcats::fct_reorder(species_only, genus_id)) +
-  # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) + 
-  # scale_x_continuous(trans = fourth_root_power) + 
+  facet_wrap(~ forcats::fct_reorder(species_only, genus_id)) +
+  # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) +
+  # scale_x_continuous(trans = fourth_root_power) +
   # scale_y_continuous(trans = fourth_root_power) +
-  gfplot::theme_pbs() 
+  gfplot::theme_pbs()
 
-# ggplot(filter(model$data, age == "mature" & genus_id == 7), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) + 
-#   geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") + 
+# ggplot(filter(model$data, age == "mature" & genus_id == 7), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) +
+#   geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") +
 #   # facet_grid(species~rockfish) +
 #   facet_wrap(~forcats::fct_reorder(species_only, genus_id)) +
-#   # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) + 
-#   # scale_x_continuous(trans = fourth_root_power) + 
+#   # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) +
+#   # scale_x_continuous(trans = fourth_root_power) +
 #   # scale_y_continuous(trans = fourth_root_power) +
-#   gfplot::theme_pbs() 
-# 
-# ggplot(filter(model$data, age == "mature" & genus_id == 5), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) + 
-#   geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") + 
+#   gfplot::theme_pbs()
+#
+# ggplot(filter(model$data, age == "mature" & genus_id == 5), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) +
+#   geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") +
 #   # facet_grid(species~rockfish) +
 #   facet_wrap(~species_only) +
-#   # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) + 
-#   # scale_x_continuous(trans = fourth_root_power) + 
+#   # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) +
+#   # scale_x_continuous(trans = fourth_root_power) +
 #   # scale_y_continuous(trans = fourth_root_power) +
-#   gfplot::theme_pbs() 
+#   gfplot::theme_pbs()
 
 
 #########################
 #########################
 #########################
-#### GLOBAL COEFS 
+#### GLOBAL COEFS
 ###
 ## trend model ####
 coef_names <- shortener(unique(model$coefs$coefficient))
-coef_names <- c("intercept", "change in T", "mean T", "change in DO", "mean DO", 
-  "biomass", "interaction (T)", "interaction (DO)")
+coef_names <- c(
+  "intercept", "change in T", "mean T", "change in DO", "mean DO",
+  "biomass", "interaction (T)", "interaction (DO)"
+)
 betas <- signif(as.list(model$sdr, "Estimate")$b_j, digits = 3)
 SE <- signif(as.list(model$sdr, "Std. Error")$b_j, digits = 3)
 lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
@@ -220,13 +227,15 @@ overall_betas_d$model <- "trend (DO only)"
 # # version with 2-way interactions
 # model_grad <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-23-trend-w-grad-1-500-temp-2-way.rds")
 # coef_names <- shortener(unique(model_grad$coefs$coefficient))
-# coef_names <- c("intercept", "change in T", "mean T", "gradient", "biomass", "interaction (T)",  "mean T:Gradient",  "change in T:Gradient") 
+# coef_names <- c("intercept", "change in T", "mean T", "gradient", "biomass", "interaction (T)",  "mean T:Gradient",  "change in T:Gradient")
 
 # # version with 3-way interaction
 coef_names <- shortener(unique(model_grad$coefs$coefficient))
-coef_names <- c("intercept", "change in T", "mean T", 
+coef_names <- c(
+  "intercept", "change in T", "mean T",
   "gradient", "biomass", "interaction (T)",
-  "mean T:Gradient",  "change in T:Gradient", "interaction (T):Gradient")
+  "mean T:Gradient", "change in T:Gradient", "interaction (T):Gradient"
+)
 
 betas <- signif(as.list(model_grad$sdr, "Estimate")$b_j, digits = 3)
 SE <- signif(as.list(model_grad$sdr, "Std. Error")$b_j, digits = 3)
@@ -237,8 +246,10 @@ overall_betas_g$model <- "trend (T w gradient)"
 
 ## velocity model ####
 coef_names <- shortener(unique(model_vel$coefs$coefficient))
-coef_names <- c("intercept", "change in T", "change in DO", "mean T", "mean DO", 
-  "biomass", "interaction (T)", "interaction (DO)")
+coef_names <- c(
+  "intercept", "change in T", "change in DO", "mean T", "mean DO",
+  "biomass", "interaction (T)", "interaction (DO)"
+)
 betas <- signif(as.list(model_vel$sdr, "Estimate")$b_j, digits = 3)
 SE <- signif(as.list(model_vel$sdr, "Std. Error")$b_j, digits = 3)
 lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
@@ -248,8 +259,10 @@ overall_betas_vel$model <- "velocity"
 
 ## temperature velocity model ####
 coef_names <- shortener(unique(model_vel_t$coefs$coefficient))
-coef_names <- c("intercept", "change in T", "mean T", 
-  "biomass", "interaction (T)")
+coef_names <- c(
+  "intercept", "change in T", "mean T",
+  "biomass", "interaction (T)"
+)
 betas <- signif(as.list(model_vel_t$sdr, "Estimate")$b_j, digits = 3)
 SE <- signif(as.list(model_vel_t$sdr, "Std. Error")$b_j, digits = 3)
 lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
@@ -259,8 +272,10 @@ overall_betas_vel_t$model <- "velocity (T only)"
 
 ## DO velocity model ####
 coef_names <- shortener(unique(model_vel_d$coefs$coefficient))
-coef_names <- c("intercept", "change in DO", "mean DO", 
-  "biomass", "interaction (DO)")
+coef_names <- c(
+  "intercept", "change in DO", "mean DO",
+  "biomass", "interaction (DO)"
+)
 betas <- signif(as.list(model_vel_d$sdr, "Estimate")$b_j, digits = 3)
 SE <- signif(as.list(model_vel_d$sdr, "Std. Error")$b_j, digits = 3)
 lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
@@ -272,9 +287,11 @@ overall_betas_vel_d$model <- "velocity (DO only)"
 
 # version with 3-way interactions
 coef_names <- shortener(unique(model_age$coefs$coefficient))
-coef_names <- c("intercept", "immature", "change in T", "mean T", "change in DO", "mean DO", 
-  "biomass", "interaction (T)", "interaction (DO)", "change in T:immature", "mean T:immature", 
-  "change in DO:immature", "mean DO:immature", "interaction (T):immature", "interaction (DO):immature")
+coef_names <- c(
+  "intercept", "immature", "change in T", "mean T", "change in DO", "mean DO",
+  "biomass", "interaction (T)", "interaction (DO)", "change in T:immature", "mean T:immature",
+  "change in DO:immature", "mean DO:immature", "interaction (T):immature", "interaction (DO):immature"
+)
 
 betas <- signif(as.list(model_age$sdr, "Estimate")$b_j, digits = 3)
 SE <- signif(as.list(model_age$sdr, "Std. Error")$b_j, digits = 3)
@@ -286,8 +303,10 @@ overall_betas_age$model <- "trend (3-way interactions)"
 # # version with only 2-way interactions
 model_age2 <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-22-trend-w-age-1-500-DO.rds")
 coef_names <- shortener(unique(model_age2$coefs$coefficient))
-coef_names <- c("intercept", "immature", "change in T", "mean T", "change in DO", "mean DO",
-"biomass", "interaction (T)", "interaction (DO)", "change in T:immature", "mean T:immature", "change in DO:immature", "mean DO:immature")
+coef_names <- c(
+  "intercept", "immature", "change in T", "mean T", "change in DO", "mean DO",
+  "biomass", "interaction (T)", "interaction (DO)", "change in T:immature", "mean T:immature", "change in DO:immature", "mean DO:immature"
+)
 betas <- signif(as.list(model_age2$sdr, "Estimate")$b_j, digits = 3)
 SE <- signif(as.list(model_age2$sdr, "Std. Error")$b_j, digits = 3)
 lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
@@ -295,7 +314,7 @@ upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
 overall_betas_age2 <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_age2$model <- "trend (w maturity effect)"
 
-### plot global coefs for multiple models #### 
+### plot global coefs for multiple models ####
 
 overall_betas$model_type <- "trend"
 overall_betas_t$model_type <- "trend"
@@ -307,94 +326,131 @@ overall_betas_vel_d$model_type <- "velocity"
 overall_betas_age$model_type <- "trend"
 overall_betas_age2$model_type <- "trend"
 
-custom_order <- c("intercept", "immature", "biomass", 
+custom_order <- c(
+  "intercept", "immature", "biomass",
   "gradient",
   "mean T", "mean T:immature", "mean T:Gradient",
-  "change in T",  "change in T:immature",  "change in T:Gradient",
-  "interaction (T)", "interaction (T):immature",  "interaction (T):Gradient",
-  "mean DO",  "mean DO:immature",
-  "change in DO", "change in DO:immature", 
+  "change in T", "change in T:immature", "change in T:Gradient",
+  "interaction (T)", "interaction (T):immature", "interaction (T):Gradient",
+  "mean DO", "mean DO:immature",
+  "change in DO", "change in DO:immature",
   "interaction (DO)", "interaction (DO):immature"
-  )
+)
 
 # allcoefs2 <- allcoefs %>% rename(term = coefficient, estimate = Estimate, std.error = Std..Error) %>% filter(term != "intercept")
 
 ### compare trends and velocities
-overall <- rbind.data.frame(overall_betas, overall_betas_t, overall_betas_g, overall_betas_d, 
-  overall_betas_vel, overall_betas_vel_t, overall_betas_vel_d)
+overall <- rbind.data.frame(
+  overall_betas, overall_betas_t, overall_betas_g, overall_betas_d,
+  overall_betas_vel, overall_betas_vel_t, overall_betas_vel_d
+)
 overall <- mutate(overall, term = firstup(as.character(coef_names)))
 overall2 <- overall %>% rename(
-  estimate = betas, std.error = SE) #%>% filter(term != "intercept")
-overall2 <- overall2 %>% mutate(term = factor(term, 
-  levels = firstup(as.character(custom_order))), 
-  model = firstup(as.character(model)))
+  estimate = betas, std.error = SE
+) # %>% filter(term != "intercept")
+overall2 <- overall2 %>% mutate(
+  term = factor(term,
+    levels = firstup(as.character(custom_order))
+  ),
+  model = firstup(as.character(model))
+)
 
-global_vel <- dotwhisker::dwplot(overall2) + #xlim(-10,10) +
-  geom_vline(xintercept = 0, colour = "darkgray", alpha=0.5) +
-  # geom_point(aes(term, estimate,  colour = model), 
-  #    alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) + 
-  scale_colour_manual(name = "Models", 
-    values = c("#D53E4F", 
-    "#F46D43", 
-    "#FDAE61",
-    "#FEE08B",
-    "#ABDDA4",  "#3288BD", "#5E4FA2"
-    )) + ggtitle("a. Trend versus velocity models") +
-  gfplot::theme_pbs() + theme (
-    # plot.margin = margin(0.1, 0, 0, 0, "cm"), 
+global_vel <- dotwhisker::dwplot(overall2) + # xlim(-10,10) +
+  geom_vline(xintercept = 0, colour = "darkgray", alpha = 0.5) +
+  # geom_point(aes(term, estimate,  colour = model),
+  #    alpha= 0.1, position = position_jitter(width = 0.25), inherit.aes = F, data = allcoefs2) +
+  scale_colour_manual(
+    name = "Models",
+    values = c(
+      "#D53E4F",
+      "#F46D43",
+      "#FDAE61",
+      "#FEE08B",
+      "#ABDDA4", "#3288BD", "#5E4FA2"
+    )
+  ) + ggtitle("a. Trend versus velocity models") +
+  gfplot::theme_pbs() + theme(
+    # plot.margin = margin(0.1, 0, 0, 0, "cm"),
     axis.title = element_blank(),
-    #legend.title = element_blank(),
-    legend.position = c(0.75, 0.25))
+    # legend.title = element_blank(),
+    legend.position = c(0.75, 0.25)
+  )
 global_vel
 # ggsave(here::here("ms", "figs", "supp-global-coefs-vel.pdf"), width = 5, height = 4)
 
-# look for sig age effects 
+# look for sig age effects
 overall3 <- rbind.data.frame(overall_betas, overall_betas_age2, overall_betas_age)
-overall3 <- overall3 %>% mutate(term = firstup(as.character(coef_names))) %>% rename(
-  estimate = betas, std.error = SE) %>% mutate(term = factor(term, 
-  levels = firstup(as.character(custom_order))), 
-  model = firstup(as.character(model)))
+overall3 <- overall3 %>%
+  mutate(term = firstup(as.character(coef_names))) %>%
+  rename(
+    estimate = betas, std.error = SE
+  ) %>%
+  mutate(
+    term = factor(term,
+      levels = firstup(as.character(custom_order))
+    ),
+    model = firstup(as.character(model))
+  )
 
-global_age <- dotwhisker::dwplot(overall3) + #xlim(-10,10) +
+global_age <- dotwhisker::dwplot(overall3) + # xlim(-10,10) +
   geom_vline(xintercept = 0, colour = "darkgray") +
-  scale_colour_manual(name = "Models", 
-    values = c("#D53E4F", "#F46D43", 
-    "#FDAE61" #, "#FEE08B", "#3288BD", "#5E4FA2"
-    )) + ggtitle("b. Global maturity effects") +
+  scale_colour_manual(
+    name = "Models",
+    values = c(
+      "#D53E4F", "#F46D43",
+      "#FDAE61" # , "#FEE08B", "#3288BD", "#5E4FA2"
+    )
+  ) + ggtitle("b. Global maturity effects") +
   scale_y_discrete(position = "right") +
-  gfplot::theme_pbs() + theme (
-    # plot.margin = margin(0.1, 0, 0, 0, "cm"), 
+  gfplot::theme_pbs() + theme(
+    # plot.margin = margin(0.1, 0, 0, 0, "cm"),
     axis.title = element_blank(),
     legend.title = element_blank(),
-    legend.position = c(0.25, 0.145))
+    legend.position = c(0.25, 0.145)
+  )
 # globel_age
 # ggsave(here::here("ms", "figs", "supp-global-coefs-w-age.pdf"), width = 5, height = 4)
 
-(global_vel|global_age)/ grid::textGrob("Coefficient estimate with 95% CI", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02)) 
+(global_vel | global_age) / grid::textGrob("Coefficient estimate with 95% CI", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 ggsave(here::here("ms", "figs", "supp-global-coefs.pdf"), width = 10, height = 5)
 
 
 #########################
 #### experiment with species level coefs as boxplots ####
-trendcoefs <-add_colours(model$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
-  levels = c("(Intercept)", "temp_trend_scaled", "mean_temp_scaled", 
+trendcoefs <- add_colours(model$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
+  levels = c(
+    "(Intercept)", "temp_trend_scaled", "mean_temp_scaled",
     "DO_trend_scaled", "mean_DO_scaled",
-    "log_biomass_scaled", 
-    "temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled" ),
-  labels = c("intercept", "change in T", "mean T", "change in DO", "mean DO",
-    "biomass", "interaction (T)", "interaction (DO)")))
+    "log_biomass_scaled",
+    "temp_trend_scaled:mean_temp_scaled", "DO_trend_scaled:mean_DO_scaled"
+  ),
+  labels = c(
+    "intercept", "change in T", "mean T", "change in DO", "mean DO",
+    "biomass", "interaction (T)", "interaction (DO)"
+  )
+))
 
 velcoefs1 <- add_colours(model_vel_t$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
-  levels = c("(Intercept)", "squashed_temp_vel_scaled", "mean_temp_scaled",
-    "log_biomass_scaled", "squashed_temp_vel_scaled:mean_temp_scaled"),
-  labels = c("intercept", "change in T", "mean T",
-    "biomass", "interaction (T)")))
+  levels = c(
+    "(Intercept)", "squashed_temp_vel_scaled", "mean_temp_scaled",
+    "log_biomass_scaled", "squashed_temp_vel_scaled:mean_temp_scaled"
+  ),
+  labels = c(
+    "intercept", "change in T", "mean T",
+    "biomass", "interaction (T)"
+  )
+))
 
 velcoefs2 <- add_colours(model_vel_d$coefs, species_data = stats) %>% transform(coefficient = factor(coefficient,
-  levels = c("(Intercept)", "squashed_DO_vel_scaled", "mean_DO_scaled",
-    "log_biomass_scaled", "squashed_DO_vel_scaled:mean_DO_scaled"),
-  labels = c("intercept", "change in DO", "mean DO",
-    "biomass", "interaction (DO)")))
+  levels = c(
+    "(Intercept)", "squashed_DO_vel_scaled", "mean_DO_scaled",
+    "log_biomass_scaled", "squashed_DO_vel_scaled:mean_DO_scaled"
+  ),
+  labels = c(
+    "intercept", "change in DO", "mean DO",
+    "biomass", "interaction (DO)"
+  )
+))
 
 trendcoefs$model <- "trend"
 velcoefs1$model <- "velocity (T only)"
@@ -408,27 +464,28 @@ head(allcoefs)
 
 filter(overall, coef_names != "intercept") %>%
   # overall %>%
-  ggplot(aes(coef_names, betas)) + #forcats::fct_reorder(coef_names, ) #, colour = model
-  geom_point(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = age), alpha= 0.3, position = position_jitter(width = 0.15), inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
-  geom_boxplot(aes(forcats::fct_reorder(coefficient, Estimate), Estimate,  colour = age), 
-    notch =T,
-    inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
-  geom_pointrange(aes(ymin = lowerCI, ymax = upperCI), size = 1, fatten = 3, alpha = .9) + 
-        # position = position_jitter(width = 0.2), shape = "|"
+  ggplot(aes(coef_names, betas)) + # forcats::fct_reorder(coef_names, ) #, colour = model
+  geom_point(aes(forcats::fct_reorder(coefficient, Estimate), Estimate, colour = age), alpha = 0.3, position = position_jitter(width = 0.15), inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")) +
+  geom_boxplot(aes(forcats::fct_reorder(coefficient, Estimate), Estimate, colour = age),
+    notch = T,
+    inherit.aes = F, data = filter(allcoefs, coefficient != "intercept")
+  ) +
+  geom_pointrange(aes(ymin = lowerCI, ymax = upperCI), size = 1, fatten = 3, alpha = .9) +
+  # position = position_jitter(width = 0.2), shape = "|"
   geom_hline(yintercept = 0, colour = "darkgray") +
   scale_colour_viridis_d(begin = .8, end = .2) +
   # scale_y_continuous(trans = fourth_root_power) +
   # scale_colour_manual(values = c("#D53E4F", "#5E4FA2", "#3288BD")) + #
   xlab("") +
   facet_wrap(~model_type) +
-  coord_flip(ylim = c(-2,2)) + # ylim = c(-10,10)
+  coord_flip(ylim = c(-2, 2)) + # ylim = c(-10,10)
   gfplot::theme_pbs()
 
 
 #########################
 #########################
 #########################
-#### ALL CHOPSTICKS AND SLOPE WORM PLOTS 
+#### ALL CHOPSTICKS AND SLOPE WORM PLOTS
 ###
 ### ALL TREND CHOPS ####
 # if model controling for fishing effort desired...
@@ -475,10 +532,11 @@ p_do_all_slopes <- plot_chopstick_slopes(do_slopes,
   coord_flip(ylim = c(-3.1, 1.4)) + # coord_flip(ylim =c(-3,1)) +
   ylab("slopes")
 
-cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops, 
+cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops,
   # labels = c("a.", "b.", "c.", "d."), label_size = 12,
   labels = c("a.", "", "b.", ""), label_size = 11,
-  ncol = 2, rel_widths = c(1, 2.5)) 
+  ncol = 2, rel_widths = c(1, 2.5)
+)
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 10)
 # ggsave(here::here("ms", "figs", "supp-trend-chopsticks-fishing.pdf"), width = 14, height = 11)
 
@@ -491,18 +549,20 @@ temp_slopes <- chopstick_slopes(model_temp,
 temp_slopes <- left_join(temp_slopes, stats)
 p2 <- plot_fuzzy_chopsticks(model_temp,
   x_variable = "temp_trend_scaled", type = "temp",
-  y_label = "Predicted % change in biomass", 
+  y_label = "Predicted % change in biomass",
   # choose_age = "mature",
-  slopes = temp_slopes  
-) + coord_cartesian(ylim=c(-11,7)) + 
+  slopes = temp_slopes
+) + coord_cartesian(ylim = c(-11, 7)) +
   xlab("Temperature trend (scaled)") + theme(legend.position = "none")
 
-temp_slopes$species[temp_slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"	
-p1 <- plot_chopstick_slopes(temp_slopes, type = "temp", 
-  legend_position = c(.25,.95)) + 
+temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+p1 <- plot_chopstick_slopes(temp_slopes,
+  type = "temp",
+  legend_position = c(.25, .95)
+) +
   ylab("Slopes")
 
-cowplot::plot_grid(p1,p2, rel_widths = c(1, 2.5)) 
+cowplot::plot_grid(p1, p2, rel_widths = c(1, 2.5))
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks-temp-only.pdf"), width = 14, height = 5.5)
 
 ### if just temp with gradient model... no change in chopsticks ####
@@ -513,17 +573,19 @@ temp_slopes <- chopstick_slopes(model_grad,
 temp_slopes <- left_join(temp_slopes, stats)
 p2 <- plot_fuzzy_chopsticks(model_grad,
   x_variable = "temp_trend_scaled", type = "temp",
-  y_label = "Predicted % change in biomass", 
-  slopes = temp_slopes  
-) + coord_cartesian(ylim=c(-11,7)) + 
+  y_label = "Predicted % change in biomass",
+  slopes = temp_slopes
+) + coord_cartesian(ylim = c(-11, 7)) +
   xlab("Temperature trend (scaled)") + theme(legend.position = "none")
 
-temp_slopes$species[temp_slopes$species=="Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"	
-p1 <- plot_chopstick_slopes(temp_slopes, type = "temp", 
-  legend_position = c(.25,.95)) + 
+temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+p1 <- plot_chopstick_slopes(temp_slopes,
+  type = "temp",
+  legend_position = c(.25, .95)
+) +
   ylab("Slopes")
 
-cowplot::plot_grid(p1,p2, rel_widths = c(1, 2.5)) 
+cowplot::plot_grid(p1, p2, rel_widths = c(1, 2.5))
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks-temp-grad.pdf"), width = 14, height = 5.5)
 
 ### ALL VELOCITY CHOPS ####
@@ -580,13 +642,13 @@ ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height =
 #########################
 #########################
 #########################
-#### SLOPE SCATTERPLOTS 
+#### SLOPE SCATTERPLOTS
 ###
 ### investigate interaction slopes by mean age ####
 # temp_slopes <- left_join(temp_slopes, stats)
 # do_slopes <- left_join(do_slopes, stats)
 all_slopes <- rbind(temp_slopes, do_slopes)
-all_slopes <- rbind(temp_slopes, do_slopes) %>%  mutate(growth_rate = length_50_mat_f/age_mat)
+all_slopes <- rbind(temp_slopes, do_slopes) %>% mutate(growth_rate = length_50_mat_f / age_mat)
 
 slope_depth <- slope_scatterplot(all_slopes, "depth",
   col_group = "age", point_size = 3
@@ -596,11 +658,11 @@ slope_depth <- slope_scatterplot(all_slopes, "depth",
   #   aes_string("depth", "slope_est", colour = "age"), method = "lm", size = 0.5,
   #   fill = "lightgray"
   # ) +
-  geom_smooth(method= "lm", size = 0.5, colour = "gray", fill = "lightgray") + # formula = y ~ x + I(x^2),  colour = "gray",
-  geom_hline(yintercept = 0, colour = "black", alpha = 0.5,  linetype = "dashed") +
+  geom_smooth(method = "lm", size = 0.5, colour = "gray", fill = "lightgray") + # formula = y ~ x + I(x^2),  colour = "gray",
+  geom_hline(yintercept = 0, colour = "black", alpha = 0.5, linetype = "dashed") +
   xlab("mean depth") +
   ylab("slope") +
-  facet_grid(type~chopstick, scales = "free") +
+  facet_grid(type ~ chopstick, scales = "free") +
   guides(colour = F) +
   theme(
     plot.margin = margin(0, 0.15, 0.1, 0, "cm"),
@@ -620,10 +682,10 @@ slope_age <- slope_scatterplot(all_slopes, "age_mean",
     fill = "lightgray"
   ) +
   # geom_smooth(method= "lm", size = 0.5, fill = "lightgray") + # formula = y ~ x + I(x^2),  colour = "gray",
-  geom_hline(yintercept = 0, colour = "black", alpha = 0.5,  linetype = "dashed") +
+  geom_hline(yintercept = 0, colour = "black", alpha = 0.5, linetype = "dashed") +
   xlab("Mean age") +
-  ylab("Slope") + 
-  facet_grid(type~chopstick, scales = "free") +  
+  ylab("Slope") +
+  facet_grid(type ~ chopstick, scales = "free") +
   guides(colour = F) +
   theme(
     plot.margin = margin(0, 0.15, 0.1, 0, "cm"),
@@ -645,8 +707,8 @@ slope_growth <- slope_scatterplot(all_slopes, "growth_rate",
   ) +
   # geom_smooth(method= "lm", size = 0.5, fill = "lightgray") +
   # xlab("Mean age") +
-  ylab("slope") + 
-  facet_grid(type~chopstick, scales = "free") +
+  ylab("slope") +
+  facet_grid(type ~ chopstick, scales = "free") +
   guides(colour = F) +
   theme(
     plot.margin = margin(0, 0.1, 0.1, 0, "cm"),
@@ -679,11 +741,12 @@ p_age_alone <- coef_scatterplot(
   guides(colour = F) +
   geom_smooth(
     # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
-    aes_string("age_mean", "Estimate"), method = "lm",
+    aes_string("age_mean", "Estimate"),
+    method = "lm",
     colour = "darkgray", fill = "lightgray"
   ) +
   geom_point(alpha = 0.5, size = 2) +
-  facet_grid(rows = vars(coefficient), scales = "free") + #cols = vars(rockfish), 
+  facet_grid(rows = vars(coefficient), scales = "free") + # cols = vars(rockfish),
   # theme(legend.position = c(.8,.15), legend.title = element_blank()) +
   ylab("Trend coefficient")
 p_age_alone
@@ -705,21 +768,27 @@ data <- model$data %>%
 
 data$species_only[data$species_only == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"
 
-data %>% filter(age == "mature") %>% 
+data %>%
+  filter(age == "mature") %>%
   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2() + gfplot::theme_pbs() + 
-  theme(legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
-    axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()) +
+  scale_fill_gradient2() + gfplot::theme_pbs() +
+  theme(
+    legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
+    axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
+  ) +
   facet_wrap(~species_only, strip.position = "bottom") +
   ggtitle("Mature fish biomass trend residuals")
 ggsave(here::here("ms", "figs", "supp-mat-residuals.pdf"), width = 7, height = 7)
 
-data %>% filter(age == "immature") %>% 
+data %>%
+  filter(age == "immature") %>%
   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2() + gfplot::theme_pbs() + 
-  theme(legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5), 
-    axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()) +
-  facet_wrap(~species_only, strip.position = "bottom") + 
+  scale_fill_gradient2() + gfplot::theme_pbs() +
+  theme(
+    legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
+    axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
+  ) +
+  facet_wrap(~species_only, strip.position = "bottom") +
   ggtitle("Immature fish biomass trend residuals")
 ggsave(here::here("ms", "figs", "supp-imm-residuals.pdf"), width = 7, height = 6)
 
@@ -733,171 +802,29 @@ data2 <- model_vel$data %>%
 
 data2$species_only[data2$species_only == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"
 
-data2 %>% filter(age_class == "mature") %>% 
+data2 %>%
+  filter(age_class == "mature") %>%
   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2() + gfplot::theme_pbs() + 
-  theme(legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
-    axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()) +
+  scale_fill_gradient2() + gfplot::theme_pbs() +
+  theme(
+    legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
+    axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
+  ) +
   facet_wrap(~species_only, strip.position = "bottom") +
   ggtitle("Mature fish biomass velocity residuals")
 ggsave(here::here("ms", "figs", "supp-mat-vel-residuals.pdf"), width = 7, height = 7)
 
-data %>% filter(age_class == "immature") %>% 
+data %>%
+  filter(age_class == "immature") %>%
   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2() + gfplot::theme_pbs() + 
-  theme(legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5), 
-    axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()) +
-  facet_wrap(~species_only, strip.position = "bottom") + 
+  scale_fill_gradient2() + gfplot::theme_pbs() +
+  theme(
+    legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
+    axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
+  ) +
+  facet_wrap(~species_only, strip.position = "bottom") +
   ggtitle("Immature fish biomass trend residuals")
 ggsave(here::here("ms", "figs", "supp-imm-vel-residuals.pdf"), width = 7, height = 6)
 
 #########################
 #########################
-#########################
-#### NULL MODELS
-###
-model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-27-vel-both-1-200.rds")
-
-
-null01 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-1-500-DO.rds")
-null02 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-2-500-DO.rds")
-null03 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-3-500-DO.rds")
-null04 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-4-500-DO.rds")
-null05 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-5-500-DO.rds")
-
-vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-1-200-DO.rds")
-vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-2-200-DO.rds")
-vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-3-200-DO.rds")
-vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-4-200-DO.rds")
-vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-30-vel-both-sim-5-200-DO.rds")
-
-model$coefs$model <- "trend"
-null01$coefs$model <- "null01"
-null02$coefs$model <- "null02"
-null03$coefs$model <- "null03"
-null04$coefs$model <- "null04"
-null05$coefs$model <- "null05"
-# null06$coefs$model <- "null06"
-# null07$coefs$model <- "null07"
-# null08$coefs$model <- "null08"
-# null09$coefs$model <- "null09"
-# null10$coefs$model <- "null10"
-
-model_vel$coefs$model <- "velocity"
-vnull01$coefs$model <- "vnull01"
-vnull02$coefs$model <- "vnull02"
-vnull03$coefs$model <- "vnull03"
-vnull04$coefs$model <- "vnull04"
-vnull05$coefs$model <- "vnull05"
-
-custom_order <- c("Intercept", "log_biomass", 
-  "temp", "temp_trend", "temp_vel",  "temp_trend:temp", "temp_vel:temp", 
-  "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO")
-
-nulls <- rbind(model$coefs, null01$coefs , null02$coefs, null03$coefs, null04$coefs, null05$coefs
-  ) %>% mutate(term = factor(shortener(coefficient),
-    levels = as.character(custom_order)), std.error = `Std. Error`, change_var = "trend",
-    type = if_else(model == "trend", "True trend", "Null trend")) %>% 
-  rename(estimate = Estimate)
-
-vnulls <- rbind(model_vel$coefs, vnull01$coefs, vnull02$coefs, vnull03$coefs, vnull04$coefs, vnull05$coefs
-  ) %>% mutate(term = factor(shortener(coefficient),
-    levels = as.character(custom_order)), std.error = `Std. Error`, change_var = "velocity",
-    type = if_else(model == "velocity", "True velocity", "Partial-null velocity")) %>% 
-  rename(estimate = Estimate)
-
-coef_names <- shortener(unique(model$coefs$coefficient))
-betas <- signif(as.list(model$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
-overall_t <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
-overall_t$type <- "True trend" 
-# ## velocity model ####
-coef_names <- shortener(unique(model_vel$coefs$coefficient))
-betas <- signif(as.list(model_vel$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model_vel$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
-overall_v <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
-overall_v$type <- "True velocity" 
-# nulls <- rbind(nulls, vnulls)
-
-null_coefs <-  ggplot(nulls, aes(estimate, term, fill = type, colour = type)) +
-  xlab("Coefficient estimate with 95% CI") + ylab("") +
-  # geom_violin(scale = "width") +
-  geom_violin( #aes(estimate, term), inherit.aes = F , 
-    scale = "width", 
-    alpha = 0.1, #fill= "white", 
-    data = filter(nulls, model == "trend")) +
-  # geom_violin(#aes(estimate, term), inherit.aes = F ,
-  #   scale = "width", # scale = "area", # scale = "count",
-  #   data = filter(nulls, model != "trend")) +
-  geom_violin(scale = "width", 
-    alpha = 0.1, data = filter(nulls, model == "null01")) +
-  geom_violin(scale = "width", 
-    alpha = 0.1, data = filter(nulls, model == "null02")) +
-  geom_violin(scale = "width", 
-    alpha = 0.1, data = filter(nulls, model == "null03")) +
-  geom_violin(scale = "width", 
-    alpha = 0.1, data = filter(nulls, model == "null04")) +
-  geom_violin(scale = "width", 
-    alpha = 0.1, data = filter(nulls, model == "null05")) +
-  scale_y_discrete(limits = rev(unique(sort(nulls$term))), 
-    labels = c("DO interaction", "DO trend", "Mean DO", 
-      "T interaction", "T trend", "Mean T", "Biomass", "Intercept")) +
-  scale_fill_manual(name = "Model type", values = c( "#D53E4F", "#FDAE61"  )) + # guides(fill = F) +
-  scale_colour_manual(name = "Model type", values = c( "#D53E4F", "#FDAE61", "#FDAE61")) +
-  geom_vline(xintercept = 0, colour = "darkgray") +
-  geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI), size = 0.75, shape = "|", fatten = 6,
-    inherit.aes = F, 
-    data = overall_t) +
-  coord_cartesian(xlim = c(-3, 2.75)) +
-  ggtitle("b. Trend-based models") +
-  gfplot::theme_pbs() + theme( axis.title = element_blank(), #element_text(size = 10),
-    legend.title = element_blank(),
-    legend.justification = c("left", "bottom"),
-    legend.position = c(0.025, 0.018))
-
-
-vnull_coefs <-  ggplot(vnulls, aes(estimate, term, fill = type, 
-  colour = type)) +
-  xlab("Coefficient estimate with 95% CI") + ylab("") +
-  geom_violin( #aes(estimate, term), inherit.aes = F , 
-    scale = "width", 
-    alpha = 0.1, #fill= "white",
-    data = filter(vnulls, model == "velocity")) +
-  # geom_violin(#aes(estimate, term), inherit.aes = F ,
-  #   scale = "width", # scale = "count", # scale = "area",
-  #   alpha = 0.1, data = filter(vnulls, model != "velocity")) +
-  geom_violin(scale = "width", 
-    alpha = 0.1, data = filter(vnulls, model == "vnull01")) +
-  geom_violin(scale = "width", 
-    alpha = 0.1, data = filter(vnulls, model == "vnull02")) +
-  geom_violin(scale = "width", 
-    alpha = 0.1, data = filter(vnulls, model == "vnull03")) +
-  geom_violin(scale = "width", 
-    alpha = 0.1, data = filter(vnulls, model == "vnull04")) +
-  geom_violin(scale = "width", 
-    alpha = 0.1, data = filter(vnulls, model == "vnull05")) +
-  scale_y_discrete(limits = rev(unique(sort(vnulls$term))), 
-    labels = c("DO interaction", "DO velocity", "Mean DO", 
-      "T interaction", "T velocity", "Mean T", "Biomass", "Intercept")) +
-  scale_fill_manual(name = "Model type", values = c("#5E4FA2", "#ABDDA4")) + # guides(fill = F) +
-  scale_colour_manual(name = "Model type", values = c("#5E4FA2", "#ABDDA4")) +
-  geom_vline(xintercept = 0, colour = "darkgray") +
-  geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI), size = 0.75, shape = "|", fatten = 6,
-    inherit.aes = F, 
-    data = overall_v) +
-  coord_cartesian(xlim = c(-15, 13)) +
-  ggtitle("b. Velocity-based models") +
-  gfplot::theme_pbs() + theme(axis.title = element_blank(), #element_text(size = 10),
-    legend.title = element_blank(),
-    legend.justification = c("left", "bottom"),
-    legend.position = c(0.025, 0.018))
-
-(null_coefs | vnull_coefs )/ grid::textGrob("Species-specific coefficient estimates", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02)) 
-
-ggsave(here::here("ms", "figs", "null-spp-violin.pdf"), width = 8, height = 3.5)
-# ggsave(here::here("ms", "figs", "supp-null-spp-violin-count.pdf"), width = 4, height = 3.5)
