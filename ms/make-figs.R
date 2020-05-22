@@ -24,15 +24,16 @@ model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-27-vel-both-1-200.
 # model_grad <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-23-trend-w-grad-1-500-temp.rds")
 # # model_do <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-22-trend-do-only-1-500.rds")
 
-stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats.rds"))
+stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats4.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
 stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
 stats$group[stats$group == "SHARK"] <- "DOGFISH"
 stats$group[stats$group == "HAKE"] <- "COD"
 imm <- mutate(stats, age = "immature") %>%
-  mutate(depth = depth_imm, age_mean = age_imm) %>%
+  mutate(depth = depth_imm, age_mean = age_imm, depth25 = depth_imm_dens_25, depth75 = depth_imm_dens_75, depth_iqr = depth_imm_iqr) %>%
   select(-depth_imm, -age_imm)
-mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
+mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm) %>% 
+  mutate(depth25 = depth_mat_dens_25, depth75 = depth_mat_dens_75, depth_iqr = depth_mat_iqr)
 stats <- rbind(mat, imm)
 stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
 
@@ -579,20 +580,28 @@ do_slopes <- left_join(do_slopes, stats)
 do_slopes <- do_slopes %>% mutate(sort_var = slope_est)
 do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
-do_slopes <- mutate(do_slopes, species_lab = if_else(slope_est < -0.75|depth >270, species, ""))
-temp_slopes <- mutate(temp_slopes, species_lab = if_else(slope_est < -2.25|depth >270, species, ""))
+
+# # apply labels to deep species and outliers
+# do_slopes <- mutate(do_slopes, species_lab = if_else(slope_est < -0.75|depth >270, species, ""))
+# temp_slopes <- mutate(temp_slopes, species_lab = if_else(slope_est < -2.25|depth >270, species, ""))
+
+# or just to outliers
+do_slopes <- mutate(do_slopes, species_lab = if_else(slope_est < -3, species, ""))
+temp_slopes <- mutate(temp_slopes, species_lab = if_else(slope_est < -5, species, ""))
+
+
 do_slopes$species_lab <- gsub("Rockfish", "", do_slopes$species_lab)
 temp_slopes$species_lab <- gsub("Rockfish", "", temp_slopes$species_lab)
 
 # build plots
 depth <- ggplot(do_data, aes(depth, do_est)) +
-  geom_point(aes(depth, temp/2), alpha = 0.02, shape = 20, colour = "#3d95cc", size = 0.2) +
-  geom_point(aes(depth, do_est), alpha = 0.02, shape = 20, colour = "darkorchid4", size = 0.2) +
+  geom_point(aes(depth, temp*(2/3)), alpha = 0.02, shape = 20, colour = "#3d95cc", size = 0.432) +
+  geom_point(aes(depth, do_est), alpha = 0.02, shape = 20, colour = "darkorchid4", size = 0.432) +
   geom_smooth(colour = "darkorchid4", size = 0.5) + 
-  xlim(15, 450) + 
+  coord_cartesian(ylim = c(0, 8.2), xlim = c(15, 410), expand =F) + 
   ylab("Mean DO (ml/L)") +
-  scale_y_continuous(sec.axis = sec_axis( ~ (./2), name = "Temperature (ºC)")) +  #, expand = expand_scale(mult = c(0.05, .2)
-  geom_smooth(aes(depth, temp/2), inherit.aes = F, colour = "#3d95cc", size = 0.5) + 
+  scale_y_continuous(sec.axis = sec_axis( ~ (.*3/2), name = "Temperature (ºC)")) +  #, expand = expand_scale(mult = c(0.05, .2)
+  geom_smooth(aes(depth, temp*(2/3)), inherit.aes = F, colour = "#3d95cc", size = 0.5) + 
   geom_hline(yintercept = 1.4, colour = "black", linetype = "dashed") +
   xlab("Mean depth") +
   gfplot::theme_pbs() + theme(
@@ -610,18 +619,20 @@ temp_high <- slope_scatterplot(
   point_alpha = 0.8,
   point_size = 1.5
 ) +
+  # geom_linerange(aes(xmin=depth25, xmax = depth75), alpha = 0.2, size = 2) +
   geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") +
-  ggrepel::geom_text_repel(aes(label=species_lab), 
-    size = 3, 
-    force = 3, 
-    # nudge_y = 0.1, 
-    nudge_x = -5,
+  geom_point(aes(depth, slope_est), size = 1) +
+  ggrepel::geom_text_repel(aes(label=species_lab),
+    size = 3,
+    force = 3,
+    nudge_y = 0.75,
+    nudge_x = 35,
     na.rm = T, min.segment.length = 1) +
   # scale_y_continuous(trans = fourth_root_power) +
   # geom_smooth(method= "lm", size = 0.5) +
   ylab("Slope at highest temperature") +
   scale_y_continuous(breaks = c(3, 0, -3, -6, -9)) +
-  coord_cartesian(ylim = c(-11, 4.2), xlim = c(15, 450)) + 
+  coord_cartesian(ylim = c(-11, 4.2), xlim = c(15, 410)) + 
   theme(
     plot.margin = margin(0, 0.1, 0, 0.2, "cm"),
     legend.position = c(.85, .2), 
@@ -634,12 +645,14 @@ do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth",
   point_alpha = 0.8,
   point_size = 1.5, 
 ) +
+  # geom_linerange(aes(xmin=depth25, xmax = depth75), alpha = 0.2, size = 2) +
+  geom_point(aes(depth, slope_est), size = 1) +
   geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") +
   xlab("Mean depth for species") +
   ylab("Slope at lowest DO") + guides(colour = F) +
-  xlim(15, 450) + 
-  ggrepel::geom_text_repel(aes(label=species_lab), 
-    size = 3, force = 3, nudge_y = -0.35, nudge_x = 15,     
+  coord_cartesian(xlim = c(15, 410)) + 
+  ggrepel::geom_text_repel(aes(label=species_lab),
+    size = 3, force = 3, nudge_y = 0.35, nudge_x = 35,
     na.rm = T, min.segment.length = 2) +
   gfplot::theme_pbs() + theme(
     plot.margin = margin(0, 0.1, 0, 0.2, "cm"),
@@ -659,7 +672,7 @@ depth2 <- depth %>% egg::tag_facet(open = "", close = ".", tag_pool = c("c"),
 temp_high2 + do_low2 + depth2 + plot_layout(ncol = 1, heights = c(1, 1, 1)) 
 # + plot_annotation(tag_levels = "a", tag_suffix = ". ")
 # ggsave(here::here("ms", "figs", "slope-by-depth.png"), width = 4.5, height = 7)
-ggsave(here::here("ms", "figs", "slope-by-depth2.png"), width = 5.5, height = 8)
+ggsave(here::here("ms", "figs", "slope-by-depth4.png"), width = 5.5, height = 8)
 
 
 #### COEFFICIENT SCATTERPLOTS AGAINST LIFE HISTORY ####
@@ -688,89 +701,164 @@ trendeffects <- trendeffects %>%
 # trendeffects <- mutate(trendeffects, rockfish = firstup(rockfish) # didn't work
 trendeffects$allspp <- "All species"
 
+
+### changed to IQR for depth 
+# cordat <- stats %>% select(species, age, depth, depth_iqr) %>% na.omit()
+# cor(cordat$depth_iqr,cordat$depth)
+
 p_depth <- coef_scatterplot(trendeffects,
   coef = c("Temperature", "DO"),
-  x = "depth", group = "age", regression = F
+  x = "depth_iqr", group = "age", regression = F
   ) +
-  ylab("Trend coefficient") + xlab("Mean depth") +
+  ylab("Trend coefficient") + xlab("Depth range (IQR)") + # (25th to 75th quartile)
   geom_smooth(
     # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
-    aes_string("depth", "Estimate"), method = "lm",
-    # colour = "darkgray", 
+    aes_string("depth_iqr", "Estimate"), method = "lm", size = 0.5,
+    colour = "darkgray",
     fill = "lightgray"
   ) +
   scale_colour_viridis_d(begin = .8, end = .2) +
+  scale_x_log10() +
   guides(colour = F) + 
   facet_grid(rows = vars(coefficient), cols= vars(allspp), scales = "free_y") +
   # gfplot:::theme_pbs() %+replace%
   theme(
     plot.margin = margin(0.1, 0.15, 0.1, 0, "cm"),
     strip.background = element_blank(),
-    strip.text.y = element_blank(),
+    strip.text.y = element_blank(), strip.text.x = element_blank(),
     plot.subtitle = element_text(hjust = 0.5, vjust = 0.4)
     # axis.text.y = element_blank(),
     # axis.ticks = element_blank()
   )
 
+# # with rockfish split out
+# p_age <- coef_scatterplot(trendeffects,
+#   coef = c("Temperature", "DO"),
+#   x = "age_mean", group = "age", regression = F
+#   ) +
+#   geom_smooth(
+#     # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
+#     aes_string("age_mean", "Estimate"), method = "lm",
+#     # colour = "darkgray",
+#     fill = "lightgray"
+#   ) +
+#   xlab("Mean age") +
+#   scale_colour_viridis_d(begin = .8, end = .2) +
+#   guides(colour = F) +
+#   theme(
+#     plot.margin = margin(0.1, 0.25, 0.1, 0.1, "cm"), strip.background = element_blank(),
+#     strip.text.y = element_blank(),
+#     axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()
+#   ) +
+#   facet_grid(rows = vars(coefficient), cols = vars(rockfish), scales = "free")
+
 p_age <- coef_scatterplot(trendeffects,
   coef = c("Temperature", "DO"),
   x = "age_mean", group = "age", regression = F
-  ) +
+) +
   geom_smooth(
     # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
-    aes_string("age_mean", "Estimate"), method = "lm",
-    # colour = "darkgray", 
+    aes_string("age_mean", "Estimate"), method = "lm", size = 0.5,
+    colour = "darkgray",
     fill = "lightgray"
   ) +
   xlab("Mean age") +
   scale_colour_viridis_d(begin = .8, end = .2) +
+  scale_x_log10() +
   guides(colour = F) +
   theme(
-    plot.margin = margin(0.1, 0.25, 0.1, 0.1, "cm"), strip.background = element_blank(),
-    strip.text.y = element_blank(),
-    axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()
+    plot.margin = margin(0.1, 0.15, 0.1, 0, "cm"),
+    strip.background = element_blank(),
+    strip.text.y = element_blank(), strip.text.x = element_blank(),
+    plot.subtitle = element_text(hjust = 0.5, vjust = 0.4),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()
   ) +
-  facet_grid(rows = vars(coefficient), cols = vars(rockfish), scales = "free")
+  facet_grid(rows = vars(coefficient), cols= vars(allspp), scales = "free_y")
+
+
 
 trendeffects <- mutate(trendeffects, growth_rate = length_50_mat_f/age_mat, growth_rate_m = length_50_mat_m/age_mat_m) 
 # plot(data = trendeffects, growth_rate ~ growth_rate_m)
+
+
+# # with rockfish split out
+# p_mat <- coef_scatterplot(trendeffects,
+#   coef = c("Temperature", "DO"),
+#   x = "growth_rate",
+#   # x = "length_50_mat_f", 
+#   group = "age", regression = F
+#   ) +
+#   xlab("Immature growth rate") +
+#   geom_smooth(
+#     # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
+#     aes_string("growth_rate", "Estimate"), method = "lm",
+#     # colour = "darkgray", 
+#     fill = "lightgray"
+#   ) +
+#   scale_colour_viridis_d(begin = .8, end = .2) +
+#   theme(
+#     plot.margin = margin(0.1, 0.1, 0.1, 0, "cm"),
+#     strip.background = element_blank(),
+#     legend.position = c(.75, .15), legend.title = element_blank(),
+#     # strip.text = element_blank(),
+#     axis.title.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank()
+#   ) +
+#   facet_grid(coefficient ~ rockfish, scales = "free")
+
+
 p_mat <- coef_scatterplot(trendeffects,
   coef = c("Temperature", "DO"),
   x = "growth_rate",
   # x = "length_50_mat_f", 
   group = "age", regression = F
-  ) +
+) +
   xlab("Immature growth rate") +
   geom_smooth(
-    # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
-    aes_string("growth_rate", "Estimate"), method = "lm",
+    data = filter(trendeffects, age != "mature"), #inherit.aes = F,
+    aes_string("growth_rate", "Estimate"), method = "lm", size = 0.5,
     # colour = "darkgray", 
     fill = "lightgray"
   ) +
   scale_colour_viridis_d(begin = .8, end = .2) +
+  scale_x_log10() +
   theme(
-    plot.margin = margin(0.1, 0.1, 0.1, 0, "cm"),
+    plot.margin = margin(0.1, 0.15, 0.1, 0, "cm"),
     strip.background = element_blank(),
+    strip.text.y = element_blank(), strip.text.x = element_blank(),
     legend.position = c(.75, .15), legend.title = element_blank(),
-    # strip.text = element_blank(),
-    axis.title.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank()
+    plot.subtitle = element_text(hjust = 0.5, vjust = 0.4),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()
   ) +
-  facet_grid(coefficient ~ rockfish, scales = "free")
+  facet_grid(rows = vars(coefficient), cols = vars(allspp), scales = "free_y")
+
 
 ## left side tags
 # p_depth2 <- p_depth %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("a","f"))
 # p_age2 <- p_age %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("b", "c", "g", "h"))
 # p_mat2 <- p_mat %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("d", "e", "i", "j"))
 
-## right side tags
-p_depth2 <- p_depth %>% egg::tag_facet(open = "", close = ".", tag_pool = c("a","f"), 
+# ### with rockfish split out for age
+# ## right side tags
+# p_depth2 <- p_depth %>% egg::tag_facet(open = "", close = ".", tag_pool = c("a","f"), 
+#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+# p_age2 <- p_age %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b", "c", "g", "h"), 
+#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+# p_mat2 <- p_mat %>% egg::tag_facet(open = "", close = ".", tag_pool = c("d", "e", "i", "j"), 
+#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+# cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 1.75, 1.75)) 
+
+p_depth2 <- p_depth %>% egg::tag_facet(open = "", close = ".", tag_pool = c("a","d"), 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
-p_age2 <- p_age %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b", "c", "g", "h"), 
+p_age2 <- p_age %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b", "e"), 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
-p_mat2 <- p_mat %>% egg::tag_facet(open = "", close = ".", tag_pool = c("d", "e", "i", "j"), 
+p_mat2 <- p_mat %>% egg::tag_facet(open = "", close = ".", tag_pool = c("c", "f"), 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
 
+cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 0.9)) 
 
-cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 1.75, 1.75)) 
+ggsave(here::here("ms", "figs", "coef-scatterplots-allspp.pdf"), width = 7, height = 4)
 
-ggsave(here::here("ms", "figs", "coef-scatterplots.pdf"), width = 8, height = 3.5)
