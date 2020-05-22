@@ -439,7 +439,7 @@ plot_chopstick_slopes <- function(slopedat,
                                   add_global = T,
                                   global_col = "gray30",
                                   point_size = 0.75,
-                                  alpha_range = c(0.5, 0.99),
+                                  alpha_range = c(0.4, 0.99),
                                   add_grey_bars = F,
                                   colours = NULL) {
   if (!is.null(imm_slopes)) {

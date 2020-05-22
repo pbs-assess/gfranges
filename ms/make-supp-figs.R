@@ -463,13 +463,13 @@ temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Compl
 do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 p_temp_all_slopes <- plot_chopstick_slopes(temp_slopes,
-  type = "temp", add_global = F, point_size = 1,
+  type = "temp", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
   legend_position = c(.25, .95)
 ) +
   ylab(" ")
 
 p_do_all_slopes <- plot_chopstick_slopes(do_slopes,
-  type = "DO", add_global = F, point_size = 1,
+  type = "DO", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
   legend_position = c(.25, .95)
 ) +
   coord_flip(ylim = c(-3.1, 1.4)) + # coord_flip(ylim =c(-3,1)) +
@@ -479,7 +479,7 @@ cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops,
   # labels = c("a.", "b.", "c.", "d."), label_size = 12,
   labels = c("a.", "", "b.", ""), label_size = 11,
   ncol = 2, rel_widths = c(1, 2.5)) 
-ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 11)
+ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 10)
 # ggsave(here::here("ms", "figs", "supp-trend-chopsticks-fishing.pdf"), width = 14, height = 11)
 
 
@@ -557,7 +557,7 @@ temp_vel_slopes$species[temp_vel_slopes$species == "Rougheye/Blackspotted Rockfi
 do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 p_temp_all_vel_slopes <- plot_chopstick_slopes(temp_vel_slopes,
-  type = "temp", add_global = F, point_size = 1,
+  type = "temp", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
   legend_position = c(.25, .95)
 ) +
   ylab(" ") +
@@ -565,7 +565,7 @@ p_temp_all_vel_slopes <- plot_chopstick_slopes(temp_vel_slopes,
   coord_flip(ylim = c(-14, 7.85))
 
 p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
-  type = "DO", add_global = F, point_size = 1,
+  type = "DO", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
   legend_position = c(.25, .95)
 ) +
   ylab("slopes") +
@@ -574,7 +574,7 @@ p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
 
 
 cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes, p_do_vel_chops, ncol = 2, rel_widths = c(1, 2.5))
-ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height = 11)
+ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height = 10)
 
 
 #########################
