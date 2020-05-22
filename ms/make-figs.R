@@ -682,7 +682,7 @@ temp_high2 <- temp_high %>% egg::tag_facet(open = "", close = ".", tag_pool = c(
 ### splits temp and do into separate panels
 p_depth_t <- ggplot(do_data, aes(depth, temp)) +
   scale_color_viridis_c(option = "C") +
-  geom_point(aes(depth, temp, colour = temp), alpha = 0.05, shape = 20, size = 0.432) + 
+  geom_point(aes(depth, temp, colour = temp), alpha = 0.02, shape = 20, size = 0.432) + 
   coord_cartesian(xlim = c(15, 410), ylim = c(3.4, 14.4), expand =F) + 
   ylab("Mean DO (ml/L)") +
   ylab("Temperature (ºC)") +  #, expand = expand_scale(mult = c(0.05, .2)
@@ -692,11 +692,11 @@ p_depth_t <- ggplot(do_data, aes(depth, temp)) +
     axis.title.x = element_blank())
 
 p_depth_do <- ggplot(do_data, aes(depth, do_est)) +
-  scale_color_viridis_c() +
-  geom_point(aes(depth, do_est, colour = do_est), alpha = 0.05, shape = 20, size = 0.432) +
+  scale_color_viridis_c(trans = sqrt) +
+  geom_point(aes(depth, do_est, colour = do_est), alpha = 0.02, shape = 20, size = 0.432) +
   geom_smooth(colour = "black", size = 0.5) +
   scale_y_continuous(position = "right") +
-  coord_cartesian(xlim = c(15, 410), ylim = c(0, 8.2), expand =F) + 
+  coord_cartesian(xlim = c(15, 410), ylim = c(0, 11.5), expand =F) + #ylim = c(0, 8.2),
   ylab("Mean DO (ml/L)") +
   geom_hline(yintercept = 1.4, colour = "black", linetype = "dashed") +
   xlab("Mean depth") +
@@ -722,7 +722,7 @@ do_low3 <- do_low %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b"),
 
 # ggsave(here::here("ms", "figs", "slope-by-depth-quad-iqr.png"), width = 8, height = 5)
 
-ggsave(here::here("ms", "figs", "slope-by-depth-quad-scaled2.png"), width = 8, height = 5)
+ggsave(here::here("ms", "figs", "slope-by-depth-quad2.png"), width = 8, height = 5)
 
 #### COEFFICIENT SCATTERPLOTS AGAINST LIFE HISTORY ####
 
