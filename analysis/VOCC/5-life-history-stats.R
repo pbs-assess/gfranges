@@ -88,6 +88,7 @@ species <- c(
 # species <- "North Pacific Spiny Dogfish"
 # species <- c("Bocaccio")
 # species <- c("Shortraker Rockfish")
+# species <- c( "Widow Rockfish")
 # spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 
@@ -192,12 +193,115 @@ life_history <- purrr::map_dfr(species, function(x) {
   if(nrow(biomass)<3000) { rerun <- TRUE} else { rerun <- FALSE}
   fish_count <- nrow(fish)
   event_count <- sum(!is.na(unique(fish$fishing_event_id)))
- 
+  
+  
+  if (nrow(positive_sets) > 100) {
+  if(any(names(biomass) == "imm_density")) {
+    
+    
+  depth_mat_dens <- weighted.mean(biomass$depth, biomass$adult_density, na.rm = T)
+  
+  depth_mat_dens_95 <- reldist::wtd.quantile (biomass$depth, 0.95, na.rm = T, weight=biomass$adult_density*1000000000)
+  depth_mat_dens_75 <- reldist::wtd.quantile (biomass$depth, 0.75, na.rm = T, weight=biomass$adult_density*1000000000)
+  depth_mat_dens_50 <- reldist::wtd.quantile (biomass$depth, 0.5, na.rm = T, weight=biomass$adult_density*1000000000)
+  depth_mat_dens_25 <- reldist::wtd.quantile (biomass$depth, 0.25, na.rm = T, weight=biomass$adult_density*1000000000)
+  depth_mat_iqr <- round(depth_mat_dens_75 - depth_mat_dens_25)
+  rm(biomass2)
+  biomass2 <- filter(biomass, adult_density > 0) 
+  max_depth <- max(biomass2$depth)
+  
+  if (depth_mat_dens_25 == max_depth){
+    depth_mat_dens_95 <- NA
+    depth_mat_dens_75 <- NA
+    depth_mat_dens_50 <- NA
+    depth_mat_dens_25 <- NA
+    depth_mat_iqr <- NA
+  }
+  
+  depth_imm_dens <- weighted.mean(biomass$depth, biomass$imm_density, na.rm = T)
+
+  if (x == "Bocaccio") { 
+    # a single massive catch of immatures overwhelmed iqr for bocaccio, so simply downweighting it to merely double the second largest catch
+    biomass$imm_density[biomass$fishing_event_id == 4546483] <- biomass$imm_density[biomass$fishing_event_id == 4546377]*1.2
+    # # alternatively, we could use the actual fish samples
+    # depth_imm_dens_25 <- quantile(large$depth, 0.25, na.rm = TRUE)
+    # depth_imm_dens_75 <- quantile(small$depth, 0.75, na.rm = TRUE)
+  }
+  
+  if (x == "Widow Rockfish") { 
+    # a single massive catch of immatures overwhelmed iqr, so simply downweighting it to merely double the second largest catch
+    biomass$imm_density[biomass$fishing_event_id == 2177561] <- biomass$imm_density[biomass$fishing_event_id == 308673]*1.2
+  }
+  
+  depth_imm_dens_95 <- reldist::wtd.quantile (biomass$depth, 0.975, na.rm = T, weight=biomass$imm_density*1000000000)
+  depth_imm_dens_75 <- reldist::wtd.quantile (biomass$depth, 0.75, na.rm = T, weight=biomass$imm_density*1000000000)
+  depth_imm_dens_50 <- reldist::wtd.quantile (biomass$depth, 0.5, na.rm = T, weight=biomass$imm_density*1000000000)
+  depth_imm_dens_25 <- reldist::wtd.quantile (biomass$depth, 0.25, na.rm = T, weight=biomass$imm_density*1000000000)
+  # depth_imm_dens_10 <- reldist::wtd.quantile (biomass$depth, 0.1, na.rm = T, weight=biomass$imm_density*1000000000)
+  depth_imm_iqr <- round(depth_imm_dens_75 - depth_imm_dens_25)
+  # depth_imm_range_90 <- round(depth_imm_dens_95 - depth_imm_dens_05)
+  # browser()
+  
+  rm(biomass3)
+  biomass3 <- filter(biomass, imm_density > 0) 
+  max_depth_imm <- max(biomass3$depth)
+  
+  if (depth_imm_dens_25 == max_depth_imm){
+    depth_imm_dens_95 <- NA
+    depth_imm_dens_75 <- NA
+    depth_imm_dens_50 <- NA
+    depth_imm_dens_25 <- NA
+    depth_imm_iqr <- NA
+  }
+  
+  } else {
+    depth_mat_dens <- weighted.mean(biomass$depth, biomass$density, na.rm = T)
+    depth_mat_dens_95 <- reldist::wtd.quantile (biomass$depth, 0.95, na.rm = T, weight=biomass$density*1000000000)
+    depth_mat_dens_75 <- reldist::wtd.quantile (biomass$depth, 0.75, na.rm = T, weight=biomass$density*1000000000)
+    depth_mat_dens_50 <- reldist::wtd.quantile (biomass$depth, 0.5, na.rm = T, weight=biomass$density*1000000000)
+    depth_mat_dens_25 <- reldist::wtd.quantile (biomass$depth, 0.25, na.rm = T, weight=biomass$density*1000000000)
+    depth_mat_iqr <- round(depth_mat_dens_75 - depth_mat_dens_25)
+    
+    rm(biomass4)
+    biomass4 <- filter(biomass, density > 0) 
+    max_depth <- max(biomass4$depth)
+    
+    if (depth_mat_dens_25 == max_depth){
+      depth_mat_dens_95 <- NA
+      depth_mat_dens_75 <- NA
+      depth_mat_dens_50 <- NA
+      depth_mat_dens_25 <- NA
+      depth_mat_iqr <- NA
+    }
+    depth_imm_dens <- small_depth
+    depth_imm_dens_95 <- NA
+    depth_imm_dens_75 <- NA
+    depth_imm_dens_50 <- NA
+    depth_imm_dens_25 <- NA
+    depth_imm_iqr <- NA
+  }
+  } else {
+    # if caught on less than 100 trawls revert to means from largest and smallest fish
+    depth_mat_dens <- large_depth # quantile(fish$length, 0.90, na.rm = TRUE)
+    depth_imm_dens <- small_depth # quantile(fish$length, 0.10, na.rm = TRUE)
+    depth_mat_dens_95 <- NA
+    depth_mat_dens_75 <- NA
+    depth_mat_dens_50 <- NA
+    depth_mat_dens_25 <- NA
+    depth_mat_iqr <- NA
+    depth_imm_dens_95 <- NA
+    depth_imm_dens_75 <- NA
+    depth_imm_dens_50 <- NA
+    depth_imm_dens_25 <- NA
+    depth_imm_iqr <- NA
+  }
+  # browser()
+  
   ### calculate proportion of positive events without maturity ratio estimate
   prop_mean_ratio <- NA
   mean_ratio_mature <- NA
   rm(mean_ratios)
-  try({
+  if(any(names(biomass) == "imm_density")) {
     mean_ratios <- filter(biomass, present == 1) %>% filter(is.na(sample_n) ) 
     aprox_density <- sum(mean_ratios$density)
     prop_mean_ratio <- aprox_density/sum(biomass$density)
@@ -207,13 +311,26 @@ life_history <- purrr::map_dfr(species, function(x) {
     # count_prop_mean_ratio <- count_mean_ratios/pos_sets
     # true_ratios <- filter(biomass, present == 1) %>% filter(!is.na(sample_n))
     mean_ratio_mature <- mean(biomass$mass_ratio_mature, na.rm = T)
-  })
+  }
   
   list(
     species = x, group = group[1],
-    depth = round(large_depth),
-    depth_imm = round(small_depth),
-    depth_diff = round(small_depth - large_depth),
+    depth = round(depth_mat_dens),
+    depth_imm = round(depth_imm_dens),
+    depth_diff = round(depth_imm_dens - depth_mat_dens),
+    depth_mat_iqr = depth_mat_iqr,
+    depth_imm_iqr = depth_imm_iqr,
+    depth_fish = round(large_depth),
+    depth_imm_fish = round(small_depth),
+    depth_diff_fish = round(small_depth - large_depth),
+    depth_mat_dens_95 = round(depth_mat_dens_95),
+    depth_mat_dens_75 = round(depth_mat_dens_75),
+    depth_mat_dens_50 = round(depth_mat_dens_50),
+    depth_mat_dens_25 = round(depth_mat_dens_25),
+    depth_imm_dens_95 = round(depth_imm_dens_95),
+    depth_imm_dens_75 = round(depth_imm_dens_75),
+    depth_imm_dens_50 = round(depth_imm_dens_50),
+    depth_imm_dens_25 = round(depth_imm_dens_25),
     age_count = age_count, 
     age_count_imm = age_count_imm,
     age_mean = round(mat_age),
@@ -270,4 +387,4 @@ life_history <- inner_join(life_history, taxonomic_info)
 
 life_history$parent_taxonomic_unit[life_history$parent_taxonomic_unit=="bathyraja"] <- "rajidae(skates)"
 
-saveRDS(life_history, file = "data/life-history-stats3.rds")
+saveRDS(life_history, file = "data/life-history-stats4.rds")
