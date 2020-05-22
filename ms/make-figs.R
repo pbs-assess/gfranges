@@ -593,25 +593,27 @@ temp_slopes <- mutate(temp_slopes, species_lab = if_else(slope_est < -5, species
 do_slopes$species_lab <- gsub("Rockfish", "", do_slopes$species_lab)
 temp_slopes$species_lab <- gsub("Rockfish", "", temp_slopes$species_lab)
 
-# build plots
-depth <- ggplot(do_data, aes(depth, do_est)) +
-  geom_point(aes(depth, temp*(2/3)), alpha = 0.02, shape = 20, colour = "#3d95cc", size = 0.432) +
-  geom_point(aes(depth, do_est), alpha = 0.02, shape = 20, colour = "darkorchid4", size = 0.432) +
-  geom_smooth(colour = "darkorchid4", size = 0.5) + 
-  coord_cartesian(ylim = c(0, 8.2), xlim = c(15, 410), expand =F) + 
-  ylab("Mean DO (ml/L)") +
-  scale_y_continuous(sec.axis = sec_axis( ~ (.*3/2), name = "Temperature (ºC)")) +  #, expand = expand_scale(mult = c(0.05, .2)
-  geom_smooth(aes(depth, temp*(2/3)), inherit.aes = F, colour = "#3d95cc", size = 0.5) + 
-  geom_hline(yintercept = 1.4, colour = "black", linetype = "dashed") +
-  xlab("Mean depth") +
-  gfplot::theme_pbs() + theme(
-    plot.margin = margin(0, 0.3, 0.2, 0.2, "cm"),
-    axis.text.y.left = element_text(color = "darkorchid4"),
-    axis.text.y.right = element_text(color = "#3d95cc"),
-    axis.title.y.left = element_text(color = "darkorchid4", vjust = 0.2),
-    axis.title.y.right = element_text(color = "#3d95cc") #, vjust = -0.2
-    # axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
-  )
+### build plots
+
+# ### combined temp-DO panel 
+# depth <- ggplot(do_data, aes(depth, do_est)) +
+#   geom_point(aes(depth, temp*(2/3)), alpha = 0.02, shape = 20, colour = "#3d95cc", size = 0.432) +
+#   geom_point(aes(depth, do_est), alpha = 0.02, shape = 20, colour = "darkorchid4", size = 0.432) +
+#   geom_smooth(colour = "darkorchid4", size = 0.5) + 
+#   coord_cartesian(ylim = c(0, 8.2), xlim = c(15, 410), expand =F) + 
+#   ylab("Mean DO (ml/L)") +
+#   scale_y_continuous(sec.axis = sec_axis( ~ (.*3/2), name = "Temperature (ºC)")) +  #, expand = expand_scale(mult = c(0.05, .2)
+#   geom_smooth(aes(depth, temp*(2/3)), inherit.aes = F, colour = "#3d95cc", size = 0.5) + 
+#   geom_hline(yintercept = 1.4, colour = "black", linetype = "dashed") +
+#   xlab("Mean depth") +
+#   gfplot::theme_pbs() + theme(
+#     plot.margin = margin(0, 0.3, 0.2, 0.2, "cm"),
+#     axis.text.y.left = element_text(color = "darkorchid4"),
+#     axis.text.y.right = element_text(color = "#3d95cc"),
+#     axis.title.y.left = element_text(color = "darkorchid4", vjust = 0.2),
+#     axis.title.y.right = element_text(color = "#3d95cc") #, vjust = -0.2
+#     # axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
+#   )
 
 temp_high <- slope_scatterplot(
   filter(temp_slopes, chopstick == "high"), "depth",
@@ -628,15 +630,16 @@ temp_high <- slope_scatterplot(
     nudge_y = 0.75,
     nudge_x = 35,
     na.rm = T, min.segment.length = 1) +
-  # scale_y_continuous(trans = fourth_root_power) +
-  # geom_smooth(method= "lm", size = 0.5) +
   ylab("Slope at highest temperature") +
   scale_y_continuous(breaks = c(3, 0, -3, -6, -9)) +
   coord_cartesian(ylim = c(-11, 4.2), xlim = c(15, 410)) + 
   theme(
     plot.margin = margin(0, 0.1, 0, 0.2, "cm"),
     legend.position = c(.85, .2), 
-    axis.title.y.left = element_text(vjust = 0.2),
+    # axis.text.y = element_text(color = "#FDAE61"), # yellow
+    # axis.text.y = element_text(color = "#cd0000"), # dark red
+    axis.text.y = element_text(color = "#ff4d00"), # redish orange
+    axis.title.y = element_text(vjust = 0.2),
     axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank(),
     legend.title = element_blank())
 
@@ -660,20 +663,66 @@ do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth",
     axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
   )
 
-# add plot tags
-temp_high2 <- temp_high %>% egg::tag_facet(open = "", close = ".", tag_pool = c("a"), 
+# # add plot tags for tri panel version
+temp_high2 <- temp_high %>% egg::tag_facet(open = "", close = ".", tag_pool = c("a"),
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
-do_low2 <- do_low %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b"), 
+# do_low2 <- do_low %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b"), 
+#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+# depth2 <- depth %>% egg::tag_facet(open = "", close = ".", tag_pool = c("c"), 
+#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+# 
+# # combine and save
+# temp_high2 + do_low2 + depth2 + plot_layout(ncol = 1, heights = c(1, 1, 1)) 
+# # + plot_annotation(tag_levels = "a", tag_suffix = ". ")
+# # ggsave(here::here("ms", "figs", "slope-by-depth.png"), width = 4.5, height = 7)
+# ggsave(here::here("ms", "figs", "slope-by-depth4.png"), width = 5.5, height = 8)
+
+
+#### QUAD VERSION ####
+### splits temp and do into separate panels
+p_depth_t <- ggplot(do_data, aes(depth, temp)) +
+  scale_color_viridis_c(option = "C") +
+  geom_point(aes(depth, temp, colour = temp), alpha = 0.05, shape = 20, size = 0.432) + 
+  coord_cartesian(xlim = c(15, 410), ylim = c(3.4, 14.4), expand =F) + 
+  ylab("Mean DO (ml/L)") +
+  ylab("Temperature (ºC)") +  #, expand = expand_scale(mult = c(0.05, .2)
+  geom_smooth(aes(depth, temp), inherit.aes = F, colour = "black", size = 0.5) + 
+  xlab("Mean depth") +
+  gfplot::theme_pbs() + theme(plot.margin = margin(0, 0.1, 0.1, 0.2, "cm"), legend.position = "none",
+    axis.title.x = element_blank())
+
+p_depth_do <- ggplot(do_data, aes(depth, do_est)) +
+  scale_color_viridis_c() +
+  geom_point(aes(depth, do_est, colour = do_est), alpha = 0.05, shape = 20, size = 0.432) +
+  geom_smooth(colour = "black", size = 0.5) +
+  scale_y_continuous(position = "right") +
+  coord_cartesian(xlim = c(15, 410), ylim = c(0, 8.2), expand =F) + 
+  ylab("Mean DO (ml/L)") +
+  geom_hline(yintercept = 1.4, colour = "black", linetype = "dashed") +
+  xlab("Mean depth") +
+  gfplot::theme_pbs() + theme(plot.margin = margin(0, 0.3, 0.1, 0, "cm"), legend.position = "none",
+    axis.title.x = element_blank()) 
+
+depth_t <- p_depth_t %>% egg::tag_facet(open = "", close = ".", tag_pool = c("c"), 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
-depth2 <- depth %>% egg::tag_facet(open = "", close = ".", tag_pool = c("c"), 
+depth_do <- p_depth_do %>% egg::tag_facet(open = "", close = ".", tag_pool = c("d"), 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
 
-# combine and save
-temp_high2 + do_low2 + depth2 + plot_layout(ncol = 1, heights = c(1, 1, 1)) 
-# + plot_annotation(tag_levels = "a", tag_suffix = ". ")
-# ggsave(here::here("ms", "figs", "slope-by-depth.png"), width = 4.5, height = 7)
-ggsave(here::here("ms", "figs", "slope-by-depth4.png"), width = 5.5, height = 8)
+do_low <- do_low + scale_y_continuous(position = "right") + theme(
+  # axis.title.y = element_text(colour = "#FDAE61", vjust = 0.2), #orange
+  axis.text.y = element_text(colour = "#5E4FA2"),
+  # axis.title.y = element_text(colour = "#5E4FA2", vjust = 0.2), # purple
+  axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank(),
+  plot.margin = margin(0, 0.1, 0, 0, "cm"))
 
+do_low3 <- do_low %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b"), 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+
+(temp_high2 + do_low3 + depth_t + depth_do + plot_layout(ncol = 2, heights = c(1, 0.5))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 2, heights = c(1, 0.02))
+
+# ggsave(here::here("ms", "figs", "slope-by-depth-quad-iqr.png"), width = 8, height = 5)
+
+ggsave(here::here("ms", "figs", "slope-by-depth-quad-scaled2.png"), width = 8, height = 5)
 
 #### COEFFICIENT SCATTERPLOTS AGAINST LIFE HISTORY ####
 
