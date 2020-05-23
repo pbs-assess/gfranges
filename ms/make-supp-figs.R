@@ -23,19 +23,7 @@ model_grad <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-23-trend-w-grad
 model_do <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-27-trend-do-only-1-500-DO.rds")
 model_age <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-22-trend-w-age-1-400-temp.rds")
 
-stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats4.rds"))
-stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
-stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
-stats$group[stats$group == "SHARK"] <- "DOGFISH"
-stats$group[stats$group == "HAKE"] <- "COD"
-imm <- mutate(stats, age = "immature") %>%
-  mutate(depth = depth_imm, age_mean = age_imm, depth25 = depth_imm_dens_25, depth75 = depth_imm_dens_75, depth_iqr = depth_imm_iqr) %>%
-  select(-depth_imm, -age_imm)
-mat <- mutate(stats, age = "mature") %>%
-  select(-depth_imm, -age_imm) %>%
-  mutate(depth25 = depth_mat_dens_25, depth75 = depth_mat_dens_75, depth_iqr = depth_mat_iqr)
-stats <- rbind(mat, imm)
-stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
+stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
 
 # model2 <- add_colours(model$coefs, species_data = stats)
 # model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"

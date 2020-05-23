@@ -24,21 +24,7 @@ model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-27-vel-both-1-200.
 # model_grad <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-23-trend-w-grad-1-500-temp.rds")
 # # model_do <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-22-trend-do-only-1-500.rds")
 
-stats <- readRDS(paste0("analysis/VOCC/data/life-history-stats4.rds"))
-stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
-stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
-stats$group[stats$group == "SHARK"] <- "DOGFISH"
-stats$group[stats$group == "HAKE"] <- "COD"
-imm <- mutate(stats, age = "immature") %>%
-  mutate(depth = depth_imm, age_mean = age_imm, depth25 = depth_imm_dens_25, depth75 = depth_imm_dens_75, depth_iqr = depth_imm_iqr) %>%
-  select(-depth_imm, -age_imm)
-mat <- mutate(stats, age = "mature") %>%
-  select(-depth_imm, -age_imm) %>%
-  mutate(depth25 = depth_mat_dens_25, depth75 = depth_mat_dens_75, depth_iqr = depth_mat_iqr)
-stats <- rbind(mat, imm)
-stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
-
-
+stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
 alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allvars.rds"))
 
 #### SAVE TEX VALUES FOR CLIMATE IQRs ####
@@ -967,7 +953,8 @@ model2 <- model2 %>% mutate(group = forcats::fct_reorder(group, Estimate, .desc 
 model2 <- model2 %>% mutate(rockfish = forcats::fct_reorder(rockfish, Estimate, .desc = F))
 trendeffects <- model2 %>%
   filter(coefficient %in% c("temp_trend_scaled", "DO_trend_scaled")) %>%
-  transform(coefficient = factor(coefficient,
+  # transform(coefficient = factor(coefficient,
+  mutate(coefficient = factor(coefficient,
     levels = c("temp_trend_scaled", "DO_trend_scaled"),
     labels = c("Temperature", "DO")
   ))
@@ -1086,6 +1073,23 @@ trendeffects <- mutate(trendeffects, growth_rate = length_50_mat_f / age_mat, gr
 #   facet_grid(coefficient ~ rockfish, scales = "free")
 
 
+## left side tags
+# p_depth2 <- p_depth %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("a","f"))
+# p_age2 <- p_age %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("b", "c", "g", "h"))
+# p_mat2 <- p_mat %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("d", "e", "i", "j"))
+
+# ### with rockfish split out for age
+# ## right side tags
+# p_depth2 <- p_depth %>% egg::tag_facet(open = "", close = ".", tag_pool = c("a","f"),
+#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+# p_age2 <- p_age %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b", "c", "g", "h"),
+#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+# p_mat2 <- p_mat %>% egg::tag_facet(open = "", close = ".", tag_pool = c("d", "e", "i", "j"),
+#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
+# cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 1.75, 1.75))
+
+
+
 p_mat <- coef_scatterplot(trendeffects,
   coef = c("Temperature", "DO"),
   x = "growth_rate",
@@ -1114,20 +1118,9 @@ p_mat <- coef_scatterplot(trendeffects,
   facet_grid(rows = vars(coefficient), cols = vars(allspp), scales = "free_y")
 
 
-## left side tags
-# p_depth2 <- p_depth %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("a","f"))
-# p_age2 <- p_age %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("b", "c", "g", "h"))
-# p_mat2 <- p_mat %>% egg::tag_facet(open = "", close = ".", vjust = 1.7, hjust = -1, tag_pool = c("d", "e", "i", "j"))
 
-# ### with rockfish split out for age
-# ## right side tags
-# p_depth2 <- p_depth %>% egg::tag_facet(open = "", close = ".", tag_pool = c("a","f"),
-#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
-# p_age2 <- p_age %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b", "c", "g", "h"),
-#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
-# p_mat2 <- p_mat %>% egg::tag_facet(open = "", close = ".", tag_pool = c("d", "e", "i", "j"),
-#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
-# cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 1.75, 1.75))
+
+
 
 p_depth2 <- p_depth %>% egg::tag_facet(
   open = "", close = ".", tag_pool = c("a", "d"),
