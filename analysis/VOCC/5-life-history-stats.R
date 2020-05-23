@@ -388,3 +388,26 @@ life_history <- inner_join(life_history, taxonomic_info)
 life_history$parent_taxonomic_unit[life_history$parent_taxonomic_unit=="bathyraja"] <- "rajidae(skates)"
 
 saveRDS(life_history, file = "data/life-history-stats4.rds")
+
+# split adults and immatures into separate rows and add CR's behavioural classifications
+stats <- readRDS(paste0("data/life-history-stats4.rds"))
+behav <- read_csv("data/VOCCSpeciesList.csv") %>% rename(species = Species, age = Age)
+behav$species[behav$species == "Rougheye/Blackspotted"] <- "Rougheye/Blackspotted Rockfish Complex" 
+behav$BenthoPelagicPelagicDemersal[behav$BenthoPelagicPelagicDemersal == "BenthoPelagic"] <- "Benthopelagic"
+
+stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
+stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
+stats$group[stats$group == "SHARK"] <- "DOGFISH"
+stats$group[stats$group == "HAKE"] <- "COD"
+imm <- mutate(stats, age = "immature") %>%
+  mutate(depth = depth_imm, age_mean = age_imm, depth25 = depth_imm_dens_25, depth75 = depth_imm_dens_75, depth_iqr = depth_imm_iqr) %>%
+  select(-depth_imm, -age_imm)
+mat <- mutate(stats, age = "mature") %>%
+  select(-depth_imm, -age_imm) %>%
+  mutate(depth25 = depth_mat_dens_25, depth75 = depth_mat_dens_75, depth_iqr = depth_mat_iqr)
+stats <- rbind(mat, imm)
+stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
+
+stats <- left_join(behav, stats)
+
+saveRDS(stats, file = "data/life-history-behav.rds")
