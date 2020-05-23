@@ -98,7 +98,7 @@ plot_coefs <- function(coloured_coefs,
 #'
 #' @export
 coef_scatterplot <- function(model_coefs, x, 
-  coef = c("temp_trend_scaled","DO_trend_scaled") , 
+  coef = c("temp_trend_scaled", "DO_trend_scaled") , 
   group = "age",
   point_size = 0.75, 
   point_alpha = 0.65,
@@ -113,8 +113,8 @@ coef_scatterplot <- function(model_coefs, x,
   }
     p <- p + geom_point(size = point_size, alpha = point_alpha) 
     if (pointrange) {
-      p <- p + geom_pointrange(aes(ymin = (Estimate - Std..Error * 1.96),
-        ymax = (Estimate + Std..Error * 1.96)), alpha = point_alpha, fatten = 1)
+      p <- p + geom_pointrange(aes(ymin = (Estimate - `Std. Error`* 1.96),
+        ymax = (Estimate + `Std. Error` * 1.96)), alpha = point_alpha, fatten = 1)
     }
     p <- p + scale_color_viridis_d(direction = 1) +
       ylab(coef) + gfplot:::theme_pbs() 
