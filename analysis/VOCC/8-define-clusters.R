@@ -10,11 +10,10 @@ source("vocc-regression-functions.R")
 # model <- readRDS("data/trend_by_trend_only_01-17-multi-spp-biotic-vocc-mature.rds")
 # model <- readRDS("data/trend_by_vel_01-16-multi-spp-biotic-vocc-mature.rds")
 
-model <- readRDS(("data/trend_by_all_temp_w_fishing_01-23-all-temp-mature.rds"))
+# model <- readRDS(("data/trend_by_all_temp_w_fishing_01-23-all-temp-mature.rds"))
 model <- readRDS("data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
 
-
-stats <- readRDS(paste0("data/life-history-stats3.rds"))
+stats <- readRDS(paste0("data/life-history-behav.rds"))
 
 model2 <- add_colours(model$coefs, species_data = stats)
 # ### IF IMMATURE CAN RUN THIS TO MAKE COLOURS MATCH
@@ -27,8 +26,9 @@ manipulate::manipulate({
 )
 
 
-coefs <- model2 %>% select(species, age, group, depth, age_max, 
-    length_99th, weight_99th, coefficient, Estimate) %>% 
+coefs <- model2 %>% select(species, age, group, 
+  Diet, Schooling, BenthoPelagicPelagicDemersal, NorthMiddleSouth,
+  depth, age_max, length_99th, weight_99th, coefficient, Estimate) %>% 
   pivot_wider(names_from = coefficient, values_from = Estimate) %>% 
   mutate(status = if_else(`(Intercept)`< 0, "negative", "stable")) 
 
@@ -36,7 +36,7 @@ coefs <- model2 %>% select(species, age, group, depth, age_max,
 ### subset options ###
 # coefs <- filter(coefs, status != "negative")
 # coefs <- filter(coefs, status == "negative")
-coefs <- filter(coefs_all, age == "mature") %>% ungroup()
+# coefs <- filter(coefs, age == "mature") %>% ungroup()
 
 # all_coefs <- select(coefs,
 #   `(Intercept)`, 
@@ -46,9 +46,9 @@ coefs <- filter(coefs_all, age == "mature") %>% ungroup()
 #   #`mean_DO_scaled:mean_temp_scaled`, 
 #   `mean_temp_scaled:temp_trend_scaled`) %>% scale()
 
-
-colnames(all_coefs) <- gsub("_scaled", "", colnames(all_coefs))
-colnames(all_coefs) <- gsub("mean_", "", colnames(all_coefs))
+# 
+# colnames(all_coefs) <- gsub("_scaled", "", colnames(all_coefs))
+# colnames(all_coefs) <- gsub("mean_", "", colnames(all_coefs))
 
 # all_coefs <- select(coefs,
 #   `(Intercept)`, 
@@ -62,11 +62,24 @@ colnames(all_coefs) <- gsub("mean_", "", colnames(all_coefs))
 
 
 #### USE SLOPES INSTEAD OF COEFICIENTS ####
-status <- coefs %>% select(species, age, status, `(Intercept)`)
-status$species[status$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+status <- coefs %>% select(species, age, status, `(Intercept)`, 
+  Diet, Schooling, BenthoPelagicPelagicDemersal, NorthMiddleSouth)
+# status$species[status$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
+temp_slopes <- chopstick_slopes(model,
+  x_variable = "temp_trend_scaled",
+  interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
+)
+do_slopes <- chopstick_slopes(model,
+  x_variable = "DO_trend_scaled",
+  interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
+)
+temp_slopes <- left_join(temp_slopes, stats)
+do_slopes <- left_join(do_slopes, stats)
 
-coef_slope_t <- temp_slopes %>% select(species, age, type, chopstick, slope, depth, age_mean, length_50_mat_f) %>% 
+coef_slope_t <- temp_slopes %>% select(species, age, type, chopstick, slope, 
+  # Diet, Schooling, BenthoPelagicPelagicDemersal, NorthMiddleSouth, 
+  depth, age_mean, length_50_mat_f) %>% 
   pivot_wider(names_from = c(type, chopstick), values_from = slope) 
 coef_slope_d <- do_slopes %>% select(species, age, type, chopstick, slope) %>% 
   pivot_wider(names_from = c(type, chopstick), values_from = slope) 
@@ -76,7 +89,8 @@ coefs_all <- left_join(coefs, status) %>% rename (intercept = `(Intercept)`)
 
 # coefs <- filter(coefs, status != "negative")
 # coefs <- filter(coefs, status == "negative")
-coefs <- filter(coefs_all, age == "mature") %>% ungroup()
+coefs <- filter(coefs_all, age == "mature") %>% ungroup() %>% mutate(species_age = paste(species, age))
+coefs <- coefs_all %>% ungroup() %>% mutate(species_age = paste(species, age))
 
 coefs <- coefs[ order(row.names(coefs)), ]
 names(coefs)
@@ -87,27 +101,76 @@ coefs$temp_low <- collapse_outliers(coefs$temp_high, c(0.025, 0.975))
 coefs$DO_low <- collapse_outliers(coefs$DO_high, c(0.025, 0.975))
 
 hist(coefs$temp_high)
-hist(coefs$temp_low)
-hist(coefs$DO_low)
 hist(coefs$DO_high)
 
-all_coefs <- coefs  %>% select( -species, -age, -depth, -age_mean, -length_50_mat_f, -status) %>% scale()
+hist(coefs$temp_low)
+hist(coefs$DO_low)
 
 
+coefs_scaled <- coefs  %>% select( -species_age, -species, 
+  -age, -Diet, -Schooling, -BenthoPelagicPelagicDemersal, -NorthMiddleSouth, 
+  -depth, -age_mean, -length_50_mat_f, -status) %>% scale()
+
+
+batch_cluster_plots <- function(x,
+  data = coefs_scaled,
+  text_label = coefs$species_age
+){
+  
+  p1 <- gfranges::plot_clusters(
+    x, data = data,  text_label = text_label,
+    colour_vector = (coefs$depth), colour_label = "Depth") + #theme(text = element_text(size=5)) +
+    # scale_color_viridis_c(direction = -1, trans = fourth_root_power) 
+    scale_color_viridis_c(direction = -1) 
+  
+  p2 <- gfranges::plot_clusters(x, data = data,  text_label = text_label,
+    colour_vector = (coefs$age_mean), colour_label = "age") + 
+    scale_color_viridis_c(direction = -1, trans = fourth_root_power) 
+  # scale_color_viridis_c(direction = -1) 
+  
+  p3 <- gfranges::plot_clusters(x, data = data,  text_label = text_label,
+    colour_vector = as.factor(coefs$Diet),
+    colour_label = "Grouping") + scale_colour_brewer(palette = 11)
+  
+  p4 <- gfranges::plot_clusters(x, data = data,  text_label = text_label,
+    colour_vector = as.factor(coefs$Schooling),
+    colour_label = "Grouping") + scale_colour_brewer(palette = 11)
+  
+  p5 <- gfranges::plot_clusters(
+    x, data = data,  text_label = text_label,
+    colour_vector = as.factor(coefs$BenthoPelagicPelagicDemersal), 
+    colour_label = "Grouping") + scale_colour_brewer(palette = 11)
+  
+  p6 <- gfranges::plot_clusters(x, data = data,  text_label = text_label,
+    colour_vector = as.factor(coefs$NorthMiddleSouth), 
+    colour_label = "Grouping") + scale_colour_brewer(palette = 11)
+  
+  p7 <-gfranges::plot_clusters(x, data = data,  text_label = text_label,
+    colour_vector = (coefs$intercept), colour_label = "intercept") + 
+    scale_color_viridis_c(direction = -1) 
+  
+  p8 <-gfranges::plot_clusters(x, data = data,  text_label = text_label,
+    colour_vector = (coefs$temp_high), colour_label = "temp_high") + 
+    scale_color_viridis_c(option = "C") 
+  
+  p9 <-gfranges::plot_clusters(x, data = data,  text_label = text_label,
+    colour_vector = (coefs$DO_low), colour_label = "DO_low") + 
+    scale_color_viridis_c(direction = 1) 
+  
+  p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9 + patchwork::plot_layout(ncol = 3)
+  
+}
 
 #### PLOTTING ####
 
-all_coefs <- all_coefs[, c(2:3, 5)]
-all_coefs <- all_coefs[, c(2:3)]
-all_coefs <- all_coefs[, c(1:4)]
+# subset variables to include
+all_coefs <- all_coefs[, c(1:4)] # only slopes
+all_coefs <- all_coefs[, c(2:3)] # only high temp and low DO
+# all_coefs <- all_coefs[, c(2:3, 5)] # high temp, low DO, and intercept
 
 
 factoextra::fviz_nbclust(all_coefs, kmeans, method = "silhouette",
   k.max = 10)
-
-factoextra::fviz_nbclust(all_coefs, cluster::pam, method = "silhouette",
-  k.max = 10)
-
 
 m_kmeans <- kmeans(all_coefs, 2)
 m_kmeans <- kmeans(all_coefs, 3)
@@ -115,59 +178,29 @@ m_kmeans <- kmeans(all_coefs, 4)
 m_kmeans <- kmeans(all_coefs, 5)
 m_kmeans <- kmeans(all_coefs, 6)
 m_kmeans <- kmeans(all_coefs, 7)
+m_kmeans <- kmeans(all_coefs, 8)
 
-gfranges::plot_clusters(
-  m_kmeans,
-  data = all_coefs,  text_label = coefs$species,
-  colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = fourth_root_power) 
-# + 
-#   scale_y_continuous(trans = fourth_root_power) + scale_x_continuous(trans = fourth_root_power)
-
-gfranges::plot_clusters(
-  m_kmeans,
-  data = all_coefs,  text_label = coefs$species,
-  # colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = log10) 
-  colour_vector = (coefs$intercept), colour_label = "intercept") + scale_color_viridis_c(direction = -1) 
-
-gfranges::plot_clusters(
-  m_kmeans,
-  data = all_coefs,  text_label = coefs$species,
-  # colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = log10) 
-  colour_vector = (coefs$temp_high), colour_label = "temp_high") + scale_color_viridis_c(direction = -1) 
-
-gfranges::plot_clusters(
-  m_kmeans,
-  data = all_coefs,  text_label = coefs$species,
-  # colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = log10) 
-  colour_vector = (coefs$DO_low), colour_label = "DO_low") + scale_color_viridis_c(direction = -1) 
+batch_cluster_plots(m_kmeans)
 
 
-
+factoextra::fviz_nbclust(all_coefs, cluster::pam, method = "silhouette",
+  k.max = 10)
 
 m_pam <- cluster::pam(all_coefs, k = 3)
 m_pam <- cluster::pam(all_coefs, k = 4)
 m_pam <- cluster::pam(all_coefs, k = 5)
 m_pam <- cluster::pam(all_coefs, k = 6)
-gfranges::plot_clusters(
-  m_pam,
-  data = all_coefs,
-  text_label = coefs$species, #shape_by_group = T,
-  colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = fourth_root_power)
-  # colour_vector = (coefs$intercept), colour_label = "intercept") + scale_color_viridis_c(direction = -1) 
+m_pam <- cluster::pam(all_coefs, k = 8)
+m_pam <- cluster::pam(all_coefs, k = 9)
+
+batch_cluster_plots(m_pam)
 
 m_pam_manhattan <- cluster::pam(all_coefs, k = 3, metric = "manhattan")
 m_pam_manhattan <- cluster::pam(all_coefs, k = 4, metric = "manhattan")
 m_pam_manhattan <- cluster::pam(all_coefs, k = 5, metric = "manhattan")
 m_pam_manhattan <- cluster::pam(all_coefs, k = 8, metric = "manhattan")
 
-gfranges::plot_clusters(
-  m_pam_manhattan,
-  data = all_coefs,
-  text_label = coefs$species, #shape_by_group = T,
-  colour_vector = (coefs$depth), colour_label = "Depth") + scale_color_viridis_c(direction = -1, trans = fourth_root_power)
-# colour_vector = (coefs$intercept), colour_label = "intercept") + scale_color_viridis_c(direction = -1) 
-
-
+batch_cluster_plots(m_pam_manhattan)
 
 #### TEMP ONLY #### 
 # # temp_coefs <- select(coefs, `(Intercept)`, 
@@ -246,12 +279,11 @@ gfranges::plot_clusters(
 library(smacof)
 library(vegan)
 
-rownames(temp_coefs) <- gsub(" Rockfish", "", coefs$species)
-rownames(all_coefs) <- gsub(" Rockfish", "", coefs$species)
+# rownames(temp_coefs) <- gsub(" Rockfish", "", coefs$species)
+rownames(all_coefs) <- gsub(" Rockfish", "", coefs$species_age)
 
 
 dist <- vegdist(all_coefs,  method = "euclidean")
-temp_dist <- vegdist(temp_coefs,  method = "euclidean")
 
 # automatically performs a NMDS for 1-10 dimensions and plots the nr of dimensions vs the stress
 NMDS.scree <- function(x) { #where x is the name of the data frame variable
@@ -263,14 +295,11 @@ NMDS.scree <- function(x) { #where x is the name of the data frame variable
 
 # Use the function that we just defined to choose the optimal nr of dimensions
 NMDS.scree(dist)
-NMDS.scree(temp_dist)
 
 set.seed(54)
 NMDS1 <- metaMDS(dist, k = 2, trymax = 100, trace = F )
 NMDS1
 
-NMDS2 <- metaMDS(temp_dist, k = 2, trymax = 100, trace = F )
-NMDS2
 #stressplot(NMDS1)
 plot(NMDS1, type = "t")
 ## Fit environmental variables
@@ -278,6 +307,11 @@ ef <- envfit(NMDS1, all_coefs)
 ef
 plot(ef, p.max = 0.25)
 
+
+temp_dist <- vegdist(temp_coefs,  method = "euclidean")
+NMDS.scree(temp_dist)
+NMDS2 <- metaMDS(temp_dist, k = 2, trymax = 100, trace = F )
+NMDS2
 plot(NMDS2, type = "t")
 ## Fit environmental variables
 ef <- envfit(NMDS2, temp_coefs)

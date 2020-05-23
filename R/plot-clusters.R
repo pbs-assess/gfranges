@@ -85,10 +85,11 @@ plot_clusters <- function(model, data = NULL,
     geom_polygon(aes_string(x = "x", y = "y", group = "group"),
       fill = NA, colour = "grey50"
     ) +
-    ggplot2::theme_minimal() +
+    ggplot2::theme_minimal() + 
     ggrepel::geom_text_repel(
       data = label_data,
-      aes(x, y, label = text_label)
+      aes(x, y, label = text_label),
+      size = 2
     ) 
   
   if(shape_by_group) {
@@ -104,5 +105,6 @@ plot_clusters <- function(model, data = NULL,
     labs(x = g$labels$x, y = g$labels$y, colour = colour_label) +
     ggplot2::scale_color_viridis_d()
   }
+  
   gg
 }
