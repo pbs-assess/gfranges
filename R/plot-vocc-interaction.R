@@ -175,19 +175,34 @@ plot_fuzzy_chopsticks <- function(model,
         ))
     }
   }
-
+  
   if (is.null(colours)) {
     if (type == "DO" | type == "do") {
-      colours <- c("#5E4FA2", "#FDAE61")
+
+      # # green to blue option
+      # colours = c("#3d95cc", "yellowgreen")
+      
+      # # cyan to gold option,
+      colours = c("goldenrod1", "darkcyan") #"gold"
+      
+      # # blue to yellow option
+      # colours <- c("#FDAE61", "#3d95cc")
+      
+      # # yellow to purple option
+      # colours <- c("#5E4FA2", "#FDAE61")
     } else {
       if (type == "mean_temp") {
-        colours <- c("#5E4FA2", "#FDAE61") #
+        colours <- c("#5E4FA2", "#FDAE61")
       } else {
-        colours <- c("#D53E4F", "#3d95cc") #"#36648b") #  ,"#3288BD") #"#FF420A"
+        # purple to red option 
+        # colours <- c("#cd0000", "#5E4FA2")
+        # # blue and red option
+        colours <- c("#D53E4F", "royalblue4")
+        # colours <- c("#D53E4F", "#3d95cc") #"#36648b") #  ,"#3288BD") #"#FF420A"  # colours <- c("#D53E4F", "#3288BD")
       }
     }
   }
-
+  
   if (!is.null(type)) {
     pred_dat <- filter(pred_dat, type == !!type) %>% mutate(chopstick = paste(chopstick, type))
 
@@ -428,6 +443,7 @@ chopstick_slopes <- function(model,
 #' @param colours Add custom colours
 #' @param point_size Change point size
 #' @param add_grey_bars Add grey stripes to alternating species
+#' @param name_chop_type Add type to chopstick name in legend
 #'
 #' @export
 plot_chopstick_slopes <- function(slopedat,
@@ -441,6 +457,7 @@ plot_chopstick_slopes <- function(slopedat,
                                   point_size = 0.75,
                                   alpha_range = c(0.4, 0.99),
                                   add_grey_bars = F,
+                                  name_chop_type = T, 
                                   colours = NULL) {
   if (!is.null(imm_slopes)) {
     imm_slopes$age <- "immature"
@@ -455,17 +472,32 @@ plot_chopstick_slopes <- function(slopedat,
 
   if (!is.null(type)) {
     slopedat <- filter(slopedat, type == !!type) %>% ungroup()
+    
+    if (name_chop_type) {
     slopedat <- slopedat %>% mutate(chopstick = paste(chopstick, type))
-
+    }
+    
     if (is.null(colours)) {
       if (type == "DO" | type == "do") {
-        colours <- c("#5E4FA2", "#FDAE61")
+        # # green to blue option
+        # colours = c("#3d95cc", "yellowgreen")
+        
+        # # cyan to gold option,
+        colours = c("goldenrod1", "darkcyan") #"gold"
+
+        # # blue to yellow option
+        # colours <- c("#FDAE61", "#3d95cc")
+        # # yellow to purple option
+        # colours <- c("#5E4FA2", "#FDAE61")
       } else {
         if (type == "mean_temp") {
           colours <- c("#5E4FA2", "#FDAE61")
-        } else {
-          colours <- c("#D53E4F", "#3d95cc") #"#36648b") #  ,"#3288BD") #"#FF420A"  
-          # colours <- c("#D53E4F", "#3288BD")
+        } else {        
+          # purple to red option 
+          # colours <- c("#cd0000", "#5E4FA2")
+          # # blue and red option
+          colours <- c("#D53E4F", "royalblue4")
+          # colours <- c("#D53E4F", "#3d95cc") #"#36648b") #  ,"#3288BD") #"#FF420A"  # colours <- c("#D53E4F", "#3288BD")
         }
       }
     }
