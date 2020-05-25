@@ -497,8 +497,11 @@ p_do_worm <- plot_chopstick_slopes(do_slopes,
   scale_x_discrete(position = "top") +
   theme(axis.title.x = element_blank())
 
+# colorblindr::cvd_grid(p_temp_worm)
+
 (p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
-ggsave(here::here("ms", "figs", "worm-plot-trend.pdf"), width = 7.5, height = 6)
+
+ggsave(here::here("ms", "figs", "worm-plot-trend-newcol.pdf"), width = 7.5, height = 6)
 
 # meta-analytical coefficients? ... all span zero, but could include as appendix?
 
@@ -628,8 +631,8 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
     vec_aes = NULL,
     fill_col = "biotic_trend", fill_label = "", raster_cell_size = 4,
     na_colour = "lightgrey", white_zero = TRUE,
-    high_fill = "#276b95", # "Steel Blue 4", # "#5E4FA2", #
-    low_fill = "Red 3", # "#FF8B09", #
+    high_fill = "#3d95cc", #"#5E4FA2", #purple  #"gold", #"yellowgreen", #"#276b95", # "Steel Blue 4", # "#5E4FA2", #
+    low_fill = "#cd0000", #"Red 3", # "#FF8B09", #
     axis_lables = T, legend_position = c(0.15, 0.25), make_square = F
   ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
     ylab("Predicted % change in biomass") +
@@ -649,7 +652,8 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
       x_variable = "temp_trend_scaled", type = "temp", y_label = "",
       line_size = 1,
       alpha_range = alpha_range,
-      colours = c("#cd0000", "#2971A0"), # "#3288BD"),
+      colours = colours <- c("#cd0000", #"Red 3", #"#D53E4F", 
+        "#5E4FA2"), #c("#cd0000", "#2971A0"), # "#3288BD"),
       choose_species = stringr::str_replace(species, ".*mature ", ""),
       choose_age = gsub(" .*", "", species),
       slopes = temp_slopes # if add, the global slope can be included for insig.
@@ -663,7 +667,9 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
       plot_vocc(
         vec_aes = NULL,
         fill_col = "temp_trend", fill_label = "ºC ",
-        raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE, low_fill = "#0072B2",
+        raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE, 
+        low_fill = "#5E4FA2",
+        high_fill = "Red 3", #"#D53E4F", #"#0072B2",
         axis_lables = T,
         legend_position = c(0.15, 0.25), make_square = F
       ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
@@ -685,7 +691,7 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
     single_chop <- plot_fuzzy_chopsticks(model,
       x_variable = "DO_trend_scaled", type = "DO", y_label = "",
       line_size = 1, alpha_range = alpha_range,
-      # colours = c("#cd0000", "#2971A0"), #"#3288BD"),
+      colours = c("#FDAE61", "#3d95cc"), #c("#5E4FA2", "#FDAE61"), #c("#FDAE61", "#5E4FA2"), #
       choose_species = stringr::str_replace(species, ".*mature ", ""),
       choose_age = gsub(" .*", "", species),
       slopes = do_slopes # if add, the global slope can be included for insig.
@@ -702,7 +708,8 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
         vec_aes = NULL,
         fill_col = "DO_trend", fill_label = "ml/L ",
         raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
-        high_fill = "#5E4FA2", low_fill = "#FDAE61",
+        high_fill = "#FDAE61",
+        low_fill = "#3d95cc", #"#5E4FA2",
         axis_lables = T,
         legend_position = c(0.15, 0.25), make_square = F
       ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
