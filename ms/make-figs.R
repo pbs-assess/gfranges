@@ -74,6 +74,10 @@ trend_do <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "DO_trend", fill_label = "ml/L ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
+  high_fill = "gold",
+  low_fill = "darkcyan", #"lightseagreen",
+  # high_fill = "#3d95cc",
+  # low_fill = "yellowgreen",
   axis_lables = F, tag_text = "d.",
   legend_position = c(0.15, 0.3)
 ) + # ggtitle("dissolved oxygen") +
@@ -88,6 +92,8 @@ trend_temp <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "temp_trend", fill_label = "ºC ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
+  low_fill = "royalblue4",#low_fill = "#5E4FA2",
+  high_fill = "Red 3", 
   axis_lables = T, tag_text = "c.",
   legend_position = c(0.15, 0.3)
 ) + # ggtitle("temperature") +
@@ -104,6 +110,10 @@ vel_do <- plot_vocc(alldata,
   fill_col = "squashed_DO_vel", fill_label = "km",
   raster_cell_size = 4,
   na_colour = "lightgrey", white_zero = TRUE,
+  high_fill = "gold",
+  low_fill = "darkcyan",
+  # high_fill = "#3d95cc",
+  # low_fill = "yellowgreen",
   axis_lables = F, tag_text = "f.",
   legend_position = c(0.15, 0.3)
 ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
@@ -117,6 +127,8 @@ vel_temp <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "squashed_temp_vel", fill_label = "km",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
+  low_fill = "royalblue4",#low_fill = "#5E4FA2",
+  high_fill = "Red 3", 
   axis_lables = T, tag_text = "e.",
   legend_position = c(0.15, 0.3)
 ) + ylab("Velocities per decade") +
@@ -128,9 +140,9 @@ vel_temp <- plot_vocc(alldata,
   )
 
 mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + plot_layout(ncol = 2)
-
+# colorblindr::cvd_grid(trend_do)
 # ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 6, height = 9)
-ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 5, height = 7.5)
+ggsave(here::here("ms", "figs", "climate-maps-newcol2.png"), width = 5, height = 7.5)
 
 #########################
 #########################
@@ -470,7 +482,7 @@ do_slopes <- chopstick_slopes(model,
   x_variable = "DO_trend_scaled",
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
 )
-temp_slopes <- left_join(temp_slopes, stats)
+temp_slopes <- left_join(temp_slopes, stats) %>% 
 do_slopes <- left_join(do_slopes, stats)
 
 temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
@@ -478,16 +490,19 @@ do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"]
 
 p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
-  legend_position = c(.3, .95),
+  legend_position = c(.25, .95),
+  name_chop_type = F,
   add_grey_bars = T
 ) + coord_flip(ylim = c(-6, 5)) +
   # annotate("rect", ymin = lowerT[[1]], ymax = upperT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
   geom_hline(yintercept = estT[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   theme(axis.title.x = element_blank()) +
   ggtitle("a. Temperature")
+
 p_do_worm <- plot_chopstick_slopes(do_slopes,
   type = "DO",
   legend_position = c(.25, .95),
+  name_chop_type = F,
   add_grey_bars = T
 ) + coord_flip(ylim = c(-3, 1.4)) +
   # annotate("rect", ymin = lowerD[[1]], ymax = upperD[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
@@ -498,10 +513,11 @@ p_do_worm <- plot_chopstick_slopes(do_slopes,
   theme(axis.title.x = element_blank())
 
 # colorblindr::cvd_grid(p_temp_worm)
+# colorblindr::cvd_grid(p_do_worm) 
 
 (p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "worm-plot-trend-newcol.pdf"), width = 7.5, height = 6)
+ggsave(here::here("ms", "figs", "worm-plot-trend-newcol2.pdf"), width = 7.5, height = 6)
 
 # meta-analytical coefficients? ... all span zero, but could include as appendix?
 
@@ -631,7 +647,9 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
     vec_aes = NULL,
     fill_col = "biotic_trend", fill_label = "", raster_cell_size = 4,
     na_colour = "lightgrey", white_zero = TRUE,
-    high_fill = "#3d95cc", #"#5E4FA2", #purple  #"gold", #"yellowgreen", #"#276b95", # "Steel Blue 4", # "#5E4FA2", #
+    # high_fill = "#3d95cc", #"#5E4FA2", #purple  #"#276b95", # "Steel Blue 4", # "#5E4FA2", #
+    # high_fill = "royalblue4", 
+    high_fill = "darkcyan",
     low_fill = "#cd0000", #"Red 3", # "#FF8B09", #
     axis_lables = T, legend_position = c(0.15, 0.25), make_square = F
   ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
@@ -652,8 +670,8 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
       x_variable = "temp_trend_scaled", type = "temp", y_label = "",
       line_size = 1,
       alpha_range = alpha_range,
-      colours = colours <- c("#cd0000", #"Red 3", #"#D53E4F", 
-        "#5E4FA2"), #c("#cd0000", "#2971A0"), # "#3288BD"),
+      # colours = colours <- c("#cd0000", #"Red 3", #"#D53E4F", 
+      #   "#5E4FA2"), #c("#cd0000", "#2971A0"), # "#3288BD"),
       choose_species = stringr::str_replace(species, ".*mature ", ""),
       choose_age = gsub(" .*", "", species),
       slopes = temp_slopes # if add, the global slope can be included for insig.
@@ -668,7 +686,7 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
         vec_aes = NULL,
         fill_col = "temp_trend", fill_label = "ºC ",
         raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE, 
-        low_fill = "#5E4FA2",
+        low_fill = "royalblue3",#"#5E4FA2",
         high_fill = "Red 3", #"#D53E4F", #"#0072B2",
         axis_lables = T,
         legend_position = c(0.15, 0.25), make_square = F
@@ -691,7 +709,6 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
     single_chop <- plot_fuzzy_chopsticks(model,
       x_variable = "DO_trend_scaled", type = "DO", y_label = "",
       line_size = 1, alpha_range = alpha_range,
-      colours = c("#FDAE61", "#3d95cc"), #c("#5E4FA2", "#FDAE61"), #c("#FDAE61", "#5E4FA2"), #
       choose_species = stringr::str_replace(species, ".*mature ", ""),
       choose_age = gsub(" .*", "", species),
       slopes = do_slopes # if add, the global slope can be included for insig.
@@ -708,8 +725,8 @@ species_panels <- function(species, model, x_type, alpha_range = c(0.9, 0.9)) {
         vec_aes = NULL,
         fill_col = "DO_trend", fill_label = "ml/L ",
         raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
-        high_fill = "#FDAE61",
-        low_fill = "#3d95cc", #"#5E4FA2",
+        high_fill = "gold", 
+        low_fill = "darkcyan",
         axis_lables = T,
         legend_position = c(0.15, 0.25), make_square = F
       ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +

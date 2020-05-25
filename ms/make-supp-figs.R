@@ -525,7 +525,7 @@ cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops,
   labels = c("a.", "", "b.", ""), label_size = 11,
   ncol = 2, rel_widths = c(1, 2.5)
 )
-ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 10)
+ggsave(here::here("ms", "figs", "supp-trend-chopsticks-newcol.pdf"), width = 14, height = 10)
 # ggsave(here::here("ms", "figs", "supp-trend-chopsticks-fishing.pdf"), width = 14, height = 11)
 
 
@@ -624,7 +624,7 @@ p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
 
 
 cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes, p_do_vel_chops, ncol = 2, rel_widths = c(1, 2.5))
-ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height = 10)
+ggsave(here::here("ms", "figs", "supp-vel-chopsticks-newcol.pdf"), width = 14, height = 10)
 
 
 #########################
