@@ -94,6 +94,7 @@ plot_coefs <- function(coloured_coefs,
 #' @param group Colour by grouping.
 #' @param point_size 
 #' @param point_alpha 
+#' @param point_shapes Vector of shapes. Defaults to open and closed circles.
 #' @param regression Logical for adding regression line.
 #'
 #' @export
@@ -102,11 +103,12 @@ coef_scatterplot <- function(model_coefs, x,
   group = "age",
   point_size = 0.75, 
   point_alpha = 0.65,
+  point_shapes = c(21, 19),
   pointrange = T,
   regression = T
 ){
   p <- filter(model_coefs, coefficient %in% !!coef) %>% 
-    ggplot(aes_string(x, "Estimate", colour = group)) +
+    ggplot(aes_string(x, "Estimate", shape = group, colour = group)) +
     geom_hline(yintercept = 0, colour = "black", alpha = 0.75, linetype = "dashed")
   if (regression) {
     p <- p + geom_smooth(method = "lm", colour = "darkgray", fill = "lightgray") 
@@ -117,6 +119,8 @@ coef_scatterplot <- function(model_coefs, x,
         ymax = (Estimate + `Std. Error` * 1.96)), alpha = point_alpha, fatten = 1)
     }
     p <- p + scale_color_viridis_d(direction = 1) +
+      scale_shape_manual(values = point_shapes) +
+      guides(fill = F) +
       ylab(coef) + gfplot:::theme_pbs() 
   p
 }

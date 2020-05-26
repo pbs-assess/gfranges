@@ -647,16 +647,20 @@ plot_chopstick_slopes <- function(slopedat,
 #' @param point_alpha Set point alpha
 #' @param pointrange Logical for adding 95% CI bars to points. Default T
 #' @param regression Logical for plotting simple linear regression line.
+#' @param shape_group Varible to set shape by.
+#' @param point_shapes Vector of shapes. Defaults to open and closed circles.
 #'
 #' @export
 slope_scatterplot <- function(slopes_w_traits, x,
                               slope_var = "slope_est",
                               col_group = "chopstick",
+                              shape_group = "age",
                               point_size = 0.75,
                               point_alpha = 0.99,
+                              point_shapes = c(21, 19),
                               pointrange = T,
                               regression = F) {
-  p <- ggplot(slopes_w_traits, aes_string(x, slope_var, colour = col_group)) +
+  p <- ggplot(slopes_w_traits, aes_string(x, slope_var, shape = shape_group, colour = col_group)) +
     geom_hline(yintercept = 0, colour = "black", alpha = 0.75, linetype = "dashed") 
   if (regression) {
     p <- p + geom_smooth(method = "lm", fill = "lightgray")
@@ -669,6 +673,7 @@ slope_scatterplot <- function(slopes_w_traits, x,
     p <- p + geom_point(size = point_size, alpha = point_alpha) 
   }
   p <- p + scale_colour_viridis_d(begin = .8, end = .2) +
+    scale_shape_manual(values = point_shapes) +
     gfplot:::theme_pbs()
   p
 }
