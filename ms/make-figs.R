@@ -842,7 +842,7 @@ temp_high <- slope_scatterplot(
 ) +
   # geom_linerange(aes(xmin=depth25, xmax = depth75), alpha = 0.2, size = 2) +
   geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") +
-  geom_point(aes(depth, slope_est), size = 1) +
+  geom_point(size = 1, fill = "white") +
   ggrepel::geom_text_repel(aes(label = species_lab),
     size = 3,
     force = 3,
@@ -853,15 +853,16 @@ temp_high <- slope_scatterplot(
   ylab("Slope at highest temperature") +
   scale_y_continuous(breaks = c(3, 0, -3, -6, -9)) +
   coord_cartesian(ylim = c(-11, 4.2), xlim = c(15, 410)) +
+  scale_colour_manual(values = c("#D53E4F","#D53E4F")) + 
   theme(
     plot.margin = margin(0, 0.1, 0, 0.2, "cm"),
-    legend.position = c(.85, .2),
+    # legend.position = c(.85, .2), legend.title = element_blank(),
+    legend.position = "none",
     # axis.text.y = element_text(color = "#FDAE61"), # yellow
     # axis.text.y = element_text(color = "#cd0000"), # dark red
-    axis.text.y = element_text(color = "#ff4d00"), # redish orange
+    # axis.text.y = element_text(color = "#ff4d00"), # redish orange
     axis.title.y = element_text(vjust = 0.2),
-    axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank(),
-    legend.title = element_blank()
+    axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
   )
 
 do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth",
@@ -870,16 +871,19 @@ do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth",
   point_size = 1.5,
 ) +
   # geom_linerange(aes(xmin=depth25, xmax = depth75), alpha = 0.2, size = 2) +
-  geom_point(aes(depth, slope_est), size = 1) +
+  geom_point(size = 1, fill = "white") +
   geom_hline(yintercept = 0, colour = "gray", linetype = "dashed") +
   xlab("Mean depth for species") +
-  ylab("Slope at lowest DO") + guides(colour = F) +
+  ylab("Slope at lowest DO") + #guides(colour = F) +
   coord_cartesian(xlim = c(15, 410)) +
   ggrepel::geom_text_repel(aes(label = species_lab),
     size = 3, force = 3, nudge_y = 0.35, nudge_x = 35,
     na.rm = T, min.segment.length = 2
   ) +
+  scale_colour_manual(values = c("darkcyan","darkcyan")) + 
   gfplot::theme_pbs() + theme(
+    # legend.position = c(.85, .2), legend.title = element_blank(), 
+    legend.position = "none",
     plot.margin = margin(0, 0.1, 0, 0.2, "cm"),
     axis.title.y.left = element_text(vjust = 0.2),
     axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
@@ -941,9 +945,7 @@ depth_do <- p_depth_do %>% egg::tag_facet(
 )
 
 do_low <- do_low + scale_y_continuous(position = "right") + theme(
-  # axis.title.y = element_text(colour = "#FDAE61", vjust = 0.2), #orange
-  axis.text.y = element_text(colour = "#5E4FA2"),
-  # axis.title.y = element_text(colour = "#5E4FA2", vjust = 0.2), # purple
+  # axis.text.y = element_text(colour = "darkcyan"), # "#5E4FA2"),
   axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank(),
   plot.margin = margin(0, 0.1, 0, 0, "cm")
 )
@@ -981,7 +983,7 @@ trendeffects <- model2 %>%
   mutate(coefficient = factor(coefficient,
     levels = c("temp_trend_scaled", "DO_trend_scaled"),
     labels = c("Temperature", "DO")
-  ))
+  ), Std..Error = `Std. Error`)
 
 trendeffects <- trendeffects %>%
   mutate(coefficient = forcats::fct_reorder(coefficient, Estimate, .desc = F))
@@ -996,21 +998,24 @@ trendeffects$allspp <- "All species"
 p_depth <- coef_scatterplot(trendeffects,
   coef = c("Temperature", "DO"),
   x = "depth_iqr", group = "age", regression = F
-) +
+) +  
   ylab("Trend coefficient") + xlab("Depth range (IQR)") + # (25th to 75th quartile)
   geom_smooth(
-    # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
+    # data = filter(trendeffects, coefficient != "DO" & age == "mature"), 
+    inherit.aes = F,
     aes_string("depth_iqr", "Estimate"),
     method = "lm", size = 0.5,
     colour = "darkgray",
     fill = "lightgray"
-  ) +
-  scale_colour_viridis_d(begin = .8, end = .2) +
+  ) + geom_point(size = 1, fill = "white") +
+  # scale_colour_manual(values = c("gold", "darkorchid4")) + #"royalblue4" #chartreuse4
+  scale_colour_viridis_d(option = "D", begin = 0.8, end = 0.2) +
   scale_x_log10() +
   guides(colour = F) +
   facet_grid(rows = vars(coefficient), cols = vars(allspp), scales = "free_y") +
   # gfplot:::theme_pbs() %+replace%
   theme(
+    legend.position = "none", 
     plot.margin = margin(0.1, 0.15, 0.1, 0, "cm"),
     strip.background = element_blank(),
     strip.text.y = element_blank(), strip.text.x = element_blank(),
@@ -1018,6 +1023,7 @@ p_depth <- coef_scatterplot(trendeffects,
     # axis.text.y = element_blank(),
     # axis.ticks = element_blank()
   )
+# colorblindr::cvd_grid(p_depth)
 
 # # with rockfish split out
 # p_age <- coef_scatterplot(trendeffects,
@@ -1043,19 +1049,22 @@ p_depth <- coef_scatterplot(trendeffects,
 p_age <- coef_scatterplot(trendeffects,
   coef = c("Temperature", "DO"),
   x = "age_mean", group = "age", regression = F
-) +
+) +  
   geom_smooth(
-    # data = filter(trendeffects, coefficient != "DO" & age == "mature"), inherit.aes = F,
+    # data = filter(trendeffects, coefficient != "DO" & age == "mature"), 
+    inherit.aes = F,
     aes_string("age_mean", "Estimate"),
     method = "lm", size = 0.5,
     colour = "darkgray",
     fill = "lightgray"
-  ) +
-  xlab("Mean age") +
-  scale_colour_viridis_d(begin = .8, end = .2) +
+  ) + geom_point(size = 1, fill = "white") +
+  xlab("Mean age") +  
+  # scale_colour_manual(values = c("darkorchid4", "darkcyan")) + #"royalblue4"
+  scale_colour_viridis_d(begin = 0.8, end = 0.2) +
   scale_x_log10() +
   guides(colour = F) +
   theme(
+    legend.position = "none", 
     plot.margin = margin(0.1, 0.15, 0.1, 0, "cm"),
     strip.background = element_blank(),
     strip.text.y = element_blank(), strip.text.x = element_blank(),
@@ -1065,8 +1074,6 @@ p_age <- coef_scatterplot(trendeffects,
     axis.ticks = element_blank()
   ) +
   facet_grid(rows = vars(coefficient), cols = vars(allspp), scales = "free_y")
-
-
 
 trendeffects <- mutate(trendeffects, growth_rate = length_50_mat_f / age_mat, growth_rate_m = length_50_mat_m / age_mat_m)
 # plot(data = trendeffects, growth_rate ~ growth_rate_m)
@@ -1112,22 +1119,21 @@ trendeffects <- mutate(trendeffects, growth_rate = length_50_mat_f / age_mat, gr
 #   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
 # cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 1.75, 1.75))
 
-
-
 p_mat <- coef_scatterplot(trendeffects,
   coef = c("Temperature", "DO"),
   x = "growth_rate",
   # x = "length_50_mat_f",
   group = "age", regression = F
-) +
+) +  
   xlab("Immature growth rate") +
   geom_smooth(
     data = filter(trendeffects, age != "mature"), # inherit.aes = F,
     aes_string("growth_rate", "Estimate"), method = "lm", size = 0.5,
     # colour = "darkgray",
     fill = "lightgray"
-  ) +
-  scale_colour_viridis_d(begin = .8, end = .2) +
+  ) + geom_point(size = 1, fill = "white") +
+  # scale_colour_manual(values = c("darkorchid4", "darkcyan")) +
+  scale_colour_viridis_d(begin = 0.8, end = 0.2) +
   scale_x_log10() +
   theme(
     plot.margin = margin(0.1, 0.15, 0.1, 0, "cm"),
@@ -1140,10 +1146,6 @@ p_mat <- coef_scatterplot(trendeffects,
     axis.ticks = element_blank()
   ) +
   facet_grid(rows = vars(coefficient), cols = vars(allspp), scales = "free_y")
-
-
-
-
 
 
 p_depth2 <- p_depth %>% egg::tag_facet(
@@ -1161,7 +1163,7 @@ p_mat2 <- p_mat %>% egg::tag_facet(
 
 cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 0.9))
 
-ggsave(here::here("ms", "figs", "coef-scatterplots-allspp.pdf"), width = 7, height = 4)
+ggsave(here::here("ms", "figs", "coef-scatterplots-allspp2.pdf"), width = 7, height = 4)
 
 
 #########################
