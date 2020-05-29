@@ -394,6 +394,8 @@ stats <- readRDS(paste0("data/life-history-stats4.rds"))
 behav <- read_csv("data/VOCCSpeciesList.csv") %>% rename(species = Species, age = Age)
 behav$species[behav$species == "Rougheye/Blackspotted"] <- "Rougheye/Blackspotted Rockfish Complex" 
 behav$BenthoPelagicPelagicDemersal[behav$BenthoPelagicPelagicDemersal == "BenthoPelagic"] <- "Benthopelagic"
+behav$Diet[behav$Diet == "CrabShrimp"] <- "Crustaceans"
+
 
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
 stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
