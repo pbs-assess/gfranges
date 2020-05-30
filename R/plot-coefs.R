@@ -283,6 +283,8 @@ shortener <- function(string) {
   out <- gsub("\\)", "", out)
   out <- gsub("squashed_", "", out)
   out <- gsub("mean_", "", out)
+  out <- gsub("immature", "", out)
+  out <- gsub("mature ", "", out)
   #out <- gsub("_", "", out)
   out
 }
