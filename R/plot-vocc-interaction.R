@@ -197,7 +197,10 @@ plot_fuzzy_chopsticks <- function(model,
         # purple to red option 
         # colours <- c("#cd0000", "#5E4FA2")
         # # blue and red option
-        colours <- c("#D53E4F", "royalblue4")
+        colours <- c("orangered2", "royalblue4")
+        # colours <- c("Firebrick2", "royalblue4")
+        # colours <- c("Red 3", "royalblue4")
+        # colours <- c("#D53E4F", "royalblue4")
         # colours <- c("#D53E4F", "#3d95cc") #"#36648b") #  ,"#3288BD") #"#FF420A"  # colours <- c("#D53E4F", "#3288BD")
       }
     }
@@ -254,7 +257,8 @@ plot_fuzzy_chopsticks <- function(model,
       legend.direction = "vertical",
       legend.position = "top"
     )
-  p <- p + geom_ribbon(data = filter(pred_dat, age == "mature"), aes(
+  p <- p + geom_hline(yintercept = 0, colour = "gray", linetype = "solid") +
+    geom_ribbon(data = filter(pred_dat, age == "mature"), aes(
     fill = chopstick,
     ymin = est_p - 1.96 * se_p, ymax = est_p + 1.96 * se_p
   ), alpha = 0.2) +
@@ -478,10 +482,12 @@ plot_chopstick_slopes <- function(slopedat,
     }
     
     if (is.null(colours)) {
+      
+
       if (type == "DO" | type == "do") {
         # # green to blue option
         # colours = c("#3d95cc", "yellowgreen")
-        
+
         # # cyan to gold option,
         colours = c("goldenrod1", "darkcyan") #"gold"
 
@@ -492,13 +498,17 @@ plot_chopstick_slopes <- function(slopedat,
       } else {
         if (type == "mean_temp") {
           colours <- c("#5E4FA2", "#FDAE61")
-        } else {        
-          # purple to red option 
+        } else {
+          # purple to red option
           # colours <- c("#cd0000", "#5E4FA2")
           # # blue and red option
-          colours <- c("#D53E4F", "royalblue4")
-          # colours <- c("#D53E4F", "#3d95cc") #"#36648b") #  ,"#3288BD") #"#FF420A"  # colours <- c("#D53E4F", "#3288BD")
-        }
+
+          #colours <- c("Firebrick2", "royalblue4")
+          colours <- c("Red 3", "royalblue4")
+          # colours <- c("#D53E4F", "royalblue4")
+          # colours <- c("#D53E4F", "#3d95cc") 
+          # colours <- c("#D53E4F", "#3288BD")
+       }
       }
     }
   }
