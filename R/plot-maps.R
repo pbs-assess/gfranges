@@ -37,6 +37,10 @@
 #' @param legend_position Vector of coordinates for legend placement. Or "none" to remove legend.
 #' @param make_square Logical for adding space to map to make it square
 #' @param theme_black Logical for inverting plot to white on black
+#' @param tag_text Text to be added to top right corner of plot
+#' @param grey_water Make water (panel background) light grey
+#' @param viridis_begin Value to start viridis scale at
+#' @param viridis_end Value to end viridis scale at
 #'
 #' @export
 #'
@@ -63,12 +67,15 @@ plot_vocc <- function(df,
                       axis_lables = FALSE,
                       viridis_option = "D",
                       viridis_dir = 1,
+                      viridis_begin = 0.2,
+                      viridis_end = 1,
                       transform_col = no_trans,
                       raster_limits = NULL,
                       raster_cell_size = 2,
                       legend_position = c(0.15, 0.25),
                       tag_text = NULL,
                       make_square = TRUE,
+                      grey_water = TRUE,
                       theme_black = FALSE) {
   if (!is.null(vec_aes)) {
     # order so smaller vectors are on top?
@@ -147,13 +154,26 @@ plot_vocc <- function(df,
           plot.background = element_rect(color = "black", fill = "black")
         )
       } else {
-        gvocc <- gvocc + theme(legend.position = legend_position)
+        if (grey_water) {
+          gvocc <- gvocc + theme(
+            legend.position = legend_position,
+            legend.background = element_rect(color = NA, fill = "grey95"),
+            legend.key = element_rect(fill = "grey95"),
+            panel.background = element_rect(fill = "grey95", color = NA)
+          )
+        } else {
+          gvocc <- gvocc + theme(legend.position = legend_position)
+        }
       }
+      
     } else {
+      
       gvocc <- gvocc +
         geom_tile(aes(fill = fill), alpha = raster_alpha, width = raster_cell_size, height = raster_cell_size) + #
         scale_fill_viridis_c(
           direction = viridis_dir,
+          begin = viridis_begin,
+          end = viridis_end,
           option = viridis_option, na.value = na_colour,
           trans = transform_col, breaks = breaks, labels = labels,
           limits = raster_limits
@@ -172,7 +192,16 @@ plot_vocc <- function(df,
           plot.background = element_rect(color = "black", fill = "black")
         )
       } else {
-        gvocc <- gvocc + theme(legend.position = legend_position)
+        if (grey_water) {
+          gvocc <- gvocc + theme(
+            legend.position = legend_position,
+            legend.background = element_rect(color = NA, fill = "grey95"),
+            legend.key = element_rect(fill = "grey95"),
+            panel.background = element_rect(fill = "grey95", color = NA)
+          )
+        } else {
+          gvocc <- gvocc + theme(legend.position = legend_position)
+        }
       }
     }
   }
@@ -260,11 +289,22 @@ plot_vocc <- function(df,
     #### Add coast ####
     if (!isTRUE(coast)) {
       # add premade coast polygons layer (must be in utms)
-      gvocc <- gvocc +
-        geom_polygon(
-          data = coast, aes_string(x = "X", y = "Y", group = "PID"),
-          fill = "grey87", col = "grey70", lwd = 0.2
-        )
+      
+      # if (grey_water) {
+      # gvocc <- gvocc +
+      #   geom_polygon(
+      #     data = coast, aes_string(x = "X", y = "Y", group = "PID"),
+      #     fill = "white", col = "grey70", lwd = 0.2
+      #   )
+      # } else {
+        gvocc <- gvocc +
+          geom_polygon(
+            data = coast, aes_string(x = "X", y = "Y", group = "PID"),
+            fill = "grey87", col = "grey70", lwd = 0.2
+          )
+      # }
+      
+      
     } else {
       # add coast polygons from gfplot
       try({
@@ -281,11 +321,20 @@ plot_vocc <- function(df,
         )
 
         # add polygons to plot
-        gvocc <- gvocc +
-          geom_polygon(
-            data = coast, aes_string(x = "X", y = "Y", group = "PID"),
-            fill = "grey87", col = "grey70", lwd = 0.2
-          )
+        
+        # if (grey_water) {
+        # gvocc <- gvocc +
+        #   geom_polygon(
+        #     data = coast, aes_string(x = "X", y = "Y", group = "PID"),
+        #     fill = "white", col = "grey70", lwd = 0.2
+        #   )
+        # } else {
+          gvocc <- gvocc +
+            geom_polygon(
+              data = coast, aes_string(x = "X", y = "Y", group = "PID"),
+              fill = "grey87", col = "grey70", lwd = 0.2
+            )
+          # }
       }, silent = TRUE)
     }
   }

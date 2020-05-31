@@ -40,7 +40,7 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
 #########################
 #########################
 #### CLIMATE MAPS ####
-(mean_do <- plot_vocc(alldata, #theme_grey = T,
+(mean_do <- plot_vocc(alldata, #grey_water = T,
   vec_aes = NULL,
   fill_col = "mean_DO", fill_label = "ml/L ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
@@ -661,7 +661,7 @@ species_panels <- function(
     na_colour = "red 3", white_zero = TRUE,
     # high_fill = "#3d95cc", #"#5E4FA2", #purple  #"#276b95", # "Steel Blue 4", # "#5E4FA2", # "royalblue4", 
     high_fill = "darkcyan",
-    mid_fill = "grey95", theme_grey = F,
+    mid_fill = "grey95", grey_water = F,
     low_fill = "Red 3", # "#FF8B09", #"#cd0000", 
     raster_limits = c(-6,6),
     axis_lables = T, 
@@ -719,7 +719,7 @@ species_panels <- function(
         fill_col = "temp_trend", fill_label = "ºC per \ndecade",
         raster_cell_size = 4, na_colour = "red 3", white_zero = TRUE, 
         low_fill = "royalblue3",#"#5E4FA2",
-        mid_fill = "grey95", theme_grey = F,
+        mid_fill = "grey95", grey_water = F,
         high_fill = "Red 3", #"#D53E4F", #"#0072B2",
         axis_lables = T,
         raster_limits = c(-0.5,1.8),
@@ -766,7 +766,7 @@ species_panels <- function(
         fill_col = "DO_trend", fill_label = "ml/L per \ndecade",
         raster_cell_size = 4, na_colour = "red 3", white_zero = TRUE,
         high_fill = "gold", 
-        mid_fill = "grey95", theme_grey = F,
+        mid_fill = "grey95", grey_water = F,
         low_fill = "darkcyan",
         axis_lables = T,
         raster_limits = c(-1.6,1.2),
