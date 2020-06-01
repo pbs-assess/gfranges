@@ -40,7 +40,7 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
 #########################
 #########################
 #### CLIMATE MAPS ####
-(mean_do <- plot_vocc(alldata, #grey_water = T,
+(mean_do <- plot_vocc(alldata, # grey_water = T,
   vec_aes = NULL,
   fill_col = "mean_DO", fill_label = "ml/L ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
@@ -78,7 +78,7 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
   fill_col = "DO_trend", fill_label = "ml/L ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
   high_fill = "gold",
-  low_fill = "darkcyan", #"lightseagreen",
+  low_fill = "darkcyan", # "lightseagreen",
   # high_fill = "#3d95cc",
   # low_fill = "yellowgreen",
   axis_lables = F, tag_text = "d.",
@@ -95,8 +95,8 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
   vec_aes = NULL,
   fill_col = "temp_trend", fill_label = "ºC ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
-  low_fill = "royalblue4",#low_fill = "#5E4FA2",
-  high_fill = "Red 3", 
+  low_fill = "royalblue4", # low_fill = "#5E4FA2",
+  high_fill = "Red 3",
   axis_lables = T, tag_text = "c.",
   legend_position = c(0.15, 0.3)
 ) + # ggtitle("temperature") +
@@ -130,8 +130,8 @@ vel_temp <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "squashed_temp_vel", fill_label = "km",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
-  low_fill = "royalblue4",#low_fill = "#5E4FA2",
-  high_fill = "Red 3", 
+  low_fill = "royalblue4", # low_fill = "#5E4FA2",
+  high_fill = "Red 3",
   axis_lables = T, tag_text = "e.",
   legend_position = c(0.15, 0.3)
 ) + ylab("Velocities per decade") +
@@ -485,8 +485,8 @@ do_slopes <- chopstick_slopes(model,
   x_variable = "DO_trend_scaled",
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
 )
-temp_slopes <- left_join(temp_slopes, stats) %>% 
-do_slopes <- left_join(do_slopes, stats)
+temp_slopes <- left_join(temp_slopes, stats) %>%
+  do_slopes() <- left_join(do_slopes, stats)
 
 temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
@@ -516,7 +516,7 @@ p_do_worm <- plot_chopstick_slopes(do_slopes,
   theme(axis.title.x = element_blank())
 
 # colorblindr::cvd_grid(p_temp_worm)
-# colorblindr::cvd_grid(p_do_worm) 
+# colorblindr::cvd_grid(p_do_worm)
 
 (p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
@@ -647,25 +647,23 @@ ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 
 
 species_panels <- function(
-  species, model, x_type, 
-  chop_label = F, 
-  biotic_legend = F,
-  alpha_range = c(0.9, 0.9)
-  ){
-  
+                           species, model, x_type,
+                           chop_label = F,
+                           biotic_legend = F,
+                           alpha_range = c(0.9, 0.9)) {
   age <- unique(model$data[model$data$species == species, ]$age)
-  
+
   biotic_map <- filter(model$data, species == !!species) %>% plot_vocc(
     vec_aes = NULL,
     fill_col = "biotic_trend", fill_label = "%", raster_cell_size = 4,
     na_colour = "red 3", white_zero = TRUE,
-    # high_fill = "#3d95cc", #"#5E4FA2", #purple  #"#276b95", # "Steel Blue 4", # "#5E4FA2", # "royalblue4", 
+    # high_fill = "#3d95cc", #"#5E4FA2", #purple  #"#276b95", # "Steel Blue 4", # "#5E4FA2", # "royalblue4",
     high_fill = "darkcyan",
     mid_fill = "grey95", grey_water = F,
-    low_fill = "Red 3", # "#FF8B09", #"#cd0000", 
-    raster_limits = c(-6,6),
-    axis_lables = T, 
-    legend_position = c(0.15, 0.25), 
+    low_fill = "Red 3", # "#FF8B09", #"#cd0000",
+    raster_limits = c(-6, 6),
+    axis_lables = T,
+    legend_position = c(0.15, 0.25),
     make_square = F
   ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
     ylab(" ") +
@@ -673,20 +671,20 @@ species_panels <- function(
     theme(
       plot.title = element_text(vjust = 1),
       plot.margin = margin(1, 0, 0.2, 0, "cm"),
-      axis.text = element_blank(), 
+      axis.text = element_blank(),
       axis.ticks = element_blank(),
       axis.title.x = element_blank()
     )
-  
+
   if (!biotic_legend) {
-    biotic_map  <- biotic_map + theme(legend.position = "none")
+    biotic_map <- biotic_map + theme(legend.position = "none")
   }
-  
+
   if (age == "immature") {
-    biotic_map  <- biotic_map + ggtitle(paste0(shortener(species), " (", age ,")"))
+    biotic_map <- biotic_map + ggtitle(paste0(shortener(species), " (", age, ")"))
   } else {
-    biotic_map  <- biotic_map + ggtitle(paste0(shortener(species)))
-    }
+    biotic_map <- biotic_map + ggtitle(paste0(shortener(species)))
+  }
 
   if (x_type == "temp") {
     temp_slopes <- chopstick_slopes(model,
@@ -698,46 +696,46 @@ species_panels <- function(
       x_variable = "temp_trend_scaled", type = "temp", y_label = "",
       line_size = 1,
       alpha_range = alpha_range,
-      # colours = colours <- c("#cd0000", #"Red 3", #"#D53E4F", 
+      # colours = colours <- c("#cd0000", #"Red 3", #"#D53E4F",
       #   "#5E4FA2"), #c("#cd0000", "#2971A0"), # "#3288BD"),
       choose_species = stringr::str_replace(species, ".*mature ", ""),
       choose_age = gsub(" .*", "", species),
       slopes = temp_slopes # if add, the global slope can be included for insig.
-    ) + #geom_hline(yintercept = 0, colour = "gray", linetype = "solid") +
+    ) + # geom_hline(yintercept = 0, colour = "gray", linetype = "solid") +
       # xlab("Temperature trend (scaled)") +
-      coord_cartesian(xlim = c(-0.2, 2.6), ylim = c(-3.5,3.8)) + 
+      coord_cartesian(xlim = c(-0.2, 2.6), ylim = c(-3.5, 3.8)) +
       theme(
         plot.margin = margin(0, 0.2, 0.2, 0, "cm"),
         axis.title.x = element_blank(),
         # axis.title.x = element_text(hjust = 0, vjust = 0),
         legend.position = "none"
       )
-    
+
     climate_map <- filter(model$data, species == !!species) %>%
       plot_vocc(
         vec_aes = NULL,
         fill_col = "temp_trend", fill_label = "ºC per \ndecade",
-        raster_cell_size = 4, na_colour = "red 3", white_zero = TRUE, 
-        low_fill = "royalblue3",#"#5E4FA2",
+        raster_cell_size = 4, na_colour = "red 3", white_zero = TRUE,
+        low_fill = "royalblue3", # "#5E4FA2",
         mid_fill = "grey95", grey_water = F,
-        high_fill = "Red 3", #"#D53E4F", #"#0072B2",
+        high_fill = "Red 3", # "#D53E4F", #"#0072B2",
         axis_lables = T,
-        raster_limits = c(-0.5,1.8),
+        raster_limits = c(-0.75, 1.8),
         legend_position = c(0.15, 0.3), make_square = F
       ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
       xlab(" ") +
-      theme(#plot.title = element_text(vjust = 0),
+      theme( # plot.title = element_text(vjust = 0),
         plot.margin = margin(0, 0, 0, 0, "cm"),
-        axis.text = element_blank(), 
+        axis.text = element_blank(),
         axis.ticks = element_blank(),
         axis.title.y = element_blank()
       )
-    
+
     if (chop_label) {
       climate_map <- climate_map + ggtitle("Temperature trend (scaled)")
-    } else { 
-      climate_map <- climate_map +  ggtitle(" ") + theme(legend.position = "none")
-      }
+    } else {
+      climate_map <- climate_map + ggtitle(" ") + theme(legend.position = "none")
+    }
   }
 
   if (x_type == "DO") {
@@ -752,24 +750,24 @@ species_panels <- function(
       choose_species = stringr::str_replace(species, ".*mature ", ""),
       choose_age = gsub(" .*", "", species),
       slopes = do_slopes # if add, the global slope can be included for insig.
-    ) + coord_cartesian( ylim = c(-3.5,3.8), xlim = c(-3,3)) + # ylim = c(-2,2)
+    ) + coord_cartesian(ylim = c(-3.5, 3.8), xlim = c(-3, 3)) + # ylim = c(-2,2)
       # geom_hline(yintercept = 0, colour = "gray", linetype = "solid") +
       theme(
         plot.margin = margin(0, 0.2, 0.2, 0.2, "cm"),
         legend.position = "none",
         axis.title.x = element_blank()
       )
-    
+
     climate_map <- filter(model$data, species == !!species) %>%
       plot_vocc(
         vec_aes = NULL,
         fill_col = "DO_trend", fill_label = "ml/L per \ndecade",
         raster_cell_size = 4, na_colour = "red 3", white_zero = TRUE,
-        high_fill = "gold", 
+        high_fill = "gold",
         mid_fill = "grey95", grey_water = F,
         low_fill = "darkcyan",
         axis_lables = T,
-        raster_limits = c(-1.6,1.2),
+        raster_limits = c(-1.6, 1.2),
         legend_position = c(0.15, 0.3), make_square = F
       ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
       xlab(" ") +
@@ -778,33 +776,38 @@ species_panels <- function(
         axis.text = element_blank(), axis.ticks = element_blank(),
         axis.title.y = element_blank()
       )
-    
+
     if (chop_label) {
       climate_map <- climate_map + ggtitle("DO trend (scaled)")
-       
-    } else { 
-      climate_map <- climate_map +  ggtitle(" ") + theme(legend.position = "none")
+    } else {
+      climate_map <- climate_map + ggtitle(" ") + theme(legend.position = "none")
     }
   }
-  
+
   if (!biotic_legend) {
-  single_chop <- single_chop + theme(axis.text.y = element_blank())   
+    single_chop <- single_chop + theme(axis.text.y = element_blank())
   }
-  
-  (biotic_map / single_chop / climate_map + plot_layout(heights = c(2, 0.5, 2))) #+ theme(plot.title = element_text(vjust = 1))
+
+  (biotic_map / single_chop / climate_map + plot_layout(heights = c(2, 0.5, 2))) 
+  #+ theme(plot.title = element_text(vjust = 1))
   # ggsave(here::here("ms", "figs", paste0("panels-", x_type, "-", species, ".pdf")), width = 4, height = 10)
 }
 
-(p1 <- species_panels("mature Sablefish", model, "temp", chop_label = T, biotic_legend = T,
-  alpha_range = c(0.1, 0.9)))
+(p1 <- species_panels("mature Sablefish", model, "temp",
+  chop_label = T, biotic_legend = T,
+  alpha_range = c(0.1, 0.9)
+))
 (p2 <- species_panels("mature Redbanded Rockfish", model, "temp"))
 
-(p3 <- species_panels("immature Canary Rockfish", model, "temp", 
-  alpha_range = c(0.1, 0.9)))
+(p3 <- species_panels("immature Canary Rockfish", model, "temp",
+  alpha_range = c(0.1, 0.9)
+))
 (p4 <- species_panels("immature Arrowtooth Flounder", model, "temp"))
 
-ygrob <- grid::textGrob(("Predicted % change in biomass per decade"), gp=grid::gpar(fontsize=12), rot=90, 
-  hjust = 0)
+ygrob <- grid::textGrob(("Predicted % change in biomass per decade"),
+  gp = grid::gpar(fontsize = 12), rot = 90,
+  hjust = 0
+)
 
 # wrap_plots(wrap_elements(ygrob), p1) + plot_layout(nrow= 1, ncol = 2, widths = c(0.05, 1))
 # wrap_plots(wrap_elements(ygrob), p1, p2, p3, p4) + plot_layout(nrow= 1, ncol = 5, widths = c(0.05,1,1,1,1))
@@ -813,20 +816,20 @@ ygrob <- grid::textGrob(("Predicted % change in biomass per decade"), gp=grid::g
 (p5 <- species_panels("mature North Pacific Spiny Dogfish", chop_label = T, model, "DO"))
 (p6 <- species_panels("mature Shortspine Thornyhead", model, "DO"))
 
-wrap_plots(wrap_elements(ygrob), p1, p2, p3, p4, p5, p6) + plot_layout(nrow= 1, ncol = 7, widths = c(0.05,1,1,1,1,1,1))
+wrap_plots(wrap_elements(ygrob), p1, p2, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(0.05, 1, 1, 1, 1, 1, 1))
 ggsave(here::here("ms", "figs", "all-chop-panels4.pdf"), width = 18, height = 8)
 
 
 #### OTHER SPECIES PANEL OPTIONS ####
 # species_panels("mature Arrowtooth Flounder", model, "temp")
-# 
+#
 # species_panels("mature Flathead Sole", model, "temp")
 # species_panels("immature Flathead Sole", model, "temp")
 # species_panels ("mature Dover Sole", model, "temp")
 # species_panels ("immature Dover Sole", model, "temp")
 # species_panels("mature English Sole", model, "temp")
 # species_panels("immature English Sole", model, "temp", alpha_range = c(0.25, 0.9))
-# 
+#
 # species_panels("mature Pacific Cod", model, "temp", alpha_range = c(0.25, 0.9))
 # species_panels("mature Canary Rockfish", model, "temp", alpha_range = c(0.25, 0.9))
 # species_panels("mature Widow Rockfish", model, "temp")
@@ -835,13 +838,13 @@ ggsave(here::here("ms", "figs", "all-chop-panels4.pdf"), width = 18, height = 8)
 
 # species_panels("mature Sablefish", model, "DO")
 # species_panels("mature Pacific Cod", model, "DO")
-# 
+#
 # species_panels("mature Canary Rockfish", model, "DO", alpha_range = c(0.25, 0.9))
 # species_panels("mature Yelloweye Rockfish", model, "DO", alpha_range = c(0.25, 0.9))
 # species_panels("mature Bocaccio", model, "DO", alpha_range = c(0.25, 0.9))
 # species_panels("mature Redbanded Rockfish", model, "DO")
 # species_panels("mature Widow Rockfish", model, "DO")
-# 
+#
 # species_panels("mature Pacific Halibut", model, "DO")
 # species_panels("mature English Sole", model, "DO")
 # species_panels("mature Flathead Sole", model, "DO")
@@ -923,8 +926,8 @@ temp_high <- slope_scatterplot(
   ylab("Slope at highest temperature") +
   scale_y_continuous(breaks = c(3, 0, -3, -6, -9)) +
   coord_cartesian(ylim = c(-11, 4.2), xlim = c(15, 410)) +
-  scale_colour_manual(values = c("Red 3","Red 3")) + 
-  # scale_colour_manual(values = c("#D53E4F","#D53E4F")) + 
+  scale_colour_manual(values = c("Red 3", "Red 3")) +
+  # scale_colour_manual(values = c("#D53E4F","#D53E4F")) +
   theme(
     plot.margin = margin(0, 0.1, 0, 0.2, "cm"),
     # legend.position = c(.85, .2), legend.title = element_blank(),
@@ -944,15 +947,15 @@ do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth",
   # geom_linerange(aes(xmin=depth25, xmax = depth75), alpha = 0.2, size = 2) +
   geom_point(size = 1, fill = "white") +
   xlab("Mean depth for species") +
-  ylab("Slope at lowest DO") + #guides(colour = F) +
+  ylab("Slope at lowest DO") + # guides(colour = F) +
   coord_cartesian(xlim = c(15, 410)) +
   ggrepel::geom_text_repel(aes(label = species_lab),
     size = 3, force = 3, nudge_y = 0.35, nudge_x = 35,
     na.rm = T, min.segment.length = 2
   ) +
-  scale_colour_manual(values = c("darkcyan","darkcyan")) + 
+  scale_colour_manual(values = c("darkcyan", "darkcyan")) +
   gfplot::theme_pbs() + theme(
-    # legend.position = c(.85, .2), legend.title = element_blank(), 
+    # legend.position = c(.85, .2), legend.title = element_blank(),
     legend.position = "none",
     plot.margin = margin(0, 0.1, 0, 0.2, "cm"),
     axis.title.y.left = element_text(vjust = 0.2),
@@ -1067,10 +1070,10 @@ trendeffects$allspp <- "All species"
 p_depth <- coef_scatterplot(trendeffects,
   coef = c("Temperature", "DO"),
   x = "depth_iqr", group = "age", regression = F
-) +  
+) +
   ylab("Trend coefficient") + xlab("Depth range (IQR)") + # (25th to 75th quartile)
   geom_smooth(
-    # data = filter(trendeffects, coefficient != "DO" & age == "mature"), 
+    # data = filter(trendeffects, coefficient != "DO" & age == "mature"),
     inherit.aes = F,
     aes_string("depth_iqr", "Estimate"),
     method = "lm", size = 0.5,
@@ -1084,7 +1087,7 @@ p_depth <- coef_scatterplot(trendeffects,
   facet_grid(rows = vars(coefficient), cols = vars(allspp), scales = "free_y") +
   # gfplot:::theme_pbs() %+replace%
   theme(
-    legend.position = "none", 
+    legend.position = "none",
     plot.margin = margin(0.1, 0.15, 0.1, 0, "cm"),
     strip.background = element_blank(),
     strip.text.y = element_blank(), strip.text.x = element_blank(),
@@ -1115,25 +1118,25 @@ p_depth <- coef_scatterplot(trendeffects,
 #   ) +
 #   facet_grid(rows = vars(coefficient), cols = vars(rockfish), scales = "free")
 
-p_age <- coef_scatterplot(trendeffects,
+(p_age <- coef_scatterplot(trendeffects,
   coef = c("Temperature", "DO"),
   x = "age_mean", group = "age", regression = F
-) +  
+) +
   geom_smooth(
-    # data = filter(trendeffects, coefficient != "DO" & age == "mature"), 
+    # data = filter(trendeffects, coefficient != "DO" & age == "mature"),
     inherit.aes = F,
     aes_string("age_mean", "Estimate"),
     method = "lm", size = 0.5,
     colour = "darkgray",
     fill = "lightgray"
   ) + geom_point(size = 1, fill = "white") +
-  xlab("Mean age") +  
-  # scale_colour_manual(values = c("darkorchid4", "darkcyan")) + #"royalblue4"
+  xlab("Mean age") +
+  # scale_colour_manual(values = c("darkorchid4", "royalblue4")) + #"darkcyan"
   scale_colour_viridis_d(begin = 0.8, end = 0.2) +
   scale_x_log10() +
   guides(colour = F) +
   theme(
-    legend.position = "none", 
+    legend.position = "none",
     plot.margin = margin(0.1, 0.15, 0.1, 0, "cm"),
     strip.background = element_blank(),
     strip.text.y = element_blank(), strip.text.x = element_blank(),
@@ -1143,6 +1146,7 @@ p_age <- coef_scatterplot(trendeffects,
     axis.ticks = element_blank()
   ) +
   facet_grid(rows = vars(coefficient), cols = vars(allspp), scales = "free_y")
+)
 
 trendeffects <- mutate(trendeffects, growth_rate = length_50_mat_f / age_mat, growth_rate_m = length_50_mat_m / age_mat_m)
 # plot(data = trendeffects, growth_rate ~ growth_rate_m)
@@ -1193,7 +1197,7 @@ p_mat <- coef_scatterplot(trendeffects,
   x = "growth_rate",
   # x = "length_50_mat_f",
   group = "age", regression = F
-) +  
+) +
   xlab("Immature growth rate") +
   geom_smooth(
     data = filter(trendeffects, age != "mature"), # inherit.aes = F,

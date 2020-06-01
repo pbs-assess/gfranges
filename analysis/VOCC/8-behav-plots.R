@@ -671,7 +671,9 @@ dredgedat <- temp_slopes %>% select(slope, slope_est, slope_se, slope_trim, max_
   chopstick, species, species_age)
 
 tempslopemod <- lmerTest::lmer(slope ~ 
-    Schooling * Latitude +
+    Schooling + Zone + 
+    # Specialist + # lacks generalist representatives in North
+    Trophic * Latitude +
     Rockfish * age +
     max_mass_scaled * Schooling +
     max_mass_scaled * age +
@@ -679,7 +681,6 @@ tempslopemod <- lmerTest::lmer(slope ~
     Zone * depth_iqr_scaled +
     Latitude * depth_iqr_scaled  +
     Trophic * depth_iqr_scaled +
-    Specialist * depth_iqr_scaled +
     chopstick + 
     (1|species) + (1|species_age), na.action = na.fail, REML = F, 
   data = dredgedat) 
@@ -694,7 +695,7 @@ tempslopemod <- lmerTest::lmer(slope ~
     # age +  # probably spurious
     # Rockfish + # probably spurious
     chopstick + 
-    (1|species) + (1|species_age), na.action = na.fail, REML = T, 
+    (1|species) + (1|species_age), REML = T, 
   data = dredgedat) 
 
 tempslopemod %>% summary()
@@ -926,10 +927,10 @@ tempslopemod2f <- lmerTest::lmer(slope ~ 1 + depth_iqr_scaled * age + growth_rat
 (m2 <- MuMIn::dredge(tempslopemod2f, beta = "partial.sd"))
 
 tempslopemod2 <- lmerTest::lmer(slope ~ 1 + depth_iqr_scaled * age + growth_rate_scaled * age + chopstick + 
-    (1|species) + (1|species_age), na.action = na.fail, REML = T, data = dredgedat2) 
+    (1|species) + (1|species_age),REML = T, data = dredgedat2) 
 
 tempslopemod2b <- lmerTest::lmer(slope ~ 1 + depth_iqr_scaled * age + log_age_scaled + growth_rate_scaled * age + chopstick + 
-    (1|species) + (1|species_age), na.action = na.fail, REML = T, data = dredgedat2) 
+    (1|species) + (1|species_age), REML = T, data = dredgedat2) 
 
 # tempslopemod2c <- lmerTest::lmer(slope ~ 1 + depth_iqr_scaled + log_age_scaled * age + chopstick + 
     # (1|species) + (1|species_age), na.action = na.fail, REML = T, data = dredgedat2) 
