@@ -39,9 +39,12 @@ long_slopes <- long_slopes %>% mutate(
   Schooling = as.factor(Schooling),
   Trophic = factor(if_else(Diet == "Zooplankton", "Lower", "Higher"), levels = c("Lower", "Higher")),
   Specialist = factor(if_else(Diet == "Generalist", "Generalist", "Specialist"), levels = c("Generalist", "Specialist")),
+  depth_iqr_scaled = scale(log(depth_iqr), center = T),
   log_age_scaled = scale(log(age_mean + 1), center = T),
   max_mass_scaled = scale(log(weight_99th + 1), center = T),
+  # age_mat is the 95 quantile of ages for immature females
   growth_rate_scaled = scale(log((length_50_mat_f / age_mat)+1), center = T)
+  
   )
 
 # collapse Middle and South together because only 3 "southern" species
@@ -68,13 +71,14 @@ do_slopes %>% lmerTest::lmer(slope ~ 0 + chopstick + (1|species) + (1|species_ag
 # high temp and low DO have sig non-zero effects (in both cases negative) 
 best_slopes <- long_slopes %>% filter( slope_type == "high temp" | slope_type == "low DO") 
 
-
+#########################################
+###### INDEPENDENT EFFFECTS ############
+#########################################
 #### WILCOX TESTS OF OVERALL EFFECTS ####
 # preliminary impressions from the following code
 # intercept slightly negative, for northern, immature, zooplankton eating pops at high temperatures
 # less negative for low temp, moderate latitudes
 # more negative for generalists and piscivores and those foraging in Benthopelagic zone
-
 
 #### Is there an effect of age? ####
 #### paired test of coefficients by age 
@@ -195,8 +199,7 @@ compare_means(slope~Specialist, filter(do_slopes, chopstick == "low"), method = 
 
 
 #########################################
-#########################################
-#### MIXED MODELS WITHOUT INTERCEPTS ####
+### MIXED MODELS WITHOUT INTERCEPTS ####
 #########################################
 #########################################
 
@@ -574,60 +577,11 @@ p1 + p2 + p3 + p4 + p5 + p6 + p8 + p9b + p7b + patchwork::plot_layout(ncol=1, he
 ggsave(here::here("ms", "figs", "behav-slope-diff-zero2.pdf"), width = 5, height = 10 )
 
 
-#### ALL SIG EFFECT COMBINED #### 
-
-temp_slopes %>% lmerTest::lmer(slope ~ 1 + Diet + age + Zone + Latitude + chopstick + Schooling + Rockfish + (1|species) + (1|species_age), data = .) %>% anova() # .
-temp_slopes %>% lmerTest::lmer(slope ~ 1 + Diet + Zone + Latitude + chopstick + age + (1|species) + (1|species_age), data = .) %>% anova() # .
-
-temp_slopes %>% lmerTest::lmer(slope ~ 0 + Diet + age + Zone + Latitude + chopstick + (1|species) + (1|species_age), data = .) %>% summary()  # .
-temp_slopes %>% lmerTest::lmer(slope ~ 0 + Diet + Zone + Latitude + chopstick + (1|species) + (1|species_age), data = .) %>% summary()  # .
-
-# temperature has stronger -ve effects for northern benthopelagic piscivores 
-
-do_slopes %>% lmerTest::lmer(slope ~ 1 + Diet + age + Zone + Latitude + chopstick + Schooling + Rockfish + (1|species) + (1|species_age), data = .) %>% anova() # .
-# do_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick + age + (1|species) + (1|species_age), data = .) %>% anova() # .
-# do_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick + age + (1|species) + (1|species_age), data = .) %>% summary() 
-
-# no patterns for DO
-#########################################
-#### Add in continuous covariatiates #### 
-
-# temp_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick + Zone + Latitude + max_mass_scaled * age + growth_rate_scaled * age + max_mass_scaled * growth_rate_scaled + log_age_scaled + (1|species) + (1|species_age), data = .) %>% anova()
-# 
-# temp_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick + Zone + Latitude + max_mass_scaled + growth_rate_scaled * age + log_age_scaled + (1|species) + (1|species_age), data = .) %>% anova()
-# 
-# 
-# temp_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick + Zone + Latitude + growth_rate_scaled * age + log_age_scaled + (1|species) + (1|species_age), data = .) %>% anova()
-# 
-# temp_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick + Zone + Latitude + growth_rate_scaled * age + log_age_scaled + (1|species) + (1|species_age), data = .) %>% summary()
-# 
-########################################
-# # full model with both chopsticks (mean effects) 
-# temp_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick + Latitude + growth_rate_scaled * age + log_age_scaled + (1|species) + (1|species_age), data = .) %>% anova()
-temp_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick + Latitude + growth_rate_scaled * age + log_age_scaled + (1|species) + (1|species_age), data = .) %>% summary()
-
-### models for just highest temperatures ####
-# filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 +  Zone * growth_rate_scaled + Zone * max_mass_scaled + Latitude * growth_rate_scaled + growth_rate_scaled * age + log_age_scaled * max_mass_scaled + (1|species), data = .) %>% anova()
-
-# filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 +  Zone + Latitude + growth_rate_scaled * age + log_age_scaled + (1|species), data = .) %>% anova()
-
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 +  Zone + Latitude + growth_rate_scaled * age + log_age_scaled + (1|species), data = .) %>% summary()
-
-# filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Zone + Latitude + growth_rate_scaled * max_mass_scaled + growth_rate_scaled * age + (1|species), data = .) %>% anova()
-
-
-# with only high temp chosticks, zone is almost sig...
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Zone + Latitude + growth_rate_scaled * age + (1|species), data = .) %>% anova()
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Zone + Latitude + growth_rate_scaled * age + (1|species), data = .) %>% summary()
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope_trim ~ 1 + Zone + Latitude + growth_rate_scaled * age + (1|species), data = .) %>% summary() # retains sig
-
-# hist(temp_slopes$slope)
 #### explore zone and diet combinations ####
-
 temp_slopes %>% filter(chopstick == "high") %>% 
   # filter(age == "Immature") %>%
-ggboxplot(x = "Diet", y = "slope",  color = "slope_type", id = "species", 
-  ylab = "Slope", repel = T, facet.by = c("Zone")) + 
+  ggboxplot(x = "Diet", y = "slope",  color = "slope_type", id = "species", 
+    ylab = "Slope", repel = T, facet.by = c("Zone")) + 
   scale_colour_manual(values = c("Red 3", "royalblue4", "goldenrod1", "darkcyan")) + 
   geom_point() +
   geom_hline(yintercept = 0, colour = "black", linetype = "dashed") +
@@ -640,7 +594,7 @@ ggboxplot(x = "Diet", y = "slope",  color = "slope_type", id = "species",
     # aes(label = paste0(..p.signif..)), 
     # label.x = c(0.1,0.25,0.5,0.75,0.9), #sort(unique(temp_slopes$Diet))# method = "t.test",
     method = "wilcox.test"
-    ) + theme(legend.position = "none")
+  ) + theme(legend.position = "none")
 
 # Specialists
 temp_slopes %>% filter(chopstick == "high") %>% 
@@ -688,245 +642,699 @@ filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + log_age_
 filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + log_age_scaled + Specialist + Zone + Latitude + growth_rate_scaled * age + (1|species), data = .) %>% anova()
 
 
-#### DO WITH CONTIUOUS ####
 
+
+#### preliminary conclusions #### 
+# temperature has stronger -ve effects for higher trophic level, northern, Benthopelagic, and maybe immatures
+# most -ve for immatures in benthopalagic zones
+#########################################
+###### MARGINAL EFFECTS #######
+# hist(temp_slopes$slope)
+### models for just highest temperatures ####
+filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Trophic + age + Zone + Latitude + (1|species), data = .) %>% anova() #*
+filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Trophic + age + Zone + Latitude + (1|species), data = .) %>% summary()
+# matches both slopes result
+
+#### DO need to redo but preliminary exploration suggests ####
 # bigger adults = more negative
 # faster growing juvi = more negative
 # but collapsing outliers loses sig
 
-#### stepwise ####
-# do_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick + max_mass_scaled * age + growth_rate_scaled * age + max_mass_scaled * growth_rate_scaled + log_age_scaled  + (1|species) + (1|species_age), data = .) %>% anova() # .
-# do_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick + max_mass_scaled * age + growth_rate_scaled * age + max_mass_scaled * growth_rate_scaled + (1|species) + (1|species_age), data = .) %>% anova() # .
+#FINAL MODELS #####
+
+rm(tempslopemod)
+# change order to force dashed line in effect_plots to be for immature
+temp_slopes <- temp_slopes %>% mutate(age = factor(age, levels = c("Mature", "Immature")) ) 
+
+dredgedat <- temp_slopes %>% select(slope, slope_est, slope_se, slope_trim, max_mass_scaled,
+  Schooling, Rockfish, age, depth_iqr_scaled, Zone, Latitude, Trophic, Specialist,
+  chopstick, species, species_age)
+
+tempslopemod <- lmerTest::lmer(slope ~ 
+    Schooling * Latitude +
+    Rockfish * age +
+    max_mass_scaled * Schooling +
+    max_mass_scaled * age +
+    # Schooling *  depth_iqr_scaled + # only include one of this or the Zone interaction as they are confounded
+    Zone * depth_iqr_scaled +
+    Latitude * depth_iqr_scaled  +
+    Trophic * depth_iqr_scaled +
+    Specialist * depth_iqr_scaled +
+    chopstick + 
+    (1|species) + (1|species_age), na.action = na.fail, REML = F, 
+  data = dredgedat) 
+
+(m <- MuMIn::dredge(tempslopemod, beta = "partial.sd"))
+
+tempslopemod <- lmerTest::lmer(slope ~ 
+    Zone * depth_iqr_scaled +
+    Latitude + 
+    Latitude * depth_iqr_scaled  + # weakest interaction but still sig
+    Trophic * depth_iqr_scaled +
+    # age +  # probably spurious
+    # Rockfish + # probably spurious
+    chopstick + 
+    (1|species) + (1|species_age), na.action = na.fail, REML = T, 
+  data = dredgedat) 
+
+tempslopemod %>% summary()
+
+#### plot marginal effects for high temp slopes #### 
+#### faded points are low temp slopes
+#### LATITUDE ####
+(p_depth_lat <- interactions::interact_plot(tempslopemod,
+  pred = depth_iqr_scaled, modx = Latitude,
+  interval = TRUE, int.type = c("prediction"), line.thickness = 0.5,
+  outcome.scale = "response", plot.points = TRUE,
+  #partial.residuals = T,
+  point.alpha = 0.25,
+  point.shape = T,
+  # legend.main = "age",
+  # modx.values = c("Mature", "Immature"),
+  vary.lty =TRUE
+) + geom_point(data = filter(temp_slopes, chopstick == "high"),
+      aes(depth_iqr_scaled, slope, colour = Latitude, shape = Latitude), alpha = 1,
+      inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "high"),
+      aes(x = depth_iqr_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+        colour = Latitude, shape = Latitude), alpha = 1, fatten = 1, inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "low"),
+      aes(x = depth_iqr_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+        colour = Latitude, shape = Latitude), alpha = 0.2, fatten = 1, inherit.aes = F) +
+    scale_colour_manual(values = c("royalblue4", "red 4")) +
+    scale_fill_manual(values = c("royalblue4", "red 3")) +
+    ## colours used for maturity
+    # scale_colour_manual(values = c("royalblue4", "darkorchid4")) +
+    # scale_fill_manual(values = c("royalblue4", "darkorchid4")) +
+    scale_shape_manual(values = c(21, 19)) +
+    # back transform axis labels on scaled depth iqr
+    scale_x_continuous(labels = function(x)
+      paste0(round(exp(x * attributes(temp_slopes$depth_iqr_scaled)[[3]] +
+          attributes(temp_slopes$depth_iqr_scaled)[[2]])))) +
+    coord_cartesian(ylim = c(-10,5)) +
+    gfplot::theme_pbs() +
+    ylab("Biomass change ~ warming rate") +
+    xlab("Depth range (IQR)") +
+    # labs(tag = "D") +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0.2, 0.2, 0.3, "cm"),
+      plot.tag.position = c(0.225,0.925),
+      legend.title.align=0,
+      axis.title.x = element_blank(),
+      # legend.title = element_blank(),
+      # legend.position = "none")
+  legend.position = c(0.8,0.15))
+)
+#### FORAGING ZONE ####
+(p_depth_zone <- interactions::interact_plot(tempslopemod, 
+  pred = depth_iqr_scaled, modx = Zone, 
+  interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
+  outcome.scale = "response", plot.points = TRUE,
+  #partial.residuals = T, 
+  point.alpha = 0.25,
+  point.shape = T, 
+  # modx.values = c("Lower", "Higher"),
+  vary.lty =TRUE
+) + geom_point(data = filter(temp_slopes, chopstick == "high"),
+  aes(depth_iqr_scaled, slope, colour = Zone, shape = Zone), alpha = 1,
+  inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "high"), 
+      aes(x = depth_iqr_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+        colour = Zone, shape = Zone), alpha = 1, fatten = 1, inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "low"), 
+      aes(x = depth_iqr_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+        colour = Zone, shape = Zone), alpha = 0.2, fatten = 1, inherit.aes = F) +
+    scale_colour_manual(values = c("royalblue4", "red 4")) +
+    scale_fill_manual(values = c("royalblue4", "red 3")) + 
+    ## alternate colours used 
+    # scale_colour_manual(values = c("royalblue4", "maroon")) +
+    # scale_fill_manual(values = c("royalblue4", "maroon")) +
+    scale_shape_manual(values = c(21, 19)) +
+    # back transform axis labels on scaled depth iqr
+    scale_x_continuous(labels = function(x)
+      paste0(round(exp(x * attributes(temp_slopes$depth_iqr_scaled)[[3]] +
+          attributes(temp_slopes$depth_iqr_scaled)[[2]])))) +
+    coord_cartesian(ylim = c(-10,5)) +
+    gfplot::theme_pbs() + 
+    # ylab("Peak Frequency") +
+    xlab("Depth range (IQR)") +
+    # labs(tag = "D") + 
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0.2, 0.2, 0.3, "cm"),
+      axis.title=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title.align=0,
+      # legend.title = element_blank(),
+      # legend.position = "none")
+      legend.position = c(0.8,0.15))
+)
+
+### too few schooling demersal fishes so confounded with ZONE ####
+# (p_depth_sch <- interactions::interact_plot(tempslopemod, 
+#   pred = depth_iqr_scaled, modx = Schooling, 
+#   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
+#   outcome.scale = "response", plot.points = TRUE,
+#   #partial.residuals = T, 
+#   point.alpha = 0.25,
+#   point.shape = T, 
+#   # modx.values = c("Lower", "Higher"),
+#   vary.lty =TRUE
+# ) + geom_point(data = filter(temp_slopes, chopstick == "high"),
+#   aes(depth_iqr_scaled, slope, colour = Schooling, shape = Schooling), alpha = 1,
+#   inherit.aes = F) +
+#     geom_linerange(data = filter(temp_slopes, chopstick == "high"), 
+#       aes(x = depth_iqr_scaled,
+#         ymin = (slope_est - slope_se * 1.96),
+#         ymax = (slope_est + slope_se * 1.96),
+#         colour = Schooling, shape = Schooling), alpha = 1, fatten = 1, inherit.aes = F) +
+#     geom_linerange(data = filter(temp_slopes, chopstick == "low"), 
+#       aes(x = depth_iqr_scaled,
+#         ymin = (slope_est - slope_se * 1.96),
+#         ymax = (slope_est + slope_se * 1.96),
+#         colour = Schooling, shape = Schooling), alpha = 0.2, fatten = 1, inherit.aes = F) +
+#     scale_colour_manual(values = c("royalblue4", "red 4")) +
+#     scale_fill_manual(values = c("royalblue4", "red 3")) + 
+#     ## alternate colours used 
+#     # scale_colour_manual(values = c("royalblue4", "maroon")) +
+#     # scale_fill_manual(values = c("royalblue4", "maroon")) +
+#     scale_shape_manual(values = c(21, 19)) +
+#     # back transform axis labels on scaled depth iqr
+#     scale_x_continuous(labels = function(x)
+#       paste0(round(exp(x * attributes(temp_slopes$depth_iqr_scaled)[[3]] +
+#           attributes(temp_slopes$depth_iqr_scaled)[[2]])))) +
+#     coord_cartesian(ylim = c(-10,5)) +
+#     gfplot::theme_pbs() + 
+#     # ylab("Peak Frequency") +
+#     xlab("Depth range (IQR)") +
+#     # labs(tag = "D") + 
+#     gfplot::theme_pbs() + theme(
+#       plot.margin = margin(0.2, 0.2, 0.2, 0.3, "cm"),
+#       axis.title=element_blank(),
+#       axis.text.y=element_blank(),
+#       axis.ticks.y=element_blank(),
+#       plot.tag.position = c(0.225,0.925),
+#       legend.title.align=0,
+#       # legend.title = element_blank(),
+#       # legend.position = "none")
+#       legend.position = c(0.8,0.15))
+# )
+#### TROPHIC LEVEL ####
+(p_depth_troph <- interactions::interact_plot(tempslopemod, 
+  pred = depth_iqr_scaled, modx = Trophic, 
+  interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
+  outcome.scale = "response", plot.points = TRUE,
+  #partial.residuals = T, 
+  point.alpha = 0.25,
+  point.shape = T, 
+  # legend.main = "Trophic level",
+  modx.values = c("Lower", "Higher"),
+  vary.lty =TRUE
+) + geom_point(data = filter(temp_slopes, chopstick == "high"),
+  aes(depth_iqr_scaled, slope, colour = Trophic, shape = Trophic), alpha = 1,
+  inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "high"), 
+      aes(x = depth_iqr_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+        colour = Trophic, shape = Trophic), alpha = 1, fatten = 1, inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "low"), 
+      aes(x = depth_iqr_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+        colour = Trophic, shape = Trophic), alpha = 0.2, fatten = 1, inherit.aes = F) +
+    scale_colour_manual(values = c("royalblue4", "red 4")) +
+    scale_fill_manual(values = c("royalblue4", "red 3")) + 
+    ## alternate colours 
+    # scale_colour_manual(values = c("darkorchid4", "maroon")) +
+    # scale_fill_manual(values = c("darkorchid4", "maroon")) +
+    scale_shape_manual(values = c(21, 19)) +
+    # back transform axis labels on scaled depth iqr
+    scale_x_continuous(labels = function(x) 
+      paste0(round(exp(x * attributes(temp_slopes$depth_iqr_scaled)[[3]] + 
+          attributes(temp_slopes$depth_iqr_scaled)[[2]])))) +
+    coord_cartesian(ylim = c(-10,5)) +
+    gfplot::theme_pbs() + 
+    # ylab("Peak Frequency") +
+    xlab("Depth range (IQR)") +
+    # labs(tag = "D") + 
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0.2, 0.2, 0.3, "cm"),
+      axis.title=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title.align=0,
+      # legend.title = element_blank(),
+      # legend.position = "none")
+      legend.position = c(0.8,0.15))
+)
+
+#####################
+#### SAVE FIGURE ####
+# (p_depth_lat + p_depth_zone + p_depth_troph + plot_layout(ncol = 3))/grid::textGrob("Depth range (IQR)", 
+#   just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 2, heights = c(1, 0.02))
 # 
-# do_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick + max_mass_scaled * age + growth_rate_scaled * age + max_mass_scaled * growth_rate_scaled + (1|species) + (1|species_age), data = .) %>% summary() # .
-######
-do_slopes %>% lmerTest::lmer(slope ~ 0 + chopstick + max_mass_scaled * age + growth_rate_scaled * age + (1|species) + (1|species_age), data = .) %>% summary() 
-do_slopes %>% lmerTest::lmer(slope_trim ~ 0 + chopstick + max_mass_scaled * age + growth_rate_scaled * age + (1|species) + (1|species_age), data = .) %>% summary() ### not sig anymore
+# ggsave(here::here("ms", "figs", "ecology-slope-model.pdf"), width = 10, height = 3.5)
 
-### only for low DO = same answer but stronger effects ####
+(p_depth_sch + p_depth_zone + plot_layout(ncol = 3))/grid::textGrob("Depth range (IQR)", 
+  just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 2, heights = c(1, 0.02))
 
-filter(do_slopes, chopstick == "low")  %>% lmerTest::lmer(slope ~ 1 + max_mass_scaled * age + growth_rate_scaled * age + max_mass_scaled * growth_rate_scaled + log_age_scaled  + (1|species), data = .) %>% anova() 
+ggsave(here::here("ms", "figs", "ecology-slope-model.pdf"), width = 10, height = 3.5)
 
-filter(do_slopes, chopstick == "low")  %>% lmerTest::lmer(slope ~ 1 + max_mass_scaled * age + growth_rate_scaled * age + max_mass_scaled * growth_rate_scaled + (1|species), data = .) %>% summary() 
-
-filter(do_slopes, chopstick == "low")  %>% lmerTest::lmer(slope ~ 1 + max_mass_scaled * age + growth_rate_scaled * age + (1|species), data = .) %>% summary() 
-
-filter(do_slopes, chopstick == "low")  %>% lmerTest::lmer(slope_trim ~ 1 + max_mass_scaled * age + growth_rate_scaled * age + 
-    (1|species), data = .) %>% summary()  ### not sig anymore
-
-##############################
-#### OLD PLOT CODE
-##############################
-### split by maturity too ####
+#####################
+#### CHECK AGE EFFECTS
+#####################
+dredgedat2 <- temp_slopes %>% select(slope, slope_est, slope_se, slope_trim,
+  age, depth_iqr_scaled, Zone, log_age_scaled, growth_rate_scaled, max_mass_scaled,
+  Latitude, Trophic, chopstick, species, species_age) %>% na.delete()
 
 
-p1 <- ggplot(data = filter(long_slopes, type == "temp"), aes(slope, Latitude, colour = slope_type, fill = slope_type )) + 
-  scale_colour_manual(values = c("Red 3", "royalblue4") )+ scale_fill_manual(values = c("Red 3", "royalblue4")) + 
-  geom_vline(xintercept = 0, colour = "grey") +
-  #  geom_boxplot(alpha = 0.12, outlier.colour = "white", notch = F) +
-  geom_violin(alpha = 0.1) + #scale = "width",
-  geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
-  facet_grid(cols = vars(age), scales = "free") + scale_x_continuous(expand = c(0.2,0.2)) + 
-  # ggtitle("Range limits") +
-  gfplot:::theme_pbs() + 
-  theme(plot.title = element_text(hjust = 0.5),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks = element_blank(),
-    strip.text.y = element_blank(),
-    plot.margin = margin(0.1, 0, 0.1, 0.1, "cm"),
-    legend.position = "none"
-    # legend.title = element_blank(),
-    # legend.position = c(.15, .15)
-  ) 
-p1d <- ggplot(data = filter(long_slopes, type == "DO"), aes(slope, Latitude, colour = slope_type, fill = slope_type )) + 
-  scale_colour_manual(values = c("goldenrod1", "darkcyan") )+ scale_fill_manual(values = c("goldenrod1", "darkcyan")) + 
-  geom_vline(xintercept = 0, colour = "grey") +
-  #  geom_boxplot(alpha = 0.12, outlier.colour = "white", notch = F) +
-  geom_violin(alpha = 0.1) + #scale = "width",
-  geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
-  facet_grid(cols = vars(age), scales = "free") + scale_x_continuous(expand = c(0.2,0.2)) + 
-  gfplot:::theme_pbs() + 
-  theme(plot.title = element_text(hjust = 0.5),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks = element_blank(),
-    axis.title.y = element_blank(),
-    axis.text.y = element_blank(),
-    strip.text.y = element_blank(),
-    plot.margin = margin(0.1, 0, 0.1, 0.1, "cm"),
-    # legend.position = "none"
+tempslopemod2f <- lmerTest::lmer(slope ~ 1 + depth_iqr_scaled * age + growth_rate_scaled * age + log_age_scaled * age + max_mass_scaled * age + chopstick + 
+    (1|species) + (1|species_age), na.action = na.fail, REML = F, data = dredgedat2) 
+
+# convergence issues with nested chop
+(m2 <- MuMIn::dredge(tempslopemod2f, beta = "partial.sd"))
+
+tempslopemod2 <- lmerTest::lmer(slope ~ 1 + depth_iqr_scaled * age + growth_rate_scaled * age + chopstick + 
+    (1|species) + (1|species_age), na.action = na.fail, REML = T, data = dredgedat2) 
+
+tempslopemod2b <- lmerTest::lmer(slope ~ 1 + depth_iqr_scaled * age + log_age_scaled + growth_rate_scaled * age + chopstick + 
+    (1|species) + (1|species_age), na.action = na.fail, REML = T, data = dredgedat2) 
+
+# tempslopemod2c <- lmerTest::lmer(slope ~ 1 + depth_iqr_scaled + log_age_scaled * age + chopstick + 
+    # (1|species) + (1|species_age), na.action = na.fail, REML = T, data = dredgedat2) 
+
+tempslopemod2 %>% summary()
+tempslopemod2b %>% summary()
+
+#### for smaller subset of species that have age data
+#### effect of mean age and maturity
+
+#### remove slope for mature, because growth_rate for immature only
+#### faded points are low temp slopes
+
+temp_slopes <- temp_slopes %>% mutate(age = factor(age, levels = c("Mature", "Immature")) )
+
+(p_depth_age <- interactions::interact_plot(tempslopemod2, pred = depth_iqr_scaled, 
+  modx = age, 
+  interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
+  outcome.scale = "response", plot.points = TRUE,
+  #partial.residuals = T, 
+  point.alpha = 0.25,
+  point.shape = T, 
+  modx.values = c("Mature", "Immature"),
+  vary.lty =TRUE#, legend.main = " "
+) + 
+    geom_point(data = filter(temp_slopes, chopstick == "high"),
+      aes(depth_iqr_scaled, slope, colour = age, shape = age), alpha = 1,
+      inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "high"), 
+      aes(x = depth_iqr_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+        colour = age, shape = age), alpha = 1, fatten = 1, inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "low"), 
+      aes(x = depth_iqr_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+        colour = age, shape = age), alpha = 0.2, fatten = 1, inherit.aes = F) +
+    scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
+    scale_fill_manual(values = c("cornflowerblue", "deepskyblue")) +
+    # scale_colour_manual(values = c("royalblue4", "darkorchid4")) +
+    # scale_fill_manual(values = c("royalblue4", "darkorchid4")) + 
+    scale_shape_manual(values = c(19, 21)) +
+    # back transform axis labels on scaled log growth rate
+    scale_x_continuous(labels = function(x) 
+      paste0(round(exp(x * attributes(temp_slopes$depth_iqr_scaled)[[3]] + 
+          attributes(temp_slopes$depth_iqr_scaled)[[2]])+1))) +
+    coord_cartesian(ylim = c(-10,5)) +
+    xlab("Depth range (IQR)") +
+    ylab("Biomass change ~ warming rate") +
+    # labs(tag = "D") + 
+    # labs(colour = "Maturity") +
+    gfplot::theme_pbs() + theme( 
+      plot.margin = margin(0.2, 0.2, 0.2, 0.3, "cm"),
+      # axis.title.y=element_blank(),
+      # axis.text.y=element_blank(),
+      # axis.ticks.y=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title.align=0,
+      legend.title = element_blank(),
+      legend.position = c(0.8,0.15))
+  # legend.position = "none")
+)
+
+(p_log_age <- interactions::interact_plot(tempslopemod2b, pred = log_age_scaled, 
+  modx = age, 
+  interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
+  outcome.scale = "response", plot.points = TRUE,
+  #partial.residuals = T, 
+  point.alpha = 0.25,
+  point.shape = T, 
+  modx.values = c("Mature", "Immature"),
+  vary.lty =TRUE#, legend.main = " "
+) + 
+    geom_point(data = filter(temp_slopes, chopstick == "high"),
+      aes(log_age_scaled, slope, colour = age, shape = age), alpha = 1,
+      inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "high"), 
+      aes(x = log_age_scaled,
+      ymin = (slope_est - slope_se * 1.96),
+      ymax = (slope_est + slope_se * 1.96),
+      colour = age, shape = age), alpha = 1, fatten = 1, inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "low"), 
+      aes(x = log_age_scaled,
+      ymin = (slope_est - slope_se * 1.96),
+      ymax = (slope_est + slope_se * 1.96),
+      colour = age, shape = age), alpha = 0.2, fatten = 1, inherit.aes = F) +
+    scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
+    scale_fill_manual(values = c("cornflowerblue", "deepskyblue")) +
+    # scale_colour_manual(values = c("royalblue4", "darkorchid4")) +
+    # scale_fill_manual(values = c("royalblue4", "darkorchid4")) + 
+    scale_shape_manual(values = c(19, 21)) +
+    # back transform axis labels on scaled log growth rate
+    scale_x_continuous(labels = function(x) 
+      paste0(round(exp(x * attributes(temp_slopes$log_age_scaled)[[3]] + 
+          attributes(temp_slopes$log_age_scaled)[[2]])+1))) +
+    coord_cartesian(ylim = c(-10,5)) +
+    xlab("Mean age ") +
+    ylab("Biomass change ~ warming rate") +
+    # labs(tag = "D") + 
+    # labs(colour = "Maturity") +
+    gfplot::theme_pbs() + theme( 
+      plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
+      axis.title.y=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title.align=0,
+      legend.title = element_blank(),
+      # legend.position = c(0.8,0.15))
+      legend.position = "none")
+)
+
+#### effect of immature growth rate 
+(p_growth_rate <- interactions::interact_plot(tempslopemod2, pred = growth_rate_scaled, modx = age, 
+  interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
+  outcome.scale = "response", plot.points = TRUE,
+  #partial.residuals = T, 
+  point.alpha = 0.25,
+  point.shape = F, 
+  modx.values = c("Mature", "Immature"),
+  vary.lty =TRUE, legend.main = "age"
+) + 
+    geom_point(data = filter(temp_slopes, chopstick == "high" & age == "Immature"),
+      aes(growth_rate_scaled, slope, colour = age, shape = age), alpha = 1,
+      inherit.aes = F) +
+    geom_point(data = filter(temp_slopes, chopstick == "low" & age == "Mature"),
+      aes(growth_rate_scaled, slope, shape = age), alpha = 0.25, colour = "royalblue4",
+      inherit.aes = F) +
+    geom_point(data = filter(temp_slopes, chopstick == "high" & age == "Mature"),
+      aes(growth_rate_scaled, slope, shape = age), alpha = 1, colour = "royalblue4",
+      inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "high" & age == "Immature"),
+      aes(x = growth_rate_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+        colour = age, shape = age), alpha = 1, fatten = 1, inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "high" & age == "Mature"),
+      aes(x = growth_rate_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+        shape = age), alpha = 1, fatten = 1, colour = "royalblue4", inherit.aes = F) +
+    geom_linerange(data = filter(temp_slopes, chopstick == "low" & age == "Immature"), 
+      aes(x = growth_rate_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+        colour = age, shape = age), alpha = 0.2, fatten = 1, inherit.aes = F) +
+    scale_colour_manual(values = c("white", "deepskyblue3")) +
+    scale_fill_manual(values = c("white", "deepskyblue")) +
+    # scale_colour_manual(values = c("white", "darkorchid4")) +
+    # scale_fill_manual(values = c("white", "darkorchid4")) + 
+    scale_shape_manual(values = c(21, 19)) +
+    # back transform axis labels on scaled log growth rate
+    scale_x_continuous(labels = function(x) 
+      paste0(round(exp(x * attributes(temp_slopes$growth_rate_scaled)[[3]] + 
+          attributes(temp_slopes$growth_rate_scaled)[[2]])+1))) +
+    coord_cartesian(ylim = c(-10,5)) +
+    xlab("Immature growth rate") +
+    # labs(tag = "D") + 
+    gfplot::theme_pbs() + theme( 
+      plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
+      axis.title.y=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title.align=0,
+      legend.title = element_blank(),
+      legend.position = "none")
+)
+
+(p_depth_age  + p_growth_rate  + p_log_age + plot_layout(nrow = 1))
+
+ggsave(here::here("ms", "figs", "age-slope-model-tri.pdf"), width = 9, height = 3.5)
+
+
+##### effect code for factors or without interactions #####
+(p_lat <- effect_plot(tempslopemod, pred = Latitude,
+  interval = TRUE, int.type = c("prediction"),
+  # cat.interval.geom = "linerange", 
+  line.thickness = 0.5, point.alpha = 1, cat.pred.point.size = 2.5,
+  # partial.residuals = T,  # plot.points = TRUE, # point.alpha = 0.2,
+  outcome.scale = "response"
+  ) + geom_hline(yintercept = 0, colour = "grey") +
+    geom_violin(data = filter(temp_slopes, chopstick == "high"), aes(Latitude, slope, colour = Latitude, fill = Latitude), alpha = 0.2, inherit.aes = F) +
+    
+    scale_colour_manual(values = c("royalblue4", "red 4")) +
+    scale_fill_manual(values = c("royalblue4", "red 3")) + 
+    # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
+    # scale_shape_manual(values = c(21, 19)) +
+  coord_cartesian(ylim = c(-10,5) ) +
+    ylab("Biomass change ~ warming rate") +
+  gfplot::theme_pbs() + theme(
+    plot.margin = margin(0.2, 0, 0.2, 0, "cm"),
+    axis.title.y=element_blank(),
+    axis.text.y=element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.title.x=element_blank(),
+    axis.text.x=element_blank(),
+    axis.ticks.x=element_blank(),
+    plot.tag.position = c(0.225,0.925),
     legend.title = element_blank(),
-    legend.position = c(.15, .15)
-  ) 
+    legend.position = "none"
+    )
+)
 
-p0 <- ggplot(data = filter(long_slopes, type == "temp"), aes(slope, Rockfish, colour = slope_type, fill = slope_type )) + 
-  scale_colour_manual(values = c("Red 3", "royalblue4") )+ scale_fill_manual(values = c("Red 3", "royalblue4")) + 
-  geom_vline(xintercept = 0, colour = "grey") +
-  #  geom_boxplot(alpha = 0.12, outlier.colour = "white", notch = F) +
-  geom_violin(alpha = 0.1) + #scale = "width",
-  geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
-  facet_grid(cols = vars(age), scales = "free") + scale_x_continuous(expand = c(0.2,0.2)) + 
-  # ggtitle("Sociality") +
-  gfplot:::theme_pbs() + 
-  theme(plot.title = element_text(hjust = 0.5),
-    axis.title.x = element_blank(),
-    strip.text.x = element_blank(),
-    plot.margin = margin(0.1, 0, 0.1, 0, "cm"),
-    axis.text.x = element_blank(),
-    # plot.subtitle = element_text(hjust = 0.5, vjust = 0.4),
-    # axis.title.y = element_blank(),
-    # axis.text.y = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "none"
-  ) 
-p0d <- ggplot(data = filter(long_slopes, type == "DO"), aes(slope, Rockfish, colour = slope_type, fill = slope_type )) + 
-  scale_colour_manual(values = c("goldenrod1", "darkcyan") )+ scale_fill_manual(values = c("goldenrod1", "darkcyan")) + 
-  geom_vline(xintercept = 0, colour = "grey") +
-  #  geom_boxplot(alpha = 0.12, outlier.colour = "white", notch = F) +
-  geom_violin(alpha = 0.1) + #scale = "width",
-  geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
-  facet_grid(cols = vars(age), scales = "free") + scale_x_continuous(expand = c(0.2,0.2)) + 
-  gfplot:::theme_pbs() + 
-  theme(plot.title = element_text(hjust = 0.5),
-    axis.title.x = element_blank(),
-    strip.text.x = element_blank(),
-    plot.margin = margin(0.1, 0, 0.1, 0, "cm"),
-    axis.text.x = element_blank(),
-    # plot.subtitle = element_text(hjust = 0.5, vjust = 0.4),
-    axis.title.y = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "none"
-  ) 
-p2 <- ggplot(data = filter(long_slopes, type == "temp"), aes(slope, Schooling, colour = slope_type, fill = slope_type )) + 
-  scale_colour_manual(values = c("Red 3", "royalblue4") )+ scale_fill_manual(values = c("Red 3", "royalblue4")) + 
-  geom_vline(xintercept = 0, colour = "grey") +
-  #  geom_boxplot(alpha = 0.12, outlier.colour = "white", notch = F) +
-  geom_violin(alpha = 0.1) + #scale = "width",
-  geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
-  facet_grid(cols = vars(age), scales = "free") + scale_x_continuous(expand = c(0.2,0.2)) + 
-  # ggtitle("Sociality") +
-  gfplot:::theme_pbs() + 
-  theme(plot.title = element_text(hjust = 0.5),
-    axis.title.x = element_blank(),
-    strip.text.x = element_blank(),
-    plot.margin = margin(0.1, 0, 0.1, 0, "cm"),
-    axis.text.x = element_blank(),
-    # plot.subtitle = element_text(hjust = 0.5, vjust = 0.4),
-    # axis.title.y = element_blank(),
-    # axis.text.y = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "none"
-  ) 
-p2d <- ggplot(data = filter(long_slopes, type == "DO"), aes(slope, Schooling, colour = slope_type, fill = slope_type )) + 
-  scale_colour_manual(values = c("goldenrod1", "darkcyan") )+ scale_fill_manual(values = c("goldenrod1", "darkcyan")) + 
-  geom_vline(xintercept = 0, colour = "grey") +
-  #  geom_boxplot(alpha = 0.12, outlier.colour = "white", notch = F) +
-  geom_violin(alpha = 0.1) + #scale = "width",
-  geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
-  facet_grid(cols = vars(age), scales = "free") + scale_x_continuous(expand = c(0.2,0.2)) + 
-  gfplot:::theme_pbs() + 
-  theme(plot.title = element_text(hjust = 0.5),
-    axis.title.x = element_blank(),
-    strip.text.x = element_blank(),
-    plot.margin = margin(0.1, 0, 0.1, 0, "cm"),
-    axis.text.x = element_blank(),
-    # plot.subtitle = element_text(hjust = 0.5, vjust = 0.4),
-    axis.title.y = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "none"
-  ) 
+(p_zone <- effect_plot(tempslopemod, pred = Zone,
+  interval = TRUE, int.type = c("prediction"),
+  # cat.interval.geom = "linerange", 
+  line.thickness = 0.5, point.alpha = 1, cat.pred.point.size = 2.5,
+  # partial.residuals = T,  # plot.points = TRUE, # point.alpha = 0.2,
+  outcome.scale = "response"
+) + geom_hline(yintercept = 0, colour = "grey") +
+    geom_violin(data = filter(temp_slopes, chopstick == "high"), 
+      aes(Zone, slope, colour = Zone, fill = Zone), 
+      alpha = 0.2, inherit.aes = F) +
+    scale_colour_manual(values = c("royalblue4", "red 4")) +
+    scale_fill_manual(values = c("royalblue4", "red 3")) +
+    # scale_colour_manual(values = c("darkcyan", "orange")) +
+    # scale_fill_manual(values = c("darkcyan", "orange")) + 
+    # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
+    coord_cartesian(ylim = c(-10,5) ) +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0, 0.2, 0, "cm"),
+      axis.title.y=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      axis.title.x=element_blank(),
+      axis.text.x=element_blank(),
+      axis.ticks.x=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title = element_blank(),
+      legend.position = "none"
+    )
+)
 
-p3 <- ggplot(data = filter(long_slopes, type == "temp"), aes(slope, Zone, colour = slope_type, fill = slope_type )) + 
-  scale_colour_manual(values = c("Red 3", "royalblue4") )+ scale_fill_manual(values = c("Red 3", "royalblue4")) + 
-  geom_vline(xintercept = 0, colour = "grey") +
-  #  geom_boxplot(alpha = 0.12, outlier.colour = "white", notch = F) +
-  geom_violin(alpha = 0.1) + #scale = "width",
-  geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
-  facet_grid(cols = vars(age), scales = "free") + scale_x_continuous(expand = c(0.2,0.2)) + 
-  # ggtitle("Foraging zone") +
-  gfplot:::theme_pbs() + 
-  theme(plot.title = element_text(hjust = 0.5),
-    axis.title.x = element_blank(),
-    strip.text.x = element_blank(),
-    plot.margin = margin(0.1, 0, 0.1, 0, "cm"),
-    axis.text.x = element_blank(),
-    # plot.subtitle = element_text(hjust = 0.5, vjust = 0.4),
-    # axis.title.y = element_blank(),
-    # axis.text.y = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "none"
-  ) 
-p3d <- ggplot(data = filter(long_slopes, type == "DO"), aes(slope, Zone, colour = slope_type, fill = slope_type )) + 
-  scale_colour_manual(values = c("goldenrod1", "darkcyan") )+ scale_fill_manual(values = c("goldenrod1", "darkcyan")) + 
-  geom_vline(xintercept = 0, colour = "grey") +
-  #  geom_boxplot(alpha = 0.12, outlier.colour = "white", notch = F) +
-  geom_violin(alpha = 0.1) + #scale = "width",
-  geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
-  facet_grid(cols = vars(age), scales = "free") + scale_x_continuous(expand = c(0.2,0.2)) + 
-  gfplot:::theme_pbs() + 
-  theme(plot.title = element_text(hjust = 0.5),
-    axis.title.x = element_blank(),
-    strip.text.x = element_blank(),
-    plot.margin = margin(0.1, 0, 0.1, 0, "cm"),
-    axis.text.x = element_blank(),
-    # plot.subtitle = element_text(hjust = 0.5, vjust = 0.4),
-    axis.title.y = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "none"
-  ) 
+(p_troph <- effect_plot(tempslopemod, pred = Trophic,
+  interval = TRUE, int.type = c("prediction"),
+  # cat.interval.geom = "linerange", 
+  line.thickness = 0.5, point.alpha = 1, cat.pred.point.size = 2.5,
+  # partial.residuals = T,  # plot.points = TRUE, # point.alpha = 0.2,
+  outcome.scale = "response"
+) + geom_hline(yintercept = 0, colour = "grey") +
+    geom_violin(data = filter(temp_slopes, chopstick == "high"), 
+      aes(Trophic, slope, colour = Trophic, fill = Trophic), 
+      alpha = 0.2, inherit.aes = F) +
+    scale_colour_manual(values = c("royalblue4", "red 4")) +
+    scale_fill_manual(values = c("royalblue4", "red 3")) +
+    # scale_colour_manual(values = c("darkcyan", "orange")) +
+    # scale_fill_manual(values = c("darkcyan", "orange")) + 
+    # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
+    
+    coord_cartesian(ylim = c(-10,5) ) +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0, 0.2, 0, "cm"),
+      axis.title.y=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      axis.title.x=element_blank(),
+      axis.text.x=element_blank(),
+      axis.ticks.x=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title = element_blank(),
+      legend.position = "none"
+    )
+)
 
-p4 <- ggplot(data = filter(long_slopes, type == "temp"), aes(slope, Diet, colour = slope_type, fill = slope_type )) + 
-  scale_colour_manual(values = c("Red 3", "royalblue4") )+ scale_fill_manual(values = c("Red 3", "royalblue4")) + 
-  geom_vline(xintercept = 0, colour = "grey") +
-  #  geom_boxplot(alpha = 0.12, outlier.colour = "white", notch = F) +
-  geom_violin(alpha = 0.1) + #scale = "width",
-  geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
-  facet_grid(cols = vars(age), scales = "free") + scale_x_continuous(expand = c(0.2,0.2)) + 
-  # ggtitle("Diet") +
-  gfplot:::theme_pbs() + 
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    strip.text.x = element_blank(),
-    axis.title.x = element_blank(),
-    plot.margin = margin(0.1, 0.1, 0.1, 0, "cm"),
-    # axis.title.y = element_blank(),
-    # axis.text.y = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "none"
-  ) 
+(p_chop <- effect_plot(tempslopemod, pred = chopstick,
+  interval = TRUE, int.type = c("prediction"),
+  line.thickness = 0.5, point.alpha = 1, cat.pred.point.size = 2.5,
+  # cat.interval.geom = "linerange", 
+  # partial.residuals = T,  # plot.points = TRUE, # point.alpha = 0.2,
+  outcome.scale = "response"
+) + geom_hline(yintercept = 0, colour = "grey") +
+    geom_violin(data = temp_slopes, 
+      aes(chopstick, slope, colour = chopstick, fill = chopstick), 
+      alpha = 0.2, inherit.aes = F) +
+    scale_colour_manual(values = c("red 4", "royalblue4")) +
+    scale_fill_manual(values = c("red 3", "royalblue4")) +
+    scale_x_discrete(limits = rev(levels(as.factor(temp_slopes$chopstick)))) +
+    # scale_colour_manual(values = c("darkcyan", "orange")) +
+    # scale_fill_manual(values = c("darkcyan", "orange")) + 
+    # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
+    xlab("Mean temperature") +
+    coord_cartesian(ylim = c(-10,5) ) +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0, 0.2, 0, "cm"),
+      axis.title.y=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      axis.title.x=element_blank(),
+      axis.text.x=element_blank(),
+      axis.ticks.x=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title = element_blank(),
+      legend.position = "none"
+    )
+)
 
-p4d <- ggplot(data = filter(long_slopes, type == "DO"), aes(slope, Diet, colour = slope_type, fill = slope_type )) + 
-  scale_colour_manual(values = c("goldenrod1", "darkcyan") )+ scale_fill_manual(values = c("goldenrod1", "darkcyan")) + 
-  geom_vline(xintercept = 0, colour = "grey") +
-#  geom_boxplot(alpha = 0.12, outlier.colour = "white", notch = F) +
-  geom_violin(alpha = 0.1) + #scale = "width",
-  geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
-  facet_grid(cols = vars(age), scales = "free") + scale_x_continuous(expand = c(0.2,0.2)) +
-  gfplot:::theme_pbs() + 
-  theme(#axis.text.x = element_blank(),
-    strip.text.x = element_blank(),
-    plot.title = element_text(hjust = 0.5),
-    axis.title.x = element_blank(),
-    plot.margin = margin(0.1, 0.1, 0.1, 0, "cm"),
-    axis.title.y = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks = element_blank(),
-    legend.position = "none"
-  ) 
+(p_lat + p_zone + p_troph + p_chop + plot_layout(nrow = 1))
 
-# p1 + p2 + p3 + p4 + p1d + p2d + p3d + p4d + patchwork::plot_layout(ncol = 4, nrow = 2, widths = c(1, 0.66, 0.66, 0.9, 1.5)) 
-p1 + p1d + p0 + p0d + p2 + p2d + p3 + p3d + p4 + p4d + patchwork::plot_layout(ncol = 2, nrow = 5, widths = c(1, 0.9), heights = c(1, 0.66, 0.66, 1, 1.5)) 
+# ggsave(here::here("ms", "figs", "ecology-slope-model-violins.pdf"), width = 7, height = 3.5)
 
-ggsave(here::here("ms", "figs", "behav-slope-boxplots-trim.pdf"), width = 7, height = 6 )
-# Cggsave(here::here("ms", "figs", "behav-slope-boxplots-imm.pdf"), width = 12, height = 5)
+(p_depth_lat + p_lat +p_depth_zone +p_zone + p_depth_troph + p_troph + 
+    plot_layout(nrow = 1, widths = c(1, 0.2, 1, 0.2, 1, 0.2)))/grid::textGrob("Depth range (IQR)", 
+      just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 2, heights = c(1, 0.02))
+
+ggsave(here::here("ms", "figs", "ecology-slope-model-w-violins.pdf"), width = 12, height = 3.5)
+
+
+(p_age <- effect_plot(tempslopemod2, pred = age,
+  interval = TRUE, int.type = c("prediction"),
+  line.thickness = 0.5, point.alpha = 1, cat.pred.point.size = 2.5,
+  # cat.interval.geom = "linerange", 
+  # partial.residuals = T,  # plot.points = TRUE, # point.alpha = 0.2,
+  outcome.scale = "response"
+) + geom_hline(yintercept = 0, colour = "grey") +
+    geom_violin(data = temp_slopes, 
+      aes(age, slope, colour = age, fill = age), 
+      alpha = 0.2, inherit.aes = F) +
+    scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
+    scale_fill_manual(values = c("cornflowerblue", "deepskyblue")) +
+    scale_x_discrete(limits = rev(levels(as.factor(temp_slopes$age)))) +
+    # scale_colour_manual(values = c("darkcyan", "orange")) +
+    # scale_fill_manual(values = c("darkcyan", "orange")) + 
+    # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
+    xlab("Mean temperature") +
+    coord_cartesian(ylim = c(-10,5) ) +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0, 0.2, 0, "cm"),
+      axis.title.y=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      axis.title.x=element_blank(),
+      axis.text.x=element_blank(),
+      axis.ticks.x=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title = element_blank(),
+      legend.position = "none"
+    )
+)
+(p_depth_age + p_age + p_growth_rate +  p_log_age + plot_layout(nrow = 1, widths = c(1,0.2,1,1)))
+
+ggsave(here::here("ms", "figs", "age-slope-model-quad.pdf"), width = 9, height = 3.5)
+
+##############################
+### COEFFICIENT MODELS ####
+
+model2 <- model2 %>%
+  group_by(group) %>%
+  mutate(spp_count = length(unique(species))) %>%
+  ungroup()
+model2 <- model2 %>% mutate(group = forcats::fct_reorder(group, Estimate, .desc = F))
+model2 <- model2 %>% mutate(rockfish = forcats::fct_reorder(rockfish, Estimate, .desc = F))
+trendeffects <- model2 %>%
+  filter(coefficient %in% c("temp_trend_scaled", "DO_trend_scaled")) %>%
+  # transform(coefficient = factor(coefficient,
+  mutate(coefficient = factor(coefficient,
+    levels = c("temp_trend_scaled", "DO_trend_scaled"),
+    labels = c("Temperature", "DO")
+  ), Std..Error = `Std. Error`)
+
+trendeffects <- trendeffects %>%
+  mutate(coefficient = forcats::fct_reorder(coefficient, Estimate, .desc = F))
+# trendeffects <- mutate(trendeffects, rockfish = firstup(rockfish) # didn't work
+trendeffects$allspp <- "All species"
+
+trendeffects <- 
+  trendeffects %>% mutate(
+    # type = factor(type, levels = c("temp", "DO")),
+    species_age = paste(species, age),
+    age = factor(age, levels = c("immature", "mature"),  labels = c("Immature", "Mature")),
+    Rockfish = factor(rockfish, levels = c("rockfish", "other fishes"),  labels = c("Rockfish", "Other fishes")),
+    # slope_type = factor(slope_type, levels = c("high temp", "low temp", "high DO", "low DO")),
+    Diet = factor(Diet, levels = c("Zooplankton", "Generalist", "Polychaetes", "Crustaceans", "Fish")),
+    Zone = factor(BenthoPelagicPelagicDemersal, levels = c("Demersal", "Benthopelagic", "Pelagic")),
+    Latitude = factor(NorthMiddleSouth, levels = c("North", "Middle", "South")),
+    Schooling = as.factor(Schooling),
+    Trophic = factor(if_else(Diet == "Zooplankton", "Lower", "Higher"), levels = c("Lower", "Higher")),
+    Specialist = factor(if_else(Diet == "Generalist", "Generalist", "Specialist"), levels = c("Generalist", "Specialist")),
+    depth_iqr_scaled = scale(log(depth_iqr), center = T),
+    log_age_scaled = scale(log(age_mean + 1), center = T),
+    max_mass_scaled = scale(log(weight_99th + 1), center = T),
+    # age_mat is the 95 quantile of ages for immature females
+    growth_rate_scaled = scale(log((length_50_mat_f / age_mat)+1), center = T))
+
+# collapse Middle and South together because only 3 "southern" species
+trendeffects$Latitude[trendeffects$Latitude == "Middle"] <- "South"
+
+# collapse Pelagic into Benthopelagic because only 3 "pelagic" species
+trendeffects$Zone[trendeffects$Zone == "Pelagic"] <- "Benthopelagic"
+
+trendeffects <- trendeffects %>% mutate(
+  Zone = factor(Zone, levels = c("Demersal", "Benthopelagic")),
+  Latitude = factor(Latitude, levels = c("North", "South"))
+)
+
+filter(trendeffects, coefficient == "Temperature") %>% lmerTest::lmer(Estimate ~ 1 + depth_iqr_scaled * Trophic + depth_iqr_scaled * age + depth_iqr_scaled * Zone + depth_iqr_scaled * Latitude + (1|species), data = .) %>% anova()
+
+# add in age-based variables that limit the species included
+filter(trendeffects, coefficient == "Temperature") %>% lmerTest::lmer(Estimate ~ 1 + depth_iqr_scaled * age + growth_rate_scaled * age + log_age_scaled + (1|species), data = .) %>% summary()
 
 
 ###################
-### basic boxplots ####
+#### OLD CODE ####
+### basic boxplots for slopes ####
 # p0 <- ggplot(long_slopes, aes(age, slope, colour =slope_type, fill = slope_type )) + 
 #   # geom_violin( alpha = 0.1) + #scale = "width",
 #   geom_hline(yintercept = 0, colour = "grey") +
