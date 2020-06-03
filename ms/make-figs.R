@@ -41,11 +41,12 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
 #########################
 #### CLIMATE MAPS ####
 (mean_do <- plot_vocc(alldata, # grey_water = T,
-  vec_aes = NULL,
+  vec_aes = NULL, grey_water = F,
   fill_col = "mean_DO", fill_label = "ml/L ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
   axis_lables = F, tag_text = "b.",
   viridis_begin = 0.2,
+  raster_limits = c(0.69, 5.24),
   legend_position = c(0.15, 0.3)
 ) + ggtitle("Dissolved oxygen (DO)") +
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
@@ -56,7 +57,7 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
   ))
 
 (mean_temp <- plot_vocc(alldata,
-  vec_aes = NULL,
+  vec_aes = NULL, grey_water = F,
   fill_col = "mean_temp", fill_label = "ºC ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
   viridis_option = "B",
@@ -73,28 +74,12 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
     axis.title.x = element_blank()
   ))
 
-(trend_do <- plot_vocc(alldata,
-  vec_aes = NULL,
-  fill_col = "DO_trend", fill_label = "ml/L ",
-  raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
-  high_fill = "gold",
-  low_fill = "darkcyan", # "lightseagreen",
-  # high_fill = "#3d95cc",
-  # low_fill = "yellowgreen",
-  axis_lables = F, tag_text = "d.",
-  legend_position = c(0.15, 0.3)
-) + # ggtitle("dissolved oxygen") +
-  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-  theme(
-    plot.margin = margin(0, 0, 0, 0, "cm"),
-    axis.text = element_blank(), axis.ticks = element_blank(),
-    axis.title.x = element_blank(), axis.title.y = element_blank()
-  ))
-
 (trend_temp <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "temp_trend", fill_label = "ºC ",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
+  # mid_fill = "ghostwhite", grey_water = F,
+  mid_fill = "mistyrose1", grey_water = F,
   low_fill = "royalblue4", # low_fill = "#5E4FA2",
   high_fill = "Red 3",
   axis_lables = T, tag_text = "c.",
@@ -108,15 +93,59 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
     axis.title.x = element_blank()
   ))
 
-vel_do <- plot_vocc(alldata,
+(vel_temp <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "squashed_temp_vel", fill_label = "km",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
+  # mid_fill = "ghostwhite", grey_water = F,
+  mid_fill = "mistyrose1", grey_water = F,
+  # mid_fill = "lavenderblush1", grey_water = F,
+  low_fill = "royalblue4", # low_fill = "#5E4FA2",
+  high_fill = "Red 3",
+  axis_lables = T, tag_text = "e.",
+  legend_position = c(0.15, 0.3)
+) + ylab("Velocities per decade") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank()
+    ))
+
+(trend_do <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "DO_trend", fill_label = "ml/L ",
+  raster_cell_size = 4, white_zero = TRUE,
+  # mid_fill = "lightcyan1", grey_water = F,
+  # mid_fill = "aliceblue", grey_water = F,
+  # mid_fill = "mintcream", grey_water = F,
+  mid_fill = "honeydew", grey_water = F,
+  # mid_fill = "azure", grey_water = F,
+  high_fill = "gold",
+  low_fill = "darkcyan", # "lightseagreen",
+  # high_fill = "#3d95cc",
+  # low_fill = "yellowgreen",
+  raster_limits = c(-1.7, 2.3), na_colour = "gold", 
+  axis_lables = F, tag_text = "d.",
+  legend_position = c(0.15, 0.3)
+) + # ggtitle("dissolved oxygen") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+
+(vel_do <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "squashed_DO_vel", fill_label = "km",
   raster_cell_size = 4,
   na_colour = "lightgrey", white_zero = TRUE,
+  # mid_fill = "lightcyan1", grey_water = F,
+  mid_fill = "honeydew", grey_water = F,
+  # mid_fill = "azure", grey_water = F,
   high_fill = "gold",
   low_fill = "darkcyan",
-  # high_fill = "#3d95cc",
-  # low_fill = "yellowgreen",
   axis_lables = F, tag_text = "f.",
   legend_position = c(0.15, 0.3)
 ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
@@ -124,28 +153,13 @@ vel_do <- plot_vocc(alldata,
     plot.margin = margin(0, 0, 0, 0, "cm"),
     axis.text = element_blank(), axis.ticks = element_blank(),
     axis.title.x = element_blank(), axis.title.y = element_blank()
-  )
+  ))
 
-vel_temp <- plot_vocc(alldata,
-  vec_aes = NULL,
-  fill_col = "squashed_temp_vel", fill_label = "km",
-  raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
-  low_fill = "royalblue4", # low_fill = "#5E4FA2",
-  high_fill = "Red 3",
-  axis_lables = T, tag_text = "e.",
-  legend_position = c(0.15, 0.3)
-) + ylab("Velocities per decade") +
-  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-  theme(
-    plot.margin = margin(0, 0, 0, 0, "cm"),
-    axis.text = element_blank(), axis.ticks = element_blank(),
-    axis.title.x = element_blank()
-  )
 
 mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + plot_layout(ncol = 2)
 # colorblindr::cvd_grid(trend_do)
 # ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 6, height = 9)
-ggsave(here::here("ms", "figs", "climate-maps.png"), width = 5, height = 7.5)
+ggsave(here::here("ms", "figs", "climate-maps-witwat2.png"), width = 5, height = 7.5)
 
 #########################
 #########################
@@ -649,7 +663,7 @@ ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 species_panels <- function(
                            species, model, x_type,
                            chop_label = F,
-                           biotic_legend = F,
+                           leftmost = F,
                            alpha_range = c(0.9, 0.9)) {
   age <- unique(model$data[model$data$species == species, ]$age)
 
@@ -659,24 +673,27 @@ species_panels <- function(
     na_colour = "red 3", white_zero = TRUE,
     # high_fill = "#3d95cc", #"#5E4FA2", #purple  #"#276b95", # "Steel Blue 4", # "#5E4FA2", # "royalblue4",
     high_fill = "darkcyan",
-    mid_fill = "grey95", grey_water = F,
+    # mid_fill = "honeydew", grey_water = F,
+    # mid_fill = "lightyellow", grey_water = F,
+    mid_fill = "lightcyan1", grey_water = F,
+    # mid_fill = "azure", grey_water = F,
     low_fill = "Red 3", # "#FF8B09", #"#cd0000",
     raster_limits = c(-6, 6),
     axis_lables = T,
     legend_position = c(0.15, 0.25),
     make_square = F
   ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-    ylab(" ") +
+    # ylab(" ") +
     # ylab("Predicted % change in biomass") +
     theme(
       plot.title = element_text(vjust = 1),
       plot.margin = margin(1, 0, 0.2, 0, "cm"),
       axis.text = element_blank(),
       axis.ticks = element_blank(),
-      axis.title.x = element_blank()
+      axis.title = element_blank()
     )
 
-  if (!biotic_legend) {
+  if (!leftmost) {
     biotic_map <- biotic_map + theme(legend.position = "none")
   }
 
@@ -705,7 +722,7 @@ species_panels <- function(
       # xlab("Temperature trend (scaled)") +
       coord_cartesian(xlim = c(-0.2, 2.6), ylim = c(-3.5, 3.8)) +
       theme(
-        plot.margin = margin(0, 0.2, 0.2, 0, "cm"),
+        plot.margin = margin(0, 0.2, 0.2, 0.1, "cm"),
         axis.title.x = element_blank(),
         # axis.title.x = element_text(hjust = 0, vjust = 0),
         legend.position = "none"
@@ -717,24 +734,55 @@ species_panels <- function(
         fill_col = "temp_trend", fill_label = "ºC per \ndecade",
         raster_cell_size = 4, na_colour = "red 3", white_zero = TRUE,
         low_fill = "royalblue3", # "#5E4FA2",
-        mid_fill = "grey95", grey_water = F,
+        mid_fill = "mistyrose1", grey_water = F,
+        # mid_fill = "ghostwhite", grey_water = F,
         high_fill = "Red 3", # "#D53E4F", #"#0072B2",
         axis_lables = T,
         raster_limits = c(-0.75, 1.8),
         legend_position = c(0.15, 0.3), make_square = F
       ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-      xlab(" ") +
-      theme( # plot.title = element_text(vjust = 0),
-        plot.margin = margin(0, 0, 0, 0, "cm"),
+      theme( 
         axis.text = element_blank(),
         axis.ticks = element_blank(),
-        axis.title.y = element_blank()
+        axis.title.x = element_blank()
+      )
+
+    climate_map2 <- filter(model$data, species == !!species) %>%
+      plot_vocc(
+        vec_aes = NULL, grey_water = F,
+        fill_col = "mean_temp", fill_label = "mean \nºC",
+        raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+        viridis_option = "B",
+        viridis_begin = 0.15,
+        viridis_end = 0.7,
+        raster_limits = c( 3.79, 9.85),
+        axis_lables = T, #make_square = F,
+        legend_position = c(0.15, 0.3)
+      ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+      theme( 
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank()
       )
 
     if (chop_label) {
-      climate_map <- climate_map + ggtitle("Temperature trend (scaled)")
+      climate_map <- climate_map + ggtitle("Temperature trend (scaled)") + 
+        #ylab("Climate trends\n \n") + 
+        theme(plot.margin = margin(0.1, 0, 0, 0, "cm"),
+          axis.title.y = element_blank())
+      climate_map2 <- climate_map2 + #ylab("Mean climate\n \n") + 
+        theme(plot.margin = margin(0.1, 0, 0, 0, "cm"),
+          axis.title.y = element_blank())
     } else {
-      climate_map <- climate_map + ggtitle(" ") + theme(legend.position = "none")
+      climate_map <- climate_map + ggtitle("()") + 
+        theme(plot.margin = margin(0.1, 0, 0, 0, "cm"), 
+          plot.title = element_text(colour = "white"),
+          axis.title.y = element_blank(), 
+          legend.position = "none")
+      climate_map2 <- climate_map2 + 
+        theme(plot.margin = margin(0.1, 0, 0, 0, "cm"),
+          axis.title.y = element_blank(), 
+          legend.position = "none")
     }
   }
 
@@ -764,50 +812,97 @@ species_panels <- function(
         fill_col = "DO_trend", fill_label = "ml/L per \ndecade",
         raster_cell_size = 4, na_colour = "red 3", white_zero = TRUE,
         high_fill = "gold",
-        mid_fill = "grey95", grey_water = F,
+        mid_fill = "lightyellow", grey_water = F,
+        # mid_fill = "lightcyan1", grey_water = F,
+        # mid_fill = "honeydew", grey_water = F,
+        # mid_fill = "azure", grey_water = F,
         low_fill = "darkcyan",
         axis_lables = T,
-        raster_limits = c(-1.6, 1.2),
+        raster_limits = c(-1.6, 1.6),
         legend_position = c(0.15, 0.3), make_square = F
       ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-      xlab(" ") +
       theme(
-        plot.margin = margin(0, 0, 0, 0, "cm"),
-        axis.text = element_blank(), axis.ticks = element_blank(),
-        axis.title.y = element_blank()
+        axis.text = element_blank(), 
+        axis.ticks = element_blank(),
+        axis.title = element_blank()
       )
-
+    
+    climate_map2 <- filter(model$data, species == !!species) %>%
+      plot_vocc(
+        vec_aes = NULL, grey_water = F,
+        fill_col = "mean_DO", fill_label = "mean \nDO",
+        raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+        viridis_option = "D",
+        viridis_begin = 0.2,
+        axis_lables = T, #make_square = F,
+        raster_limits = c(0.69, 5.24),
+        legend_position = c(0.15, 0.3)
+      ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+      theme( 
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank()
+      )
+    
     if (chop_label) {
-      climate_map <- climate_map + ggtitle("DO trend (scaled)")
+      climate_map <- climate_map + ggtitle("DO trend (scaled)") + 
+        theme(plot.margin = margin(0.1, 0, 0, 0, "cm"))
     } else {
-      climate_map <- climate_map + ggtitle(" ") + theme(legend.position = "none")
+      climate_map <- climate_map + ggtitle("()") + 
+        theme(plot.margin = margin(0.1, 0, 0, 0, "cm"), 
+          plot.title = element_text(colour = "white"), 
+          legend.position = "none")
+      climate_map2 <- climate_map2 + 
+        theme(plot.margin = margin(0.1, 0, 0, 0, "cm"), 
+        legend.position = "none")
     }
   }
 
-  if (!biotic_legend) {
+  if (!leftmost) {
     single_chop <- single_chop + theme(axis.text.y = element_blank())
+    
+    (biotic_map / single_chop / climate_map/ climate_map2 + plot_layout(heights = c(2, 0.5, 2, 2))) 
+  # } else {
+  #   
+  #   ygrob <- grid::textGrob(("Predicted % change in biomass per decade"),
+  #     gp = grid::gpar(fontsize = 12), hjust = 0.5,
+  #     rot = 90
+  #   )
+  # 
+  #   # wrap_plots(
+  #   #   wrap_plots( wrap_elements(ygrob), (
+  #   #       wrap_plots(biotic_map, single_chop) + plot_layout(nrow = 2, heights = c(2, 0.5))
+  #   #     ) + plot_layout(ncol = 2, widths = c(0.02, 1))
+  #   #     ), climate_map, climate_map2
+  #   #   ) + plot_layout(ncol = 1, heights = c(2.5, 2, 2))
+  #   
+  #   layout <- "
+  #     AABBBBBBBB
+  #     AACCCCCCCC
+  #     DDDDDDDDDD
+  #     EEEEEEEEEE
+  #     "
+  #   
+  #   wrap_plots(wrap_elements(ygrob), biotic_map, single_chop, climate_map, climate_map2) + 
+  #     plot_layout(design = layout, widths = c(0.1, 20), heights = c(3, 0.5, 2, 2))  
+    
   }
-
-  (biotic_map / single_chop / climate_map + plot_layout(heights = c(2, 0.5, 2))) 
-  #+ theme(plot.title = element_text(vjust = 1))
+  (biotic_map / single_chop / climate_map/ climate_map2 + plot_layout(heights = c(2, 0.5, 2, 2)))
   # ggsave(here::here("ms", "figs", paste0("panels-", x_type, "-", species, ".pdf")), width = 4, height = 10)
 }
 
 (p1 <- species_panels("mature Sablefish", model, "temp",
-  chop_label = T, biotic_legend = T,
+  chop_label = T, leftmost = T,
   alpha_range = c(0.1, 0.9)
 ))
-(p2 <- species_panels("mature Redbanded Rockfish", model, "temp"))
+
+# (p2 <- species_panels("mature Redbanded Rockfish", model, "temp"))
 
 (p3 <- species_panels("immature Canary Rockfish", model, "temp",
   alpha_range = c(0.1, 0.9)
 ))
-(p4 <- species_panels("immature Arrowtooth Flounder", model, "temp"))
-
-ygrob <- grid::textGrob(("Predicted % change in biomass per decade"),
-  gp = grid::gpar(fontsize = 12), rot = 90,
-  hjust = 0
-)
+(p4 <- species_panels("mature Arrowtooth Flounder", model, "temp"))
+# (p4 <- species_panels("mature Pacific Halibut", model, "temp", alpha_range = c(0.25, 0.9)))
 
 # wrap_plots(wrap_elements(ygrob), p1) + plot_layout(nrow= 1, ncol = 2, widths = c(0.05, 1))
 # wrap_plots(wrap_elements(ygrob), p1, p2, p3, p4) + plot_layout(nrow= 1, ncol = 5, widths = c(0.05,1,1,1,1))
@@ -816,21 +911,56 @@ ygrob <- grid::textGrob(("Predicted % change in biomass per decade"),
 (p5 <- species_panels("mature North Pacific Spiny Dogfish", chop_label = T, model, "DO"))
 (p6 <- species_panels("mature Shortspine Thornyhead", model, "DO"))
 
-wrap_plots(wrap_elements(ygrob), p1, p2, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(0.05, 1, 1, 1, 1, 1, 1))
-ggsave(here::here("ms", "figs", "all-chop-panels4.pdf"), width = 18, height = 8)
+# wrap_plots(p1, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(1.05, 1, 1, 1, 1), design = layout)
+
+ygrob <- grid::textGrob(("Predicted % change in biomass per decade"),
+  gp = grid::gpar(fontsize = 12), rot = 90,
+  hjust = -1
+)
+
+# wrap_plots(wrap_elements(ygrob), p1, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(0.05, 1, 1, 1, 1, 1))
+
+ygrob1 <- grid::textGrob(("Predicted % change in biomass per decade"),
+  gp = grid::gpar(fontsize = 12), rot = 90
+)
+
+ygrob2 <- grid::textGrob(("Climate trend"),
+  gp = grid::gpar(fontsize = 12), rot = 90
+)
+
+ygrob3 <- grid::textGrob(("Mean climate"),
+  gp = grid::gpar(fontsize = 12), rot = 90
+)
+
+layout <- "
+      ADDDEEEFFFGGGHHH
+      ADDDEEEFFFGGGHHH
+      BDDDEEEFFFGGGHHH
+      CDDDEEEFFFGGGHHH
+      "
+
+
+wrap_plots(ygrob1, ygrob2, ygrob3, p1, p3, p4, p5, p6) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1, 1))
+
+ggsave(here::here("ms", "figs", "all-chop-panels-w-means.pdf"), width = 14, height = 9)
 
 
 #### OTHER SPECIES PANEL OPTIONS ####
-# species_panels("mature Arrowtooth Flounder", model, "temp")
+species_panels("mature Arrowtooth Flounder", model, "temp")
+species_panels("immature Arrowtooth Flounder", model, "temp")
+species_panels("mature Curlfin Sole", model, "temp")
+species_panels("mature Flathead Sole", model, "temp")
+species_panels("immature Flathead Sole", model, "temp")
+species_panels ("mature Dover Sole", model, "temp")
+species_panels ("immature Dover Sole", model, "temp")
+species_panels("mature English Sole", model, "temp")
+species_panels("mature Pacific Halibut", model, "temp")
+
+species_panels("immature English Sole", model, "temp", alpha_range = c(0.25, 0.9))
 #
-# species_panels("mature Flathead Sole", model, "temp")
-# species_panels("immature Flathead Sole", model, "temp")
-# species_panels ("mature Dover Sole", model, "temp")
-# species_panels ("immature Dover Sole", model, "temp")
-# species_panels("mature English Sole", model, "temp")
-# species_panels("immature English Sole", model, "temp", alpha_range = c(0.25, 0.9))
-#
-# species_panels("mature Pacific Cod", model, "temp", alpha_range = c(0.25, 0.9))
+species_panels("mature Pacific Cod", model, "temp", alpha_range = c(0.25, 0.9))
+species_panels("mature Walleye Pollock", model, "temp")
+
 # species_panels("mature Canary Rockfish", model, "temp", alpha_range = c(0.25, 0.9))
 # species_panels("mature Widow Rockfish", model, "temp")
 # species_panels("mature Bocaccio", model, "temp")
@@ -844,6 +974,8 @@ ggsave(here::here("ms", "figs", "all-chop-panels4.pdf"), width = 18, height = 8)
 # species_panels("mature Bocaccio", model, "DO", alpha_range = c(0.25, 0.9))
 # species_panels("mature Redbanded Rockfish", model, "DO")
 # species_panels("mature Widow Rockfish", model, "DO")
+species_panels("mature Petrale Sole", model, "DO")
+#
 #
 # species_panels("mature Pacific Halibut", model, "DO")
 # species_panels("mature English Sole", model, "DO")
