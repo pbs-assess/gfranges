@@ -660,8 +660,7 @@ ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 # O2 maps plus chopsticks
 
 
-species_panels <- function(
-                           species, model, x_type,
+species_panels <- function(species, model, x_type,
                            chop_label = F,
                            leftmost = F,
                            alpha_range = c(0.9, 0.9)) {
@@ -722,7 +721,7 @@ species_panels <- function(
       # xlab("Temperature trend (scaled)") +
       coord_cartesian(xlim = c(-0.2, 2.6), ylim = c(-3.5, 3.8)) +
       theme(
-        plot.margin = margin(0, 0.2, 0.2, 0.1, "cm"),
+        plot.margin = margin(0, 0.2, 0.2, 0.2, "cm"),
         axis.title.x = element_blank(),
         # axis.title.x = element_text(hjust = 0, vjust = 0),
         legend.position = "none"
@@ -860,39 +859,36 @@ species_panels <- function(
 
   if (!leftmost) {
     single_chop <- single_chop + theme(axis.text.y = element_blank())
-    
-    (biotic_map / single_chop / climate_map/ climate_map2 + plot_layout(heights = c(2, 0.5, 2, 2))) 
+  # (biotic_map / single_chop / climate_map/ climate_map2 + plot_layout(heights = c(2, 0.5, 2, 2))) 
   # } else {
   #   
   #   ygrob <- grid::textGrob(("Predicted % change in biomass per decade"),
   #     gp = grid::gpar(fontsize = 12), hjust = 0.5,
   #     rot = 90
   #   )
-  # 
   #   # wrap_plots(
   #   #   wrap_plots( wrap_elements(ygrob), (
   #   #       wrap_plots(biotic_map, single_chop) + plot_layout(nrow = 2, heights = c(2, 0.5))
   #   #     ) + plot_layout(ncol = 2, widths = c(0.02, 1))
   #   #     ), climate_map, climate_map2
   #   #   ) + plot_layout(ncol = 1, heights = c(2.5, 2, 2))
-  #   
   #   layout <- "
   #     AABBBBBBBB
   #     AACCCCCCCC
   #     DDDDDDDDDD
   #     EEEEEEEEEE
   #     "
-  #   
   #   wrap_plots(wrap_elements(ygrob), biotic_map, single_chop, climate_map, climate_map2) + 
   #     plot_layout(design = layout, widths = c(0.1, 20), heights = c(3, 0.5, 2, 2))  
-    
   }
+  
   (biotic_map / single_chop / climate_map/ climate_map2 + plot_layout(heights = c(2, 0.5, 2, 2)))
   # ggsave(here::here("ms", "figs", paste0("panels-", x_type, "-", species, ".pdf")), width = 4, height = 10)
 }
 
 (p1 <- species_panels("mature Sablefish", model, "temp",
-  chop_label = T, leftmost = T,
+  chop_label = T, 
+  leftmost = T,
   alpha_range = c(0.1, 0.9)
 ))
 
@@ -904,45 +900,41 @@ species_panels <- function(
 (p4 <- species_panels("mature Arrowtooth Flounder", model, "temp"))
 # (p4 <- species_panels("mature Pacific Halibut", model, "temp", alpha_range = c(0.25, 0.9)))
 
-# wrap_plots(wrap_elements(ygrob), p1) + plot_layout(nrow= 1, ncol = 2, widths = c(0.05, 1))
-# wrap_plots(wrap_elements(ygrob), p1, p2, p3, p4) + plot_layout(nrow= 1, ncol = 5, widths = c(0.05,1,1,1,1))
-# ggsave(here::here("ms", "figs", "temp-chop-panels.pdf"), width = 14, height = 9)
-
 (p5 <- species_panels("mature North Pacific Spiny Dogfish", chop_label = T, model, "DO"))
 (p6 <- species_panels("mature Shortspine Thornyhead", model, "DO"))
 
 # wrap_plots(p1, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(1.05, 1, 1, 1, 1), design = layout)
 
-ygrob <- grid::textGrob(("Predicted % change in biomass per decade"),
-  gp = grid::gpar(fontsize = 12), rot = 90,
-  hjust = -1
-)
-
+# ygrob <- grid::textGrob(("Predicted % change in biomass per decade"),
+#   gp = grid::gpar(fontsize = 12), rot = 90,
+#   hjust = -1
+# )
 # wrap_plots(wrap_elements(ygrob), p1, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(0.05, 1, 1, 1, 1, 1))
 
+layout <- "
+      ADEFGH
+      ADEFGH
+      BDEFGH
+      CDEFGH
+      "
+
 ygrob1 <- grid::textGrob(("Predicted % change in biomass per decade"),
-  gp = grid::gpar(fontsize = 12), rot = 90
+  gp = grid::gpar(fontsize = 12),
+  hjust = 0.4,
+  rot = 90
 )
 
 ygrob2 <- grid::textGrob(("Climate trend"),
-  gp = grid::gpar(fontsize = 12), rot = 90
+  gp = grid::gpar(fontsize = 12), hjust = 0.25, rot = 90
 )
 
 ygrob3 <- grid::textGrob(("Mean climate"),
-  gp = grid::gpar(fontsize = 12), rot = 90
+  gp = grid::gpar(fontsize = 12), hjust = 0.25, rot = 90
 )
 
-layout <- "
-      ADDDEEEFFFGGGHHH
-      ADDDEEEFFFGGGHHH
-      BDDDEEEFFFGGGHHH
-      CDDDEEEFFFGGGHHH
-      "
+wrap_plots(ygrob1, ygrob2, ygrob3, p1, p3, p4, p5, p6) + plot_layout(design = layout, widths = c(0.05, 1.05, 1, 1, 1, 1))
 
-
-wrap_plots(ygrob1, ygrob2, ygrob3, p1, p3, p4, p5, p6) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1, 1))
-
-ggsave(here::here("ms", "figs", "all-chop-panels-w-means.pdf"), width = 14, height = 9)
+ggsave(here::here("ms", "figs", "all-chop-panels-w-means.pdf"), width = 12, height = 10)
 
 
 #### OTHER SPECIES PANEL OPTIONS ####
