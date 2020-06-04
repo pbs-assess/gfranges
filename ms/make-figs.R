@@ -678,7 +678,7 @@ species_panels <- function(species, model, x_type,
   ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
     theme(
       plot.title = element_text(vjust = 1),
-      plot.margin = margin(1, 0, 0.1, 0, "cm"),
+      plot.margin = margin(1, 0, 0, 0, "cm"),
       axis.text = element_blank(),
       axis.ticks = element_blank(),
       axis.title = element_blank()
@@ -703,19 +703,18 @@ species_panels <- function(species, model, x_type,
     )
 
     single_chop <- plot_fuzzy_chopsticks(model,
-      x_variable = "temp_trend_scaled", type = "temp", y_label = "",
+      x_variable = "temp_trend_scaled", type = "temp", #y_label = "",
       line_size = 1,
       alpha_range = alpha_range,
       choose_species = stringr::str_replace(species, ".*mature ", ""),
       choose_age = gsub(" .*", "", species),
       slopes = temp_slopes # if add, the global slope can be included for insig.
-    ) + # xlab("Temperature trend (scaled)") +
+    ) + 
       coord_cartesian(xlim = c(-0.2, 2.6), ylim = c(-3.5, 3.8)) +
       theme(
         plot.margin = margin(0, 0.2, 0.1, 0.1, "cm"),
-        axis.title.x = element_blank(),
-        # axis.title.x = element_text(hjust = 0, vjust = 0),
-        legend.position = "none"
+        legend.position = "none",
+        axis.title = element_blank()
       )
 
     climate_map <- filter(model$data, species == !!species) %>%
@@ -746,7 +745,7 @@ species_panels <- function(species, model, x_type,
         viridis_begin = 0.15,
         viridis_end = 0.7,
         raster_limits = c( 3.79, 9.85),
-        axis_lables = T, #make_square = F,
+        axis_lables = T, make_square = F,
         legend_position = c(0.15, 0.3)
       ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
       theme( 
@@ -757,14 +756,14 @@ species_panels <- function(species, model, x_type,
 
     if (chop_label) {
       climate_map <- climate_map + ggtitle("Temperature trend (scaled)") + 
-        theme(plot.margin = margin(0, 0, 0, 0, "cm"),
+        theme(plot.margin = margin(0, 0, 0.1, 0, "cm"),
           axis.title.y = element_blank())
       climate_map2 <- climate_map2 + 
         theme(plot.margin = margin(0, 0, 0, 0, "cm"),
           axis.title.y = element_blank())
     } else {
       climate_map <- climate_map + ggtitle("()") + 
-        theme(plot.margin = margin(0, 0, 0, 0, "cm"), 
+        theme(plot.margin = margin(0, 0, 0.1, 0, "cm"), 
           plot.title = element_text(colour = "white"),
           axis.title.y = element_blank(), 
           legend.position = "none")
@@ -782,16 +781,17 @@ species_panels <- function(species, model, x_type,
     )
 
     single_chop <- plot_fuzzy_chopsticks(model,
-      x_variable = "DO_trend_scaled", type = "DO", y_label = "",
+      x_variable = "DO_trend_scaled", type = "DO", #y_label = "",
       line_size = 1, alpha_range = alpha_range,
       choose_species = stringr::str_replace(species, ".*mature ", ""),
       choose_age = gsub(" .*", "", species),
       slopes = do_slopes # if add, the global slope can be included for insig.
-    ) + coord_cartesian(ylim = c(-3.5, 3.8), xlim = c(-3, 3)) + 
+    ) + 
+      coord_cartesian(xlim = c(-3, 3), ylim = c(-3.5, 3.8)) + 
       theme(
         plot.margin = margin(0, 0.2, 0.1, 0.1, "cm"),
         legend.position = "none",
-        axis.title.x = element_blank()
+        axis.title = element_blank()
       )
 
     climate_map <- filter(model$data, species == !!species) %>%
@@ -824,7 +824,7 @@ species_panels <- function(species, model, x_type,
         viridis_begin = 0.2,
         axis_lables = T, 
         raster_limits = c(0.69, 5.24),
-        legend_position = c(0.15, 0.3)
+        legend_position = c(0.15, 0.3), make_square = F
       ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
       theme( 
         axis.text = element_blank(),
@@ -834,10 +834,13 @@ species_panels <- function(species, model, x_type,
     
     if (chop_label) {
       climate_map <- climate_map + ggtitle("DO trend (scaled)") + 
-        theme(plot.margin = margin(0, 0, 0, 0, "cm"))
+        theme(plot.margin = margin(0, 0, 0.1, 0, "cm"))
+      climate_map2 <- climate_map2 + 
+        theme(plot.margin = margin(0, 0, 0, 0, "cm"),
+          axis.title.y = element_blank())
     } else {
       climate_map <- climate_map + ggtitle("()") + 
-        theme(plot.margin = margin(0, 0, 0, 0, "cm"), 
+        theme(plot.margin = margin(0, 0, 0.1, 0, "cm"), 
           plot.title = element_text(colour = "white"), 
           legend.position = "none")
       climate_map2 <- climate_map2 + 
@@ -905,7 +908,7 @@ ygrob3 <- grid::textGrob(("Mean climate"),
 
 wrap_plots(ygrob1, ygrob2, ygrob3, p1, p3, p4, p5, p6, p7) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1, 1, 1))
 
-ggsave(here::here("ms", "figs", "all-chop-panels-w-means4.pdf"), width = 18, height = 11)
+ggsave(here::here("ms", "figs", "all-chop-panels-w-means7.pdf"), width = 17, height = 11)
 
 
 #### OTHER SPECIES PANEL OPTIONS ####
