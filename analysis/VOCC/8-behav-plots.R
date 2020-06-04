@@ -74,9 +74,11 @@ best_slopes <- long_slopes %>% filter( slope_type == "high temp" | slope_type ==
 
 
 best_slopes %>% filter(type == "temp") %>% 
-  ggplot(aes(depth, depth_iqr, shape = age, colour = age)) + geom_point() +
+  ggplot(aes(depth, depth_iqr)) + 
+  geom_smooth(method = "lm", colour = "black", size =0.5) +
+  geom_line(aes(group = species), colour = "grey60") +
+  geom_point(aes(shape = age, colour = age), fill = "white", size = 2) +
   scale_colour_manual(values = c("deepskyblue3", "royalblue4")) +
-  geom_line(aes(group = species)) +
   # scale_fill_manual(values = c("cornflowerblue", "deepskyblue")) +
   # scale_colour_manual(values = c("royalblue4", "darkorchid4")) +
   # scale_fill_manual(values = c("royalblue4", "darkorchid4")) + 
@@ -90,8 +92,7 @@ best_slopes %>% filter(type == "temp") %>%
     legend.title = element_blank()
   ) 
 
-ggsave(ggsave(here::here("ms", "figs", "spp-depth-iqr.pdf"), width = 5, height = 3.5)
-)
+ggsave(here::here("ms", "figs", "supp-depth-iqr.pdf"), width = 5, height = 3.5)
 
 #########################################
 ###### INDEPENDENT EFFFECTS ############
@@ -689,7 +690,7 @@ rm(tempslopemod)
 temp_slopes <- temp_slopes %>% mutate(age = factor(age, levels = c("Mature", "Immature")) ) 
 
 dredgedat <- temp_slopes %>% select(slope, slope_est, slope_se, slope_trim, max_mass_scaled,
-  Schooling, Rockfish, age, depth_iqr_scaled, Zone, Latitude, Trophic, Specialist,
+  Schooling, Rockfish, age, depth_iqr_scaled, depth_mean_scaled, Zone, Latitude, Trophic, Specialist,
   chopstick, species, species_age)
 
 tempslopemod <- lmerTest::lmer(slope ~ 
