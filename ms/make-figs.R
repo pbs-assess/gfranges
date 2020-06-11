@@ -499,8 +499,8 @@ do_slopes <- chopstick_slopes(model,
   x_variable = "DO_trend_scaled",
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
 )
-temp_slopes <- left_join(temp_slopes, stats) %>%
-  do_slopes() <- left_join(do_slopes, stats)
+temp_slopes <- left_join(temp_slopes, stats) #%>% ungroup () %>% mutate(chopstick = factor(chopstick, levels = c("high", "low")))
+  do_slopes <- left_join(do_slopes, stats)
 
 temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
@@ -510,10 +510,12 @@ p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   legend_position = c(.25, .95),
   name_chop_type = F,
   add_grey_bars = T
-) + coord_flip(ylim = c(-6, 5)) +
+) + coord_flip(ylim = c(-7.75, 4.25)) +
   # annotate("rect", ymin = lowerT[[1]], ymax = upperT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
   geom_hline(yintercept = estT[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
-  theme(axis.title.x = element_blank()) +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank()) +
   ggtitle("a. Temperature")
 
 p_do_worm <- plot_chopstick_slopes(do_slopes,
@@ -527,14 +529,16 @@ p_do_worm <- plot_chopstick_slopes(do_slopes,
   ggtitle("b. DO") +
   # ylab("slopes")
   scale_x_discrete(position = "top") +
-  theme(axis.title.x = element_blank())
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank())
 
 # colorblindr::cvd_grid(p_temp_worm)
 # colorblindr::cvd_grid(p_do_worm)
 
 (p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "worm-plot-trend-newcol2.pdf"), width = 7.5, height = 6)
+ggsave(here::here("ms", "figs", "worm-plot-trend-nokey.pdf"), width = 7.5, height = 6)
 
 # meta-analytical coefficients? ... all span zero, but could include as appendix?
 
@@ -710,7 +714,8 @@ species_panels <- function(species, model, x_type,
       choose_age = gsub(" .*", "", species),
       slopes = temp_slopes # if add, the global slope can be included for insig.
     ) + 
-      coord_cartesian(xlim = c(-0.2, 2.6), ylim = c(-3.5, 3.8)) +
+      scale_x_continuous(labels = function(x) paste0(round(x * 0.6328, 1))) +
+      coord_cartesian(xlim = c(-0.2 , 2.6), ylim = c(-3.5, 3.8)) +
       theme(
         plot.margin = margin(0, 0.2, 0.1, 0.1, "cm"),
         legend.position = "none",
@@ -755,7 +760,7 @@ species_panels <- function(species, model, x_type,
       )
 
     if (chop_label) {
-      climate_map <- climate_map + ggtitle("Temperature trend (scaled)") + 
+      climate_map <- climate_map + ggtitle("Temperature trend") + 
         theme(plot.margin = margin(0, 0, 0.1, 0, "cm"),
           axis.title.y = element_blank())
       climate_map2 <- climate_map2 + 
@@ -787,7 +792,8 @@ species_panels <- function(species, model, x_type,
       choose_age = gsub(" .*", "", species),
       slopes = do_slopes # if add, the global slope can be included for insig.
     ) + 
-      coord_cartesian(xlim = c(-3, 3), ylim = c(-3.5, 3.8)) + 
+      scale_x_continuous(labels = function(x) paste0(round(x * 0.4093, 1))) +
+      coord_cartesian(xlim = c(-4, 4), ylim = c(-3.5, 3.8)) + 
       theme(
         plot.margin = margin(0, 0.2, 0.1, 0.1, "cm"),
         legend.position = "none",
@@ -833,7 +839,7 @@ species_panels <- function(species, model, x_type,
       )
     
     if (chop_label) {
-      climate_map <- climate_map + ggtitle("DO trend (scaled)") + 
+      climate_map <- climate_map + ggtitle("DO trend") + 
         theme(plot.margin = margin(0, 0, 0.1, 0, "cm"))
       climate_map2 <- climate_map2 + 
         theme(plot.margin = margin(0, 0, 0, 0, "cm"),
@@ -873,7 +879,7 @@ species_panels <- function(species, model, x_type,
 
 (p5 <- species_panels("mature North Pacific Spiny Dogfish", chop_label = T, model, "DO"))
 
-(p6 <- species_panels("mature Bocaccio", model, "DO", alpha_range = c(0.25, 0.9)))
+(p6 <- species_panels("mature Bocaccio", model, "DO")) #, alpha_range = c(0.25, 0.9)))
 # (p7 <- species_panels("mature Shortspine Thornyhead", model, "DO"))
 (p7 <- species_panels("immature Shortspine Thornyhead", model, "DO"))
 
@@ -956,7 +962,7 @@ species_panels("mature Petrale Sole", model, "DO")
 
 #########################
 #########################
-#### SLOPE SCATTERPLOTS AGAINST DEPTH ####
+#### DEPTH SCATTERPLOTS ####
 ### prep data ####
 do_data <- readRDS(paste0("analysis/VOCC/data/predicted-DO-new.rds")) %>%
   select(X, Y, year, depth, temp, do_est)
@@ -990,7 +996,7 @@ temp_slopes <- mutate(temp_slopes, species_lab = if_else(slope_est < -5, species
 do_slopes$species_lab <- gsub("Rockfish", "", do_slopes$species_lab)
 temp_slopes$species_lab <- gsub("Rockfish", "", temp_slopes$species_lab)
 
-##### combined temp-DO panel ####
+##### combined temp-DO panel 
 # depth <- ggplot(do_data, aes(depth, do_est)) +
 #   geom_point(aes(depth, temp*(2/3)), alpha = 0.02, shape = 20, colour = "#3d95cc", size = 0.432) +
 #   geom_point(aes(depth, do_est), alpha = 0.02, shape = 20, colour = "darkorchid4", size = 0.432) +
@@ -1009,7 +1015,8 @@ temp_slopes$species_lab <- gsub("Rockfish", "", temp_slopes$species_lab)
 #     axis.title.y.right = element_text(color = "#3d95cc") #, vjust = -0.2
 #     # axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
 #   )
-##### quad verion of depth figure ####
+
+#### SLOPES AGAINST DEPTH ####
 temp_high <- slope_scatterplot(
   filter(temp_slopes, chopstick == "high"), "depth",
   col_group = "age",
@@ -1022,13 +1029,13 @@ temp_high <- slope_scatterplot(
   ggrepel::geom_text_repel(aes(label = species_lab),
     size = 3,
     force = 3,
-    nudge_y = 0.75,
+    nudge_y = 0.9,
     nudge_x = 35,
     na.rm = T, min.segment.length = 1
   ) +
   ylab("Slope at highest temperature") +
   scale_y_continuous(breaks = c(3, 0, -3, -6, -9)) +
-  coord_cartesian(ylim = c(-11, 4.2), xlim = c(15, 410)) +
+  coord_cartesian(ylim = c(-11, 5.5), xlim = c(15, 410)) +
   scale_colour_manual(values = c("Red 3", "Red 3")) +
   # scale_colour_manual(values = c("#D53E4F","#D53E4F")) +
   theme(
@@ -1040,7 +1047,7 @@ temp_high <- slope_scatterplot(
     # axis.text.y = element_text(color = "#ff4d00"), # redish orange
     axis.title.y = element_text(vjust = 0.2),
     axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
-  )
+  ) 
 
 do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth",
   col_group = "age",
@@ -1065,25 +1072,8 @@ do_low <- slope_scatterplot(filter(do_slopes, chopstick == "low"), "depth",
     axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
   )
 
-# # add plot tags for tri panel version
-temp_high2 <- temp_high %>% egg::tag_facet(
-  open = "", close = ".", tag_pool = c("a"),
-  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
-)
-# do_low2 <- do_low %>% egg::tag_facet(open = "", close = ".", tag_pool = c("b"),
-#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
-# depth2 <- depth %>% egg::tag_facet(open = "", close = ".", tag_pool = c("c"),
-#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1)
-#
-# # combine and save
-# temp_high2 + do_low2 + depth2 + plot_layout(ncol = 1, heights = c(1, 1, 1))
-# # + plot_annotation(tag_levels = "a", tag_suffix = ". ")
-# # ggsave(here::here("ms", "figs", "slope-by-depth.png"), width = 4.5, height = 7)
-# ggsave(here::here("ms", "figs", "slope-by-depth4.png"), width = 5.5, height = 8)
 
-
-#### QUAD VERSION
-### splits temp and do into separate panels
+#### CLIMATE BY DEPTH ####
 (p_depth_t <- ggplot(do_data, aes(depth, temp)) +
   scale_color_viridis_c(option = "B", end = 0.8) +
   geom_point(aes(depth, temp, colour = temp), alpha = 0.02, shape = 20, size = 0.432) +
@@ -1111,12 +1101,62 @@ p_depth_do <- ggplot(do_data, aes(depth, do_est)) +
     axis.title.x = element_blank()
   )
 
+(p_iqr <- temp_slopes %>% filter(chopstick == "high") %>% 
+  ggplot(aes(depth, depth_iqr)) + 
+  # geom_smooth(method = "lm", colour = "black", size =0.5) +
+  geom_line(aes(group = species), colour = "grey60") +
+  geom_point(aes(shape = age, colour = age), fill = "white", size = 1.5) +
+  scale_colour_manual(values = c("deepskyblue3", "royalblue4")) +
+    # scale_colour_manual(values = c("royalblue4","deepskyblue3" )) +
+  # scale_fill_manual(values = c("cornflowerblue", "deepskyblue")) +
+  # scale_colour_manual(values = c("royalblue4", "darkorchid4")) +
+  # scale_fill_manual(values = c("royalblue4", "darkorchid4")) + 
+  scale_shape_manual(values = c(21, 19)) +
+  coord_cartesian(xlim = c(15, 410), ylim = c(2, 240), expand = F) +
+  # scale_x_log10() +
+  # scale_y_log10() +
+  ylab("Depth range (IQR)") +
+  xlab("Mean depth") +
+  gfplot::theme_pbs() + theme(
+    plot.margin = margin(0, 0, 0, 0.3, "cm"),
+    legend.position = c(0.2, 0.8),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    legend.title = element_blank()
+  ))  
+
+
+d <- temp_slopes %>% filter(chopstick == "high" & type == "temp" & age == "Immature") 
+
+# if adding to tex
+# cor(d$log_age_scaled, d$growth_rate_scaled, use = "pairwise.complete.obs", method = "spearman")
+
+ggplot(d, aes(age_mean, y=(length_50_mat_f / age_mat))) +
+  geom_point(aes(shape = age, colour = age), size = 3) +
+  scale_colour_manual(values = c("deepskyblue3")) +
+  scale_shape_manual(values = c(21)) +
+  ylim(1,21) +
+  scale_x_log10() + scale_y_log10() +
+  ggrepel::geom_text_repel(aes(label = gsub(" Rockfish", "", species)),
+    point.padding = 0.3, segment.colour = "deepskyblue3", max.iter = 5000,
+    size = 3, force = 20, #nudge_y = -0.1, #nudge_x = 35,
+    na.rm = T, min.segment.length = 0.5, seed = 1000
+  ) +
+  ylab("Immature growth rate") +
+  xlab("Mean age of immature population") +
+  gfplot::theme_pbs() + theme(legend.position = "none")
+
+ggsave(here::here("ms", "figs", "supp-age-growth.pdf"), width = 4, height = 4)
+
+
+#### add facet tags and save ####
 depth_t <- p_depth_t %>% egg::tag_facet(
-  open = "", close = ".", tag_pool = c("c"),
+  open = "", close = ".", tag_pool = c("d"),
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 depth_do <- p_depth_do %>% egg::tag_facet(
-  open = "", close = ".", tag_pool = c("d"),
+  open = "", close = ".", tag_pool = c("e"),
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
@@ -1127,14 +1167,33 @@ do_low <- do_low + scale_y_continuous(position = "right") + theme(
 )
 
 do_low3 <- do_low %>% egg::tag_facet(
+  open = "", close = ".", tag_pool = c("c"),
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+)
+
+temp_high2 <- temp_high %>% egg::tag_facet(
   open = "", close = ".", tag_pool = c("b"),
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
-(temp_high2 + do_low3 + depth_t + depth_do + plot_layout(ncol = 2, heights = c(1, 0.5))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 2, heights = c(1, 0.02))
+p_iqr <- p_iqr %>% egg::tag_facet(
+  open = "", close = ".", tag_pool = c("a"),
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+)
+
+# ggsave(here::here("ms", "figs", "supp-depth-iqr.pdf"), width = 5, height = 3.5)
+layout <- "
+      AA##
+      BBCC
+      DDEE
+      "
+
+(p_iqr + temp_high2 + do_low3 + depth_t + depth_do + 
+  plot_layout(design = layout, heights = c(0.7, 0.9, 0.5))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + 
+  plot_layout(nrow = 2, heights = c(1, 0.02))
 
 # ggsave(here::here("ms", "figs", "slope-by-depth-quad-iqr.png"), width = 8, height = 5)
-ggsave(here::here("ms", "figs", "slope-by-depth-quad2.png"), width = 8, height = 5)
+ggsave(here::here("ms", "figs", "slope-by-depth-w-iqr2.png"), width = 6, height = 6)
 
 #########################
 #########################
