@@ -541,7 +541,7 @@ plot_chopstick_slopes <- function(slopedat,
         # ymin = slope_min, # min slope possible inside CI
         # ymax = slope_max # max slope possible inside CI
       ),
-      position = position_jitter(width = 0.25), # dodge.width = 1.2
+      position = position_jitterdodge(width = 0.25), # dodge.width = 1.2
       size = point_size, fatten = 1, fill = "white"
       ) +
       geom_pointrange(aes(species,
@@ -598,7 +598,7 @@ plot_chopstick_slopes <- function(slopedat,
     
     p <- p + scale_colour_manual(values = colours) + # , guide=T
       geom_pointrange(
-        position = position_jitter(), # dodge.width = 1.2
+        position = position_jitterdodge(), # dodge.width = 1.2
         size = point_size, fatten = 1.5, 
         fill = "white"
       ) +
