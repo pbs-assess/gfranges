@@ -4,12 +4,13 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    #species: "Redbanded Rockfish"
+    # species: "Redbanded Rockfish"
     #species: "Pacific Ocean Perch"
     #species: "Pacific Cod"
     #species: "Petrale Sole"
-    #species: "Widow Rockfish"
+    # species: "Widow Rockfish"
     species: "Bocaccio"
+    # species: "Sablefish"
     region: "All synoptic surveys"
     knots: 500
     covariates: "" # +as.factor(ssid)
@@ -408,6 +409,30 @@ ggplot(depth_only_predictions, aes(X, Y, colour = (residuals))) +
   scale_colour_gradient2() +
   scale_x_continuous(trans = "log10") +
   facet_wrap(~year)
+```
+
+```{r}
+fits <- readRDS("climate-fits.rds")
+check_fits <- left_join(depth_only_predictions,fits)
+
+try({
+  g3 <- ggplot(check_fits, aes(t_resids, residuals, colour = density)) +
+    geom_point() + # scale_x_continuous(trans = 'log10') +
+    facet_wrap(~year)
+  g4 <- ggplot(check_fits, aes(d_resids, residuals, colour = density)) +
+    geom_point() + # scale_x_continuous(trans = 'log10') +
+    facet_wrap(~year)
+})
+try({
+  g3 <- ggplot(check_fits, aes(t_resids, residuals, colour = adult_density)) +
+    geom_point() + # scale_x_continuous(trans = 'log10') +
+    facet_wrap(~year)
+  g4 <- ggplot(check_fits, aes(d_resids, residuals, colour = adult_density)) +
+    geom_point() + # scale_x_continuous(trans = 'log10') +
+    facet_wrap(~year)
+})
+g3
+g4
 ```
 
 ### Build time-varying depth plots

@@ -78,7 +78,10 @@ list_species <- c(
    "Longnose Skate",
    "Spotted Ratfish"
 )
- 
+
+list_species <- c(
+  "Bocaccio"
+)
 
 ### build time-varying depth models
 list_regions <- c("All synoptic surveys")
@@ -95,12 +98,12 @@ for (r_h in seq_along(list_regions)) {
           region = list_regions[r_h],
           covariates = "", # additional non-climate variables
           covs = covs,
-          knots = 400,
+          knots = 500,
           update_model = TRUE # FALSE #
         ),
         output_file = paste0(
           "html/biomass-by-depth/biomass-by",
-          covs, "-", spp, "-400.html"
+          covs, "-", spp, "-500.html"
         ),
         envir = env
       )
