@@ -59,7 +59,7 @@ list_regions <- c(
   #   "All synoptic surveys"
 )
 
-# age <- "mature"
+age <- "mature"
 if (age == "mature") {
 for (r_h in seq_along(list_regions)) {
   for (spp_i in seq_along(list_species)) {
@@ -78,7 +78,7 @@ for (r_h in seq_along(list_regions)) {
         output_file = paste0(
           "html/VOCC-plots/vocc-w-do-", spp,
           # "-imm",
-          covs, "-", reg, "-dvocc-decade.html"
+          covs, "-", reg, "-updated-climate.html"
         ),
         envir = env
       )
@@ -87,7 +87,7 @@ for (r_h in seq_along(list_regions)) {
 }
 }
 
-# age <- "immature"
+age <- "immature"
 if (age == "immature") {
 for (r_h in seq_along(list_regions)) {
   for (spp_i in seq_along(list_species)) {
@@ -105,7 +105,7 @@ for (r_h in seq_along(list_regions)) {
         output_file = paste0(
           "html/VOCC-plots/vocc-w-do-", spp,
           "-imm",
-          covs, "-", reg, "-dvocc.html"
+          covs, "-", reg, "-updated-climate.html"
         ),
         envir = env
       )

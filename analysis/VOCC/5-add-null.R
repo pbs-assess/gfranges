@@ -15,16 +15,26 @@ if (trim_threshold == 0.1) { trim_percent <- 90}
 if (trim_threshold == 0.2) { trim_percent <- 80}
 if (trim_threshold == 0.5) { trim_percent <- 50}
 
+# age <- "mature"
+# d1 <- readRDS(paste0("data/", age, "-all-do-dvocc.rds")) %>% mutate(age = "mature")
+# 
+# age <- "immature"
+# d2 <- readRDS(paste0("data/", age, "-all-do-dvocc.rds")) %>% mutate(age = "immature")
+
 age <- "mature"
-d1 <- readRDS(paste0("data/", age, "-all-do-dvocc.rds")) %>% mutate(age = "mature")
+d1 <- readRDS(paste0("data/", age, "-all-do-newclim.rds")) %>% mutate(age = "mature")
 
 age <- "immature"
-d2 <- readRDS(paste0("data/", age, "-all-do-dvocc.rds")) %>% mutate(age = "immature")
+d2 <- readRDS(paste0("data/", age, "-all-do-newclim.rds")) %>% mutate(age = "immature")
 
 
 d <- rbind(d1, d2) 
 
 d <- na.omit(d) %>% as_tibble() %>% mutate(species_age = paste(age, species))
+
+d <- filter(d, species_age != "immature Shortraker Rockfish") 
+d <- filter(d, species_age != "immature Curlfin Sole")
+
 
 all_species <- unique(d$species_age)
 
@@ -111,14 +121,14 @@ newdata <- do.call(rbind, with_nulls)
 
 # saveRDS(newdata, file = paste0("data/mature-all-temp-with-null-1-untrimmed.rds"))
 # saveRDS(newdata, file = paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed.rds"))
-saveRDS(newdata, file = paste0("data/all-do-with-null-", null_number, "-untrimmed.rds"))
+saveRDS(newdata, file = paste0("data/all-newclim-with-null-", null_number, "-untrimmed.rds"))
 
 
 ### ADD SPECIES TRAITS ANS SCALE VARIABLES
 # age <- "mature"
 # d <- readRDS(paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed.rds"))
 
-d <- readRDS(paste0("data/all-do-with-null-", null_number, "-untrimmed.rds"))
+d <- readRDS(paste0("data/all-newclim-with-null-", null_number, "-untrimmed.rds"))
 
 
 stats <- readRDS(paste0("data/life-history-stats.rds"))
@@ -141,9 +151,10 @@ select(d, genus, species) %>%
 
 
 #### PREP TEMP VARIABLES ####
-d$squashed_temp_vel <- collapse_outliers(d$temp_vel, c(0, 0.985))
+d$squashed_temp_vel <- collapse_outliers(d$temp_vel, c(0.005, 0.993)) #99th quantile and then droped to be less than 100km
 hist(d$squashed_temp_vel, breaks = 100)
 d$squashed_temp_dvocc <- collapse_outliers(d$temp_dvocc, c(0.005, 0.995))
+hist(d$squashed_temp_dvocc, breaks = 100)
 # plot(squashed_do_vel ~ squashed_temp_vel, data = d, col = "#00000010")
 d$squashed_temp_vel_scaled <- scale(d$squashed_temp_vel, center = FALSE)
 d$squashed_temp_dvocc_scaled <- scale(d$squashed_temp_dvocc, center = F)
@@ -163,14 +174,14 @@ d$temp_grad_scaled <- scale(d$temp_grad)
 
 #### PREP DO VARIABLES ####
 
-d$squashed_DO_vel <- collapse_outliers(d$DO_vel, c(0.01, 0.995))
-hist(d$squashed_DO_vel, breaks = 30)
+d$squashed_DO_vel <- collapse_outliers(d$DO_vel, c(0.008, 0.995)) #99th quantile and then droped to be less than 100km
+hist(d$squashed_DO_vel, breaks = 100)
 
 d$squashed_DO_vel_scaled <- scale(d$squashed_DO_vel, center = FALSE)
-hist(d$squashed_DO_vel_scaled, breaks = 30)
 
-d$DO_dvocc_scaled <- scale(d$DO_dvocc, center = F)
 d$squashed_DO_dvocc <- collapse_outliers(d$DO_dvocc, c(0.005, 0.995))
+hist(d$squashed_DO_dvocc, breaks = 100)
+# d$DO_dvocc_scaled <- scale(d$DO_dvocc, center = F)
 d$squashed_DO_dvocc_scaled <- scale(d$squashed_DO_dvocc, center = FALSE)
 
 # hist(d$mean_DO)
@@ -179,12 +190,13 @@ d$mean_DO_scaled <- scale(d$mean_DO)
 hist((d$mean_DO_scaled))
 hist((d$mean_DO_scaled2))
 
-# hist(d$mean_DO_scaled)
-# hist(d$DO_trend)
-d$squashed_DO_trend <- collapse_outliers(d$DO_trend, c(0.000, 0.999))
+hist(d$mean_DO_scaled)
+hist(d$DO_trend)
+d$squashed_DO_trend <- collapse_outliers(d$DO_trend, c(0.005, 0.995))
 hist(d$squashed_DO_trend)
+d$squashed_DO_trend_scaled <- scale(d$quashed_DO_trend, center = FALSE)
 
-d$DO_trend_scaled <- scale(collapse_outliers(d$DO_trend, c(0.000, 0.999)), center = FALSE)
+d$DO_trend_scaled <- scale(d$DO_trend, center = FALSE)
 hist(d$DO_trend_scaled)
 d$DO_grad_scaled <- scale(d$DO_grad)
 # hist(d$DO_grad_scaled)
@@ -208,7 +220,7 @@ d$log_effort_scaled <- scale(d$log_effort, center = F)
 
 
  # saveRDS(d, file = paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
-saveRDS(d, file = paste0("data/all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
+saveRDS(d, file = paste0("data/all-newclim-with-null-", null_number, "-untrimmed-allvars.rds"))
 
 
 ##########################################
@@ -216,7 +228,7 @@ saveRDS(d, file = paste0("data/all-do-with-null-", null_number, "-untrimmed-allv
 # age <- "mature"
 # age <- "immature"
 # newdata <- readRDS(paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
-newdata <- readRDS(paste0("data/all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
+newdata <- readRDS(paste0("data/all-newclim-with-null-", null_number, "-untrimmed-allvars.rds"))
 
 trimmed.dat <- list()
 for (i in seq_along(all_species)) {
@@ -232,11 +244,9 @@ data <- do.call(rbind, trimmed.dat)
 # saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-temp-with-null-", null_number, ".rds"))
 
 
-data <- filter(data, species_age != "immature Shortraker Rockfish") 
-data <- filter(data, species_age != "immature Curlfin Sole")
 
 # saveRDS(data, file = paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
-saveRDS(data, file = paste0("data/all-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
+saveRDS(data, file = paste0("data/all-", trim_percent, "-newclim-with-null-", null_number, ".rds"))
 
 # ggplot(data = data, aes(mean_DO_scaled, log(mean_biomass+1))) + 
 #   geom_point(alpha= .2) + facet_wrap(~species)
@@ -247,8 +257,8 @@ ggplot(data, aes(mean_DO_scaled, DO_trend_scaled)) + geom_point() + geom_smooth(
 
 #####################################
 ### PLOT REAL AND FAKE TREND DATA
-data <- readRDS(paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
-data <- readRDS(paste0("data/all-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
+# data <- readRDS(paste0("data/", age, "-", trim_percent, "-all-newclim-with-null-", null_number, ".rds"))
+data <- readRDS(paste0("data/all-", trim_percent, "-newclim-with-null-", null_number, ".rds"))
 
 plots <- list()
 for (i in seq_along(all_species)) {
@@ -280,7 +290,7 @@ plots[[i]] <- cowplot::plot_grid(o, n)
 }
 
 # pdf(paste0(age, "-null-", null_number, "-trends-new.pdf"))
-pdf(paste0("all-null-", null_number, "-trends-new.pdf"))
+pdf(paste0("all-null-", null_number, "-trends-newclim.pdf"))
 
 plots
 dev.off()

@@ -172,7 +172,7 @@ if (scrambled_years) {
 
 #### TRIM environment to range sampled
 ```{r}
-nd_all <- readRDS(paste0("data/predicted-DO-new.rds")) %>% select(X, Y, year, temp, do_est)
+nd_all <- readRDS(paste0("data/predicted-DO-june-2020.rds")) %>% select(X, Y, year, temp, do_est)
 fishing <- readRDS("data/_fishing_effort/fishing-effort-grid.rds")
 # fishing <- readRDS("data/fishing-effort-grid-6hr.rds")
 
@@ -221,6 +221,7 @@ gf$squashed_effort <- collapse_outliers(gf$mean_effort, c(0, 0.95))
 
 ```{r eval = F}
 effort <- plot_vocc(gf,
+  raster_cell_size = 4,
   # theme_black = TRUE,
   coast = TRUE,
   vec_aes = NULL,
@@ -246,6 +247,7 @@ effort <- plot_vocc(gf,
 effort
 
 fish_t <- plot_vocc(gf,
+  raster_cell_size = 4,
   # theme_black = TRUE,
   coast = TRUE,
   vec_aes = NULL,
@@ -340,6 +342,7 @@ gf2$dvocc <- dv_t$dvocc
 ```{r eval=F}
 plot_vocc(gf2,
   # theme = "black",
+  raster_cell_size = 4,
   coast = TRUE,
   vec_aes = NULL,
   # grad_vec_aes = "velocity",
@@ -365,6 +368,7 @@ gf2$squashed_velocity <- collapse_outliers(gf2$velocity, c(0.005, 0.995))
 
 plot_vocc(gf2,
   # theme = "black",
+  raster_cell_size = 4,
   coast = TRUE,
   vec_aes = NULL,
   # grad_vec_aes = "velocity",
@@ -387,6 +391,7 @@ plot_vocc(gf2,
 
 ```{r eval=F}
 grad2 <- plot_vocc(gf2,
+  raster_cell_size = 4,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -534,6 +539,7 @@ gf0$dvocc_both <- dv_td$dvocc
 
 ```{r eval=F}
 grad0dv <- plot_vocc(gf0,
+  raster_cell_size = 4,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -563,6 +569,7 @@ grad0dv
 gf0$squashed_velocity <- collapse_outliers(gf0$velocity, c(0.005, 0.995))
 
 grad0v <- plot_vocc(gf0,
+  raster_cell_size = 4,
   # theme_black = TRUE,
   coast = TRUE,
   vec_aes = NULL,
@@ -590,6 +597,7 @@ grad0v
 
 ```{r eval=F}
 grad0 <- plot_vocc(gf0,
+  raster_cell_size = 4,
   # theme_black = TRUE,
   coast = TRUE,
   vec_aes = NULL,
@@ -709,6 +717,7 @@ gf3t <- filter(gf3, mean_biomass > lower_density_threshold)
 
 ```{r eval=T}
 gradbv <- plot_vocc(gf3t,
+  raster_cell_size = 4,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -739,6 +748,7 @@ gradbv
 gf3t$squashed_velocity <- collapse_outliers(gf3t$velocity, c(0.005, 0.995))
 
 grad3 <- gfranges::plot_vocc(gf3t,
+  raster_cell_size = 4,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -767,6 +777,7 @@ grad3
 # gf3t$squashed_velocity <- collapse_outliers(gf3t$velocity, c(0.005, 0.995))
 
 grad3 <- gfranges::plot_vocc(gf3t,
+  raster_cell_size = 4,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -794,6 +805,7 @@ grad3
 #raster_max <- quantile(gf3$mean_biomass, 0.995, na.rm = T)
 gf3$mean_biomass2 <- collapse_outliers(gf3$mean_biomass, c(0, 0.995))
 grad4 <- gfranges::plot_vocc(gf3,
+  raster_cell_size = 4,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -819,6 +831,7 @@ grad4
 
 ```{r eval=T}
 grad5 <- gfranges::plot_vocc(gf3t,
+  raster_cell_size = 4,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -845,6 +858,7 @@ grad5
 
 ```{r eval=T}
 grad6 <- gfranges::plot_vocc(gf3t,
+  raster_cell_size = 4,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -871,6 +885,7 @@ grad6
 ```{r eval=F}
 raster_max <- quantile(gf3t$CV, 0.90, na.rm = TRUE)
 grad7 <- gfranges::plot_vocc(gf3t,
+  raster_cell_size = 4,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -944,14 +959,14 @@ vocc <- left_join(vocc, temp_values) # add temp
 vocc <- mutate(vocc, species = !!species, method = "both")
 
 write.csv(vocc, file = paste0(
-  "data/_dvocc_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
+  "data/_newclim_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
 ))
 
 ```
 
 ```{r}
 vocc  <- read.csv(paste0(
-  "data/_dvocc_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, "-", covs, "-", min(d$year), "-", max(d$year), ".csv"
+  "data/_newclim_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
 ))
 vocc_t <- filter(vocc, mean_biomass > lower_density_threshold)
 ```

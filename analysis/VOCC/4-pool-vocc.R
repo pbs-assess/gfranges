@@ -3,12 +3,15 @@ setwd(here::here("/analysis/VOCC/data"))
 library("dplyr")
 
 # covs <- "-fixed"
-mydir = paste0( "_new_null")
-mydir = paste0( "_do_null")
-mydir = paste0( "_dvocc")
+# mydir = paste0( "_new_null")
+# mydir = paste0( "_do_null")
+# mydir = paste0( "_dvocc")
 
-mydir = paste0( "_dvocc_mature")
-mydir = paste0( "_dvocc_immature")
+# mydir = paste0( "_dvocc_mature")
+# mydir = paste0( "_dvocc_immature")
+
+# mydir = paste0( "_newclim_mature")
+mydir = paste0( "_newclim_immature")
 ####################
 myfiles <- list.files(path = mydir, pattern = "*.csv", full.names = TRUE)
 myfiles
@@ -25,10 +28,17 @@ glimpse(biotic)
 #   "mature-all-do-untrimmed.rds"
 # ))
 # 
-saveRDS(biotic, file = paste0(
-  "mature-all-do-dvocc.rds"
-))
+# saveRDS(biotic, file = paste0(
+#   "mature-all-do-dvocc.rds"
+# ))
+# 
+# saveRDS(biotic, file = paste0(
+#   "immature-all-do-dvocc.rds"
+# ))
+# saveRDS(biotic, file = paste0(
+#   "mature-all-do-newclim.rds"
+# ))
 
 saveRDS(biotic, file = paste0(
-  "immature-all-do-dvocc.rds"
+  "immature-all-do-newclim.rds"
 ))
