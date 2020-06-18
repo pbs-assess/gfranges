@@ -28,12 +28,15 @@ plot_vocc(
   axis_lables = FALSE,
   viridis_option = "D",
   viridis_dir = 1,
+  viridis_begin = 0.2,
+  viridis_end = 1,
   transform_col = no_trans,
   raster_limits = NULL,
   raster_cell_size = 2,
   legend_position = c(0.15, 0.25),
   tag_text = NULL,
   make_square = TRUE,
+  grey_water = TRUE,
   theme_black = FALSE
 )
 }
@@ -89,6 +92,10 @@ If TRUE, will attempt to create bathymetry layer for xy values in df using gfplo
 
 \item{viridis_dir}{Option to flip scale by giving value of -1.}
 
+\item{viridis_begin}{Value to start viridis scale at}
+
+\item{viridis_end}{Value to end viridis scale at}
+
 \item{transform_col}{Apply transformation to colour scale.
 Accepts standard options (e.g. "sqrt") or unquoted custom transformations
 defined using scales::trans_new (e.g. fourth_root_power).
@@ -100,7 +107,11 @@ Default is to apply no transformation (no_trans).}
 
 \item{legend_position}{Vector of coordinates for legend placement. Or "none" to remove legend.}
 
+\item{tag_text}{Text to be added to top right corner of plot}
+
 \item{make_square}{Logical for adding space to map to make it square}
+
+\item{grey_water}{Make water (panel background) light grey}
 
 \item{theme_black}{Logical for inverting plot to white on black}
 }

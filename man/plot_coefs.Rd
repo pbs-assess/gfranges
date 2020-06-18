@@ -9,6 +9,7 @@ plot_coefs(
   grouping_taxa = "species",
   order_by_trait = FALSE,
   order_by = "scale(do_vel_squashed)",
+  increasing = F,
   grid_facets = F,
   add_grey_bars = F,
   fixed_scales = TRUE

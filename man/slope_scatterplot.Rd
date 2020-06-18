@@ -9,28 +9,34 @@ slope_scatterplot(
   x,
   slope_var = "slope_est",
   col_group = "chopstick",
+  shape_group = "age",
   point_size = 0.75,
   point_alpha = 0.99,
+  point_shapes = c(21, 19),
   pointrange = T,
   regression = F
 )
 }
 \arguments{
-\item{slopes_w_traits}{Df of slopes merged with df of species traits.}
+\item{slopes_w_traits}{Df of slopes merged with df of species traits}
 
-\item{x}{Variable (species trait) on x-axis.}
+\item{x}{Variable (species trait) on x-axis}
 
-\item{slope_var}{Varible containing slope estimate.}
+\item{slope_var}{Varible containing slope estimate}
 
-\item{col_group}{Varible to colour by.}
+\item{col_group}{Varible to colour by}
+
+\item{shape_group}{Varible to set shape by}
 
 \item{point_size}{Set point size}
 
 \item{point_alpha}{Set point alpha}
 
-\item{pointrange}{Logical for adding 95% CI bars to points. Default T}
+\item{point_shapes}{Vector of shapes. Defaults to open and closed circles}
 
-\item{regression}{Logical for plotting simple linear regression line.}
+\item{pointrange}{Logical for adding 95CI bars to points. Default T}
+
+\item{regression}{Logical for plotting simple linear regression line}
 }
 \description{
 Scatterplot of slopes against traits

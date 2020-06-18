@@ -14,8 +14,9 @@ plot_chopstick_slopes(
   add_global = T,
   global_col = "gray30",
   point_size = 0.75,
-  alpha_range = c(0.5, 0.99),
+  alpha_range = c(0.4, 0.99),
   add_grey_bars = F,
+  name_chop_type = T,
   colours = NULL
 )
 }
@@ -41,6 +42,8 @@ plot_chopstick_slopes(
 \item{alpha_range}{Set alapha values based on slope significance}
 
 \item{add_grey_bars}{Add grey stripes to alternating species}
+
+\item{name_chop_type}{Add type to chopstick name in legend}
 
 \item{colours}{Add custom colours}
 }

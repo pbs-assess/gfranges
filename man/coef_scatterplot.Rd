@@ -11,6 +11,7 @@ coef_scatterplot(
   group = "age",
   point_size = 0.75,
   point_alpha = 0.65,
+  point_shapes = c(21, 19),
   pointrange = T,
   regression = T
 )
@@ -27,6 +28,8 @@ coef_scatterplot(
 \item{point_size}{}
 
 \item{point_alpha}{}
+
+\item{point_shapes}{Vector of shapes. Defaults to open and closed circles.}
 
 \item{regression}{Logical for adding regression line.}
 }

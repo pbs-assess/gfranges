@@ -649,16 +649,16 @@ plot_chopstick_slopes <- function(slopedat,
 
 #' Scatterplot of slopes against traits
 #'
-#' @param slopes_w_traits Df of slopes merged with df of species traits.
-#' @param x Variable (species trait) on x-axis.
-#' @param slope_var Varible containing slope estimate.
-#' @param col_group Varible to colour by.
+#' @param slopes_w_traits Df of slopes merged with df of species traits
+#' @param x Variable (species trait) on x-axis
+#' @param slope_var Varible containing slope estimate
+#' @param col_group Varible to colour by
 #' @param point_size Set point size
 #' @param point_alpha Set point alpha
-#' @param pointrange Logical for adding 95% CI bars to points. Default T
-#' @param regression Logical for plotting simple linear regression line.
-#' @param shape_group Varible to set shape by.
-#' @param point_shapes Vector of shapes. Defaults to open and closed circles.
+#' @param pointrange Logical for adding 95CI bars to points. Default T
+#' @param regression Logical for plotting simple linear regression line
+#' @param shape_group Varible to set shape by
+#' @param point_shapes Vector of shapes. Defaults to open and closed circles
 #'
 #' @export
 slope_scatterplot <- function(slopes_w_traits, x,
@@ -687,7 +687,6 @@ slope_scatterplot <- function(slopes_w_traits, x,
     gfplot:::theme_pbs()
   p
 }
-
 
 
 #' Plot raw chopsticks for vocc regression models
