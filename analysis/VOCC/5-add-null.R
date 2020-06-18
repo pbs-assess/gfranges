@@ -35,6 +35,9 @@ d <- na.omit(d) %>% as_tibble() %>% mutate(species_age = paste(age, species))
 d <- filter(d, species_age != "immature Shortraker Rockfish") 
 d <- filter(d, species_age != "immature Curlfin Sole")
 
+### correct for use to trend_per_year variable in current vocc-dist.Rmd
+d <- mutate(d, temp_trend = temp_trend*10, DO_trend = DO_trend*10)
+
 
 all_species <- unique(d$species_age)
 
@@ -166,7 +169,7 @@ hist((d$mean_temp_scaled2))
 hist(d$squashed_temp_vel_scaled, breaks = 100)
 
 # hist(d$temp_trend)
-d$temp_trend_scaled <- scale(d$temp_trend*10, center = FALSE)
+d$temp_trend_scaled <- scale(d$temp_trend, center = FALSE)
 # hist(d$temp_trend_scaled)
 d$temp_grad_scaled <- scale(d$temp_grad)
 # hist(d$temp_grad_scaled)
@@ -192,12 +195,12 @@ hist((d$mean_DO_scaled))
 hist((d$mean_DO_scaled2))
 
 hist(d$mean_DO_scaled)
-hist(d$DO_trend*10)
-d$squashed_DO_trend <- collapse_outliers(d$DO_trend*10, c(0.005, 0.995))
+hist(d$DO_trend)
+d$squashed_DO_trend <- collapse_outliers(d$DO_trend, c(0.005, 0.995))
 hist(d$squashed_DO_trend)
 d$squashed_DO_trend_scaled <- scale(d$squashed_DO_trend, center = FALSE)
 
-d$DO_trend_scaled <- scale(d$DO_trend*10, center = FALSE)
+d$DO_trend_scaled <- scale(d$DO_trend, center = FALSE)
 hist(d$DO_trend_scaled)
 d$DO_grad_scaled <- scale(d$DO_grad)
 # hist(d$DO_grad_scaled)
