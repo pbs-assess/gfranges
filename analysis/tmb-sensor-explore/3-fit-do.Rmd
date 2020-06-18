@@ -204,7 +204,7 @@ hist(d_trawl$log_do)
 
 d_trawl1 <- d_trawl %>% filter(!(year == 2016 & ssid ==4)) #%>% filter(ssid != 16) %>% filter(ssid != 4)    
 #test <- d_trawl1 %>% filter(year == 2016 & ssid ==16) 
-spde <- make_spde(d_trawl1$X, d_trawl1$Y, n_knots = 800)
+spde <- make_spde(d_trawl1$X, d_trawl1$Y, n_knots = 800) ### TODO: rerun with 500
 plot_spde(spde)
 ```
 
@@ -240,8 +240,8 @@ get_diag(temp_model_all, response = "temp_scaled", variable = "depth_scaled")
 ```
 
 Add temperature predictions to newdata grid for DO predictions
-```{r}
-temperature <- readRDS(here::here("analysis/VOCC/data/predicted_temp_allyears.rds"))
+```{r eval=FALSE}
+temperature <- readRDS(here::here("analysis/VOCC/data/predicted_temp_allyears_revised2"))
 years <- unique(d_trawl1$year) 
 temperature <- filter(temperature, year %in% years)
 unique(temperature$year) 
@@ -264,10 +264,12 @@ Current best model of DO
 ```{r eval=FALSE}
     starttime1 <- Sys.time()
 
-    do_model_all_DOY <- sdmTMB::sdmTMB(d_trawl1,
+    do_model_all_DOY <- sdmTMB::sdmTMB(
       log_do ~ 0 + as.factor(year) + temp_scaled + temp_scaled2 + DOY_scaled,
+      data = d_trawl1,
       time_varying = ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
-      time = "year", spde = spde,
+      time = "year", 
+      spde = spde,
       family = gaussian(link = "identity"),
       ar1_fields = TRUE,
       include_spatial = TRUE,
@@ -296,6 +298,12 @@ get_diag(do_model_all_DOY, response = "log_do", variable = "depth_scaled")
 ```
 
 Other models tried:
+```{r eval=FALSE}
+do_model_DOY <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016.rds"))
+do_model_DOY
+#p_nd <- predict(do_model_DOY, newdata = newdata)
+get_diag(do_model_DOY, response = "log_do", variable = "depth_scaled")
+```
 
 ```{r eval=FALSE}
 #with both DOY and depth as time-varying random effects
@@ -335,7 +343,8 @@ get_diag(do_model_all, response = "log_do", variable = "depth_scaled")
 
 Predict DO for whole grid using quadratic of predicted temperature values and mean DOY
 ```{r eval=FALSE}
-p_nd <- predict(do_model_DOY, newdata = newdata)
+do_model_all <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-poly.rds"))
+p_nd <- predict(do_model_all_DOY, newdata = newdata)
 p_nd$do_est <- exp(p_nd$est)
 
 p_nd <- p_nd %>% filter(depth>15)
@@ -359,17 +368,36 @@ Save new predictions without QCS gap and WCVI 2016 DO
 ```{r eval=FALSE}
 #new temp and do prediction grid for vectors
 
-model1 <- readRDS("~/github/dfo/gfranges/analysis/tmb-sensor-explore/models/model-temp-2008-on-used.rds")
+# model1 <- readRDS("~/github/dfo/gfranges/analysis/tmb-sensor-explore/models/model-temp-2008-on-used.rds")
 #model2 <- readRDS("~/github/dfo/gfranges/analysis/tmb-sensor-explore/models/model-do-all-DOY-used.rds")
-#update model to exclude WCVI 2016 outliers
-model2 <- readRDS("~/github/dfo/gfranges/analysis/tmb-sensor-explore/models/model-do-without-wcvi2016.rds")
 
-nd_all <- readRDS(paste0("data/nd_all_synoptic.rds"))
-nd <- filter(nd_all, year >2007) %>% filter(year<2019)
-pred_temp <- predict(model1, newdata = nd)
-predtemp <- pred_temp %>% mutate(temp_scaled = est, temp_scaled2 = est^2, depth_scaled3 = depth_scaled^3) %>% select(-est, -est_non_rf, -est_rf, -omega_s, -zeta_s, -epsilon_st)
+# fix RW additon error
+model1 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn.rds"))
+# update model to exclude WCVI 2016 outliers
+model2 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016.rds"))
+
+nd_all <- readRDS(here::here("analysis/VOCC/data/nd_all_synoptic.rds")) %>% filter(year<2019)
+
+pred_temp <- predict(model1, newdata = nd_all)
+
+# get scaling used in model
+d <- all_sensor %>%
+  # filter missing do data 
+  dplyr::filter(!is.na(do_mlpl)) %>%
+  # remove 2007 data because clearly faulty or scaled differently
+  dplyr::filter(year>2007)
+d$temp_scaled <- scale(d$temperature_c)
+attributes(d$temp_scaled)
+
+
+predtemp <- pred_temp %>% mutate(temp_scaled = (est - 6.49 )/1.296, temp_scaled2 = ((est - 6.49 )/1.296)^2, depth_scaled3 = depth_scaled^3) %>% select(-est, -est_non_rf, -est_rf, -omega_s, -zeta_s, -epsilon_st)
+predtemp <- predtemp %>% filter(year > 2007) 
 predtemp$DOY_scaled <- 0
+
+
 pred_do <- predict(model2, newdata = predtemp)
+
+
 pred_do$temp <- pred_do$temp_scaled*1.296 + 6.49
 
 
@@ -379,7 +407,7 @@ pred_do$do_est <- exp(pred_do$log_do)
 # may want to filter estimates for depths less than 15 m
 # pred_do <- pred_do %>% filter(depth>15)
 
-saveRDS(pred_do, file="~/github/dfo/gfranges/analysis/VOCC/data/predicted-DO-new.rds")
+saveRDS(pred_do, file=here::here("analysis/VOCC/data/predicted-DO-june-2020.rds"))
 
 ```
 
@@ -389,7 +417,9 @@ Plot predictions from saved DO predictions file
 
 ```{r}
 #p_nd <- readRDS((here::here("analysis/tmb-sensor-explore/models/predicted-DO.rds")))
-p_nd <- readRDS((here::here("analysis/VOCC/data/predicted-DO-new.rds")))
+# p_nd <- readRDS((here::here("analysis/VOCC/data/predicted-DO-new.rds")))
+
+p_nd <- readRDS((here::here("analysis/VOCC/data/predicted-DO-june-2020.rds")))
 
 plot_map_raster <- function(dat, column = "est") {
     ggplot(dat, aes_string("X", "Y", fill = column)) +
@@ -412,7 +442,9 @@ breaks <- scales::trans_breaks(no_trans[["transform"]], no_trans[["inverse"]],n 
 labels <- function(x) format(x, digits = 2, scientific = FALSE)
  
 pred_1 <- plot_map_raster(p_nd1, "do_est") +
-  scale_fill_viridis_c(labels = labels, breaks = c(0,2,4,6,8), limits = c(0, 9), na.value = "red") +
+  scale_fill_viridis_c(labels = labels, breaks = c(0,2,4,6,8), 
+    limits = c(1, 8), 
+    na.value = "red") +
   facet_wrap(~year) +
   labs(fill = "ml/L DO") +
   ggtitle("Prediction (fixed effects + all random effects)") + 
@@ -423,7 +455,8 @@ pred_1
 ```{r}
 p_nd4 <- p_nd %>% filter(ssid==4) #%>% filter(year!=2016)
 pred_4 <- plot_map_raster(p_nd4, "do_est") +
-  scale_fill_viridis_c(labels = labels, breaks = c(0,2,4,6,8), limits = c(0, 9), na.value = "red")+
+  scale_fill_viridis_c(labels = labels, breaks = c(0,2,4,6,8), limits = c(1, 7), 
+     na.value = "red")+
   facet_wrap(~year) +
   labs(fill = "ml/L DO") +
   #ggtitle(" ")+ 

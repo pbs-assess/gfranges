@@ -11,7 +11,7 @@ library(sdmTMB)
 library(future)
 library(dplyr)
 
-plan(multiprocess)
+# plan(multiprocess)
 ```
 
 Load data
@@ -101,7 +101,7 @@ ggplot(d_trawl, aes_string("X", "Y", colour = "meanSST")) +
 ```
 
 ```{r}
-ggplot(dplyr::filter(d_trawl1, shallow==1), aes(SST_scaled,temperature_c, colour = -depth)) + geom_point()
+ggplot(dplyr::filter(d_trawl, shallow==1), aes(SST_scaled,temperature_c, colour = -depth)) + geom_point()
 ```
 
 
@@ -125,7 +125,7 @@ ggplot(d_trawl, aes(DOY, temperature_c, colour = -depth, alpha=0.5)) + geom_poin
 ```
 
 
-```{r eval = FALSE}
+```{r, eval = FALSE}
 library(gbm)
 
 m <- gbm( temperature_c ~ depth_scaled + X + Y, data = d_trawl, n.trees = 2000, interaction.depth = 3, shrinkage = 0.02)
@@ -229,7 +229,6 @@ sdmTMB_cv_batch <- function(cv_args, data, ...) {
 # }
 ```
 
-
 Short example: 
 ```{r, eval=FALSE}
 cv_args <- generate_cv_args(
@@ -255,7 +254,7 @@ View(cv$summary)
 # 10-fold cross-validation 
 
 ## Just compare fixed slope models with simplest random effect structure
-```{r eval=F}
+```{r, eval=F}
 cv_args <- generate_cv_args(
   formula = list(
     temperature_c ~ 0 + SST_scaled*shallow + depth_scaled,
@@ -291,7 +290,7 @@ glimpse(non_time_varying$summary)
 ## Compare time-varying slope models still with simplest random effect structure
 All of top models for any seed contained year and none showed a linear effect of depth
 All are better than fixed slope models
-```{r}
+```{r, eval=FALSE}
 cv_args <- generate_cv_args(
   formula = list(
     #temperature_c ~ 0 + SST_scaled*shallow,
@@ -318,11 +317,10 @@ saveRDS(time_varying, file = "cv-output/cv-time-varying.rds")
 glimpse(time_varying$summary)
 ```
 
-
 ## Now vary random effect configuation for top model(s) 
 a separate spatial field is in all models with highest likelihoods for each seed
 AR1 doesn't make much difference (differences between years appear independent)
-```{r}
+```{r, eval=FALSE}
 cv_args <- generate_cv_args(
   formula = list(
     temperature_c ~ 0 + as.factor(year) + SST_scaled*shallow,
@@ -347,8 +345,7 @@ glimpse(vary_rf$summary)
 ```
 
 ## Change knot number
-
-```{r}
+```{r, eval=FALSE}
 cv_args <- generate_cv_args(
     formula = list(
     # temperature_c ~ 0 + as.factor(year) + SST_scaled,
@@ -375,8 +372,7 @@ glimpse(more_knots$summary)
 ## Change seeds 
 Also increased knot number too 
 Models without SST_scaled are usually better
-
-```{r}
+```{r, eval=FALSE}
 cv_args <- generate_cv_args(
     formula = list(
     temperature_c ~ 0 + as.factor(year) + SST_scaled*shallow,
@@ -399,7 +395,6 @@ write.csv(more_seeds$summary, file = "cv-output/cv-more-seeds.csv")
 saveRDS(more_seeds, file = "cv-output/cv-more-seeds.rds")
 glimpse(more_seeds$summary)
 ```
-
 
 Load saved batches:
 ```{r, eval=FALSE}
@@ -444,25 +439,24 @@ write.csv(all_cv_loglik, file = "all_cv_loglik.csv")
 ```
 
 Current top model
-
-
 ```{r}
-spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 400)
+spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 500)
 plot_spde(spde)
 ```
 
 
 ```{r}
-m_temp_rw <- sdmTMB(d_trawl,
+m_temp_rw <- sdmTMB(
   temperature_c ~ 0 + as.factor(year), #+ DOY_scaled + as.factor(ssid)
   time_varying = ~ 0 + depth_scaled + depth_scaled2,
+  data = d_trawl,
   ar1_fields = TRUE, # changed AR1_field to true
   include_spatial = TRUE, 
   time = "year", spde = spde, family = gaussian(link = "identity"),
   silent = FALSE
 )
 
-saveRDS(m_temp_rw, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-400kn.rds")))
+saveRDS(m_temp_rw, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn.rds")))
 
 ```
 
@@ -545,16 +539,18 @@ nd_all <- readRDS(paste0("../VOCC/data/nd_all_synoptic.rds")) %>% filter(year<20
 unique(nd_all$year)
 glimpse(nd_all)
 predict_temp <- predict(m_temp_rw, newdata = nd_all)
-saveRDS(predict_temp, file = "../VOCC/data/predicted_temp_allyears_revised")
+saveRDS(predict_temp, file = "../VOCC/data/predicted_temp_allyears_revised2")
 p_nd <- predict_temp
 #p_nd <- readRDS("../VOCC/data/predicted_temp_allyears.rds")
 # View(p_nd)
 ```
 
 ```{r}
-p_nd <- readRDS("../VOCC/data/predicted_temp_allyears_revised")
+p_nd <- readRDS("../VOCC/data/predicted_temp_allyears_revised.rds")
 # p_nd <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/predicted_temp_allyears_revised.rds")
+p_nd2 <- readRDS("../VOCC/data/predicted_temp_allyears_revised2")
 
+plot(p_nd$est ~ p_nd2$est)
 
 plot_map_raster <- function(dat, column = "est") {
     ggplot(dat, aes_string("X", "Y", fill = column)) +
@@ -587,11 +583,11 @@ pred_1 <- plot_map_raster(p_nd1, "est") +
     #trans = "sqrt",
     option = "C",
     #breaks = c(0,2,4,6,8), 
-    limits = c(5, 11), 
+    limits = c(4, 11),
     na.value = "red") +
   facet_wrap(~year) +
   labs(fill = "°C") + 
-  theme(legend.position = "none") +
+  # theme(legend.position = "none") +
   ggtitle("Prediction (fixed effects + all random effects)") 
 pred_1
 ```
