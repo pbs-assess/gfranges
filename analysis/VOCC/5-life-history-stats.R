@@ -89,6 +89,11 @@ species <- c(
 # species <- c("Bocaccio")
 # species <- c("Shortraker Rockfish")
 # species <- c( "Widow Rockfish")
+
+
+# species <- "Lingcod"
+# species <- "Yelloweye Rockfish"
+# species <- "Redbanded Rockfish"
 # spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 
 
@@ -105,8 +110,10 @@ life_history <- purrr::map_dfr(species, function(x) {
 
   bath <- readRDS("data/bathymetry-data")
   depth <- bath$data %>% select(fishing_event_id, depth)
-  fish <- left_join(fish, depth)
-
+  fish <- left_join(fish, depth) %>% group_by(year) %>% mutate(mat_count = sum(!is.na(maturity_name))) %>% ungroup() 
+  fish_yrs <- filter(fish, year > 2007) # filter to the relevant years
+  min_mat_count <- min(fish_yrs$mat_count) # min fish in a any year
+  total_mat_count <- sum(!is.na(fish_yrs$maturity_name)) # all fish with maturity data
   rm(maturity)
   # browser()
   try({
@@ -244,10 +251,14 @@ life_history <- purrr::map_dfr(species, function(x) {
         biomass$imm_density[biomass$fishing_event_id == 2177561] <- biomass$imm_density[biomass$fishing_event_id == 308673] * 1.2
       }
 
-      depth_imm_dens_95 <- reldist::wtd.quantile(biomass$depth, 0.975, na.rm = T, weight = biomass$imm_density * 1000000000)
-      depth_imm_dens_75 <- reldist::wtd.quantile(biomass$depth, 0.75, na.rm = T, weight = biomass$imm_density * 1000000000)
-      depth_imm_dens_50 <- reldist::wtd.quantile(biomass$depth, 0.5, na.rm = T, weight = biomass$imm_density * 1000000000)
-      depth_imm_dens_25 <- reldist::wtd.quantile(biomass$depth, 0.25, na.rm = T, weight = biomass$imm_density * 1000000000)
+      depth_imm_dens_95 <- reldist::wtd.quantile(biomass$depth, 0.975, na.rm = T, 
+        weight = biomass$imm_density * 1000000000)
+      depth_imm_dens_75 <- reldist::wtd.quantile(biomass$depth, 0.75, na.rm = T, 
+        weight = biomass$imm_density * 1000000000)
+      depth_imm_dens_50 <- reldist::wtd.quantile(biomass$depth, 0.5, na.rm = T, 
+        weight = biomass$imm_density * 1000000000)
+      depth_imm_dens_25 <- reldist::wtd.quantile(biomass$depth, 0.25, na.rm = T, 
+        weight = biomass$imm_density * 1000000000)
       # depth_imm_dens_10 <- reldist::wtd.quantile (biomass$depth, 0.1, na.rm = T, weight=biomass$imm_density*1000000000)
       depth_imm_iqr <- round(depth_imm_dens_75 - depth_imm_dens_25)
       # depth_imm_range_90 <- round(depth_imm_dens_95 - depth_imm_dens_05)
@@ -266,10 +277,14 @@ life_history <- purrr::map_dfr(species, function(x) {
       }
     } else {
       depth_mat_dens <- weighted.mean(biomass$depth, biomass$density, na.rm = T)
-      depth_mat_dens_95 <- reldist::wtd.quantile(biomass$depth, 0.95, na.rm = T, weight = biomass$density * 1000000000)
-      depth_mat_dens_75 <- reldist::wtd.quantile(biomass$depth, 0.75, na.rm = T, weight = biomass$density * 1000000000)
-      depth_mat_dens_50 <- reldist::wtd.quantile(biomass$depth, 0.5, na.rm = T, weight = biomass$density * 1000000000)
-      depth_mat_dens_25 <- reldist::wtd.quantile(biomass$depth, 0.25, na.rm = T, weight = biomass$density * 1000000000)
+      depth_mat_dens_95 <- reldist::wtd.quantile(biomass$depth, 0.95, na.rm = T, 
+        weight = biomass$density * 1000000000)
+      depth_mat_dens_75 <- reldist::wtd.quantile(biomass$depth, 0.75, na.rm = T, 
+        weight = biomass$density * 1000000000)
+      depth_mat_dens_50 <- reldist::wtd.quantile(biomass$depth, 0.5, na.rm = T, 
+        weight = biomass$density * 1000000000)
+      depth_mat_dens_25 <- reldist::wtd.quantile(biomass$depth, 0.25, na.rm = T, 
+        weight = biomass$density * 1000000000)
       depth_mat_iqr <- round(depth_mat_dens_75 - depth_mat_dens_25)
 
       rm(biomass4)
@@ -325,6 +340,12 @@ life_history <- purrr::map_dfr(species, function(x) {
 
   list(
     species = x, group = group[1],
+    min_mat_count = min_mat_count,
+    total_mat_count = total_mat_count,
+    total_fish = fish_count,
+    total_events = event_count,
+    prop_pos_sets = prop_pos,
+    
     depth = round(depth_mat_dens),
     depth_imm = round(depth_imm_dens),
     depth_diff = round(depth_imm_dens - depth_mat_dens),
@@ -357,12 +378,9 @@ life_history <- purrr::map_dfr(species, function(x) {
     # max_age = max(fish$age, na.rm = TRUE),
     large_threshold = large_threshold[[1]],
     small_threshold = small_threshold[[1]],
-    prop_pos_sets = prop_pos,
     mean_ratio_mature = mean_ratio_mature,
     density_mean_split = prop_mean_ratio,
     total_kg_2019 = weight_2019,
-    total_fish = fish_count,
-    total_events = event_count,
     rerun = rerun
   )
 })
