@@ -36,11 +36,11 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
 # # DO
 # write_tex(signif(quantile(alldata$DO_trend, 0.025), digits = 2), "lowDOquantile")
 # write_tex(signif(quantile(alldata$DO_trend, 0.975), digits = 2), "highDOquantile")
-# SD for scaled variables
-write_tex(signif(attributes(alldata$temp_trend_scaled)[[2]], digits = 2), "temptrendSD")
-write_tex(signif(attributes(alldata$DO_trend_scaled)[[2]], digits = 2), "DOtrendSD")
-write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelSD")
-write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelSD")
+# # SD for scaled variables
+# write_tex(signif(attributes(alldata$temp_trend_scaled)[[2]], digits = 2), "temptrendSD")
+# write_tex(signif(attributes(alldata$DO_trend_scaled)[[2]], digits = 2), "DOtrendSD")
+# write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelSD")
+# write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelSD")
 
 #########################
 #########################
@@ -165,6 +165,73 @@ mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + plot_layout(nc
 # colorblindr::cvd_grid(trend_do)
 # ggsave(here::here("ms", "figs", "climate-maps-updated.png"), width = 6, height = 9)
 ggsave(here::here("ms", "figs", "climate-maps-witwat2.png"), width = 5, height = 7.5)
+
+
+#### FISHING EFFORT MAPS ####
+(mean_fish <- plot_vocc(alldata,
+  vec_aes = NULL, grey_water = F,
+  fill_col = "mean_effort", fill_label = "Hrs/yr",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  viridis_option = "B",
+  viridis_begin = 0.15,
+  viridis_end = 0.7,
+  transform_col = fourth_root_power,
+  axis_lables = T, tag_text = "a.",
+  legend_position = c(0.15, 0.3)
+) + ggtitle("Fishing effort") +
+    # ylab("Mean conditions") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+
+(trend_fish <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "fishing_trend", fill_label = "% ",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
+  # mid_fill = "ghostwhite", grey_water = F,
+  mid_fill = "ghostwhite", grey_water = F,
+  low_fill = "royalblue4", # low_fill = "#5E4FA2",
+  high_fill = "Red 3",
+  axis_lables = T, tag_text = "b.",
+  legend_position = c(0.15, 0.3)
+) +  #ggtitle("Fishing") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    ylab("Change per decade") +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+
+mean_fish + trend_fish + plot_layout(nrow  = 2)
+ggsave(here::here("ms", "figs", "fishing-maps.png"), width = 3, height = 6)
+
+
+## attempt at fishing velocity but not very interesting
+# fishing <- readRDS("fishig-velocity.rds")
+# fishing$squashed <- collapse_outliers(fishing$velocity, c(0, 0.985))
+# (vel_fishing <- plot_vocc(fishing,
+#   vec_aes = NULL,
+#   fill_col = "velocity", fill_label = "km",
+#   raster_cell_size = 4, 
+#   na_colour = "lightgrey", white_zero = TRUE,
+#   # mid_fill = "ghostwhite", grey_water = F,
+#   mid_fill = "mistyrose1", grey_water = F,
+#   # mid_fill = "lavenderblush1", grey_water = F,
+#   low_fill = "royalblue4", # low_fill = "#5E4FA2",
+#   high_fill = "Red 3",
+#   axis_lables = T, tag_text = "e.",
+#   legend_position = c(0.15, 0.3)
+# ) + ylab("Velocities per decade") +
+#     # coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+#     theme(
+#       plot.margin = margin(0, 0, 0, 0, "cm"),
+#       axis.text = element_blank(), axis.ticks = element_blank(),
+#       axis.title.x = element_blank(), axis.title.y = element_blank()
+#     ))
 
 #########################
 #########################
