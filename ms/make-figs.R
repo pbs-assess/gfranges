@@ -36,6 +36,11 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
 # # DO
 # write_tex(signif(quantile(alldata$DO_trend, 0.025), digits = 2), "lowDOquantile")
 # write_tex(signif(quantile(alldata$DO_trend, 0.975), digits = 2), "highDOquantile")
+# SD for scaled variables
+write_tex(signif(attributes(alldata$temp_trend_scaled)[[2]], digits = 2), "temptrendSD")
+write_tex(signif(attributes(alldata$DO_trend_scaled)[[2]], digits = 2), "DOtrendSD")
+write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelSD")
+write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelSD")
 
 #########################
 #########################
