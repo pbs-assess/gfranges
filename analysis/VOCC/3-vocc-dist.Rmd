@@ -649,7 +649,7 @@ gf3 <- gf3 %>%
       # trend_per_year = trend,
       # trend_per_decade = trend_per_year * 10,
     ## if default of divisor = 10
-      trend_per_year = exp(trend/10),
+      trend_per_year = (trend/10), # percent change not raw
       trend_per_decade = trend_per_year * 10,
     velocity = velocity
   ) %>%
@@ -925,7 +925,7 @@ biotic_values <- gf3 %>%
   rename(
     biotic_vel = velocity,
     biotic_dvocc = dvocc,
-    biotic_trend = trend,
+    biotic_trend = trend, # currently per decade
     biotic_CV = CV,
     sd_est = cv,
     biotic_grad = gradient
@@ -945,7 +945,7 @@ DO_values <- gf0 %>%
   rename(
     DO_vel = velocity,
     DO_dvocc = dvocc,
-    DO_trend = trend_per_year,
+    DO_trend = trend_per_year, # should change to trend_per_decade
     DO_grad = gradient,
     mean_DO = mean
   ) %>%
@@ -955,7 +955,7 @@ temp_values <- gf2 %>%
   rename(
     temp_vel = velocity,
     temp_dvocc = dvocc,
-    temp_trend = trend_per_year,
+    temp_trend = trend_per_year, # should change to trend_per_decade
     temp_grad = gradient,
     mean_temp = mean
   ) %>%
