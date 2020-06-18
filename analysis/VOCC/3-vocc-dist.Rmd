@@ -13,8 +13,8 @@ params:
     # species: "Sablefish"
     # species: "Arrowtooth Flounder"
     immature: F
-    # region: "West Coast Vancouver Island"
-    region: "both odd year surveys"
+    region: "West Coast Vancouver Island"
+    # region: "both odd year surveys"
     # region: "West Coast Haida Gwaii"
     covs: "-tv-depth-only"
     scrambled_years: FALSE
@@ -336,7 +336,9 @@ dv_t <- dvocc_t %>% select(icell, x, y, dvocc) %>% unique()
 # glimpse(dv_t)
 # glimpse(gf2)
 
-gf2$dvocc <- dv_t$dvocc
+# gf2$dvocc <- dv_t$dvocc
+
+gf2 <- left_join(gf2, dv_t)
 ```
 
 ```{r eval=F}
@@ -352,7 +354,7 @@ plot_vocc(gf2,
   fill_label = "temperature \ndvocc",
   raster_alpha = 1,
   # raster_limits = c(raster_min, raster_max),
-  na_colour = "white",
+  na_colour = "black",
   white_zero = TRUE,
   vec_alpha = 0.35,
   axis_lables = FALSE,
@@ -491,8 +493,9 @@ dv_d <- dvocc_d %>% select(icell, x, y, dvocc) %>% unique()
 # glimpse(dv_b)
 # glimpse(gf0)
 
-gf0$dvocc <- dv_d$dvocc
+# gf0$dvocc <- dv_d$dvocc
 
+gf0 <- left_join(gf0, dv_d)
 
 
 lower_change_td <- c(Inf, do_sd_choice*2) 
@@ -530,11 +533,14 @@ dvocc_td <- dvocc_td %>% mutate(dvocc = if_else(dvocc > (max_dist_all_years/ yea
 dvocc_td <- mutate(dvocc_td, dvocc = if_else(dvocc < -(max_dist_all_years / year_range)*10,
   -(max_dist_all_years / year_range)*10, dvocc))
 
-dv_td <- dvocc_td %>% select(icell, x, y, dvocc) %>% unique()
+dv_td <- dvocc_td %>% select(icell, x, y, dvocc_both = dvocc) %>% unique()
 # glimpse(dv_b)
 # glimpse(gf0)
 
-gf0$dvocc_both <- dv_td$dvocc
+# gf0$dvocc_both <- dv_td$dvocc
+
+gf0 <- left_join(gf0, dv_td)
+
 ```
 
 ```{r eval=F}
@@ -710,7 +716,9 @@ dv_b <- dvocc_b %>% select(icell, x, y, dvocc) %>% unique()
 # glimpse(dv_b)
 # glimpse(gf3)
 
-gf3$dvocc <- dv_b$dvocc
+# gf3$dvocc <- dv_b$dvocc
+
+gf3 <- left_join(gf3, dv_b)
 
 gf3t <- filter(gf3, mean_biomass > lower_density_threshold)
 ```
@@ -973,6 +981,7 @@ vocc_t <- filter(vocc, mean_biomass > lower_density_threshold)
 
 ```{r eval=T}
 plot_vocc(vocc_t,
+    raster_cell_size = 4,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -999,7 +1008,7 @@ plot_vocc(vocc_t,
 ```{r eval=T}
 vocc_t$squashed_temp <- collapse_outliers(vocc_t$temp_vel, c(0.005, 0.995))
 
-plot_vocc(vocc_t,
+plot_vocc(vocc_t,  raster_cell_size = 4,
   # theme = "black",
   coast = TRUE,
   vec_aes = NULL,
@@ -1024,7 +1033,7 @@ plot_vocc(vocc_t,
 
 ```{r eval=T}
 plot_vocc(vocc_t,
-  # theme = "black",
+    raster_cell_size = 4,# theme = "black",
   coast = TRUE,
   vec_aes = NULL,
   # grad_vec_aes = "velocity",
@@ -1048,7 +1057,7 @@ plot_vocc(vocc_t,
 
 ```{r eval=T}
 plot_vocc(vocc_t,
-  # theme = "black",
+    raster_cell_size = 4,# theme = "black",
   coast = TRUE,
   vec_aes = NULL,
   # grad_vec_aes = "velocity",
@@ -1073,7 +1082,7 @@ plot_vocc(vocc_t,
 
 ```{r eval=T}
 plot_vocc(vocc_t,
-  # theme = "black",
+    raster_cell_size = 4,# theme = "black",
   coast = TRUE,
   vec_aes = NULL,
   # grad_vec_aes = "velocity",
@@ -1100,7 +1109,7 @@ plot_vocc(vocc_t,
 vocc_t$squashed_do <- collapse_outliers(vocc_t$DO_vel, c(0.005, 0.995))
 
 plot_vocc(vocc_t,
-  # theme = "black",
+    raster_cell_size = 4,# theme = "black",
   coast = TRUE,
   vec_aes = NULL,
   # grad_vec_aes = "velocity",
@@ -1124,7 +1133,7 @@ plot_vocc(vocc_t,
 
 ```{r eval=T}
 plot_vocc(vocc_t,
-  # theme = "black",
+    raster_cell_size = 4,# theme = "black",
   coast = TRUE,
   vec_aes = NULL,
   # grad_vec_aes = "velocity",
@@ -1151,7 +1160,7 @@ plot_vocc(vocc_t,
 
 ```{r eval=T}
 plot_vocc(vocc_t,
-  # theme = "black",
+    raster_cell_size = 4,# theme = "black",
   coast = TRUE,
   vec_aes = NULL,
   # grad_vec_aes = "velocity",
@@ -1180,7 +1189,7 @@ plot_vocc(vocc_t,
 vocc_t$squashed_effort <- collapse_outliers(vocc_t$mean_effort, c(0.005, 0.995))
 
 plot_vocc(vocc_t,
-  # theme_black = TRUE,
+    raster_cell_size = 4,# theme_black = TRUE,
   coast = TRUE,
   vec_aes = NULL,
   # grad_vec_aes = "velocity",
@@ -1204,7 +1213,7 @@ plot_vocc(vocc_t,
 
 
 plot_vocc(vocc_t,
-  # theme_black = TRUE,
+    raster_cell_size = 4,# theme_black = TRUE,
   coast = TRUE,
   vec_aes = NULL,
   # grad_vec_aes = "velocity",
