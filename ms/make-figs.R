@@ -11,7 +11,8 @@ write_tex <- function(x, macro, ...) {
 }
 
 # load appropriate final models
-model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
+# model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-04-trend-with-do-1-500.rds")
 model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-27-vel-both-1-200.rds")
 
 ## Maybe just for supplementary
@@ -35,7 +36,6 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-do-with-null-1-untrimmed-allva
 # # DO
 # write_tex(signif(quantile(alldata$DO_trend, 0.025), digits = 2), "lowDOquantile")
 # write_tex(signif(quantile(alldata$DO_trend, 0.975), digits = 2), "highDOquantile")
-
 
 #########################
 #########################
@@ -183,10 +183,10 @@ overall_betas <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas$model <- "Trend"
 
 ### SAVE TEX VALUES FOR TEMPERATURE TREND ESTIMATES ###
-# write_tex(signif(overall_betas$betas[overall_betas$coef_names == "change in T"], 2), "betaTtrend")
-# write_tex(signif(abs(overall_betas$betas[overall_betas$coef_names == "change in T"]), 2), "ABSbetaTtrend")
-# write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "change in T"], 2), "lowerTtrend")
-# write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "change in T"], 2), "upperTtrend")
+write_tex(signif(overall_betas$betas[overall_betas$coef_names == "change in T"], 2), "betaTtrend")
+write_tex(signif(abs(overall_betas$betas[overall_betas$coef_names == "change in T"]), 2), "ABSbetaTtrend")
+write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "change in T"], 2), "lowerTtrend")
+write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "change in T"], 2), "upperTtrend")
 
 
 #### get velocity model betas and save tex ####
@@ -1132,31 +1132,59 @@ d <- temp_slopes %>% filter(chopstick == "high" & type == "temp" & age == "Immat
 # if adding to tex
 # cor(d$log_age_scaled, d$growth_rate_scaled, use = "pairwise.complete.obs", method = "spearman")
 
-ggplot(d, aes(age_mean, y=(length_50_mat_f / age_mat))) +
-  geom_point(aes(shape = age, colour = age), size = 3) +
+(growth <- ggplot(d, aes(y = age_mean, x=(length_50_mat_f / age_mat))) +
+  geom_point(aes(shape = age, colour = age), size = 2) +
   scale_colour_manual(values = c("deepskyblue3")) +
   scale_shape_manual(values = c(21)) +
   ylim(1,21) +
-  scale_x_log10() + scale_y_log10() +
+  scale_x_log10(
+    # position = "top",
+    expand= c(0,0.1)
+    ) + 
+  scale_y_log10(
+    # position = "right",
+    expand= c(0.01,0.1)
+    ) +
   ggrepel::geom_text_repel(aes(label = gsub(" Rockfish", "", species)),
     point.padding = 0.3, segment.colour = "deepskyblue3", max.iter = 5000,
     size = 3, force = 20, #nudge_y = -0.1, #nudge_x = 35,
     na.rm = T, min.segment.length = 0.5, seed = 1000
   ) +
-  ylab("Immature growth rate") +
-  xlab("Mean age of immature population") +
-  gfplot::theme_pbs() + theme(legend.position = "none")
+  xlab("Immature growth rate") +
+  ylab("Mean age of immature population") +
+  gfplot::theme_pbs() + theme(
+    # plot.margin = margin(0.2, 0.2, 0.4, 0.4, "cm"),
+    # axis.text.y.right = element_text(
+    # margin = margin(l = -10, r = 10)
+    # ),
+    # axis.text.x.top  = element_text(
+    # margin = margin(b = -10, t = 10)
+    # ),
+    # axis.ticks.length=unit(-0.2, "cm"),
+    # axis.title.y.right = element_text(),
+    legend.position = "none"
+   )
+  )
+
+# (p_growth <- growth %>% egg::tag_facet(
+#   open = "", close = ".", tag_pool = c("b"),
+#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+# ))
 
 ggsave(here::here("ms", "figs", "supp-age-growth.pdf"), width = 4, height = 4)
 
 
 #### add facet tags and save ####
 depth_t <- p_depth_t %>% egg::tag_facet(
-  open = "", close = ".", tag_pool = c("d"),
+  tag_pool = c("d"),
+  # tag_pool = c("e"),
+  open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 depth_do <- p_depth_do %>% egg::tag_facet(
-  open = "", close = ".", tag_pool = c("e"),
+  tag_pool = c("e"),
+  # tag_pool = c("f"),
+  open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
@@ -1166,34 +1194,50 @@ do_low <- do_low + scale_y_continuous(position = "right") + theme(
   plot.margin = margin(0, 0.1, 0, 0, "cm")
 )
 
-do_low3 <- do_low %>% egg::tag_facet(
-  open = "", close = ".", tag_pool = c("c"),
+do_low3 <- do_low %>% egg::tag_facet( 
+  tag_pool = c("c"),
+  # tag_pool = c("d"),
+  open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
 temp_high2 <- temp_high %>% egg::tag_facet(
-  open = "", close = ".", tag_pool = c("b"),
+  tag_pool = c("b"),
+  # tag_pool = c("c"),
+  open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
 p_iqr <- p_iqr %>% egg::tag_facet(
-  open = "", close = ".", tag_pool = c("a"),
+  tag_pool = c("a"),
+  open = "", close = ".", 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+)
+
+p_growth <- growth %>% egg::tag_facet(
+  open = "", close = ".", tag_pool = c("b"),
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
 # ggsave(here::here("ms", "figs", "supp-depth-iqr.pdf"), width = 5, height = 3.5)
 layout <- "
-      AA##
-      BBCC
-      DDEE
+      AAAA####
+      AAAA####
+      AAAA####
+      BBBBCCCC
+      BBBBCCCC
+      BBBBCCCC
+      DDDDEEEE
+      DDDDEEEE
+      DDDDEEEE
       "
 
-(p_iqr + temp_high2 + do_low3 + depth_t + depth_do + 
+(p_iqr + temp_high2 + do_low3 + depth_t + depth_do + # p_growth  +
   plot_layout(design = layout, heights = c(0.7, 0.9, 0.5))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + 
   plot_layout(nrow = 2, heights = c(1, 0.02))
 
 # ggsave(here::here("ms", "figs", "slope-by-depth-quad-iqr.png"), width = 8, height = 5)
-ggsave(here::here("ms", "figs", "slope-by-depth-w-iqr2.png"), width = 6, height = 6)
+ggsave(here::here("ms", "figs", "slope-by-depth-w-iqr3.png"), width = 9, height = 9)
 
 #########################
 #########################
