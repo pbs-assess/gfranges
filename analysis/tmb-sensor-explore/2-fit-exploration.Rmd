@@ -1,0 +1,726 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+# Fit spatial temporal models to bottom temperature
+
+```{r setup}
+library(tidyverse)
+library(sdmTMB)
+library(future)
+library(dplyr)
+```
+
+Load and prep data
+```{r}
+all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-meanSST-all.rds"))
+# all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-processed.rds")) # no SST
+# glimpse(all_sensor)
+
+all_depth <- all_sensor %>%
+  # filter(depth_max>10) %>% # maybe we should filter incase missing depth values also indicate a sensor fail?
+  # filter missing location data and trial year
+  dplyr::filter(!is.na(latitude), !is.na(longitude)) %>%
+
+  # convert lat and lon to UTMs
+  dplyr::mutate(X = longitude, Y = latitude) %>%
+  gfplot:::ll2utm(., utm_zone = 9) %>% 
+
+  # interpolate missing depth values
+  dplyr::rename(depth = depth_m) %>%
+  gfplot:::interp_survey_bathymetry()
+
+d_trawl <- all_depth$data %>% 
+  # remove obvious sensor fails, d_trawl %>% filter(depth_max<10), fishing event ids = 481861, 2179089
+  filter(depth_max>10) %>% 
+  gfplot:::scale_survey_predictors()
+
+d_trawl <- d_trawl[!is.na(d_trawl$depth), ]
+d_trawl <- d_trawl[!is.na(d_trawl$temperature_c), ]
+
+#d_trawl <- d_trawl[!is.na(d_trawl$SST), ]
+#d_trawl <- d_trawl[!is.na(d_trawl$meanSST), ]
+
+d_trawl <- mutate(d_trawl,
+  DOY = lubridate::yday(date),
+  DOY_scaled = arm::rescale(lubridate::yday(date)),
+  DOY_scaled2 = arm::rescale(lubridate::yday(date))^2,
+  #depth_scaled = arm::rescale(log(depth_m)),
+  SST_scaled = arm::rescale(meanSST),
+  depth_scaled3 = depth_scaled^3,
+  shallow = ifelse(depth>35,0,1),
+  deep = ifelse(depth<35,0,1)
+)
+
+# d_trawl[is.na(d_trawl$shallow), ]
+# d_trawl[is.na(d_trawl$SST_scaled), ]
+
+glimpse(d_trawl)
+```
+
+Explore SST on survey day
+```{r}
+ggplot(d_trawl, aes_string("X", "Y", colour = "SST")) +
+    geom_point() +
+    facet_wrap(~year) +
+    coord_fixed() +
+    scale_color_viridis_c()
+```
+
+Is bottom temp related to SST in shallower samples?
+```{r}
+ggplot(dplyr::filter(d_trawl, depth <35), aes(SST,temperature_c, colour = -depth)) + geom_point()
+ggplot(dplyr::filter(d_trawl, depth <35), aes(SST,temperature_c, colour = DOY)) + geom_point()
+```
+
+Explore mean SST 
+```{r}
+ggplot(d_trawl, aes_string("X", "Y", colour = "meanSST")) +
+    geom_point() +
+    facet_wrap(~year) +
+    coord_fixed() +
+    scale_color_viridis_c()
+```
+
+```{r}
+ggplot(dplyr::filter(d_trawl, shallow==1), aes(SST_scaled,temperature_c, colour = -depth)) + geom_point()
+```
+
+
+EXLORE TEMPERATURE at DEPTH
+
+```{r}
+ggplot(d_trawl, aes_string("X", "Y", colour = "temperature_c")) +
+    geom_point() +
+    facet_wrap(~year) +
+    coord_fixed() +
+    scale_color_viridis_c()
+```
+
+
+```{r}
+ggplot(d_trawl, aes(DOY, temperature_c, colour = -depth, alpha=0.5)) + geom_point() + facet_wrap(~year) 
+```
+
+
+
+### Functions for model exploration:
+```{r}
+# aic <- function(m) {
+#   k <- length(m$model$par)
+#   nll <- m$model$objective
+#   2 * k - 2 * (-nll)
+# }
+
+generate_cv_args <- function(
+                             formula = formula,
+                             time_varying = time_varying,
+                             ar1_fields = c(FALSE), # simiple, fast defaults
+                             include_spatial = c(FALSE), # simiple, fast defaults
+                             n_knots = c(100), # simiple, fast defaults
+                             seed = c(999)) {
+  arguments <- expand.grid(
+    formula = formula,
+    time_varying = time_varying,
+    include_spatial = include_spatial,
+    ar1_fields = ar1_fields,
+    n_knots = n_knots,
+    seed = seed
+  )
+  as.data.frame(arguments)
+}
+
+sdmTMB_cv_batch <- function(cv_args, data, ...) {
+  cv_batch <- purrr::pmap(cv_args, sdmTMB_cv, data = d_trawl, ...)
+  cv_out <- cv_args
+  cv_out$cv_loglik <- c()
+  cv_out$all_converged <- c()
+  cv_out$max_grad <- c()
+  for (i in seq_len(nrow(cv_args))) {
+    cv_out$cv_loglik[[i]] <- round(cv_batch[[i]]$sum_loglik, 1)
+    cv_out$all_converged[[i]] <- all(cv_batch[[i]]$converged)
+    cv_out$max_grad[[i]] <- max(cv_batch[[i]]$max_grad)
+    if (is.null(cv_out$time_varying[[i]])) {
+      cv_out$time_varying[[i]] <- as.character(NA)
+    }
+  }
+  cv_out$formula <- as.character(cv_out$formula)
+  cv_out$time_varying <- as.character(cv_out$time_varying)
+
+  cv_out <- cv_out %>%
+    group_by(seed) %>%
+    mutate(., max_ll_per_seed = max(cv_loglik)) %>%
+    mutate(., delta_ll = cv_loglik - max_ll_per_seed) %>%
+    ungroup()
+  row.names(cv_out) <- NULL
+  list(summary = as.data.frame(cv_out), cv_model_set = cv_batch)
+}
+
+# # this code keeps breaking... working, fails, worked again, then failed again...
+# plot_cv_meshes <- function(sdmTMB_cv_output) {
+#   cv_output <- sdmTMB_cv_output
+#   k <- max(cv_output$data$cv_fold) # should probably rename cv_fold to fold_id
+#   if (k == 2 | k == 5 | k == 10) {
+#     op <- graphics::par(
+#       mfrow = c((sqrt(k)), ceiling(sqrt(k))),
+#       mar = c(1, 1, 1, 1)
+#       )
+#   } else {
+#     op <- graphics::par(
+#       mfrow = c(ceiling(sqrt(k)), ceiling(sqrt(k))),
+#       mar = c(1, 1, 1, 1)
+#     )
+#   }
+#   for (i in seq_len(k)){
+#     plot_spde(cv_output$models[[i]]$spde)
+# #FIXME: Error in xy.coords(x, y, xlabel, ylabel, log) :
+# #  'x' is a list, but does not have components 'x' and 'y'
+#   }
+#   graphics::par(op)
+# }
+```
+
+Short example: 
+```{r, eval=FALSE}
+cv_args <- generate_cv_args(
+  formula = list(
+    temperature_c ~ 0 + as.factor(year) + SST_scaled + depth_scaled + depth_scaled2 + depth_scaled3
+  ),
+  time_varying = list(NULL),
+  ar1_fields = c(FALSE),
+  include_spatial = c(FALSE),
+  n_knots = c(135, 140, 145, 150),
+  seed = c(1)
+)
+
+cv <- sdmTMB_cv_batch(cv_args, d_trawl, k_folds = 4, time = "year", x = "X", y = "Y")
+glimpse(cv$summary)
+write.csv(cv$summary, file = "cv-output/cv-test.csv")
+cv_test <- read_csv(file = "cv-output/cv-test.csv")
+View(cv$summary)
+# plot_cv_meshes(cv$cv_model_set[[1]])
+# plot_cv_meshes(cv$cv_model_set[[2]])
+```
+
+# 10-fold cross-validation 
+
+## Just compare fixed slope models with simplest random effect structure
+```{r, eval=F}
+cv_args <- generate_cv_args(
+  formula = list(
+    temperature_c ~ 0 + SST_scaled*shallow + depth_scaled,
+    temperature_c ~ 0 + SST_scaled*shallow + depth_scaled + depth_scaled2,
+    temperature_c ~ 0 + SST_scaled*shallow + depth_scaled + depth_scaled2 + depth_scaled3,
+    temperature_c ~ 1 + SST_scaled + depth_scaled,
+    temperature_c ~ 1 + SST_scaled + depth_scaled + depth_scaled2,
+    temperature_c ~ 1 + SST_scaled + depth_scaled + depth_scaled2 + depth_scaled3,
+    temperature_c ~ 0 + as.factor(year) + depth_scaled,
+    temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2,
+    temperature_c ~ 0 + as.factor(year) + depth_scaled + depth_scaled2 + depth_scaled3,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled + depth_scaled,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled + depth_scaled + depth_scaled2,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled + depth_scaled + depth_scaled2 + depth_scaled3,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled * depth_scaled,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled * depth_scaled + SST_scaled * depth_scaled2,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled * depth_scaled + SST_scaled * depth_scaled2 + SST_scaled * depth_scaled3
+  ),
+  time_varying = list(NULL),
+  ar1_fields = c(FALSE),
+  include_spatial = c(FALSE),
+  n_knots = c(100),
+  seed = c(1111, 2222, 3333, 4444)
+)
+
+non_time_varying <- sdmTMB_cv_batch(cv_args, d_trawl, time = "year", x = "X", y = "Y")
+View(non_time_varying$summary)
+write.csv(non_time_varying$summary, file = "cv-output/cv-non-time-varying.csv")
+saveRDS(non_time_varying, file = "cv-output/cv-non-time-varying.rds")
+glimpse(non_time_varying$summary)
+```
+
+## Compare time-varying slope models still with simplest random effect structure
+All of top models for any seed contained year and none showed a linear effect of depth
+All are better than fixed slope models
+```{r, eval=FALSE}
+cv_args <- generate_cv_args(
+  formula = list(
+    #temperature_c ~ 0 + SST_scaled*shallow,
+    # temperature_c ~ 0 + as.factor(year) + SST_scaled*shallow,
+    # #temperature_c ~ 1 + SST_scaled,
+    # temperature_c ~ 0 + as.factor(year) + SST_scaled,
+    temperature_c ~ 0 + as.factor(year)
+  ),
+  time_varying = list(
+    # ~ 0 + depth_scaled + depth_scaled2 + depth_scaled3,
+    ~ 0 + depth_scaled + depth_scaled2,
+  ),
+  ar1_fields = c(TRUE),
+  include_spatial = c(TRUE),
+  n_knots = c(400), # keep same n_knots
+  seed = c(1111, 2222, 3333, 4444) # keep same seeds
+)
+
+time_varying <- sdmTMB_cv_batch(cv_args, d_trawl, time = "year", x = "X", y = "Y")
+
+View(time_varying$summary)
+write.csv(time_varying$summary, file = "cv-output/cv-time-varying.csv")
+saveRDS(time_varying, file = "cv-output/cv-time-varying.rds")
+glimpse(time_varying$summary)
+```
+
+## Now vary random effect configuation for top model(s) 
+a separate spatial field is in all models with highest likelihoods for each seed
+AR1 doesn't make much difference (differences between years appear independent)
+```{r, eval=FALSE}
+cv_args <- generate_cv_args(
+  formula = list(
+    temperature_c ~ 0 + as.factor(year) + SST_scaled*shallow,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled,
+    temperature_c ~ 0 + as.factor(year)
+  ),
+  time_varying = list(
+    ~ 0 + depth_scaled + depth_scaled2
+  ),
+  ar1_fields = c(FALSE, TRUE),
+  include_spatial = c(FALSE, TRUE),
+  n_knots = c(100),
+  seed = c(1111, 2222, 3333, 4444)
+)
+
+vary_rf <- sdmTMB_cv_batch(cv_args, d_trawl, time = "year", x = "X", y = "Y")
+
+View(vary_rf$summary)
+write.csv(vary_rf$summary, file = "cv-output/cv-varying-rf.csv")
+saveRDS(vary_rf, file = "cv-output/cv-varying-rf.rds")
+glimpse(vary_rf$summary)
+```
+
+## Change knot number
+```{r, eval=FALSE}
+cv_args <- generate_cv_args(
+    formula = list(
+    # temperature_c ~ 0 + as.factor(year) + SST_scaled,
+    temperature_c ~ 0 + as.factor(year)
+  ),
+  time_varying = list(
+    ~ 0 + depth_scaled + depth_scaled2
+  ),
+  ar1_fields = c(FALSE,TRUE),
+  include_spatial = c(TRUE),
+  n_knots = c(140,180,220,250),
+  #seed = c(1111, 2222, 3333, 4444) 
+  seed = c(5555, 6666, 7777, 8888, 9999)
+)
+
+more_knots <- sdmTMB_cv_batch(cv_args, d_trawl, time = "year", x = "X", y = "Y")
+
+View(more_knots$summary)
+write.csv(more_knots$summary, file = "cv-output/cv-more-knots2.csv")
+saveRDS(more_knots, file = "cv-output/cv-more-knots2.rds")
+glimpse(more_knots$summary)
+```
+
+## Change seeds 
+Also increased knot number too 
+Models without SST_scaled are usually better
+```{r, eval=FALSE}
+cv_args <- generate_cv_args(
+    formula = list(
+    temperature_c ~ 0 + as.factor(year) + SST_scaled*shallow,
+    temperature_c ~ 0 + as.factor(year) + SST_scaled,
+    temperature_c ~ 0 + as.factor(year)
+  ),
+  time_varying = list(
+    ~ 0 + depth_scaled + depth_scaled2
+  ),
+  ar1_fields = c(FALSE, TRUE),
+  include_spatial = c(TRUE, FALSE),
+  n_knots = c(130),
+  seed = c(5555, 6666, 7777, 8888, 9999)
+)
+
+more_seeds <- sdmTMB_cv_batch(cv_args, d_trawl, time = "year", x = "X", y = "Y")
+
+View(more_seeds$summary)
+write.csv(more_seeds$summary, file = "cv-output/cv-more-seeds.csv")
+saveRDS(more_seeds, file = "cv-output/cv-more-seeds.rds")
+glimpse(more_seeds$summary)
+```
+
+Load saved batches:
+```{r, eval=FALSE}
+# non_time_varying <- readRDS(file = "cv-output/cv-non-time-varying.rds")
+# time_varying <- readRDS(file = "cv-output/cv-time-varying.rds")
+# vary_rf <- readRDS(file = "cv-output/cv-varying-rf.rds")
+# knot_refining <- readRDS(file = "cv-output/cv-refine-knots.rds")
+
+non_time_varying <- read.csv(file = "cv-output/cv-non-time-varying.csv")
+time_varying <- read.csv(file = "cv-output/cv-time-varying.csv")
+vary_rf <- read.csv(file = "cv-output/cv-varying-rf.csv")
+non_time_varying1 <- read.csv(file = "cv-output/cv-non-time-varying1.csv")
+time_varying1 <- read.csv(file = "cv-output/cv-time-varying1.csv")
+vary_rf1 <- read.csv(file = "cv-output/cv-varying-rf1.csv")
+refine_knots1 <- read.csv(file = "cv-output/cv-refine-knots1.csv")
+more_seeds <- read.csv(file = "cv-output/cv-more-seeds.csv")
+more_seeds1 <- read.csv(file = "cv-output/cv-more-seeds1.csv")
+
+
+all_cv_loglik <- rbind(
+  non_time_varying,
+  time_varying,
+  vary_rf,
+  non_time_varying1,
+  time_varying1,
+  vary_rf1,
+  refine_knots1,
+  more_seeds,
+  more_seeds1,
+  deparse.level = 1, make.row.names = TRUE
+)
+
+by_seed <- all_cv_loglik %>%
+  group_by(seed) %>%
+  mutate(., max_ll_per_seed = max(cv_loglik)) %>%
+  mutate(., delta_ll = cv_loglik - max_ll_per_seed)
+
+View(by_seed)
+all_cv_loglik <- by_seed %>% ungroup()
+
+write.csv(all_cv_loglik, file = "all_cv_loglik.csv")
+```
+
+Current top model
+```{r}
+spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 500)
+plot_spde(spde)
+```
+
+
+```{r}
+m_temp_rw <- sdmTMB(
+  temperature_c ~ 0 + as.factor(year), #+ DOY_scaled + as.factor(ssid)
+  time_varying = ~ 0 + depth_scaled + depth_scaled2,
+  data = d_trawl,
+  ar1_fields = TRUE, # changed AR1_field to true
+  include_spatial = TRUE, 
+  time = "year", spde = spde, family = gaussian(link = "identity"),
+  silent = FALSE
+)
+
+saveRDS(m_temp_rw, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn.rds")))
+
+```
+
+
+```{r}
+predictions_rw <- predict(m_temp_rw)
+predictions_rw$residuals <- residuals(m_temp_rw)
+cor(predictions_rw$est, predictions_rw$temperature_c)^2 #
+# aic(m_temp3_rw)
+
+```
+
+
+
+Residual plots:
+```{r}
+ggplot(predictions_rw, aes(est, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+```
+
+```{r}
+ggplot(predictions_rw, aes(depth_scaled, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+```
+
+```{r}
+ggplot(predictions_rw, aes(depth_scaled, residuals)) +
+  geom_point() +
+  geom_smooth()
+```
+
+Does a fixed interaction with SST_scaled do any better?
+
+```{r eval=FALSE}
+m_temp3 <- sdmTMB(d_trawl,
+  temperature_c ~ 0 + as.factor(year) + SST_scaled*depth_scaled + SST_scaled*depth_scaled2 ,
+  ar1_fields = FALSE, include_spatial = TRUE,
+  time = "year", spde = spde, family = gaussian(link = "identity"),
+  silent = TRUE
+)
+
+predictions3 <- predict(m_temp3)
+predictions3$residuals <- residuals(m_temp3)
+cor(predictions3$est, predictions3$temperature_c)^2 #
+```
+
+```{r eval=FALSE}
+ggplot(predictions3, aes(est, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+```
+
+```{r eval=FALSE}
+ggplot(predictions3, aes(depth_scaled, residuals)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~year)
+```
+
+```{r eval=FALSE}
+ggplot(predictions3, aes(depth_scaled, residuals)) +
+  geom_point() +
+  geom_smooth()
+```
+
+#FIXME: DON'T HAVE SST TEMP FOR PREDICITON GRID YET...
+
+
+
+
+## Plotting predictions from saved temperature model
+
+```{r}
+nd_all <- readRDS(paste0("../VOCC/data/nd_all_synoptic.rds")) %>% filter(year<2019)
+unique(nd_all$year)
+glimpse(nd_all)
+predict_temp <- predict(m_temp_rw, newdata = nd_all)
+saveRDS(predict_temp, file = "../VOCC/data/predicted_temp_allyears_revised2")
+p_nd <- predict_temp
+#p_nd <- readRDS("../VOCC/data/predicted_temp_allyears.rds")
+# View(p_nd)
+```
+
+```{r}
+p_nd <- readRDS("../VOCC/data/predicted_temp_allyears_revised.rds")
+# p_nd <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/predicted_temp_allyears_revised.rds")
+p_nd2 <- readRDS("../VOCC/data/predicted_temp_allyears_revised2")
+
+plot(p_nd$est ~ p_nd2$est)
+
+plot_map_raster <- function(dat, column = "est") {
+    ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    coord_fixed()+
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+}
+
+plot_map_raster(p_nd, "est") +
+  scale_fill_viridis_c(trans = sqrt) +
+  facet_wrap(~year) +
+  ggtitle("Prediction (fixed effects + all random effects)")
+
+
+test <- plot_facet_map(p_nd, "est", viridis_option = "D",
+    raster_limits = c(min(p_nd$est),quantile(p_nd$est, 0.99)),
+    transform_col = sqrt
+  )
+```
+
+
+```{r}
+p_nd1 <- p_nd %>% filter(ssid!=16) %>% filter(ssid!=4)
+
+breaks <- scales::trans_breaks(no_trans[["transform"]], no_trans[["inverse"]],n = 6)
+labels <- function(x) format(x, digits = 2, scientific = FALSE)
+ 
+pred_1 <- plot_map_raster(p_nd1, "est") +
+  scale_fill_viridis_c(labels = labels, 
+    #trans = "sqrt",
+    option = "C",
+    #breaks = c(0,2,4,6,8), 
+    limits = c(4, 11),
+    na.value = "red") +
+  facet_wrap(~year) +
+  labs(fill = "°C") + 
+  # theme(legend.position = "none") +
+  ggtitle("Prediction (fixed effects + all random effects)") 
+pred_1
+```
+
+```{r}
+p_nd4 <- p_nd %>% filter(ssid==4)
+pred_4 <- plot_map_raster(p_nd4, "est") +
+  scale_fill_viridis_c(labels = labels, 
+     #trans = "sqrt",
+    option = "C",
+    #breaks = c(0,2,4,6,8), 
+    limits = c(5, 11), 
+    na.value = "black")+
+  facet_wrap(~year) + 
+  theme(legend.position = c(.85,.12)) +
+  labs(fill = "°C")
+  #ggtitle(" ")
+pred_4
+```
+
+```{r}
+plot_map_raster(p_nd, "est_non_rf") +
+  ggtitle("Prediction (fixed effects only)") +
+  facet_wrap(~year) +
+  scale_fill_viridis_c()
+```
+
+```{r}
+plot_map_raster(p_nd, "est_rf") +
+  ggtitle("Prediction (all random effects only)") +
+  facet_wrap(~year) +
+  scale_fill_viridis_c()
+```
+
+```{r}
+#glimpse(p_nd)
+
+omega_s_all <- plot_map_raster(p_nd, "omega_s") +
+  ggtitle("Spatial random effects only") +
+    scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1.5,1.5),
+    na.value = "red") +  labs(fill = "") + 
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = c(.82,.75))
+
+omega_s_all
+```
+
+```{r}
+ plot_map_raster(p_nd, "epsilon_st") +
+  ggtitle("Spatiotemporal random effects only") +
+  facet_wrap(~year) +   scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1.5,1.5),
+    na.value = "red")
+```
+
+```{r}
+p_nd1 <- p_nd %>% filter(ssid!=16) %>% filter(ssid!=4)
+st_1n3 <- plot_map_raster(p_nd1, "epsilon_st") +
+  ggtitle("Spatiotemporal random effects") +
+  facet_wrap(~year) +
+   scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1.5,1.5), trans = sqrt,
+    na.value = "red") +
+  labs(fill = "epsilon") + 
+  gfplot::theme_pbs() + 
+  theme(
+  legend.position = "none", 
+  axis.title.x = element_blank(), axis.title.y = element_blank())
+
+png(
+  file = "figs/temp-predictions-1n3.png", 
+  res = 400,
+  units = "in",
+  width = 8, 
+  height = 8
+) 
+st_1n3
+dev.off()
+
+```
+
+```{r}
+p_nd4 <- p_nd %>% filter(ssid==4) #%>% filter(ssid!=4)
+st_4 <- plot_map_raster(p_nd4, "epsilon_st") +
+  #ggtitle(" ") +
+  facet_wrap(~year) +
+     scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1.5,1.5), trans = sqrt,
+    na.value = "red") +
+          labs(fill = " ") + 
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = c(.85,.15))
+st_4
+```
+
+
+
+
+
+```{r}
+p_nd16 <- p_nd %>% filter(ssid==16) #%>% filter(ssid!=4)
+st_16 <- plot_map_raster(p_nd16, "epsilon_st") +
+  #ggtitle(" ") +
+  facet_wrap(~year) +
+   scale_fill_gradient2( low = "Steel Blue 4",
+ high = "Red 3", limits = c(-1.5,1.5),
+    na.value = "red") +
+  xlim(65,345) +
+    ylim(5800,6100) +
+gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = "none")
+st_16
+```
+
+
+```{r}
+png(
+  file = "figs/temp-predictions.png", 
+  res = 600,
+  units = "in",
+  width = 11, 
+  height = 10
+) 
+
+gridExtra::grid.arrange(
+  grobs = list(pred_1, st_1n3, omega_s_all, pred_4, st_4, st_16 ),
+  widths = c(2, 2, 1.75),
+  heights = c(2, 1.35),
+  layout_matrix = rbind(c(1, 2, 3),
+                        c(4, 5, 6)),
+  top = grid::textGrob("Bottom temperature estimates from sdmTMB model")
+)
+
+# gridExtra::grid.arrange( nrow = 2, heights = c(2,1.5), 
+#   top = grid::textGrob("Dissolved oxygen estimates from sdmTMB model")) 
+dev.off()
+```
+
+ALTERNATE MODEL
+```{r, eval = FALSE}
+library(gbm)
+
+m <- gbm( temperature_c ~ depth_scaled + X + Y, data = d_trawl, n.trees = 2000, interaction.depth = 3, shrinkage = 0.02)
+m2 <- gbm( temperature_c ~ SST_scaled + depth_scaled + X + Y, data = d_trawl, n.trees = 2000, interaction.depth = 3, shrinkage = 0.02)
+
+plot(m,i.var=2)
+plot(m,i.var=3)
+plot(m,i.var=4)
+plot(m,i.var=5)
+
+
+plot(m2,i.var=1)
+plot(m2,i.var=2)
+plot(m,i.var=3)
+plot(m,i.var=4)
+
+plot(m2,i.var=1:2)
+plot(m2,i.var=c(1,3))
+plot(m2,i.var=c(1,4))
+d_trawl$r <- predict(m, n.trees = 2000) - d_trawl1$temperature_c
+
+ggplot(d_trawl, aes(depth_scaled, r)) +
+  geom_point(alpha=0.4) +
+  ylim(-8,8) +
+  geom_smooth()
+```
+
+
+
+CENTER OF GRAVITY
+```{r}
+temp_cog <- get_cog(p_nd)
+
+temp_cog %>%
+  reshape2::dcast(year ~ coord, value.var = "est") %>%
+  ggplot(aes(X, Y, colour = year)) + geom_path(arrow = arrow()) +
+  scale_color_viridis_c()
+```
+
+```{r}
+temp_cog %>%
+  ggplot(aes(year, est, ymin = lwr, ymax = upr)) +
+  geom_line() +
+  geom_ribbon(alpha = 0.2) +
+  facet_wrap(~coord, scales = "free_y")
+```
