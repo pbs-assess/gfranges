@@ -12,39 +12,6 @@ library(sdmTMB)
 library(gfranges)
 ```
 
-Load data
-```{r}
-all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/all-sensor-data-processed.rds"))
-# glimpse(all_sensor)
-
-d_trawl <- all_sensor %>%
-  # filter missing do data 
-  dplyr::filter(!is.na(do_mlpl)) %>%
-  # remove 2007 data because clearly faulty or scaled differently
-  dplyr::filter(year>2007) %>%
-  # add day of year variable
-  mutate(DOY = lubridate::yday(fe_event_start), temp = temperature_c, 
-    raw_depth = depth, depth = log(depth), log_do = log(do_mlpl)) %>%
-  # scale potential covariates across all surveys
-  scale_predictors(predictors = c(quo(depth), quo(DOY), quo(temp)))
-
-d_trawl <- d_trawl[!is.na(d_trawl$depth), ]
-d_trawl <- d_trawl[!is.na(d_trawl$temperature_c), ]
-
-d_trawl <- d_trawl %>% mutate(exclude = if_else(do_mlpl>8, 1, 0)) %>% 
-  filter(exclude != 1)
-
-# glimpse(d_trawl)
-```
-
-Ranges sampled
-```{r}
-paste("depth") 
-range(d_trawl$raw_depth)
-paste("DO") 
-range(d_trawl$do_mlpl)
-```
-
 Model diagnostics functions
 ```{r}
 get_diag <- function(m, response = "log_do", variable = "depth_scaled") {
@@ -122,6 +89,39 @@ get_diag <- function(m, response = "log_do", variable = "depth_scaled") {
   print("AIC:")
   print(aic(m))
 }
+```
+
+Load data
+```{r}
+all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/all-sensor-data-processed.rds"))
+# glimpse(all_sensor)
+
+d_trawl <- all_sensor %>%
+  # filter missing do data 
+  dplyr::filter(!is.na(do_mlpl)) %>%
+  # remove 2007 data because clearly faulty or scaled differently
+  dplyr::filter(year>2007) %>%
+  # add day of year variable
+  mutate(DOY = lubridate::yday(fe_event_start), temp = temperature_c, 
+    raw_depth = depth, depth = log(depth), log_do = log(do_mlpl)) %>%
+  # scale potential covariates across all surveys
+  scale_predictors(predictors = c(quo(depth), quo(DOY), quo(temp)))
+
+d_trawl <- d_trawl[!is.na(d_trawl$depth), ]
+d_trawl <- d_trawl[!is.na(d_trawl$temperature_c), ]
+
+d_trawl <- d_trawl %>% mutate(exclude = if_else(do_mlpl>8, 1, 0)) %>% 
+  filter(exclude != 1)
+
+# glimpse(d_trawl)
+```
+
+Ranges sampled
+```{r}
+paste("depth") 
+range(d_trawl$raw_depth)
+paste("DO") 
+range(d_trawl$do_mlpl)
 ```
 
 
@@ -216,7 +216,8 @@ do_model_all_DOY <- sdmTMB::sdmTMB(
       ar1_fields = TRUE,
       include_spatial = TRUE,
       enable_priors = FALSE,
-      control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
+      nlminb_loops = 2,
+      newton_steps = 1,
       silent = FALSE
     )
 

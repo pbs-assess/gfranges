@@ -70,7 +70,10 @@ m_temp_rw <- sdmTMB(
   data = d_trawl,
   ar1_fields = TRUE, # changed AR1_field to true
   include_spatial = TRUE, 
-  time = "year", spde = spde, family = gaussian(link = "identity"),
+  time = "year", spde = spde, 
+  family = gaussian(link = "identity"),
+  nlminb_loops = 2,
+  newton_steps = 1,
   silent = FALSE
 )
 
@@ -260,6 +263,8 @@ m_temp3 <- sdmTMB(
   time_varying = ~ 0 + depth_scaled + depth_scaled2,
   ar1_fields = TRUE, include_spatial = TRUE,
   time = "year", spde = spde2, family = gaussian(link = "identity"),
+  nlminb_loops = 2,
+  newton_steps = 1,
   silent = TRUE
 )
 ```
