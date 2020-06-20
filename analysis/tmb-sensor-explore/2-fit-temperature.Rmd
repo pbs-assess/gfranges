@@ -58,7 +58,7 @@ ggplot(d_trawl, aes(DOY, temperature_c, colour = -depth, alpha=0.5)) + geom_poin
 
 Current temperature model
 ```{r}
-spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 500)
+spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 800)
 plot_spde(spde)
 ```
 
@@ -68,7 +68,7 @@ m_temp_rw <- sdmTMB(
   temperature_c ~ 0 + as.factor(year), #+ DOY_scaled + as.factor(ssid)
   time_varying = ~ 0 + depth_scaled + depth_scaled2,
   data = d_trawl,
-  ar1_fields = TRUE, # changed AR1_field to true
+  ar1_fields = TRUE, # changed AR1 to true
   include_spatial = TRUE, 
   time = "year", spde = spde, 
   family = gaussian(link = "identity"),
@@ -77,11 +77,12 @@ m_temp_rw <- sdmTMB(
   silent = FALSE
 )
 
-saveRDS(m_temp_rw, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn.rds")))
+saveRDS(m_temp_rw, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn.rds")))
 ```
 
 Check predictions against raw data
 ```{r}
+m_temp_rw <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn-2.rds"))
 predictions <- predict(m_temp_rw)
 predictions$residuals <- residuals(m_temp_rw)
 cor(predictions$est, predictions$temperature_c)^2 
@@ -168,7 +169,7 @@ get_diag <- function(m, response = "log_do", variable = "depth_scaled") {
 
 
 ```{r eval=FALSE}
-m_temp_rw <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn.rds")))
+m_temp_rw <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn-2.rds")))
 get_diag(m_temp_rw, response = "temperature_c", variable = "depth_scaled")
 ```
 
@@ -257,6 +258,23 @@ plot_spde(spde2)
 ```
 
 ```{r eval=FALSE}
+m_temp2 <- sdmTMB(
+  temperature_c ~ 0 + as.factor(year) + DOY_scaled * shallow + DOY_scaled2 * shallow,
+  data = d_trawl2,
+  time_varying = ~ 0 + depth_scaled + depth_scaled2,
+  ar1_fields = TRUE, include_spatial = TRUE,
+  time = "year", spde = spde2, family = gaussian(link = "identity"),
+  nlminb_loops = 2,
+  newton_steps = 1,
+  silent = TRUE
+)
+
+saveRDS(m_temp2, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-DOY.rds")))
+
+m_temp2
+```
+
+```{r eval=FALSE}
 m_temp3 <- sdmTMB(
   temperature_c ~ 0 + as.factor(year) + SST_scaled * shallow + DOY_scaled * shallow + DOY_scaled2 * shallow,
   data = d_trawl2,
@@ -267,6 +285,10 @@ m_temp3 <- sdmTMB(
   newton_steps = 1,
   silent = TRUE
 )
+
+saveRDS(m_temp3, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST.rds")))
+
+m_temp3
 ```
 
 ```{r eval=FALSE}
@@ -276,6 +298,9 @@ cor(predictions3$est, predictions3$temperature_c)^2 #
 ```
 
 
+```{r eval=FALSE}
+get_diag(m_temp3, response = "temperature_c", variable = "depth_scaled")
+```
 
 ## Plotting predictions from saved temperature model
 
