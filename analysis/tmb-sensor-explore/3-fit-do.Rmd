@@ -154,8 +154,6 @@ ggplot(d_trawl, aes(raw_depth, temp, colour = DOY, size = sqrt(temp_range))) +
   scale_color_viridis_c()
 ```
 
-
-
 ```{r}
 ggplot(d_trawl, aes(temp, log_do, colour = DOY, size = sqrt(temp_range))) +
   geom_point() +
@@ -200,7 +198,7 @@ Remove WCVI in 2016 due to extreme values and make 500 knot mesh
 ```{r}
 d_trawl1 <- d_trawl %>% filter(!(year == 2016 & ssid ==4)) 
 
-spde <- make_spde(d_trawl1$X, d_trawl1$Y, n_knots = 500) 
+spde <- make_spde(d_trawl1$X, d_trawl1$Y, n_knots = 800) 
 plot_spde(spde)
 ```
 
@@ -221,11 +219,16 @@ do_model_all_DOY <- sdmTMB::sdmTMB(
       silent = FALSE
     )
 
-saveRDS(do_model_all_DOY, file = (here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016.rds")))
+saveRDS(do_model_all_DOY, file = (here::here(
+  paste0("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-", 
+    "800kn", #Sys.Date(), 
+    ".rds")))
+  )
 ```
 
 
 ```{r eval=FALSE}
+do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-800kn.rds")))
 get_diag(do_model_all_DOY, response = "log_do", variable = "depth_scaled")
 ```
 
@@ -233,7 +236,7 @@ get_diag(do_model_all_DOY, response = "log_do", variable = "depth_scaled")
 Predict DO for whole grid using quadratic of predicted temperature values and mean DOY
 ```{r eval=FALSE}
 model1 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn.rds"))
-model2 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-depth2.rds"))
+model2 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-800kn.rds"))
 
 nd_all <- readRDS(here::here("analysis/VOCC/data/nd_all_synoptic.rds")) %>% filter(year<2019)
 
@@ -263,7 +266,7 @@ saveRDS(pred_do, file=here::here(paste0("analysis/VOCC/data/predicted-DO-", Sys.
 
 Plot predictions from saved DO predictions file
 ```{r}
-p_nd <- readRDS((here::here("analysis/VOCC/data/predicted-DO-depth2.rds")))
+p_nd <- readRDS((here::here("analysis/VOCC/data/predicted-DO-2020-06-19.rds")))
 
 plot_map_raster <- function(dat, column = "est") {
     ggplot(dat, aes_string("X", "Y", fill = column)) +
@@ -287,8 +290,8 @@ labels <- function(x) format(x, digits = 2, scientific = FALSE)
  
 pred_1 <- plot_map_raster(p_nd1, "do_est") +
   scale_fill_viridis_c(labels = labels, breaks = c(0,2,4,6,8), 
-    limits = c(1, 8), 
-    na.value = "red") +
+    limits = c(0, 7), 
+    na.value = "gold") +
   facet_wrap(~year) +
   labs(fill = "ml/L DO") +
   ggtitle("Prediction (fixed effects + all random effects)") + 
@@ -299,13 +302,26 @@ pred_1
 ```{r}
 p_nd4 <- p_nd %>% filter(ssid==4) #%>% filter(year!=2016)
 pred_4 <- plot_map_raster(p_nd4, "do_est") +
-  scale_fill_viridis_c(labels = labels, breaks = c(0,2,4,6,8), limits = c(1, 7), 
+  scale_fill_viridis_c(labels = labels, breaks = c(0,2,4,6,8), limits = c(0, 7), 
      na.value = "red")+
   facet_wrap(~year) +
   labs(fill = "ml/L DO") +
   #ggtitle(" ")+ 
   theme(legend.position = "none")
 pred_4
+```
+
+
+```{r}
+p_nd16 <- p_nd %>% filter(ssid==16) #%>% filter(year!=2016)
+pred_16 <- plot_map_raster(p_nd16, "do_est") +
+  scale_fill_viridis_c(labels = labels, breaks = c(0,2,4,6,8), limits = c(0, 7), 
+     na.value = "red")+
+  facet_wrap(~year) +
+  labs(fill = "ml/L DO") +
+  #ggtitle(" ")+ 
+  theme(legend.position = "none")
+pred_16
 ```
 
 ```{r}
@@ -319,7 +335,9 @@ plot_map_raster(p_nd, "est_non_rf") +
 plot_map_raster(p_nd, "est_rf") +
   ggtitle("Prediction (all random effects only)") +
   facet_wrap(~year) +
-  scale_fill_viridis_c()
+  scale_fill_gradient2( high = "Steel Blue 4",
+  low = "Red 3")#, limits = c(-0.65,1)
+  # scale_fill_viridis_c()
 ```
 
 ```{r, eval=FALSE}
