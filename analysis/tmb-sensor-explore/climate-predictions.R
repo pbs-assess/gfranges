@@ -3,21 +3,19 @@ library(dplyr)
 library(sdmTMB)
 
 # load temp model
-model1 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn.rds"))
+# used in current models
+# model1 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn-2.rds")) 
+# ready for next run
+model1 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn.rds")) 
 max(model1$gradients)
-
-model1 <- run_extra_optimization(model1)
-max(model1$gradients)
-
+# model1 <- run_extra_optimization(model1)
+# max(model1$gradients)
 
 # load DO model 
-model2 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-depth2.rds")) 
-model2 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016.rds"))
-
+model2 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016b-800kn.rds"))
 max(model2$gradients)
-
-model2 <- run_extra_optimization(model2)
-max(model2$gradients)
+# model2 <- run_extra_optimization(model2)
+# max(model2$gradients)
 
 # load prediction grid
 nd_all <- readRDS(here::here("analysis/VOCC/data/nd_all_synoptic.rds")) %>% filter(year<2019)
@@ -43,4 +41,4 @@ pred_do$do_est <- exp(pred_do$log_do)
 # may want to filter estimates for depths less than 15 m
 # pred_do <- pred_do %>% filter(depth>15)
 
-saveRDS(pred_do, file=here::here(paste0("analysis/VOCC/data/predicted-DO-", Sys.Date(),".rds")))
+saveRDS(pred_do, file=here::here(paste0("analysis/VOCC/data/predicted-DO-", Sys.Date(), ".rds")))

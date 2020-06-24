@@ -51,25 +51,25 @@ get_diag <- function(m, response = "log_do", variable = "depth_scaled") {
  print(g)
  
   g <- ggplot(predictions, aes_string("est", response)) +
-    geom_point() +
+    geom_point(alpha = 0.2) +
     facet_wrap(~year) +
     coord_fixed() +
     geom_abline()
   print(g)
   
   g <- ggplot(predictions, aes(est, residuals)) +
-    geom_point() +
+    geom_point(alpha = 0.2) +
     geom_smooth()
   print(g)
   
   g <- ggplot(predictions, aes_string(variable, "residuals")) +
-    geom_point() +
+    geom_point(alpha = 0.2) +
     geom_smooth() +
     facet_wrap(~year)
   print(g)
   
   g <- ggplot(predictions, aes(X, Y, colour = residuals)) +
-    geom_point() +
+    geom_point(alpha = 0.2) +
     coord_fixed() +
     scale_color_gradient2()+
     facet_wrap(~year)
@@ -88,6 +88,7 @@ get_diag <- function(m, response = "log_do", variable = "depth_scaled") {
   print("")
   print("AIC:")
   print(aic(m))
+  
 }
 ```
 
@@ -140,6 +141,17 @@ ggplot(d_trawl, aes(X,Y, colour = temp)) +
 ```
 
 ```{r}
+ggplot(filter(d_trawl, depth_m_max < 80), aes(DOY, log_do, colour = depth)) +
+  geom_point() +
+  facet_wrap(~year) +
+  scale_color_viridis_c()
+ggplot(filter(d_trawl, depth_m_max > 80 & depth_m_max < 120), aes(DOY, log_do, colour = depth)) +
+  geom_point() +
+  facet_wrap(~year) +
+  scale_color_viridis_c()
+```
+
+```{r}
 ggplot(d_trawl, aes(depth, do_mlpl, colour = DOY, size = sqrt(do_change))) +
   geom_point() +
   facet_wrap(~year) +
@@ -162,21 +174,35 @@ ggplot(d_trawl, aes(temp, log_do, colour = DOY, size = sqrt(temp_range))) +
 ```
 
 ```{r}
-ggplot(d_trawl, aes(temp, do_mlpl, colour = as.factor(ssid))) +
+ggplot(filter(d_trawl, ssid == 4), aes(DOY,log_do,  colour = temp)) +
   geom_point() +
-  facet_wrap(~year) +
-  scale_color_viridis_d()
+  facet_grid(ssid~year, scales = "free") +
+  scale_color_viridis_c()
 ```
 
 ```{r}
-ggplot(filter(d_trawl, year==2016), aes(temp, do_mlpl, colour = as.factor(ssid))) +
+ggplot(filter(d_trawl, ssid == 4), aes(DOY,temp,  colour = temp)) +
+  geom_point() +
+  facet_grid(ssid~year, scales = "free") +
+  scale_color_viridis_c()
+```
+
+```{r}
+ggplot(filter(d_trawl, ssid == 4 & !(year ==2016 & DOY > 149)), aes(X, Y, colour = log_do)) +
+  geom_point() +
+  facet_grid(ssid~year, scales = "free") +
+  scale_color_viridis_c()
+```
+
+```{r}
+ggplot(filter(d_trawl, year==2016), aes((temp), log(do_mlpl), colour = as.factor(ssid))) +
   geom_point() +
   #facet_wrap(~year) +
   scale_color_viridis_d(begin=0.65)
 ```
 
 ```{r}
-ggplot(filter(d_trawl, year==2017), aes(temp, do_mlpl, colour = as.factor(ssid))) +
+ggplot(filter(d_trawl, year==2017), aes(x = (temp), log(do_mlpl), colour = as.factor(ssid))) +
   geom_point() +
   #facet_wrap(~year) +
   scale_color_viridis_d(end = 0.35)
@@ -194,9 +220,9 @@ hist(d_trawl$log_do)
 ```
 
 
-Remove WCVI in 2016 due to extreme values and make 500 knot mesh
+Remove most samples from WCVI in 2016 due to extreme values and make mesh
 ```{r}
-d_trawl1 <- d_trawl %>% filter(!(year == 2016 & ssid ==4)) 
+d_trawl1 <- d_trawl %>% filter(!(year == 2016 & ssid ==4 & DOY > 149)) 
 
 spde <- make_spde(d_trawl1$X, d_trawl1$Y, n_knots = 800) 
 plot_spde(spde)
@@ -220,7 +246,7 @@ do_model_all_DOY <- sdmTMB::sdmTMB(
     )
 
 saveRDS(do_model_all_DOY, file = (here::here(
-  paste0("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-", 
+  paste0("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016b-", 
     "800kn", #Sys.Date(), 
     ".rds")))
   )
@@ -228,15 +254,27 @@ saveRDS(do_model_all_DOY, file = (here::here(
 
 
 ```{r eval=FALSE}
-do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-800kn.rds")))
+# do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-depth3.rds")))
+# do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-depth2.rds")))
+# do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-800kn.rds")))
 get_diag(do_model_all_DOY, response = "log_do", variable = "depth_scaled")
 ```
 
+```{r}
+predictions <- predict(do_model_all_DOY)
+predictions$residuals <- residuals(do_model_all_DOY)
+predictions$abs <- exp(abs(predictions$residuals))
+
+good_rows <- filter (predictions, abs != "Inf")
+sum(good_rows$abs)
+19719.73-17459.49
+2260.24/19719.73  # 11% reduction in abs errors
+```
 
 Predict DO for whole grid using quadratic of predicted temperature values and mean DOY
 ```{r eval=FALSE}
-model1 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn.rds"))
-model2 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-800kn.rds"))
+model1 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn.rds"))
+model2 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016b-800kn.rds"))
 
 nd_all <- readRDS(here::here("analysis/VOCC/data/nd_all_synoptic.rds")) %>% filter(year<2019)
 
@@ -260,13 +298,13 @@ pred_do$do_est <- exp(pred_do$log_do)
 
 # may want to filter estimates for depths less than 15 m
 # pred_do <- pred_do %>% filter(depth>15)
-saveRDS(pred_do, file=here::here(paste0("analysis/VOCC/data/predicted-DO-", Sys.Date(),".rds")))
+saveRDS(pred_do, file=here::here(paste0("analysis/VOCC/data/predicted-DO-", Sys.Date(),"-more2016.rds")))
 ```
 
 
 Plot predictions from saved DO predictions file
 ```{r}
-p_nd <- readRDS((here::here("analysis/VOCC/data/predicted-DO-2020-06-19.rds")))
+p_nd <- readRDS((here::here("analysis/VOCC/data/predicted-DO-2020-06-20-more2016.rds")))
 
 plot_map_raster <- function(dat, column = "est") {
     ggplot(dat, aes_string("X", "Y", fill = column)) +
@@ -391,7 +429,7 @@ st_16 <- plot_map_raster(p_nd16, "epsilon_st") +
   scale_fill_gradient2( high = "Steel Blue 4",
   low = "Red 3", limits = c(-0.5,0.5)) +
   xlim(65,345) +
-    ylim(5800,6100) +
+  ylim(5800,6100) +
 gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = "none")
 st_16
 ```
