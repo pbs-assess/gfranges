@@ -1,0 +1,120 @@
+---
+title: "Fishing trends"
+output: html_notebook
+---
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(
+  fig.keep = "all", fig.show = "asis", dpi = 600,
+  fig.width = 6, fig.height = 5,
+  echo = FALSE, warning = FALSE, message = FALSE
+)
+options(scipen = 999)
+options(digits = 4)
+```
+
+```{r pkgs, cache=FALSE, warning=FALSE, message=FALSE}
+library("gfranges")
+library("dplyr")
+library("ggplot2")
+
+ggplot2::theme_set(gfplot::theme_pbs())
+```
+
+#### Set cell sizes and scale
+```{r, echo=TRUE}
+scale_fac <- 2 # means that the raster is reprojected to _ X original grid (2 km)
+```
+
+
+```{r}
+d_all <- readRDS(paste0(
+    "data/sablefish/predictions-sablefish-tv-depth-only-1n3n4n16-mature-biomass-prior-FALSE.rds"
+  )) %>% filter(year >= 2008)
+
+all_years <- unique(d_all$year)
+length(all_years)
+grid <- select(d_all, X,Y, depth, ssid) %>% unique()
+
+grid_by_year <- data.frame(matrix(ncol=0, nrow= nrow(grid) * length(all_years)))
+grid_by_year$ssid <- rep(grid$ssid, times = length(all_years))
+grid_by_year$X <- rep(grid$X, times = length(all_years))
+grid_by_year$Y <- rep(grid$Y, times = length(all_years))
+grid_by_year$depth <- rep(grid$depth, times = length(all_years))
+grid_by_year$year <- rep(all_years, each = nrow(grid))
+```
+
+
+Calculate mean and trend in log fishing pressure
+```{r }
+fishing <- readRDS("data/_fishing_effort/fishing-effort-grid.rds")
+
+
+d <- left_join(grid_by_year, fishing, by = c("X", "Y", "year"))
+
+d$log_effort[is.na(d$log_effort)] <- -2.3
+d$effort[is.na(d$effort)] <- 0
+
+### BOTH ODD YEAR ###
+d1n3 <- d %>% filter(ssid %in% c(1,3))
+
+ssid1n3 <- vocc_gradient_calc(d1n3, "log_effort",
+  scale_fac = scale_fac,
+  quantile_cutoff = 0.05
+)
+
+depth1n3 <- vocc_gradient_calc(d1n3, "depth",
+  scale_fac = scale_fac,
+  quantile_cutoff = 0.05
+)
+ssid1n3$depth <- depth1n3$mean
+
+d4 <- d %>% filter(ssid %in% c(4))
+
+### WCVI ###
+ssid4 <- vocc_gradient_calc(d4, "log_effort",
+  scale_fac = scale_fac,
+  quantile_cutoff = 0.05
+)
+depth4 <- vocc_gradient_calc(d4, "depth",
+  scale_fac = scale_fac,
+  quantile_cutoff = 0.05
+)
+ssid4$depth <- depth4$mean
+
+### WCHG ###
+d16 <- d %>% filter(ssid %in% c(16))
+
+ssid16 <- vocc_gradient_calc(d16, "log_effort",
+  scale_fac = scale_fac,
+  quantile_cutoff = 0.05
+)
+depth16 <- vocc_gradient_calc(d16, "depth",
+  scale_fac = scale_fac,
+  quantile_cutoff = 0.05
+)
+ssid16$depth <- depth16$mean
+
+
+fished <- rbind(ssid1n3, ssid4, ssid16)
+
+fished <- fished %>%
+  mutate(
+    fishing_trend = trend,
+    mean_effort = exp(mean),
+    fishing_vel = velocity,
+    fishing_grad = gradient
+  ) %>%
+  dplyr::mutate(X = x, Y = y) %>%
+  gfplot:::utm2ll(., utm_zone = 9)
+
+# fished$squashed_effort <- collapse_outliers(fished$mean_effort, c(0, 0.99))
+# hist(fished$squashed_effort)
+
+# fished <- left_join(fished, grid)
+fished <- fished %>%
+  select(X, Y, x, y, fishing_trend, mean_effort, fishing_vel, fishing_grad, depth)
+
+saveRDS(fished, file = paste0("data/fishing-effort-change-w-depth.rds"))
+```
