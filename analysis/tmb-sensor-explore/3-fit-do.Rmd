@@ -1,4 +1,7 @@
 ---
+title: "Spatiotemporal models of DO"
+author: "Philina English"
+date: "`r Sys.Date()`"
 output: html_document
 editor_options: 
   chunk_output_type: inline
@@ -12,7 +15,7 @@ library(sdmTMB)
 library(gfranges)
 ```
 
-Model diagnostics functions
+Model diagnostics function
 ```{r}
 get_diag <- function(m, response = "log_do", variable = "depth_scaled") {
   predictions <- predict(m)
@@ -119,7 +122,8 @@ d_trawl <- d_trawl %>%
 # glimpse(d_trawl)
 ```
 
-Ranges sampled
+# Data exploration
+Check range of depths and DO sampled
 ```{r}
 paste("depth")
 range(d_trawl$raw_depth)
@@ -220,7 +224,7 @@ hist(d_trawl$do_mlpl)
 hist(d_trawl$log_do)
 ```
 
-
+# Define spatial and temporal components to include in model
 Remove most samples from WCVI in 2016 due to extreme values and make mesh
 ```{r}
 d_trawl1 <- d_trawl %>% filter(!(year == 2016 & ssid == 4 & DOY > 149))
@@ -229,8 +233,9 @@ spde <- make_spde(d_trawl1$X, d_trawl1$Y, n_knots = 800)
 plot_spde(spde)
 ```
 
+# Define and run model
 Current best model of DO
-```{r }
+```{r eval=FALSE}
 do_model_all_DOY <- sdmTMB::sdmTMB(
   log_do ~ 0 + as.factor(year) + temp_scaled + temp_scaled2 + DOY_scaled,
   data = d_trawl1,
@@ -240,7 +245,6 @@ do_model_all_DOY <- sdmTMB::sdmTMB(
   family = gaussian(link = "identity"),
   ar1_fields = TRUE,
   include_spatial = TRUE,
-  enable_priors = FALSE,
   nlminb_loops = 2,
   newton_steps = 1,
   silent = FALSE
@@ -255,26 +259,28 @@ saveRDS(do_model_all_DOY, file = (here::here(
 )))
 ```
 
-
-```{r eval=FALSE}
-# do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-depth3.rds")))
-# do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-depth2.rds")))
-# do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-800kn.rds")))
+# Check diagnostics
+```{r eval=T}
+# do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-depth3.rds"))) # 500 knots, poly-3 of depth
+# do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-depth2.rds"))) # 500 knots, poly-2 of depth
+# do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016-800kn.rds"))) # 800 knots
+do_model_all_DOY <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016b-800kn.rds"))) # add in some WCVI 2016 data
 get_diag(do_model_all_DOY, response = "log_do", variable = "depth_scaled")
 ```
 
-```{r}
+```{r eval=FALSE}
 predictions <- predict(do_model_all_DOY)
 predictions$residuals <- residuals(do_model_all_DOY)
 
-# predictions$abs <- exp(abs(predictions$residuals))
-# pred_rows <- filter (predictions, abs != "Inf")
-# sum(pred_rows$abs) # sum absolute error
+predictions$abs <- exp(abs(predictions$residuals))
+pred_rows <- filter (predictions, abs != "Inf")
+sum(pred_rows$abs) # sum absolute error, divided by nrow for mean absolute error
 # 19719.73-17459.49 # difference in absolute error between 500 and 800 knots
 # 2260.24/19719.73  # 11% reduction in abs errors
 ```
 
-Predict DO for whole grid using quadratic of predicted temperature values and mean DOY
+# DO predictions
+For whole grid using quadratic of predicted temperature values and mean DOY
 ```{r eval=FALSE}
 model1 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn.rds"))
 model2 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016b-800kn.rds"))
@@ -392,7 +398,7 @@ plot_map_raster(p_nd, "est_rf") +
 # scale_fill_viridis_c()
 ```
 
-```{r, eval=FALSE}
+```{r}
 omega_s_all <- plot_map_raster(p_nd, "omega_s") +
   ggtitle("Spatial random effects only") +
   scale_fill_gradient2(
@@ -460,7 +466,7 @@ st_16 <- plot_map_raster(p_nd16, "epsilon_st") +
 st_16
 ```
 
-
+Save selection of prediction plots
 ```{r, eval= F}
 png(
   file = "figs/do-predictions-without-wcvi2016.png",
