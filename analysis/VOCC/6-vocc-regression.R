@@ -27,28 +27,29 @@ is_null <- F
 
 null_number <- "-1"
 
-## for trends ###
-knots <- 500
-y_type <- "trend"
-# 
-# # model_type <- "-trend" # just temp
-# # model_type <- "-trend-do-only" # just DO
-# # model_type <- "-trend-w-age" # an experiment that lacks true chops for imm
-# # model_type <- "-trend-grad"
-# # model_type <- "-trend-w-grad"
+# ## for trends ###
+# knots <- 500
+# y_type <- "trend"
+# # 
+# # # model_type <- "-trend" # just temp
+# # # model_type <- "-trend-do-only" # just DO
+# # # model_type <- "-trend-w-age" # an experiment that lacks true chops for imm
+# # model_type <- "-trend-w-age2"
+# # # model_type <- "-trend-grad"
+# # # model_type <- "-trend-w-grad"
 # model_type <- "-trend-with-do"
-model_type <- "-trend-w-fishing"
+# # model_type <- "-trend-w-fishing"
 
 
-# ### for velocities ###
-# knots <- 200
-# y_type <- "vel"
-# 
-# # model_type <- "-vel-temp"
-# # model_type <- "-vel-do"
-# # model_type <- "-dist-vel-temp"
-# model_type <- "-vel-both"
-# 
+### for velocities ###
+knots <- 350
+y_type <- "vel"
+
+# model_type <- "-vel-temp"
+# model_type <- "-vel-do"
+# model_type <- "-dist-vel-temp"
+model_type <- "-vel-both"
+
 
 ### LOAD VOCC DATA
 if (age != "both") {
@@ -58,11 +59,14 @@ if (age != "both") {
   # data_type <- paste0(age,"-50-all-temp")
   # data_type <- paste0(age,"-90-all-do")
   # data_type <- paste0(age,"-80-all-do")
-  data_type <- paste0(age, "-95-all-do")
+  # data_type <- paste0(age, "-95-all-do")
 }
 
 if (age == "both") {
-  data_type <- paste0("all-95-all-do")
+  # data_type <- paste0("all-95-all-do")
+  # data_type <- paste0("all-95-newclim2")
+  # data_type <- paste0("all-95-newclim-more2016")
+  data_type <- paste0("all-95-all-newclim")
 }
 
 d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
@@ -83,6 +87,10 @@ d <- as_tibble(d) %>%
 # if combining adult and imm in same model
 if (age == "both") d <- mutate(d, species_only = species, species = species_age, age_class = age, age = if_else(age_class == "mature", 0, 1))
 
+
+# plot(d$x, d$y)
+
+
 #### PREP FISH BIOMASS VARIABLES ####
 # range(d$mean_biomass)
 d$mean_biomass_scaled <- scale((d$mean_biomass))
@@ -96,8 +104,11 @@ d$log_biomass_scaled2 <- d$log_biomass_scaled^2
 # d$abs_biotic <- sqrt((d$biotic_trend)^2)
 # hist(log(d$abs_biotic))
 # plot(log(abs_biotic)~log(sd_est), data=d, col = "#00000010")
-
 hist(d$DO_trend_scaled)
+# hist(d$squashed_DO_trend_scaled)
+
+# d$DO_trend_scaled <- d$squashed_DO_trend_scaled
+
 #### MAKE FAKE BIOTIC VELOCITY
 hist(d$biotic_vel, breaks = 100)
 hist(d$biotic_trend, breaks = 50)
@@ -236,6 +247,29 @@ if (model_type == "-trend-w-age") {
   x_type <- "trend"
 }
 
+if (model_type == "-trend-w-age2") {
+  formula <- ~ age +
+    temp_trend_scaled +
+    mean_temp_scaled +
+    temp_trend_scaled:mean_temp_scaled +
+    # temp_grad_scaled +
+    DO_trend_scaled +
+    mean_DO_scaled +
+    DO_trend_scaled:mean_DO_scaled +
+    age:temp_trend_scaled +
+    age:mean_temp_scaled +
+    # age:temp_trend_scaled:mean_temp_scaled +
+    age:DO_trend_scaled +
+    age:mean_DO_scaled +
+    # age:DO_trend_scaled:mean_DO_scaled +
+    log_biomass_scaled #+ age:log_biomass_scaled 
+  
+  x <- model.matrix(formula, data = d)
+  
+  temp_chopstick <- T
+  DO_chopstick <- T
+  x_type <- "trend"
+}
 
 if (model_type == "-trend-w-fishing") {
   formula <- ~ temp_trend_scaled +
@@ -383,6 +417,7 @@ if (DO_chopstick) {
   ) %>% mutate(type = "DO")
 
   DO_pj <- as.matrix(select(DO_dat, -chopstick, -species, -genus, -type))
+  
   if (y_type == "trend") {
 
     #### biotic tend
@@ -757,89 +792,124 @@ r <- model$obj$report()
 model$data$residual <- model$y_i - r$eta_i
 model$data$eta <- r$eta_i
 
+model$data %>%
+  mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
+  mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
+  mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
+  mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
+  ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
+  scale_fill_gradient2() + gfplot::theme_pbs() +
+  facet_wrap(~species)
 
-if (y_type == "trend") {
-  pdf(paste0("residual-plots", model_type, date, ".pdf"), width = 18, height = 12)
-  ggplot(model$data, aes(eta, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(biotic_trend)) + geom_histogram() +
-    facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(temp_trend, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(DO_trend, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(mean_temp, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(mean_DO, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(mean_temp^2, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(mean_DO^2, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(log_biomass_scaled, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(log_biomass_scaled2, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(fishing_trend_scaled, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(log_effort_scaled, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-
-  model$data %>%
-    mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
-    mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
-    mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
-    mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
-    ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-    scale_fill_gradient2() + gfplot::theme_pbs() +
-    facet_wrap(~species)
-
-  dev.off()
-}
+ggsave(here::here("ms", "figs", paste0("spatial-residuals", null_lab, model_type, "-", knots, date, ".pdf")), width = 18, height = 12)
 
 
-if (y_type == "vel") {
-  pdf(paste0("residual-plots", model_type, date, ".pdf"), width = 18, height = 12)
 
-  ggplot(model$data, aes(eta, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
 
-  ggplot(model$data, aes(squashed_biotic_vel)) + geom_histogram() +
-    facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(squashed_temp_vel, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + scale_x_continuous(trans = fourth_root_power) +
-    facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(squashed_DO_vel, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + scale_x_continuous(trans = fourth_root_power) +
-    facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(mean_temp, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(mean_DO, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(mean_temp^2, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(mean_DO^2, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(log_biomass_scaled, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(log_biomass_scaled2, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(fishing_trend_scaled, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
-  ggplot(model$data, aes(log_effort_scaled, residual)) + geom_point(alpha = 0.2) +
-    geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
 
-  model$data %>%
-    mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
-    mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
-    mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
-    mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
-    ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-    scale_fill_gradient2() + gfplot::theme_pbs() +
-    facet_wrap(~species)
 
-  dev.off()
-}
+# pdf(paste0("residual-plots-", y_type, null_lab, model_type, date, ".pdf"), width = 18, height = 12)
+# 
+# if (y_type == "trend") {
+#   ggplot(model$data, aes(eta, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+# 
+#   ggplot(model$data, aes(biotic_trend)) + geom_histogram() +
+#     facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(temp_trend, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(DO_trend, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(mean_temp, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(mean_DO, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(mean_temp^2, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(mean_DO^2, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(log_biomass_scaled, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(log_biomass_scaled2, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(fishing_trend_scaled, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(log_effort_scaled, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+# 
+#   model$data %>%
+#     mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
+#     mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
+#     mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
+#     mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
+#     ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
+#     scale_fill_gradient2() + gfplot::theme_pbs() +
+#     facet_wrap(~species)
+# 
+# }
+# 
+# 
+# if (y_type == "vel") {
+# 
+#   ggplot(model$data, aes(eta, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+# 
+#   ggplot(model$data, aes(squashed_biotic_vel)) + geom_histogram() +
+#     facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(squashed_temp_vel, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + scale_x_continuous(trans = fourth_root_power) +
+#     facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(squashed_DO_vel, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + scale_x_continuous(trans = fourth_root_power) +
+#     facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(mean_temp, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(mean_DO, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(mean_temp^2, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(mean_DO^2, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(log_biomass_scaled, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(log_biomass_scaled2, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(fishing_trend_scaled, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+#   
+#   ggplot(model$data, aes(log_effort_scaled, residual)) + geom_point(alpha = 0.2) +
+#     geom_smooth(method = "loess") + facet_wrap(~species, scales = "free")
+# 
+#   model$data %>%
+#     mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
+#     mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
+#     mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
+#     mutate(residual = if_else(residual < resid_lower, resid_lower, residual)) %>%
+#     ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
+#     scale_fill_gradient2() + gfplot::theme_pbs() +
+#     facet_wrap(~species)
+# }
+# 
+# dev.off()
 
 # # ggsave("figs/vel-model-residuals.png", width = 12, height = 12, dpi = 300)
 # # ggsave("figs/trend-model-residuals.png", width = 12, height = 12, dpi = 300)
