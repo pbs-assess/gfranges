@@ -178,16 +178,12 @@ plot_fuzzy_chopsticks <- function(model,
   
   if (is.null(colours)) {
     if (type == "DO" | type == "do") {
-
       # # green to blue option
       # colours = c("#3d95cc", "yellowgreen")
-      
       # # cyan to gold option,
       colours = c("goldenrod1", "darkcyan") #"gold"
-      
       # # blue to yellow option
       # colours <- c("#FDAE61", "#3d95cc")
-      
       # # yellow to purple option
       # colours <- c("#5E4FA2", "#FDAE61")
     } else {
@@ -201,8 +197,8 @@ plot_fuzzy_chopsticks <- function(model,
         # colours <- c("Firebrick2", "royalblue4")
         # colours <- c("Red 3", "royalblue4")
         # colours <- c("#D53E4F", "royalblue4")
-        # colours <- c("#D53E4F", "#3d95cc") #"#36648b") #  ,"#3288BD") #"#FF420A"  # colours <- c("#D53E4F", "#3288BD")
-      }
+        # colours <- c("#D53E4F", "#3d95cc") #"#36648b") #  ,"#3288BD")
+        }
     }
   }
   
@@ -252,6 +248,8 @@ plot_fuzzy_chopsticks <- function(model,
     gfplot::theme_pbs() +
     guides(colour = guide_legend(nrow = 1, ncol = 2)) +
     theme(
+      panel.spacing = unit(0.1, "lines"),
+      plot.margin = margin(0, 0, 0.2, 0.2, "cm"),
       legend.title = element_blank(),
       legend.text = element_text(size = 10),
       legend.direction = "vertical",
@@ -487,10 +485,8 @@ plot_chopstick_slopes <- function(slopedat,
       if (type == "DO" | type == "do") {
         # # green to blue option
         # colours = c("#3d95cc", "yellowgreen")
-
         # # cyan to gold option,
         colours = c("goldenrod1", "darkcyan") #"gold"
-
         # # blue to yellow option
         # colours <- c("#FDAE61", "#3d95cc")
         # # yellow to purple option
@@ -502,9 +498,9 @@ plot_chopstick_slopes <- function(slopedat,
           # purple to red option
           # colours <- c("#cd0000", "#5E4FA2")
           # # blue and red option
-
           #colours <- c("Firebrick2", "royalblue4")
-          colours <- c("Red 3", "royalblue4")
+          colours <- c("orangered2", "royalblue4")
+          # colours <- c("Red 3", "royalblue4")
           # colours <- c("#D53E4F", "royalblue4")
           # colours <- c("#D53E4F", "#3d95cc") 
           # colours <- c("#D53E4F", "#3288BD")
