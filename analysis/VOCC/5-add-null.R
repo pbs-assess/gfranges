@@ -7,7 +7,7 @@ library(sdmTMB)
 library(gfranges)
 
 setwd(here::here("analysis", "VOCC"))
-null_number <- 5
+null_number <- 1
 trim_threshold <- 0.05
 
 if (trim_threshold == 0.05) { trim_percent <- 95}
@@ -163,13 +163,14 @@ for (i in seq_along(all_species)) {
 }
 data <- do.call(rbind, trimmed.dat)
 
+
 #### add in globally scaled and squashed climate data 
 vars <- readRDS(("data/all-newclim-untrimmed.rds")) %>% select(
     -fishing_trend,  -mean_effort,  -fishing_vel,  -fishing_grad,
     -DO_vel,  -DO_dvocc,  -DO_trend,  -DO_grad,  -mean_DO,  -dvocc_both,
-    -temp_vel,  -temp_dvocc,  -temp_trend,  -temp_grad,  -mean_temp)
+    -temp_vel,  -temp_dvocc,  -temp_trend,  -temp_grad,  -mean_temp) %>% rename(cell_depth = depth)
 
-data <- left_join(data, vars)
+data <- left_join(data, vars) %>% select(-X.1)
 
 ### TRIM CELLS THAT EXCEED MEAN CONDITIONS MEASURED
 # # test filter of cells by observed depth, DO and temp values 
@@ -190,7 +191,8 @@ data <- data %>%
   filter(mean_temp > 3.07) %>%
   filter(mean_temp < 11.3) # 0.005 and 0.995
 
-saveRDS(data, file = paste0("data/all-", trim_percent, "-newclim-more2016-with-null-", null_number, ".rds"))
+saveRDS(data, file = paste0("data/all-", trim_percent, "-all-newclim-with-null-", null_number, ".rds"))
+# saveRDS(data, file = paste0("data/all-", trim_percent, "-newclim-more2016-with-null-", null_number, ".rds"))
 # saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-temp-with-null-", null_number, ".rds"))
 # saveRDS(data, file = paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
 
@@ -204,7 +206,7 @@ ggplot(data, aes(mean_DO_scaled, DO_trend_scaled)) + geom_point() + geom_smooth(
 #####################################
 ### PLOT REAL AND FAKE TREND DATA
 # data <- readRDS(paste0("data/", age, "-", trim_percent, "-all-newclim-with-null-", null_number, ".rds"))
-data <- readRDS(paste0("data/all-", trim_percent, "-newclim-more2016-with-null-", null_number, ".rds"))
+# data <- readRDS(paste0("data/all-", trim_percent, "-newclim-more2016-with-null-", null_number, ".rds"))
 
 plots <- list()
 for (i in seq_along(all_species)) {
@@ -236,7 +238,7 @@ plots[[i]] <- cowplot::plot_grid(o, n)
 }
 
 # pdf(paste0(age, "-null-", null_number, "-trends-new.pdf"))
-pdf(paste0("all-null-", null_number, "-trends-newclim2.pdf"))
+pdf(paste0("all-null-", null_number, "-trends-newclim3.pdf"))
 
 plots
 dev.off()
