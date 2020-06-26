@@ -12,20 +12,21 @@ library(dotwhisker)
 library(tidyverse)
 
 #### load appropriate final models and other data
-# model <- readRDS("analysis/VOCC/data/trend-all-95-newclim2-06-20-trend-with-do-1-200.rds")
-model <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds")
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-22-vel-both-1-300.rds")
 
-# model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-03-vel-temp-1-200-temp.rds")
-# model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-03-vel-do-1-200-do.rds")
+# model <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds") # without WCHG
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-with-do-1-500.rds") # on full dataset 
+max(model$sdr$gradient.fixed)
 
-model_temp <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-1-500.rds")
-model_grad <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-w-grad-1-500.rds")
-model_do <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-do-only-1-500-DO.rds")
-# model_fish <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-w-fishing-1-500-DO.rds")
-model_age <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age-1-500-DO.rds")
-model_age2 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age2-1-500-DO.rds")
-max(model_age$sdr$gradient.fixed)
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-newclim2-06-20-vel-both-1-200.rds") # without WCHG
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-22-vel-both-1-300.rds") # without WCHG
+# 
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-300.rds") # on full dataset 
+
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") # on full dataset 
+max(model_vel$sdr$gradient.fixed)
+
+model_fish <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-w-fishing-1-500.rds")
+max(model_fish$sdr$gradient.fixed)
 
 stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
 
@@ -184,15 +185,32 @@ ggsave(here::here("ms", "figs", "supp-gradient-cor-family.png"), width = 6, heig
 #########################
 #########################
 #### GLOBAL COEFS
-###
+### 
+# load a set of models for comparisons ####
+# currently all built without WCHG using the climate data herein
+# alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-more2016-with-null-NA-untrimmed-allvars.rds"))
+model_trend <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds")
+# max(model_trend$sdr$gradient.fixed)
+model_temp <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-1-500.rds")
+model_grad <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-w-grad-1-500.rds")
+# max(model_grad$sdr$gradient.fixed)
+model_do <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-do-only-1-500-DO.rds")
+# max(model_do$sdr$gradient.fixed)
+model_age <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age-1-500-DO.rds")
+# max(model_age$sdr$gradient.fixed)
+model_age2 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age2-1-500-DO.rds")
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-22-vel-both-1-300.rds")
+# model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-all-do-TODO-temp.rds")
+# model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-all-do-TODO-do.rds")
+
 ## trend model ####
-coef_names <- shortener(unique(model$coefs$coefficient))
+coef_names <- shortener(unique(model_trend$coefs$coefficient))
 coef_names <- c(
   "intercept", "change in T", "mean T", "change in DO", "mean DO",
   "biomass", "interaction (T)", "interaction (DO)"
 )
-betas <- signif(as.list(model$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model$sdr, "Std. Error")$b_j, digits = 3)
+betas <- signif(as.list(model_trend$sdr, "Estimate")$b_j, digits = 3)
+SE <- signif(as.list(model_trend$sdr, "Std. Error")$b_j, digits = 3)
 lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
 upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
 overall_betas <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
@@ -509,7 +527,7 @@ p_temp_chops <- plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
   y_label = "Predicted % change in biomass",
   slopes = temp_slopes # if add, the global slope can be included for insig.
-) + coord_cartesian(ylim = c(-11, 7)) +
+) + coord_cartesian(ylim = c(-4.5, 6)) +
   xlab("Temperature trend (scaled)") + theme(legend.position = "none")
 
 p_do_chops <- plot_fuzzy_chopsticks(model,
@@ -526,13 +544,14 @@ p_temp_all_slopes <- plot_chopstick_slopes(temp_slopes,
   type = "temp", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
   legend_position = c(.25, .95)
 ) +
+  coord_flip(ylim = c(-5.5, 3)) + 
   ylab(" ")
 
 p_do_all_slopes <- plot_chopstick_slopes(do_slopes,
   type = "DO", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
   legend_position = c(.25, .95)
 ) +
-  coord_flip(ylim = c(-3.1, 1.4)) + # coord_flip(ylim =c(-3,1)) +
+  coord_flip(ylim = c(-3.1, 2)) + # coord_flip(ylim =c(-3,1)) +
   ylab("slopes")
 
 cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops,
@@ -592,6 +611,9 @@ cowplot::plot_grid(p1, p2, rel_widths = c(1, 2.5))
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks-temp-grad.pdf"), width = 14, height = 5.5)
 
 ### ALL VELOCITY CHOPS ####
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-26-vel-both-1-250.rds") # 
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") #
+
 temp_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_temp_vel_scaled",
   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp"
@@ -626,8 +648,8 @@ p_temp_all_vel_slopes <- plot_chopstick_slopes(temp_vel_slopes,
   legend_position = c(.25, .95)
 ) +
   ylab(" ") +
-  # coord_flip(ylim =c(-12,8))
-  coord_flip(ylim = c(-14, 7.85))
+  coord_flip(ylim =c(-10,10))
+  # coord_flip()
 
 p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
   type = "DO", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
@@ -635,10 +657,11 @@ p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
 ) +
   ylab("slopes") +
   # coord_flip(ylim =c(-3,3.5))
-  coord_flip(ylim = c(-5.75, 3.25))
+  coord_flip()
 
 
 cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes, p_do_vel_chops, ncol = 2, rel_widths = c(1, 2.5))
+
 ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height = 10)
 
 
