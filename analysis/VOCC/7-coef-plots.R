@@ -7,22 +7,23 @@ compile("vocc_regression.cpp")
 dyn.load(dynlib("vocc_regression"))
 source("vocc-regression-functions.R")
 
-
-stats <- readRDS(paste0("data/life-history-stats.rds"))
-stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
-stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
-stats$group[stats$group == "SHARK"] <- "DOGFISH"
-stats$group[stats$group == "HAKE"] <- "COD"
-imm <- mutate(stats, age = "immature") %>%
-  mutate(depth = depth_imm, age_mean = age_imm) %>%
-  select(-depth_imm, -age_imm)
-mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
-stats <- rbind(mat, imm)
-stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
+stats <- readRDS(paste0("data/life-history-behav.rds"))
+# 
+# stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
+# stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
+# stats$group[stats$group == "SHARK"] <- "DOGFISH"
+# stats$group[stats$group == "HAKE"] <- "COD"
+# imm <- mutate(stats, age = "immature") %>%
+#   mutate(depth = depth_imm, age_mean = age_imm) %>%
+#   select(-depth_imm, -age_imm)
+# mat <- mutate(stats, age = "mature") %>% select(-depth_imm, -age_imm)
+# stats <- rbind(mat, imm)
+# stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
 
 ##############################
 #### LOAD MODELS ####
 model <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-01-trend-with-do-1-500.rds")
+
 #### ONE JUST BUILT
 model <- new_model
 
@@ -60,6 +61,9 @@ ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null2nb.pdf"), width = 12.
 ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
 
 #### fishing model ####
+
+model <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-w-fishing-1-500-DO.rds")
+model <- readRDS("data/trend-all-95-all-newclim-06-24-trend-w-fishing-1-500-DO.rds")
 
 model2 <- add_colours(model$coefs) %>%   
   filter(coefficient %in% c("log_effort_scaled", "fishing_trend_scaled","log_effort_scaled:fishing_trend_scaled"))
