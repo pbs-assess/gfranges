@@ -118,7 +118,7 @@ plot_fuzzy_chopsticks <- function(model,
                                   global_col = "gray30",
                                   choose_species = NULL,
                                   choose_age = NULL,
-                                  order_var = "species",
+                                  order_by_chops = c("low", "high"),
                                   slopes = NULL,
                                   imm_model = NULL,
                                   imm_slopes = NULL,
@@ -131,6 +131,7 @@ plot_fuzzy_chopsticks <- function(model,
     pred_dat <- pred_dat %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
   }
 
+  # est_p is the global slope estimates
   if (is.null(pred_dat$est_p)) {
     est <- as.list(model$sdr, "Estimate", report = TRUE)
     se <- as.list(model$sdr, "Std. Error", report = TRUE)
@@ -140,13 +141,20 @@ plot_fuzzy_chopsticks <- function(model,
 
   if (!is.null(slopes)) {
     signif <- slopes %>%
-      select(species, type, chopstick, sig_diff, global_slope, global_se) %>%
+      select(species, age, type, chopstick, sig_diff, global_slope, global_se) %>%
       unique()
     pred_dat <- left_join(pred_dat, signif) %>%
       mutate(global = if_else(sig_diff == "N",
         if_else(((abs(global_slope) - global_se * 1.96) >= 0), est_p, NA_real_),
         NA_real_
       ))
+    if (is.null(slopes$sort_var)) {
+      if (!is.null(slopes$slope_est)) {
+        slopes <- slopes %>% mutate(sort_var = slope_est)
+      } else {
+        slopes <- slopes %>% mutate(sort_var = slope)
+      }
+    }
   }
 
   if (!is.null(imm_model)) {
@@ -223,6 +231,11 @@ plot_fuzzy_chopsticks <- function(model,
     pred_dat <- rbind(pred_dat, imm_pred_dat)
   }
 
+  # Shorten the one very long species name...
+  pred_dat$species[pred_dat$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+  slopes$species[slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+  
+  
   if (!is.null(choose_species)) {
     spp <- choose_species
     pred_dat <- filter(pred_dat, species == !!spp)
@@ -231,16 +244,18 @@ plot_fuzzy_chopsticks <- function(model,
       pred_dat <- filter(pred_dat, age == !!check_age)
     }
   } else {
-    pred_dat <- mutate(pred_dat, order = !!order_var)
+    # order species by values in a column named 'sort_var'  
+    slopes <- slopes %>% filter(chopstick %in% order_by_chops) %>% 
+      ungroup () %>% mutate(species = as.factor(species)) %>%
+        mutate(species_ordered = forcats::fct_reorder(species, sort_var, mean, 
+          .desc = F, na.rm = TRUE))
+    pred_dat <- pred_dat %>% mutate(species = factor(species, levels = levels(slopes$species_ordered)))
     if (!is.null(choose_age)) {
       check_age <- choose_age
       pred_dat <- filter(pred_dat, age == !!check_age)
     }
   }
-
-  # Shorten the one very long species name...
-  pred_dat$species[pred_dat$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
-
+  
   p <- ggplot(pred_dat, aes_string(x_variable, "est_p")) +
     scale_colour_manual(values = colours) +
     scale_fill_manual(values = colours) +
@@ -371,12 +386,15 @@ chopstick_slopes <- function(model,
       rename(global_slope = Estimate, global_se = `Std. Error`)
     global_coefs <- global_coefs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
     global_coefs <- global_coefs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
-
+    all_global <- global_coefs %>% rename(all_global_slope = global_slope, all_global_se = global_se) %>% 
+      select(species, age, all_global_slope, all_global_se)
+    
     if (!is.null(model$deltas)) {
       diffs <- filter(diffs, type == !!type)
       global_slopes <- filter(diffs, sig_diff == "N") %>% select(species, age)
       global <- left_join(global_slopes, global_coefs)
       diffs <- left_join(diffs, global)
+      
     } else {
       diffs <- filter(model$coefs, coefficient == !!interaction_column) %>%
         select(-species_id, -coefficient) %>%
@@ -389,6 +407,7 @@ chopstick_slopes <- function(model,
       diffs <- left_join(diffs, global)
     }
   }
+  
   slopes <- pred_dat %>%
     rename(x = x_variable) %>%
     group_by(species, age, type, chopstick) %>% # select(species, type, chopstick, x)
@@ -427,6 +446,7 @@ chopstick_slopes <- function(model,
 
   slopes <- left_join(slopes, diffs)
   slopes <- left_join(slopes, SE)
+  slopes <- left_join(slopes, all_global, by = c("species", "age"))
   slopes
 }
 
@@ -460,6 +480,7 @@ plot_chopstick_slopes <- function(slopedat,
                                   alpha_range = c(0.4, 0.99),
                                   add_grey_bars = F,
                                   name_chop_type = T, 
+                                  order_by_chops = NULL,
                                   colours = NULL) {
   if (!is.null(imm_slopes)) {
     imm_slopes$age <- "immature"
@@ -471,7 +492,24 @@ plot_chopstick_slopes <- function(slopedat,
     }
     slopedat <- rbind(slopedat, imm_slopes)
   }
+  
+  if (is.null(slopedat$sort_var)) {
+    if (!is.null(slopedat$slope_est)) {
+      slopedat <- slopedat %>% mutate(sort_var = slope_est)
+    } else {
+      slopedat <- slopedat %>% mutate(sort_var = slope)
+    }
+  } 
+  
+  if (!is.null(order_by_chops)){
+    trimmed_sort_var <- slopedat %>% filter(chopstick %in% order_by_chops) %>% 
+      select(species, age, chopstick, sort_var)
+    # browser()
+    slopedat <- select(slopedat, -sort_var)
+    slopedat <- left_join(slopedat, trimmed_sort_var)
+  }
 
+  
   if (!is.null(type)) {
     slopedat <- filter(slopedat, type == !!type) %>% ungroup()
     
@@ -509,13 +547,6 @@ plot_chopstick_slopes <- function(slopedat,
     }
   }
 
-  if (is.null(slopedat$sort_var)) {
-    if (!is.null(slopedat$slope_est)) {
-      slopedat <- slopedat %>% mutate(sort_var = slope_est)
-    } else {
-      slopedat <- slopedat %>% mutate(sort_var = slope)
-    }
-  }
 
   if (hack) {
     p <- ggplot(slopedat) +
@@ -572,7 +603,7 @@ plot_chopstick_slopes <- function(slopedat,
     }
   } else {
     p <- ggplot(slopedat, aes(
-      forcats::fct_reorder(species, sort_var, .desc = F),
+      forcats::fct_reorder(species, sort_var, mean, .desc = T, na.rm = TRUE),
       slope_est,
       colour = chopstick,
       alpha = sig_diff,
