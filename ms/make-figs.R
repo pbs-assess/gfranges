@@ -360,33 +360,33 @@ overall_betas_vel$model <- "Velocity"
 null01 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-TODO-trend-with-do-sim-1-500-DO.rds") # full dataset 
 
 # # currently partial dataset nulls are standin
-null01 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-sim-1-500-DO.rds") # without WCHG
+null01 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-30-trend-with-do-sim-1-500.rds") # not converged 0.004
 null02 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-23-trend-with-do-sim-2-500-DO.rds")
-null03 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-23-trend-with-do-sim-3-500-DO.rds") # not converged
-null04 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-23-trend-with-do-sim-4-500-DO.rds") # not converged
-null05 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-23-trend-with-do-sim-5-500-DO.rds")
-
+null03 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-07-01-trend-with-do-sim-3-500-DO.rds") 
+null04 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-30-trend-with-do-sim-4-500-DO.rds") # not converged 0.002
+null05 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-07-01-trend-with-do-sim-5-500-DO.rds")
+max(null04$sdr$gradient.fixed)
 # # # old nulls with incorrect climate data too
 # # null01 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-1-500-DO.rds")
-# # null02 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-2-500-DO.rds")
-# # null03 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-3-500-DO.rds")
+# # null02 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-2-500-DO.rds") # not converged
+# # null03 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-3-500-DO.rds") # not converged
 # # null04 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-4-500-DO.rds")
 # # null05 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-5-500-DO.rds")
 # 
 
 
 # max(null01$sdr$gradient.fixed)
-
-vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-1-300.rds")
-vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-2-300-DO.rds") ### not converged
-vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-3-300-DO.rds")
-vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-4-300-DO.rds")
-vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-24-vel-both-sim-5-300-DO.rds")
+vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-28-vel-both-sim-1-350.rds")
+# vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-2-300-DO.rds") ### new one would not converged
+vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-3-350-DO.rds") 
+vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-4-350.rds")
+vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-5-350-DO.rds")
+max(vnull03$sdr$gradient.fixed)
 
 # # # old nulls with incorrect climate data too
 # # vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-1-200-DO.rds")
-# # vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-2-200-DO.rds")
-# # vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-3-200-DO.rds")
+vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-2-200-DO.rds")
+# vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-3-200-DO.rds")
 # # vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-4-200-DO.rds")
 # # vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-30-vel-both-sim-5-200-DO.rds")
 # 
@@ -436,26 +436,25 @@ nulls <- rbind(model$coefs,
   # geom_violin(#aes(estimate, term), inherit.aes = F ,
   #   scale = "width", # scale = "area", # scale = "count",
   #   data = filter(nulls, model != "trend")) +
-  geom_violin(
-    scale = "width", fill= NA,
-    alpha = 0.1, data = filter(nulls, model == "null01")
-  ) +
+  # geom_violin(
+  #   scale = "width", fill= NA,
+  #   alpha = 0.1, data = filter(nulls, model == "null01")
+  # ) +
   # geom_violin(
   #   scale = "width", fill= NA,
   #   alpha = 0.1, data = filter(nulls, model == "null02")
   # ) +
-  # geom_violin(
-  #   scale = "width",fill= NA,
-  #   alpha = 0.1, data = filter(nulls, model == "null03")
-  # ) +
-  # geom_violin(
-  #   scale = "width",fill= NA,
-  #   alpha = 0.1, data = filter(nulls, model == "null04")
-  # ) +
+  geom_violin(
+    scale = "width",fill= NA,
+    alpha = 0.1, data = filter(nulls, model == "null03")
+  ) +
+  geom_violin(
+    scale = "width",fill= NA,
+    alpha = 0.1, data = filter(nulls, model == "null04")
+  ) +
   geom_violin(
     scale = "width", fill= NA,
-    alpha = 0.1,
-    data = filter(nulls, model == "null05")
+    alpha = 0.1, data = filter(nulls, model == "null05")
   ) +
   scale_y_discrete(
     limits = rev(unique(sort(nulls$term))),
@@ -509,26 +508,26 @@ vnulls <- rbind(model_vel$coefs,
   # geom_violin(#aes(estimate, term), inherit.aes = F ,
   #   scale = "width", # scale = "count", # scale = "area",
   #   alpha = 0.1, data = filter(vnulls, model != "velocity")) +
+  # geom_violin(
+  #   scale = "width", fill= NA,
+  #   alpha = 0.1, data = filter(vnulls, model == "vnull01")
+  # ) +
+  # # geom_violin(
+  # #   scale = "width",
+  # #   alpha = 0.1, data = filter(vnulls, model == "vnull02")
+  # # ) +
   geom_violin(
     scale = "width", fill= NA,
-    alpha = 0.1, data = filter(vnulls, model == "vnull01")
+    alpha = 0.1, data = filter(vnulls, model == "vnull03")
   ) +
-  # geom_violin(
-  #   scale = "width",
-  #   alpha = 0.1, data = filter(vnulls, model == "vnull02")
-  # ) +
-  # geom_violin(
-  #   scale = "width", fill= NA,
-  #   alpha = 0.1, data = filter(vnulls, model == "vnull03")
-  # ) +
-  # geom_violin(
-  #   scale = "width", fill= NA,
-  #   alpha = 0.1, data = filter(vnulls, model == "vnull04")
-  # ) +
-  # geom_violin(
-  #   scale = "width", fill= NA,
-  #   alpha = 0.1, data = filter(vnulls, model == "vnull05")
-  # ) +
+  geom_violin(
+    scale = "width", fill= NA,
+    alpha = 0.1, data = filter(vnulls, model == "vnull04")
+  ) +
+  geom_violin(
+    scale = "width", fill= NA,
+    alpha = 0.1, data = filter(vnulls, model == "vnull05")
+  ) +
   scale_y_discrete(
     limits = rev(unique(sort(vnulls$term))),
     labels = c(
@@ -557,7 +556,7 @@ vnulls <- rbind(model_vel$coefs,
 (null_coefs | vnull_coefs) / grid::textGrob("Species-specific coefficient estimates", 
   just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "null-spp-violin-newclim-w-wrong-nulls.pdf"), width = 9, height = 4)
+ggsave(here::here("ms", "figs", "null-spp-violin-newclim-w-nulls.pdf"), width = 9, height = 4)
 
 #########################
 #########################
@@ -586,13 +585,14 @@ estD <- overall_betas %>%
 temp_slopes <- chopstick_slopes(model,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
-)
+) %>%  mutate(sort_var = -(all_global_slope))
 do_slopes <- chopstick_slopes(model,
   x_variable = "DO_trend_scaled",
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
-)
+) %>%  mutate(sort_var = -(all_global_slope))
+
 temp_slopes <- left_join(temp_slopes, stats) #%>% ungroup () %>% mutate(chopstick = factor(chopstick, levels = c("high", "low")))
-  do_slopes <- left_join(do_slopes, stats)
+do_slopes <- left_join(do_slopes, stats)
 
 temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
@@ -663,16 +663,17 @@ temp_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_temp_vel_scaled",
   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled",
   type = "temp"
-)
-# temp_vel_slopes <- left_join(temp_vel_slopes, stat)
-temp_vel_slopes <- temp_vel_slopes %>% mutate(sort_var = slope_est)
+) 
+temp_vel_slopes <- temp_vel_slopes %>% 
+  mutate(sort_var = slope_est)
+  # mutate(sort_var = abs(diff))
 temp_vel_slopes$species[temp_vel_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 do_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_DO_vel_scaled",
   interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
-)
-do_vel_slopes <- do_vel_slopes %>% mutate(sort_var = slope_est)
+) 
+do_vel_slopes <- do_vel_slopes %>%  mutate(sort_var = (diff))
 do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 # p_temp_worm2 <- plot_chopstick_slopes(temp_vel_slopes, type = "temp",
@@ -690,11 +691,17 @@ do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish C
 # ggsave(here::here("ms", "figs", "worm-plot-vel.pdf"), width = 8, height = 6)
 
 #### IF WE WANT PLOT OF BOTH TREND AND VELOCITY SLOPES TOGETHER ####
+
+temp_slopes <- temp_slopes %>% mutate(sort_var = -slope_est)
+do_slopes <- do_slopes %>% mutate(sort_var = -slope_est)
+
 p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
   legend_position = c(.25, .95),
+  order_by_chops = c("high"),
   add_grey_bars = T
-) + coord_flip(ylim = c(-10, 4.5)) +
+) + coord_flip() + 
+  coord_flip(ylim = c(-7.6, 3)) +
   annotate("rect", ymin = lowerT[[1]], ymax = upperT[[1]], xmin = -Inf, xmax = Inf, alpha = 0.1, fill = "black") +
   geom_hline(yintercept = estT[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   theme(
@@ -703,11 +710,13 @@ p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   ) +
   ggtitle("a. Temperature") +
   xlab("% biomass change for a SD of climate change")
+
 p_do_worm <- plot_chopstick_slopes(do_slopes,
   type = "DO",
   legend_position = c(.25, .95),
+  order_by_chops = c("low"),
   add_grey_bars = T
-) + coord_flip(ylim = c(-3.1, 1.4)) +
+) + coord_flip(ylim = c(-3.1, 1.7)) +
   annotate("rect", ymin = lowerD[[1]], ymax = upperD[[1]], xmin = -Inf, xmax = Inf, alpha = 0.1, fill = "black") +
   geom_hline(yintercept = estD[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   ggtitle("b. DO") +
@@ -758,14 +767,21 @@ ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 #### SPECIES CHOPSTICK PLOTS AND MAPS FROM TREND MODEL ####
 
 species_panels <- function(species, model, x_type,
+                           trends = T,
+                           biotic_lim = c(-20, 25), # currently only applied to 
                            chop_label = F,
                            leftmost = F,
                            alpha_range = c(0.9, 0.9)) {
   age <- unique(model$data[model$data$species == species, ]$age_class)
 
+  if (trends) {
   biotic_map <- filter(model$data, species == !!species) %>% plot_vocc(
+    fill_col = "biotic_trend", 
+    fill_label = "%", 
+    raster_limits = c(-6, 6),
+    
     vec_aes = NULL,
-    fill_col = "biotic_trend", fill_label = "%", raster_cell_size = 4,
+    raster_cell_size = 4,
     na_colour = "red 3", white_zero = TRUE,
     high_fill = "darkcyan",
     # mid_fill = "honeydew", grey_water = F,
@@ -773,11 +789,33 @@ species_panels <- function(species, model, x_type,
     mid_fill = "lightcyan1", grey_water = F,
     # mid_fill = "azure", grey_water = F,
     low_fill = "Red 3", 
-    raster_limits = c(-6, 6),
     axis_lables = T,
     legend_position = c(0.15, 0.25),
     make_square = F
-  ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+  ) 
+  } else {
+    biotic_map <- filter(model$data, species == !!species) %>% plot_vocc(
+      fill_col = "squashed_biotic_vel", 
+      fill_label = "km per \ndecade", 
+      # raster_limits = c(-6, 6),
+      
+      vec_aes = NULL,
+      raster_cell_size = 4,
+      na_colour = "red 3", white_zero = TRUE,
+      high_fill = "darkcyan",
+      # mid_fill = "honeydew", grey_water = F,
+      # mid_fill = "lightyellow", grey_water = F,
+      mid_fill = "lightcyan1", grey_water = F,
+      # mid_fill = "azure", grey_water = F,
+      low_fill = "Red 3", 
+      axis_lables = T,
+      legend_position = c(0.15, 0.3),
+      make_square = F
+    ) 
+    
+  }
+  
+  biotic_map <- biotic_map + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
     theme(
       plot.title = element_text(vjust = 1),
       plot.margin = margin(1, 0, 0, 0, "cm"),
@@ -791,14 +829,15 @@ species_panels <- function(species, model, x_type,
   }
 
   if (age == "immature") {
-    biotic_map <- biotic_map + ggtitle(paste0(" ", age, "\n", shortener(species)))
-    # biotic_map <- biotic_map + ggtitle(paste0(shortener(species), " (", age, ")"))
+    # biotic_map <- biotic_map + ggtitle(paste0(" ", age, "\n", shortener(species)))
+    biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species), " (", age, ")"))
   } else {
     biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species)))
     # biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species)))
   }
 
   if (x_type == "temp") {
+    if(trends){
     temp_slopes <- chopstick_slopes(model,
       x_variable = "temp_trend_scaled",
       interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
@@ -833,12 +872,7 @@ species_panels <- function(species, model, x_type,
         # raster_limits = c(-0.75, 1.8),
         raster_limits = c(-1, 2.3),
         legend_position = c(0.15, 0.3), make_square = F
-      ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-      theme( 
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title.x = element_blank()
-      )
+      ) 
 
     climate_map2 <- filter(model$data, species == !!species) %>%
       plot_vocc(
@@ -851,15 +885,61 @@ species_panels <- function(species, model, x_type,
         raster_limits = c( 3.79, 9.85),
         axis_lables = T, make_square = F,
         legend_position = c(0.15, 0.3)
-      ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-      theme( 
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title.x = element_blank()
+      ) 
+    
+    } else { # repeat above for velocities
+      temp_slopes <- chopstick_slopes(model_vel,
+        x_variable = "squashed_temp_vel_scaled",
+        interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp"
       )
-
+      
+      single_chop <- plot_fuzzy_chopsticks(model_vel,
+        x_variable = "squashed_temp_vel_scaled",
+        type = "temp", #y_label = "",
+        line_size = 1,
+        alpha_range = alpha_range,
+        choose_species = stringr::str_replace(species, ".*mature ", ""),
+        choose_age = gsub(" .*", "", species),
+        slopes = temp_slopes # if add, the global slope can be included for insig.
+      ) + 
+        # scale_x_continuous(labels = function(x) paste0(round(x * 0.6328, 1))) + # TODO: need to make SD always correct...
+        # coord_cartesian(xlim = c(-0.2 , 2.6), ylim = c(-3.5, 5.8)) +
+        coord_cartesian(ylim = biotic_lim) + 
+        theme(
+          plot.margin = margin(0, 0.2, 0.1, 0.1, "cm"),
+          legend.position = "none",
+          axis.title = element_blank()
+        )
+      
+      climate_map <- filter(model$data, species == !!species) %>%
+        plot_vocc(
+          fill_col = "squashed_temp_vel", fill_label = "km per \ndecade",
+          raster_limits = c(-10, 85),
+          vec_aes = NULL,
+          raster_cell_size = 4, na_colour = "red 3", white_zero = TRUE,
+          low_fill = "royalblue3", 
+          mid_fill = "mistyrose1", grey_water = F,
+          high_fill = "Red 3", 
+          axis_lables = T,
+          legend_position = c(0.15, 0.3), make_square = F
+        ) 
+      
+      climate_map2 <- filter(model$data, species == !!species) %>%
+        plot_vocc(
+          vec_aes = NULL, grey_water = F,
+          fill_col = "mean_temp", fill_label = "mean \nºC",
+          raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+          viridis_option = "B",
+          viridis_begin = 0.15,
+          viridis_end = 0.7,
+          # raster_limits = c(3.79, 9.85),
+          axis_lables = T, make_square = F,
+          legend_position = c(0.15, 0.3)
+        ) 
+    }
+    
     if (chop_label) {
-      climate_map <- climate_map + ggtitle("Temperature trend") + 
+      climate_map <- climate_map + ggtitle("Temperature") + 
         theme(plot.margin = margin(0, 0, 0.1, 0, "cm"),
           axis.title.y = element_blank())
       climate_map2 <- climate_map2 + 
@@ -879,13 +959,14 @@ species_panels <- function(species, model, x_type,
   }
 
   if (x_type == "DO") {
+    if(trends){
     do_slopes <- chopstick_slopes(model,
       x_variable = "DO_trend_scaled",
       interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
     )
 
     single_chop <- plot_fuzzy_chopsticks(model,
-      x_variable = "DO_trend_scaled", type = "DO", #y_label = "",
+      x_variable = "DO_trend_scaled", type = "DO", 
       line_size = 1, alpha_range = alpha_range,
       choose_species = stringr::str_replace(species, ".*mature ", ""),
       choose_age = gsub(" .*", "", species),
@@ -914,12 +995,7 @@ species_panels <- function(species, model, x_type,
         raster_limits = c(-3.5, 2),
         # raster_limits = c(-1.6, 1.6),
         legend_position = c(0.15, 0.3), make_square = F
-      ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-      theme(
-        axis.text = element_blank(), 
-        axis.ticks = element_blank(),
-        axis.title = element_blank()
-      )
+      ) 
     
     climate_map2 <- filter(model$data, species == !!species) %>%
       plot_vocc(
@@ -929,32 +1005,92 @@ species_panels <- function(species, model, x_type,
         viridis_option = "D",
         viridis_begin = 0.2,
         axis_lables = T, 
-        raster_limits = c(0.69, 5.24),
+        # raster_limits = c(0.69, 5.24),
         legend_position = c(0.15, 0.3), make_square = F
-      ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-      theme( 
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title = element_blank()
+      ) 
+    } else { # for velocities
+      do_slopes <- chopstick_slopes(model_vel,
+        x_variable = "squashed_DO_vel_scaled",
+        interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
       )
-    
+      
+      single_chop <- plot_fuzzy_chopsticks(model_vel,
+        x_variable = "squashed_DO_vel_scaled", type = "DO", 
+        line_size = 1, alpha_range = alpha_range,
+        choose_species = stringr::str_replace(species, ".*mature ", ""),
+        choose_age = gsub(" .*", "", species),
+        slopes = do_slopes # if add, the global slope can be included for insig.
+      ) + 
+        # scale_x_continuous(labels = function(x) paste0(round(x * 0.4093, 1))) +
+        # coord_cartesian(xlim = c(-4, 4), ylim = c(-3.5, 3.8)) + 
+        coord_cartesian(ylim = biotic_lim) + 
+        theme(
+          plot.margin = margin(0, 0.2, 0.1, 0.1, "cm"),
+          legend.position = "none",
+          axis.title = element_blank()
+        )
+      
+      climate_map <- filter(model$data, species == !!species) %>%
+        plot_vocc(
+          fill_col = "squashed_DO_vel", fill_label = "km per \ndecade",
+          # raster_limits = c(-3.5, 2),
+          vec_aes = NULL, grey_water = F,
+          raster_cell_size = 4, na_colour = "red 3", white_zero = TRUE,
+          high_fill = "gold",
+          mid_fill = "honeydew", 
+          low_fill = "darkcyan",
+          axis_lables = T, 
+          legend_position = c(0.15, 0.3), make_square = F
+        ) 
+      
+      climate_map2 <- filter(model$data, species == !!species) %>%
+        plot_vocc(
+          vec_aes = NULL, grey_water = F,
+          fill_col = "mean_DO", fill_label = "mean \nDO",
+          raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+          viridis_option = "D",
+          viridis_begin = 0.2,
+          axis_lables = T, 
+          # raster_limits = c(0, 5.24),
+          legend_position = c(0.15, 0.3), make_square = F
+        ) 
+    }
     if (chop_label) {
-      climate_map <- climate_map + ggtitle("DO trend") + 
-        theme(plot.margin = margin(0, 0, 0.1, 0, "cm"))
+      climate_map <- climate_map + ggtitle("Dissolved oxygen") + 
+        theme(plot.margin = margin(0, 0, 0.1, 0, "cm"),
+          axis.title.y = element_blank())
       climate_map2 <- climate_map2 + 
         theme(plot.margin = margin(0, 0, 0, 0, "cm"),
           axis.title.y = element_blank())
     } else {
       climate_map <- climate_map + ggtitle("()") + 
         theme(plot.margin = margin(0, 0, 0.1, 0, "cm"), 
-          plot.title = element_text(colour = "white"), 
+          plot.title = element_text(colour = "white"),
+          axis.title.y = element_blank(), 
           legend.position = "none")
       climate_map2 <- climate_map2 + 
-        theme(plot.margin = margin(0, 0, 0, 0, "cm"), 
+        theme(plot.margin = margin(0, 0, 0, 0, "cm"),
+          axis.title.y = element_blank(), 
         legend.position = "none")
     }
   }
 
+  climate_map <- climate_map + 
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme( 
+      axis.text = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title.x = element_blank()
+    )
+  
+  climate_map2 <- climate_map2 + 
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme( 
+      axis.text = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title.x = element_blank()
+    )
+  
   if (!leftmost) {
     single_chop <- single_chop + theme(axis.text.y = element_blank())
   }
@@ -963,12 +1099,71 @@ species_panels <- function(species, model, x_type,
   # ggsave(here::here("ms", "figs", paste0("panels-", x_type, "-", species, ".pdf")), width = 4, height = 10)
 }
 
+# velocity-based example chops
+(p1 <- species_panels("mature Redbanded Rockfish", 
+  trends = F,
+  chop_label = T, 
+  leftmost = T,
+  model, "temp"
+))
+
+(p2 <- species_panels("mature Sablefish", 
+  trends = F,
+  # chop_label = T, 
+  # leftmost = T, alpha_range = c(0.1, 0.9),
+  model, "temp"
+))
+
+(p3 <- species_panels("mature Lingcod", 
+  trends = F,
+  chop_label = T, #leftmost = T, 
+  model, "DO"))
+
+(p4 <- species_panels("immature Flathead Sole", 
+  trends = F,
+  # chop_label = T, 
+  model, "DO"))
+
+layout <- "
+      ADEFG
+      BDEFG
+      BDEFG
+      CDEFG
+      "
+
+ygrob1 <- grid::textGrob((expression("Biotic velocity ("~italic("Y")~")")),
+  gp = grid::gpar(fontsize = 12),
+  hjust = 1,
+  rot = 90
+)
+
+ygrob2 <- grid::textGrob((expression("Climate velocity ("~italic("x")~")")),
+  gp = grid::gpar(fontsize = 12), hjust = 1, rot = 90
+)
+
+ygrob3 <- grid::textGrob(("Mean climate"),
+  gp = grid::gpar(fontsize = 12), hjust = 0.25, rot = 90
+)
+
+wrap_plots(ygrob1, ygrob2, ygrob3, p1, p2, p3, p4) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1))
+
+ggsave(here::here("ms", "figs", "species-map-panels-vel.pdf"), width = 11, height = 11)
+
+
+# trend-based example chops
+
+(p1 <- species_panels("mature Spotted Ratfish", model, "temp",
+  chop_label = T, 
+  leftmost = T#, alpha_range = c(0.1, 0.9)
+))
+
 (p1 <- species_panels("mature Spotted Ratfish", model, "temp",
   chop_label = T, 
   leftmost = T#, alpha_range = c(0.1, 0.9)
 ))
 
 (p1b <- species_panels("mature Yelloweye Rockfish", model, "temp",
+  # trends = F,
   chop_label = T, 
   leftmost = T, alpha_range = c(0.1, 0.9)
 ))
@@ -993,7 +1188,9 @@ species_panels <- function(species, model, x_type,
 # (p4 <- species_panels("mature Arrowtooth Flounder", model, "temp"))
 # (p4 <- species_panels("mature Pacific Halibut", model, "temp", alpha_range = c(0.25, 0.9)))
 
-(p5 <- species_panels("mature North Pacific Spiny Dogfish", chop_label = T, model, "DO"))
+(p5 <- species_panels("mature North Pacific Spiny Dogfish", 
+  # trends = F,
+  chop_label = T, model, "DO"))
 
 (p6 <- species_panels("mature Sablefish", model, "DO")) #, alpha_range = c(0.25, 0.9)))
 # (p7 <- species_panels("mature Shortspine Thornyhead", model, "DO"))
@@ -1017,7 +1214,7 @@ layout <- "
       CDEFGHI
       "
 
-ygrob1 <- grid::textGrob(("Predicted % change in biomass per decade"),
+ygrob1 <- grid::textGrob(("Biotic trend (Y)"),
   gp = grid::gpar(fontsize = 12),
   hjust = 0.4,
   rot = 90
@@ -1026,6 +1223,7 @@ ygrob1 <- grid::textGrob(("Predicted % change in biomass per decade"),
 ygrob2 <- grid::textGrob(("Climate trend"),
   gp = grid::gpar(fontsize = 12), hjust = 0, rot = 90
 )
+
 
 ygrob3 <- grid::textGrob(("Mean climate"),
   gp = grid::gpar(fontsize = 12), hjust = 0.25, rot = 90
