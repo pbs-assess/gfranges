@@ -515,24 +515,34 @@ ggsave(here::here("ms", "figs", "supp-global-coefs.pdf"), width = 10, height = 5
 temp_slopes <- chopstick_slopes(model,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
-)
+) %>%
+  mutate(sort_var = -(all_global_slope))
+  # mutate(sort_var = (diff))
+  # mutate(sort_var = -slope_est)
+
 do_slopes <- chopstick_slopes(model,
   x_variable = "DO_trend_scaled",
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
-)
+)%>%
+  mutate(sort_var = -(all_global_slope))
+  # mutate(sort_var = (diff))
+  # mutate(sort_var = -slope_est)
+
 temp_slopes <- left_join(temp_slopes, stats)
 do_slopes <- left_join(do_slopes, stats)
 
-p_temp_chops <- plot_fuzzy_chopsticks(model,
+(p_temp_chops <- plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
   y_label = "Predicted % change in biomass",
+  # order_by_chops = c("high"),
   slopes = temp_slopes # if add, the global slope can be included for insig.
 ) + coord_cartesian(ylim = c(-4.5, 6)) +
-  xlab("Temperature trend (scaled)") + theme(legend.position = "none")
+  xlab("Temperature trend (scaled)") + theme(legend.position = "none"))
 
 p_do_chops <- plot_fuzzy_chopsticks(model,
   x_variable = "DO_trend_scaled", type = "DO",
   y_label = "Predicted % change in biomass",
+  # order_by_chops = c("low"),
   slopes = do_slopes
 ) + coord_cartesian(ylim = c(-4, 5)) +
   xlab("DO trend (scaled)") + theme(legend.position = "none")
@@ -540,15 +550,17 @@ p_do_chops <- plot_fuzzy_chopsticks(model,
 temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
-p_temp_all_slopes <- plot_chopstick_slopes(temp_slopes,
+(p_temp_all_slopes <- plot_chopstick_slopes(temp_slopes,
   type = "temp", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
+  # order_by_chops = c("high"),
   legend_position = c(.25, .95)
 ) +
   coord_flip(ylim = c(-5.5, 3)) + 
-  ylab(" ")
+  ylab(" "))
 
 p_do_all_slopes <- plot_chopstick_slopes(do_slopes,
   type = "DO", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
+  # order_by_chops = c("low"),
   legend_position = c(.25, .95)
 ) +
   coord_flip(ylim = c(-3.1, 2)) + # coord_flip(ylim =c(-3,1)) +
@@ -559,7 +571,7 @@ cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops,
   labels = c("a.", "", "b.", ""), label_size = 11,
   ncol = 2, rel_widths = c(1, 2.5)
 )
-ggsave(here::here("ms", "figs", "supp-trend-chopsticks.pdf"), width = 14, height = 10)
+ggsave(here::here("ms", "figs", "supp-trend-chopsticks-mean-ordered.pdf"), width = 14, height = 10)
 # ggsave(here::here("ms", "figs", "supp-trend-chopsticks-fishing.pdf"), width = 14, height = 11)
 
 
@@ -573,6 +585,7 @@ p2 <- plot_fuzzy_chopsticks(model_temp,
   x_variable = "temp_trend_scaled", type = "temp",
   y_label = "Predicted % change in biomass",
   # choose_age = "mature",
+  # order_var = "species",
   slopes = temp_slopes
 ) + coord_cartesian(ylim = c(-11, 7)) +
   xlab("Temperature trend (scaled)") + theme(legend.position = "none")
@@ -618,20 +631,23 @@ temp_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_temp_vel_scaled",
   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp"
 ) %>%
-  mutate(sort_var = slope_est)
+  mutate(sort_var = abs(diff))
+  # mutate(sort_var = slope_est)
 
 do_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_DO_vel_scaled",
   interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
 ) %>%
-  mutate(sort_var = slope_est)
+  mutate(sort_var = (diff))
+  # mutate(sort_var = slope_est)
 
-p_temp_vel_chops <- plot_fuzzy_chopsticks(model_vel,
+(p_temp_vel_chops <- plot_fuzzy_chopsticks(model_vel,
   x_variable = "squashed_temp_vel_scaled", type = "temp",
   y_label = "Predicted mature biomass vel",
   slopes = temp_vel_slopes # if add, the global slope can be included for insig
 ) + coord_cartesian(xlim = c(-0.25, 4), ylim = c(-30, 37)) +
   xlab("Temperature velocity (scaled)") + theme(legend.position = "none")
+)
 
 p_do_vel_chops <- plot_fuzzy_chopsticks(model_vel,
   x_variable = "squashed_DO_vel_scaled", type = "DO",
@@ -645,10 +661,10 @@ do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish C
 
 p_temp_all_vel_slopes <- plot_chopstick_slopes(temp_vel_slopes,
   type = "temp", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
-  legend_position = c(.25, .95)
+  legend_position = c(.7, .95)
 ) +
   ylab(" ") +
-  coord_flip(ylim =c(-10,10))
+  coord_flip(ylim =c(-6,11))
   # coord_flip()
 
 p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
@@ -662,7 +678,7 @@ p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
 
 cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes, p_do_vel_chops, ncol = 2, rel_widths = c(1, 2.5))
 
-ggsave(here::here("ms", "figs", "supp-vel-chopsticks.pdf"), width = 14, height = 10)
+ggsave(here::here("ms", "figs", "supp-vel-chopsticks-ordered.pdf"), width = 14, height = 10)
 
 
 #########################
@@ -787,6 +803,74 @@ ggsave(here::here("ms", "figs", "supp-slope-scatterplots.pdf"), width = 8, heigh
 
 #########################
 #########################
+#### BIOTIC MAPS
+
+biotic_maps <- function(model, 
+trends = T,
+legend_position =  c(0.02, 0.85),  
+maturity = "mature"  
+){
+dat <- model$data %>% filter(age_class == maturity)  
+dat$species[dat$species_only == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+
+if(trends) {
+biotic_maps <- plot_vocc(dat,
+  fill_col = "biotic_trend", 
+  fill_label = "%", 
+  vec_aes = NULL,
+  raster_cell_size = 4,
+  raster_limits = c(min(dat$biotic_trend), 6),  
+  na_colour = "darkcyan", white_zero = TRUE,
+  high_fill = "darkcyan",
+  mid_fill = "lightcyan1", grey_water = F,
+  low_fill = "Red 3", 
+  axis_lables = F,
+  legend_position = legend_position,
+  make_square = F
+) 
+
+} else {
+  biotic_maps <- plot_vocc(dat,
+  fill_col = "squashed_biotic_vel", 
+  fill_label = "km", 
+  vec_aes = NULL,
+  raster_cell_size = 4,
+  na_colour = "red 3", white_zero = TRUE,
+  high_fill = "darkcyan",
+  mid_fill = "lightcyan1", grey_water = F,
+  low_fill = "Red 3", 
+  axis_lables = T,
+  legend_position = legend_position,
+  make_square = F
+) 
+}
+
+biotic_maps + facet_wrap(~species_only, ncol = 9) +
+  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+  theme(
+    panel.spacing = unit(0.1, "lines"),
+    plot.title = element_text(vjust = 1),
+    plot.margin = margin(1, 0, 0, 0, "cm"),
+    legend.title = element_text(size= 8),
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title = element_blank()
+  ) + ggtitle(paste(maturity))
+}
+
+
+biotic_maps(model)
+ggsave(here::here("ms", "figs", "supp-biotic-maps-mature.pdf"), width = 15, height = 10)
+
+biotic_maps(model, maturity = "immature")
+ggsave(here::here("ms", "figs", "supp-biotic-maps-immature.pdf"), width = 15, height = 10)
+
+biotic_maps(model, trends = F)
+ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-mature.pdf"), width = 15, height = 10)
+
+biotic_maps(model, trends = F, maturity = "immature")
+ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-immature.pdf"), width = 15, height = 10)
+
 #########################
 #### SPATIAL RESIDUALS
 ###
