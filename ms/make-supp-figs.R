@@ -810,16 +810,20 @@ trends = T,
 legend_position =  c(0.02, 0.85),  
 maturity = "mature"  
 ){
-dat <- model$data %>% filter(age_class == maturity)  
-dat$species[dat$species_only == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+
+dat_all <- model$data 
+dat_all$squashed_biotic_trend <- collapse_outliers(dat_all$biotic_trend, c(0.05, 0.95))
+dat <- dat_all %>%  filter(age_class == maturity)  
+
+dat$species_only[dat$species_only == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 if(trends) {
 biotic_maps <- plot_vocc(dat,
-  fill_col = "biotic_trend", 
+  fill_col = "squashed_biotic_trend", 
   fill_label = "%", 
+  raster_limits = c(min(dat_all$squashed_biotic_trend), max(dat_all$squashed_biotic_trend)),
   vec_aes = NULL,
   raster_cell_size = 4,
-  raster_limits = c(min(dat$biotic_trend), 6),  
   na_colour = "darkcyan", white_zero = TRUE,
   high_fill = "darkcyan",
   mid_fill = "lightcyan1", grey_water = F,
@@ -828,11 +832,12 @@ biotic_maps <- plot_vocc(dat,
   legend_position = legend_position,
   make_square = F
 ) 
-
+change_var <- "trends"
 } else {
   biotic_maps <- plot_vocc(dat,
   fill_col = "squashed_biotic_vel", 
   fill_label = "km", 
+  raster_limits = c(min(dat_all$squashed_biotic_vel), max(dat_all$squashed_biotic_vel)),
   vec_aes = NULL,
   raster_cell_size = 4,
   na_colour = "red 3", white_zero = TRUE,
@@ -843,6 +848,8 @@ biotic_maps <- plot_vocc(dat,
   legend_position = legend_position,
   make_square = F
 ) 
+  change_var <- "velocities"
+    
 }
 
 biotic_maps + facet_wrap(~species_only, ncol = 9) +
@@ -855,21 +862,20 @@ biotic_maps + facet_wrap(~species_only, ncol = 9) +
     axis.text = element_blank(),
     axis.ticks = element_blank(),
     axis.title = element_blank()
-  ) + ggtitle(paste(maturity))
+  ) + ggtitle(paste("  Biotic", change_var, "for", maturity, "groundfish species"))
 }
 
-
 biotic_maps(model)
-ggsave(here::here("ms", "figs", "supp-biotic-maps-mature.pdf"), width = 15, height = 10)
+ggsave(here::here("ms", "figs", "supp-biotic-maps-mature.png"), width = 15, height = 10)
 
 biotic_maps(model, maturity = "immature")
-ggsave(here::here("ms", "figs", "supp-biotic-maps-immature.pdf"), width = 15, height = 10)
+ggsave(here::here("ms", "figs", "supp-biotic-maps-immature.png"), width = 15, height = 10)
 
 biotic_maps(model, trends = F)
-ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-mature.pdf"), width = 15, height = 10)
+ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-mature.png"), width = 15, height = 10)
 
 biotic_maps(model, trends = F, maturity = "immature")
-ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-immature.pdf"), width = 15, height = 10)
+ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-immature.png"), width = 15, height = 10)
 
 #########################
 #### SPATIAL RESIDUALS
