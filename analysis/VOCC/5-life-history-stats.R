@@ -100,8 +100,8 @@ species <- c(
 #####
 life_history <- purrr::map_dfr(species, function(x) {
   spp <- gsub(" ", "-", gsub("\\/", "-", tolower(x)))
-  fish <- readRDS(paste0("raw/bio-data-", spp, ""))
-  group <- unique(fish$maturity_convention_desc)
+  fish1 <- readRDS(paste0("raw/bio-data-", spp, ""))
+  group <- unique(fish1$maturity_convention_desc)
   group <- group[!group == "MATURITIES NOT LOOKED AT"]
   group <- group[!group == "PORT SAMPLES"]
   group <- gsub("\\(.*", "", group)
@@ -110,7 +110,7 @@ life_history <- purrr::map_dfr(species, function(x) {
 
   bath <- readRDS("data/bathymetry-data")
   depth <- bath$data %>% select(fishing_event_id, depth)
-  fish <- left_join(fish, depth) %>% group_by(year) %>% mutate(mat_count = sum(!is.na(maturity_name))) %>% ungroup() 
+  fish <- left_join(fish1, depth) %>% group_by(year) %>% mutate(mat_count = sum(!is.na(maturity_name))) %>% ungroup() 
   fish_yrs <- filter(fish, year > 2007) # filter to the relevant years
   min_mat_count <- min(fish_yrs$mat_count) # min fish in a any year
   total_mat_count <- sum(!is.na(fish_yrs$maturity_name)) # all fish with maturity data
@@ -145,14 +145,24 @@ life_history <- purrr::map_dfr(species, function(x) {
     small_threshold <- NA
     mat_age <- mean(large$age, na.rm = TRUE)
     imm_age <- mean(small$age, na.rm = TRUE)
-    age_mat <- round(quantile(imm_f$age, 0.95, na.rm = TRUE))
-    age_mat_m <- round(quantile(imm_m$age, 0.95, na.rm = TRUE))
+    
     age_count <- sum(!is.na(large$age))
     age_count_imm <- sum(!is.na(small$age))
+    
+    # age_mat <- round(quantile(imm_f$age, 0.95, na.rm = TRUE))
+    # age_mat_m <- round(quantile(imm_m$age, 0.95, na.rm = TRUE))
+    age_mat <- NA
+    age_mat_m <- NA
+    
+    if(age_count_imm > 50){
+    # browser()
+    m <- gfplot:::fit_mat_ogive(fish1, type = "age", sample_id_re = F)
+    age_mat <- round(m$mat_perc$f.p0.5, 1)
+    age_mat_m <- round(m$mat_perc$m.p0.5, 1)
+    }
     # imm_growth <- mean(small$growth_l, na.rm = TRUE)
     # imm_growth <- mean(small$growth_m, na.rm = TRUE)
-    # browser()
-    #  })
+
   } else {
     length_50_mat_m <- NA
     length_50_mat_f <- NA
@@ -417,11 +427,11 @@ life_history <- inner_join(life_history, taxonomic_info)
 
 life_history$parent_taxonomic_unit[life_history$parent_taxonomic_unit == "bathyraja"] <- "rajidae(skates)"
 
-saveRDS(life_history, file = "data/life-history-stats4.rds")
+saveRDS(life_history, file = "data/life-history-stats5.rds")
 
 # split adults and immatures into separate rows and add CR's behavioural classifications
-stats <- readRDS(paste0("data/life-history-stats4.rds"))
-behav <- read_csv("data/VOCCSpeciesList.csv") %>% rename(species = Species, age = Age)
+stats <- readRDS(paste0("data/life-history-stats5.rds"))
+behav <- readr::read_csv("data/VOCCSpeciesList.csv") %>% rename(species = Species, age = Age)
 behav$species[behav$species == "Rougheye/Blackspotted"] <- "Rougheye/Blackspotted Rockfish Complex"
 behav$BenthoPelagicPelagicDemersal[behav$BenthoPelagicPelagicDemersal == "BenthoPelagic"] <- "Benthopelagic"
 behav$Diet[behav$Diet == "CrabShrimp"] <- "Crustaceans"
@@ -442,4 +452,4 @@ stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
 
 stats <- left_join(behav, stats)
 
-saveRDS(stats, file = "data/life-history-behav.rds")
+saveRDS(stats, file = "data/life-history-behav-new-growth.rds")
