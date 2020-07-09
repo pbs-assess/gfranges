@@ -1,4 +1,5 @@
 # test ogive
+library(tidyverse)
 library(ggplot2)
 
 # # if make-figs not just run
@@ -8,7 +9,7 @@ species <- c("Redbanded Rockfish")
 
 spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
 fish <- readRDS(paste0("analysis/VOCC/raw/bio-data-", spp, ""))
-  
+events <- readRDS(paste0("analysis/VOCC/data/", spp,"/data-by-maturity-", spp, "-1n3n4n16.rds"))
 m1 <- fit_mat_ogive_re(fish, type = "length", sample_id_re = F, year_re = TRUE)
 
 m2 <- fit_mat_ogive_re(fish, type = "length", sample_id_re = TRUE, year_re = TRUE)

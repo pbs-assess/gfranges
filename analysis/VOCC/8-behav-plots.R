@@ -10,7 +10,10 @@ library(patchwork)
 library(ggpubr)
 
 # model <- readRDS("data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
-model <- readRDS("data/trend-all-95-all-do-04-04-trend-with-do-1-500.rds")
+# model <- readRDS("data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds")
+
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-with-do-1-500.rds") # full dataset
+
 stats <- readRDS(paste0("data/life-history-behav.rds"))
 
 model2 <- add_colours(model$coefs, species_data = stats)
@@ -23,6 +26,21 @@ do_slopes <- chopstick_slopes(model,
   x_variable = "DO_trend_scaled",
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
 )
+
+#####
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") 
+
+temp_slopes <- chopstick_slopes(model_vel,
+  x_variable = "squashed_temp_vel_scaled",
+  interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled",
+  type = "temp"
+)
+do_slopes <- chopstick_slopes(model_vel,
+  x_variable = "squashed_DO_vel_scaled",
+  interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
+)
+####
+
 temp_slopes1 <- left_join(temp_slopes, stats)
 do_slopes1 <- left_join(do_slopes, stats)
 
@@ -172,6 +190,7 @@ ggpaired(matched, x = "age", y = "slope",  color = "slope_type", id = "species",
     ref.group = NULL) + scale_colour_manual(values = c("Red 3", "royalblue4", "goldenrod1", "darkcyan")) + 
   geom_hline(yintercept = 0, colour = "black", linetype = "dashed") +
   facet_grid(cols = vars(slope_type), scales = "free") + theme(legend.position = "none")
+ggsave(here::here("ms", "figs", "supp-age-effect-by-slope.pdf"), width = 7, height = 4)
 
 
 #### Is there a difference in strength of effect between high and low slopes? ####
@@ -260,7 +279,7 @@ ddat2 <- temp_slopes %>% select(slope, slope_est, slope_se, slope_trim,
   Latitude, Trophic, chopstick, species, species_age) %>% 
   Hmisc::na.delete() %>% filter(age == "Immature")
 
-tempslopemod2f <- lmerTest::lmer(slope_trim ~ 1 + 
+tempslopemod2f <- lmerTest::lmer(slope ~ 1 + 
     depth_mean_scaled * depth_iqr_scaled +
     growth_rate_scaled * depth_mean_scaled * chopstick + 
     growth_rate_scaled * depth_iqr_scaled * chopstick +
@@ -278,52 +297,106 @@ tempslopemod2f <- lmerTest::lmer(slope_trim ~ 1 +
     depth_mean_scaled +
     depth_iqr_scaled +
     chopstick +
-    (1|species_age), na.action = na.fail, REML = F, data = ddat2) 
+    (1|species), na.action = na.fail, REML = F, data = ddat2) 
 
-# convergence issues with nested chop
-# (m2 <- MuMIn::dredge(tempslopemod2f, beta = "partial.sd", m.lim = c(0, 4)))
+# # convergence issues with nested chop
+#  (m2 <- MuMIn::dredge(tempslopemod2f, beta = "partial.sd", m.lim = c(0, 3)))
 
-tempslopemod2c <- lmerTest::lmer(slope_trim ~ 1 + 
-    depth_mean_scaled +
+
+# trend slopes with trimmed slopes
+# with 4
+# (Int) chp dpt_iqr_scl dpt_men_scl grw_rat_scl log_age_scl max_mss_scl df logLik  AICc delta weight
+# 47           0.77220   -0.511800    -1.11800                 0.55690    7 -59.255 135.8  0.00  0.697
+# 43           0.59130                -1.07700                 0.33930    6 -63.554 141.5  5.70  0.040
+# 11           0.62560                -1.04200                            5 -65.044 141.8  5.95  0.036
+# 15           0.68160   -0.261200    -0.99490                            6 -64.187 142.8  6.97  0.021
+# 44     +     0.59900                -1.09100                 0.34380    7 -63.063 143.4  7.62  0.015
+
+## with just 2 
+# (Int) chp dpt_iqr_scl dpt_men_scl grw_rat_scl log_age_scl max_mss_scl df  logLik  AICc delta weight
+# 11     0          0.6256                 -1.0420                          6 -65.044 144.5  0.00  0.608
+# 19     0          0.5121                              0.9825              6 -66.441 147.3  2.79  0.150
+# 41     0                                 -0.9572                  0.4034  6 -67.549 149.5  5.01  0.050
+
+# untrimmed slopes
+# (Int) chp dpt_iqr_scl dpt_men_scl grw_rat_scl log_age_scl max_mss_scl df  logLik  AICc delta weight
+# 11     0          0.7405                 -1.2860                          5 -73.548 158.8  0.00  0.725
+# 19     0          0.5926                              1.1820              5 -75.721 163.1  4.35  0.083
+# 41     0                                 -1.1740                  0.4695  5 -76.254 164.2  5.41  0.048
+
+# (Int) chp       dpt_iqr_scl dpt_men_scl grw_rat_scl log_age_scl max_mss_scl 
+# 43         0         0.70090                -1.31600                 0.39350                                                                
+# 11         0         0.74050                -1.28600                                                                                        
+# 15         0         0.81080   -0.317500    -1.22500                                                                                        
+
+
+# top model for trimmed trends
+tempslopemod <- lmerTest::lmer(slope_trim ~ 1 + 
+    # depth_mean_scaled +
     growth_rate_scaled +
     depth_iqr_scaled +
-    # depth_iqr_scaled * growth_rate_scaled +
+    # max_mass_scaled +
     # log_age_scaled +
     chopstick +
-    (1|species_age), na.action = na.fail, REML = T, data = ddat2)
+    (1|species), na.action = na.fail, REML = T, data = ddat2)
 
-tempslopemod2c %>% summary()
+tempslopemod %>% summary()
 
+# top model for velocities
+tempslopemod <- lmerTest::lmer(slope ~ 1 + 
+    log_age_scaled * chopstick +
+    (1|species), na.action = na.fail, REML = T, data = ddat2)
 
-# check if age has an
-tempslopemod2d <- lmerTest::lmer(slope_trim ~ 1 +
-    depth_mean_scaled +
-    # growth_rate_scaled +
-    depth_iqr_scaled +
-    # depth_iqr_scaled * growth_rate_scaled +
-    log_age_scaled +
-    chopstick +
-    (1|species_age), na.action = na.fail, REML = T, data = ddat2)
+tempslopemod %>% summary()
 
-tempslopemod2d %>% summary()
-anova(tempslopemod2d, tempslopemod2c) 
+# top model for velocities
+tempslopemod2 <- lmerTest::lmer(slope ~ 1 + 
+    growth_rate_scaled * chopstick +
+    (1|species), na.action = na.fail, REML = T, data = ddat2)
+
+tempslopemod2 %>% summary()
+
+# untrimmed trends give same answer ####
+# tempslopemod2c <- lmerTest::lmer(slope ~ 1 +
+#   depth_mean_scaled +
+#   growth_rate_scaled +
+#   depth_iqr_scaled +
+#   max_mass_scaled +
+#   # log_age_scaled +
+#   # chopstick +
+#   (1|species), na.action = na.fail, REML = F, data = ddat2)
+#  
+# tempslopemod2c %>% summary()
+# 
+# 
+# # check if age has an
+# tempslopemod2d <- lmerTest::lmer(slope ~ 1 +
+#     depth_mean_scaled +
+#     # growth_rate_scaled +
+#     depth_iqr_scaled +
+#     # depth_iqr_scaled * growth_rate_scaled +
+#     log_age_scaled +
+#     chopstick +
+#     (1|species_age), na.action = na.fail, REML = F, data = ddat2)
+# tempslopemod2d %>% summary()
+# anova(tempslopemod2d, tempslopemod2c)
 
 # with REML = F 
 # Df    AIC    BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)    
 # tempslopemod2d  7 163.41 175.57 -74.704   149.41                             
 # tempslopemod2c  7 139.49 151.65 -62.743   125.48 23.922      0  < 2.2e-16 ***
 
-tempslopemod2e <- lmerTest::lmer(slope_trim ~ 1 +
-    depth_mean_scaled +
-    growth_rate_scaled +
-    depth_iqr_scaled +
-    depth_iqr_scaled * growth_rate_scaled +
-    # log_age_scaled +
-    chopstick +
-    (1|species_age), na.action = na.fail, REML = T, data = ddat2)
-
-tempslopemod2e %>% summary()
-anova(tempslopemod2c, tempslopemod2e)
+# tempslopemod2e <- lmerTest::lmer(slope_trim ~ 1 +
+#     depth_mean_scaled +
+#     growth_rate_scaled +
+#     depth_iqr_scaled +
+#     depth_iqr_scaled * growth_rate_scaled +
+#     # log_age_scaled +
+#     chopstick +
+#     (1|species_age), na.action = na.fail, REML = F, data = ddat2)
+# 
+# tempslopemod2e %>% summary()
+# anova(tempslopemod2c, tempslopemod2e)
 
 # tempslopemod2f <- lm(slope_trim ~ depth_iqr_scaled + 
 #     depth_mean_scaled +
@@ -332,13 +405,7 @@ anova(tempslopemod2c, tempslopemod2e)
 # 
 # tempslopemod2f %>% summary()
 
-
-#### for smaller subset of species that have age data
-#### effect of mean age and maturity
-
-#### remove slope for mature, because growth_rate for immature only
-#### faded points are low temp slopes
-
+######
 temp_slopes <- temp_slopes %>% mutate(age = factor(age, levels = c("Mature", "Immature")) )
 
 #### DO ####
@@ -349,7 +416,7 @@ ddat2do <- do_slopes %>% select(slope, slope_est, slope_se, slope_trim,
   chopstick, species, species_age) %>% 
   Hmisc::na.delete() %>% filter(age == "Immature")
 
-doslopemod2f <- lmerTest::lmer(slope_trim ~ 1 + 
+doslopemod2f <- lmerTest::lmer(slope ~ 1 + 
     depth_iqr_scaled * depth_mean_scaled +
     growth_rate_scaled * depth_mean_scaled * chopstick + 
     growth_rate_scaled * depth_iqr_scaled * chopstick +
@@ -361,29 +428,65 @@ doslopemod2f <- lmerTest::lmer(slope_trim ~ 1 +
     log_age_scaled * depth_mean_scaled +
     log_age_scaled * growth_rate_scaled +
     log_age_scaled * chopstick +
-    # log_age_scaled * max_mass_scaled +
-    # max_mass_scaled * chopstick +
-    # max_mass_scaled +
+    log_age_scaled * max_mass_scaled +
+    max_mass_scaled * chopstick +
+    max_mass_scaled +
     log_age_scaled +
-    # depth_iqr_scaled * age + 
+    # depth_iqr_scaled * age +
     # growth_rate_scaled * age + 
     # max_mass_scaled * age + 
     # age +
     depth_iqr_scaled +
     chopstick +
-    chopstick + #(1|species) + 
-    (1|species_age), na.action = na.fail, REML = F, data = ddat2do) 
+    (1|species), na.action = na.fail, REML = F, data = ddat2do) 
 
-# convergence issues with nested chop
-# (m2d <- MuMIn::dredge(doslopemod2f, beta = "partial.sd", m.lim = c(0, 4)))
+# # convergence issues with nested chop
+# (m2d <- MuMIn::dredge(doslopemod2f, beta = "partial.sd", m.lim = c(0, 3)))
 
-doslopemod2 <- lmerTest::lmer(slope_trim ~ 1 +
-    depth_mean_scaled + 
-    depth_iqr_scaled +
-    growth_rate_scaled * depth_mean_scaled + 
+#TRIMMED
+# (Int) chp dpt_iqr_scl dpt_men_scl grw_rat_scl log_age_scl max_mss_scl df  logLik AICc delta weight
+# 5      0                     -0.2527                                      4 -27.634 64.3  0.00  0.256
+# 7      0        0.108200     -0.2739                                      5 -26.926 65.5  1.17  0.143
+# 13     0                     -0.1869     0.07643                          5 -27.287 66.2  1.89  0.100
+# 21     0                     -0.1912               -0.038970              5 -27.545 66.8  2.41  0.077
+# 37     0                     -0.2580                           0.0356800  5 -27.559 66.8  2.44  0.076
+
+# UNTRIMMED
+
+# (Int) chp dpt_iqr_scl dpt_men_scl grw_rat_scl log_age_scl max_mss_scl df  logLik  AICc delta weight
+# 41     0                                  0.6015                -0.31300  5 -41.707  95.1  0.00  0.174
+# 9      0                                  0.5085                          4 -43.102  95.3  0.20  0.157
+# 7      0         0.33500     -0.5257                                      5 -42.273  96.2  1.13  0.099
+# 13     0                     -0.2421      0.3332                          5 -42.290  96.2  1.17  0.097
+
+# (Int) chp         dpt_iqr_scl dpt_men_scl grw_rat_scl  dpt_men_scl:grw_rat_scl 
+# 8207      0        0.290100     -0.4965   -0.005713    -0.5076  
+#                  
+# # velocity models
+doslopemodv <- lmerTest::lmer(slope ~ 1 +
+    growth_rate_scaled +
+    # log_age_scaled +
     chopstick +
-    # (1|species) + 
-    (1|species_age), REML = T, na.action = na.fail, data = ddat2do) 
+    # (1|species) +
+    (1|species_age), REML = T, na.action = na.fail, data = ddat2do)
+doslopemodv %>% summary()
+
+doslopemodv2 <- lmerTest::lmer(slope ~ 1 +
+    # growth_rate_scaled +
+    log_age_scaled +
+    chopstick +
+    # (1|species) +
+    (1|species_age), REML = T, na.action = na.fail, data = ddat2do)
+doslopemodv2 %>% summary()
+
+
+# trend models ####
+doslopemod2 <- lmerTest::lmer(slope ~ 1 +
+    depth_mean_scaled +
+    # depth_iqr_scaled +
+    growth_rate_scaled * depth_mean_scaled +
+    # chopstick +
+    (1|species), REML = T, na.action = na.fail, data = ddat2do) 
 
 # doslopemod2 <- lm(slope ~ 1 + 
 #     # log_age_scaled +
@@ -394,9 +497,10 @@ doslopemod2 <- lmerTest::lmer(slope_trim ~ 1 +
 summary(doslopemod2)
 
 doslopemod2b <- lmerTest::lmer(slope_trim ~ 1 +
-    depth_iqr_scaled +
-    depth_mean_scaled +
-    log_age_scaled * depth_mean_scaled +
+    # depth_iqr_scaled +
+    # log_age_scaled +
+    # depth_mean_scaled +
+    log_age_scaled * depth_iqr_scaled +
     # growth_rate_scaled * depth_mean_scaled + 
     chopstick +
     # (1|species) + 
@@ -406,21 +510,20 @@ doslopemod2b %>% summary()
 anova(doslopemod2, doslopemod2b )
 
 
-doslopemod2c <- lmerTest::lmer(slope_trim ~ 1 +
-    log_age_scaled +
-    depth_mean_scaled +
+doslopemod2c <- lmerTest::lmer(slope ~ 1 +
+    # log_age_scaled +
+    # depth_mean_scaled +
     # depth_iqr_scaled +
-    # growth_rate_scaled +
+    # max_mass_scaled +
+    growth_rate_scaled +
     chopstick +
     # (1|species) +
     (1|species_age), REML = F, na.action = na.fail, data = ddat2do)
 doslopemod2c %>% summary()
 
-doslopemod2d <- lmerTest::lmer(slope_trim ~ 1 +
-    # log_age_scaled +
+doslopemod2d <- lmerTest::lmer(slope ~ 1 +
     depth_mean_scaled +
-    # depth_iqr_scaled +
-    growth_rate_scaled +
+    # growth_rate_scaled +
     chopstick +
     # (1|species) +
     (1|species_age), REML = F, na.action = na.fail, data = ddat2do)
@@ -438,25 +541,25 @@ anova(doslopemod2c, doslopemod2d )
 doslopemod2 %>% summary()
 doslopemod2b %>% summary()
 
-
+###################
 # should raw data points be trimmed ones?
 # if yes, run this 
 ddat2 <- ddat2 %>% mutate(slope_est = slope_trim)
 ddat2do <- ddat2do %>% mutate(slope_est = slope_trim)
-# if no, run this
+# # if no, run this
 ddat2 <- ddat2 %>% mutate(slope_est = slope)
 ddat2do <- ddat2do %>% mutate(slope_est = slope)
 #### TEMPERATURE WITH AGE PLOTS ####
 #### for immature only ####
 # DEPTH RANGE #### 
-(p_depth_iqr <- interactions::interact_plot(tempslopemod2c, 
+(p_depth_iqr <- interactions::interact_plot(tempslopemod, 
   pred = depth_iqr_scaled, 
   modx = chopstick, 
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
   outcome.scale = "response", 
   plot.points = TRUE,
   # partial.residuals = T, 
-  point.alpha = 0.005,
+  # point.alpha = 0.005,
   # colors = "Greys",
   point.shape = F,
   modx.values = c("low", "high"),
@@ -479,7 +582,8 @@ ddat2do <- ddat2do %>% mutate(slope_est = slope)
       aes(x = depth_iqr_scaled,
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)
-      ), alpha = .2, fatten = 1, colour = "royalblue4", shape = 21, inherit.aes = F) +
+      ), #alpha = .2, 
+      fatten = 1, colour = "royalblue4", shape = 21, inherit.aes = F) +
     
     scale_colour_manual(values = c("royalblue4", "red 3")) +
     scale_fill_manual(values = c("royalblue4", "red 3")) + 
@@ -492,14 +596,15 @@ ddat2do <- ddat2do %>% mutate(slope_est = slope)
     # coord_cartesian(ylim = c(-10,5)) +
 coord_cartesian(ylim = c(-6,3)) +
     xlab("Depth range occupied ") +
-    ylab("Biomass change ~ warming rate") +
+    ylab(expression(~italic("R")~"~ warming rate")) + 
+    # ylab("Biomass change ~ warming rate") +
     # labs(tag = "D") + 
     # labs(colour = "Maturity") +
     gfplot::theme_pbs() + theme( 
       plot.margin = margin(0.2, 0.2, 0, 0, "cm"),
-      axis.title=element_blank(),
-      axis.text=element_blank(),
-      axis.ticks=element_blank(),
+      # axis.title.x=element_blank(),
+      # axis.text.x=element_blank(),
+      # axis.ticks.x=element_blank(),
       plot.tag.position = c(0.225,0.925),
       legend.title.align=0,
       # legend.title = element_blank(),
@@ -563,12 +668,16 @@ coord_cartesian(ylim = c(-6,3)) +
       legend.position = "none")
 )
 # Age within immatures ####
-(p_log_age <- interactions::interact_plot(tempslopemod2d, pred = log_age_scaled,
+
+(p_log_age <- interactions::interact_plot(
+  # tempslopemod2d, # trend
+  tempslopemod, # vel
+  pred = log_age_scaled,
   modx = chopstick,
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5,
   outcome.scale = "response", plot.points = TRUE,
   #partial.residuals = T,
-  point.alpha = 0.25,
+  # point.alpha = 0.25,
   point.shape = F,
   # modx.values = c("high", "low"),
   vary.lty =TRUE) +
@@ -589,22 +698,23 @@ coord_cartesian(ylim = c(-6,3)) +
       aes(x = log_age_scaled,
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)
-        ), colour = "royalblue4", shape = 21, alpha = .2, fatten = 1, inherit.aes = F) +
+        ), colour = "royalblue4", shape = 21, alpha = 1, fatten = 1, inherit.aes = F) +
     # back transform axis labels on scaled log growth rate
     scale_x_continuous(labels = function(x)
       paste0(round(exp(x * attributes(temp_slopes$log_age_scaled)[[3]] +
           attributes(temp_slopes$log_age_scaled)[[2]])+1))) +
     # coord_cartesian(ylim = c(-10,5)) +
-coord_cartesian(ylim = c(-6,3)) +
+# coord_cartesian(ylim = c(-6,3)) +
     xlab("Mean age ") +
-    ylab("Biomass change ~ warming rate") +
+    ylab(expression(~italic("R")~"~ warming rate")) + 
+    # ylab("Biomass change ~ warming rate") +
     # labs(tag = "D") +
     # labs(colour = "Maturity") +
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0.2, 0.2, 0, 0, "cm"),
-      axis.title=element_blank(),
-      axis.text=element_blank(),
-      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+      axis.text.x=element_blank(),
+      axis.ticks.x=element_blank(),
       plot.tag.position = c(0.225,0.925),
       legend.title.align=0,
       legend.title = element_blank(),
@@ -614,12 +724,12 @@ coord_cartesian(ylim = c(-6,3)) +
 
 #### Immature growth rate ####
 
-(p_growth_rate <- interactions::interact_plot(tempslopemod2c, 
+(p_growth_rate <- interactions::interact_plot(tempslopemod2, 
   pred = growth_rate_scaled,
   modx = chopstick,
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
   outcome.scale = "response", plot.points = TRUE,
-  point.alpha = 0.015,
+  # point.alpha = 0.015,
   point.shape = F, 
   modx.values = c("high", "low"),
   vary.lty =TRUE) + 
@@ -638,25 +748,30 @@ coord_cartesian(ylim = c(-6,3)) +
       ), alpha = 1, fatten = 1, colour = "red 3", shape = 21, inherit.aes = F) +
     geom_point(data = filter(ddat2, chopstick == "low"),
       aes(growth_rate_scaled, slope
-      ), alpha = 0.2, size = 1.5, colour = "royalblue4", shape = 21,
+      ), #alpha = 0.2, 
+      size = 1.5, colour = "royalblue4", shape = 21,
       inherit.aes = F) +
     geom_linerange(data = filter(ddat2, chopstick == "low"),
       aes(x = growth_rate_scaled,
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)
-      ), alpha = 0.2, fatten = 1, colour = "royalblue4", shape = 21, inherit.aes = F) +
+      ), # alpha = 0.2, 
+      fatten = 1, colour = "royalblue4", shape = 21, inherit.aes = F) +
     
     # back transform axis labels on scaled log growth rate
     scale_x_continuous(labels = function(x) 
       paste0(round(exp(x * attributes(temp_slopes$growth_rate_scaled)[[3]] + 
           attributes(temp_slopes$growth_rate_scaled)[[2]])+1))) +
     # coord_cartesian(ylim = c(-10,5)) +
-    coord_cartesian(ylim = c(-6,3)) +
+    # coord_cartesian(ylim = c(-6,3)) +
     xlab("Immature growth rate") +
     ylab("Biomass change ~ warming rate") +
     # labs(tag = "D") + 
     gfplot::theme_pbs() + theme(  
       plot.margin = margin(0.2, 0.2, 0, 0, "cm"),
+      # axis.title.y=element_blank(),
+      # axis.text.y=element_blank(),
+      # axis.ticks.y=element_blank(),
       axis.title=element_blank(),
       axis.text=element_blank(),
       axis.ticks=element_blank(),
@@ -666,7 +781,7 @@ coord_cartesian(ylim = c(-6,3)) +
       # legend.position = c(0.2,0.15))
       legend.position = "none")
 )
-
+##
 #### interaction with growth rate ####
 # (p_depth_iqr_i <- interactions::interact_plot(tempslopemod2c, pred = depth_iqr_scaled, 
 #   modx = growth_rate_scaled, 
@@ -777,15 +892,16 @@ doslopemod2b %>% summary()
 # MEAN DEPTH ####
 (pd_depth_mean <- interactions::interact_plot(doslopemod2, pred = depth_mean_scaled,
   # modx = chopstick,
-  modx = growth_rate_scaled,
+  # modx = growth_rate_scaled,
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5,
   outcome.scale = "response", plot.points = TRUE,
   #partial.residuals = T,
   point.alpha = 0.25,
-  point.shape = T,
+  point.shape = T, 
+  legend.main = "Growth rate",
   # colors = c("darkcyan", "yellowgreen", "gold"),
   # modx.values = c("Mature", "Immature"),
-  vary.lty =TRUE, legend.main = "Growth rate"
+  vary.lty =TRUE
 ) +
     geom_point(data = filter(ddat2do, chopstick == "high"),
       aes(depth_mean_scaled, slope_est), 
@@ -824,20 +940,23 @@ doslopemod2b %>% summary()
       plot.tag.position = c(0.225,0.925),
       legend.title.align=0,
       # legend.title = element_blank(),
-      legend.position = c(0.3,0.8))
-  # legend.position = "none")
+      # legend.position = c(0.3,0.8))
+  legend.position = "none")
 )
 
 #### DEPTH RANGE ####
-(pd_depth_iqr <- interactions::interact_plot(doslopemod2, pred = depth_iqr_scaled,
-  modx = chopstick,
-  # modx = growth_rate_scaled,
+(pd_depth_iqr <- interactions::interact_plot(doslopemod2, 
+  pred = depth_iqr_scaled,
+  # modx = chopstick,
+  modx = growth_rate_scaled,
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5,
   outcome.scale = "response", plot.points = TRUE,
   #partial.residuals = T,
   point.alpha = 0.25,
   point.shape = T,
+  # colors = c("darkcyan", "yellowgreen", "gold"),
   # modx.values = c("Mature", "Immature"),
+  legend.main = "Growth rate",
   vary.lty =TRUE#, legend.main = " "
 ) +
     geom_point(data = filter(ddat2do, chopstick == "high"),
@@ -858,9 +977,9 @@ doslopemod2b %>% summary()
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)), 
       alpha = 1, fatten = 1, colour = "darkcyan", shape = 21, inherit.aes = F) +
-    scale_colour_manual(values = c("white", "white")) +
-    scale_fill_manual(values = c("darkcyan", "gold")) +
-    # scale_shape_manual(values = c(19, 21)) +
+    # scale_colour_manual(values = c("white", "white")) +
+    # scale_fill_manual(values = c("darkcyan", "gold")) +
+    # # scale_shape_manual(values = c(19, 21)) +
     # back transform axis labels on scaled log growth rate
     scale_x_continuous(labels = function(x)
       paste0(round(exp(x * attributes(do_slopes$depth_iqr_scaled)[[3]] +
@@ -875,26 +994,34 @@ doslopemod2b %>% summary()
     # labs(colour = "Maturity") +
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
-      axis.title.y=element_blank(),
-      axis.text.y=element_blank(),
-      axis.ticks.y=element_blank(),
+      # axis.title.y=element_blank(),
+      # axis.text.y=element_blank(),
+      # axis.ticks.y=element_blank(),
       plot.tag.position = c(0.225,0.925),
       legend.title.align=0,
-      legend.title = element_blank(),
+      # legend.title = element_blank(),
+      legend.position = c(0.2,0.2))
       # legend.position = c(0.8,0.15))
-      legend.position = "none")
+      # legend.position = "none")
 )
 #### AGE in immatures ####
-(pd_log_age <- interactions::interact_plot(doslopemod2b, pred = log_age_scaled, 
+
+
+(pd_log_age <- interactions::interact_plot(
+  # doslopemod2b, 
+  doslopemodv2, 
+  pred = log_age_scaled,
   modx = chopstick,
-  # modx = depth_mean_scaled,
+  # modx = depth_iqr_scaled,
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
   outcome.scale = "response", plot.points = TRUE,
   # partial.residuals = T, 
   point.alpha = 0.25,
   point.shape = T, 
+  # colors = c("darkcyan", "yellowgreen", "gold"),
   # modx.values = c("Mature", "Immature"),
-  vary.lty =TRUE#, legend.main = " "
+  # legend.main = "Mean depth",
+  vary.lty =TRUE
 ) + 
     geom_point(data = filter(ddat2do, chopstick == "high"),
       aes(log_age_scaled, slope_est), 
@@ -914,7 +1041,8 @@ doslopemod2b %>% summary()
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)), 
       alpha = 1, fatten = 1, colour = "darkcyan", shape = 21, inherit.aes = F) +
-    scale_colour_manual(values = c("white", "white")) +
+    # scale_colour_manual(values = c("white", "white")) +
+    scale_colour_manual(values = c("darkcyan", "gold")) +
     scale_fill_manual(values = c("darkcyan", "gold")) +
     # scale_shape_manual(values = c(19, 21)) +
     # back transform axis labels on scaled log growth rate
@@ -923,31 +1051,35 @@ doslopemod2b %>% summary()
           attributes(do_slopes$log_age_scaled)[[2]])+1))) +
     # coord_cartesian(ylim = c(-3,1)) +
     xlab("Mean age ") +
+    ylab(expression(~italic("R")~"~ DO trend")) + 
     # ylab("Biomass change ~ DO trend") +
     # labs(tag = "D") + 
     # labs(colour = "Maturity") +
     gfplot::theme_pbs() + theme( 
       plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
-      axis.title.y=element_blank(),
-      axis.text.y=element_blank(),
-      axis.ticks.y=element_blank(),
+      # axis.title.y=element_blank(),
+      # axis.text.y=element_blank(),
+      # axis.ticks.y=element_blank(),
       plot.tag.position = c(0.225,0.925),
       legend.title.align=0,
       legend.title = element_blank(),
       # legend.position = c(0.8,0.15))
       legend.position = "none")
 )
-
-(pd_log_age2 <- interactions::interact_plot(doslopemod2b, pred = log_age_scaled, 
-  modx = depth_mean_scaled,
+###
+#### age by depth ####
+(pd_log_age2 <- interactions::interact_plot(doslopemod2b, 
+  pred = log_age_scaled, 
+  modx = depth_iqr_scaled,
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
   outcome.scale = "response", plot.points = TRUE,
   # partial.residuals = T, 
   point.alpha = 0.25,
   point.shape = T, 
-  colors = c("darkcyan", "yellowgreen", "gold"),
+  # colors = c("darkcyan", "yellowgreen", "gold"),
   # modx.values = c("Mature", "Immature"),
-  vary.lty =TRUE, legend.main = "Mean depth"
+  legend.main = "Depth IQR",
+  vary.lty =TRUE
 ) + 
     geom_point(data = filter(ddat2do, chopstick == "high"),
       aes(log_age_scaled, slope_est), 
@@ -987,23 +1119,28 @@ doslopemod2b %>% summary()
       plot.tag.position = c(0.225,0.925),
       legend.title.align=0,
       # legend.title = element_blank(),
-      legend.position = c(0.7,0.2))
+      legend.position = c(0.2,0.2))
       # legend.position = "none")
 )
 
 #### Immature growth rate ####
-(pd_growth_rate <- interactions::interact_plot(doslopemod2, 
+(pd_growth_rate <- interactions::interact_plot(
+  # doslopemod2,
+  # pred = growth_rate_scaled, 
+  # modx = depth_mean_scaled,
+  doslopemodv, 
   pred = growth_rate_scaled, 
-  # modx = age,
-  modx = depth_mean_scaled,
+  modx = chopstick,
+  # modx = chopstick,
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
   outcome.scale = "response", plot.points = TRUE,
   #partial.residuals = T, 
   point.alpha = 0.25,
   point.shape = F, 
-  colors = c("darkcyan", "yellowgreen", "gold"),
+  # colors = c("darkcyan", "yellowgreen", "gold"),
   # modx.values = c("Mature", "Immature"),
-  vary.lty =TRUE, legend.main = "Mean depth"
+  # legend.main = "Depth IQR",
+  vary.lty =TRUE#, legend.main = "Mean depth"
 ) + #scale_color_brewer(palette = "Reds") +
     geom_point(data = filter(ddat2do, chopstick == "high"),
       aes(growth_rate_scaled, slope_est), 
@@ -1023,16 +1160,15 @@ doslopemod2b %>% summary()
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)), 
       alpha = 1, fatten = 1, colour = "darkcyan", shape = 21, inherit.aes = F) +
-    # scale_colour_manual(values = c("darkcyan", "gold")) +
-    # scale_fill_manual(values = c("darkcyan", "gold")) +
+    scale_colour_manual(values = c("darkcyan", "gold")) +
+    scale_fill_manual(values = c("darkcyan", "gold")) +
     # scale_shape_manual(values = c(21, 19)) +
     # back transform axis labels on scaled log growth rate
-    
     scale_x_continuous(labels = function(x)
       paste0(round(exp(x * attributes(do_slopes$growth_rate_scaled)[[3]] +
           attributes(do_slopes$growth_rate_scaled)[[2]])+1))) +
-    # coord_cartesian(ylim = c(-3,1)) +
-    xlab("Immature growth rate (cm/yr)") +
+    # coord_cartesian(ylim = c(-1.6,4)) +
+    xlab("Immature growth rate") + # (cm/yr)
     # labs(tag = "D") + 
     gfplot::theme_pbs() + theme( 
       plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
@@ -1042,35 +1178,128 @@ doslopemod2b %>% summary()
       plot.tag.position = c(0.225,0.925),
       legend.title.align=0,
       # legend.title = element_blank(),
-      legend.position = c(0.7,0.2))
-  # legend.position = "none")
+      # legend.position = c(0.6,0.2))
+  legend.position = "none")
 )
 
 # SAVE FIGURES just DO ####
-(pd_depth_mean + pd_depth_iqr + pd_growth_rate  + pd_log_age2 + plot_layout(nrow = 1))
+# (pd_depth_mean + pd_depth_iqr + pd_growth_rate  + pd_log_age2 + plot_layout(nrow = 1))
 
 # ggsave(here::here("ms", "figs", "immature-do-model.pdf"), width = 10, height = 3.5)
 
-# SAVE FIGURES for both ####
-(p_depth_mean + p_depth_iqr + p_growth_rate  + 
-    pd_depth_mean + pd_depth_iqr + pd_growth_rate + plot_layout(ncol = 3))
+# SAVE FIGURES for both####
+# ### trend slopes
+# (p_depth_iqr + p_growth_rate + pd_depth_mean + pd_growth_rate + plot_layout(ncol = 2))
+# 
+# # ggsave(here::here("ms", "figs", "immature-growth-rate-models-trimmed.pdf"), width = 9, height = 7) # was trimmed model, but raw dat 
+# ggsave(here::here("ms", "figs", "immature-growth-rate-models.pdf"), width = 6, height = 6)
+# 
+
+
+#### velocity slopes
+(   #p_log_age + 
+    p_growth_rate + #pd_log_age + 
+    pd_growth_rate + plot_layout(ncol = 1))
 
 # ggsave(here::here("ms", "figs", "immature-growth-rate-models-trimmed.pdf"), width = 9, height = 7) # was trimmed model, but raw dat 
-ggsave(here::here("ms", "figs", "immature-growth-rate-models-trimmed-dat.pdf"), width = 9, height = 6)
+ggsave(here::here("ms", "figs", "immature-growth-rate-vel.pdf"), width = 6, height = 6)
 
 
-(p_depth_mean + p_depth_iqr + p_growth_rate  + p_log_age + 
-    pd_depth_mean + pd_depth_iqr + pd_growth_rate + pd_log_age2 + plot_layout(ncol = 4))
+# (p_depth_iqr + p_growth_rate  + p_log_age + 
+#     pd_depth_iqr + pd_growth_rate + pd_log_age2 + plot_layout(ncol = 3))
+# 
+# # ggsave(here::here("ms", "figs", "immature-growth-rate-models-trimmed.pdf"), width = 9, height = 7) # was trimmed model, but raw dat 
+# ggsave(here::here("ms", "figs", "immature-models-w-age.pdf"), width = 9.5, height = 5.5)
 
-# ggsave(here::here("ms", "figs", "immature-growth-rate-models-trimmed.pdf"), width = 9, height = 7) # was trimmed model, but raw dat 
-ggsave(here::here("ms", "figs", "immature-models-trimmed-dat-w-age.pdf"), width = 10.5, height = 5.5)
+
+# TWEAK FIG FOR AGE ####
+
+do_young <- filter( temp_slopes , age_mean < 10) %>%  select(
+  slope, slope_est, slope_se, slope_trim,
+  age, depth_mean_scaled,  depth_iqr_scaled, Zone,
+  log_age_scaled, #growth_rate_scaled, 
+  max_mass_scaled,
+  Latitude, Trophic, chopstick, species, species_age) %>% 
+  Hmisc::na.delete()
+
+doslope_young <- lmerTest::lmer(slope ~ 1 +
+    # growth_rate_scaled +
+    log_age_scaled *    chopstick +
+    (1|species) +
+    (1|species_age), REML = T, data = do_young)
+doslope_young %>% summary()
 
 
+(p_log_age <- interactions::interact_plot(
+  # tempslopemod2d, # trend
+  doslope_young, # vel
+  pred = log_age_scaled,
+  modx = chopstick,
+  interval = TRUE, int.type = c("prediction"), line.thickness = 0.5,
+  outcome.scale = "response", plot.points = TRUE,
+  #partial.residuals = T,
+  # point.alpha = 0.25,
+  point.shape = F,
+  # modx.values = c("high", "low"),
+  vary.lty =TRUE) +
+    # scale_colour_manual(values = c("white", "white")) +
+    scale_colour_manual(values = c("red 3", "royalblue4")) +
+    scale_fill_manual(values = c("red 3", "royalblue4")) +
+    scale_shape_manual(values = c(21, 21)) +
+    geom_point(data = filter(ddat2, chopstick == "high"),
+      aes(log_age_scaled, slope_est,
+      ), alpha = 1, size = 1.5, colour = "red 3", shape = 21,
+      inherit.aes = F) +
+    geom_linerange(data = filter(ddat2, chopstick == "high"),
+      aes(x = log_age_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96),
+      ), colour = "red 3", shape = 21, alpha = 1, fatten = 1, inherit.aes = F) +
+    geom_linerange(data = filter(ddat2, chopstick == "low"),
+      aes(x = log_age_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96)
+      ), colour = "royalblue4", shape = 21, alpha = 1, fatten = 1, inherit.aes = F) +
+    # back transform axis labels on scaled log growth rate
+    # scale_x_continuous(labels = function(x)
+    #   paste0(round(exp( (x * attributes(temp_slopes$log_age_scaled)[[3]] +
+    #       attributes(temp_slopes$log_age_scaled)[[2]]) + 1)))) +
+    # coord_cartesian(ylim = c(-10,5)) +
+    coord_cartesian(xlim = c(-1.8,0))+
+    xlab("Mean age ") +
+    ylab(expression(~italic("R")~"~ warming rate")) + 
+    # ylab("Biomass change ~ warming rate") +
+    # labs(tag = "D") +
+    # labs(colour = "Maturity") +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0.2, 0, 0, "cm"),
+      # axis.title.x=element_blank(),
+      # axis.text.x=element_blank(),
+      # axis.ticks.x=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title.align=0,
+      legend.title = element_blank(),
+      # legend.position = c(0.8,0.15))
+      legend.position = "none")
+)
+
+
+
+
+
+
+
+
+################
 # ECOLOGICAL EFFECTS FOR BOTH MATURITY CLASSES ####
 # hist(temp_slopes$slope)
 ### models for just highest temperatures ####
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Trophic + age + Zone + Latitude + (1|species), data = .) %>% anova() #*
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Trophic + age + Zone + Latitude + (1|species), data = .) %>% summary()
+filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(
+  slope ~ 1 + Trophic + age + Zone + Latitude + (1|species), data = .) %>% 
+  anova() #*
+filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(
+  slope ~ 1 + Trophic + age + Zone + Latitude + (1|species), data = .) %>% 
+  summary()
 # matches both slopes result
 
 #### DO need to redo but preliminary exploration suggests ####
@@ -1093,58 +1322,79 @@ tempslopemod1 <- lmerTest::lmer(slope ~
     Zone +
     Schooling +
     Trophic +
-    # Specialist + # lacks generalist representatives in North
+    Specialist + # lacks generalist representatives in North
     Rockfish +
     max_mass_scaled +
     depth_iqr_scaled +
-    # depth_mean_scaled + 
+    depth_mean_scaled +
     age +
     chopstick + 
     (1|species) + (1|species_age), na.action = na.fail, REML = F, 
   data = ddat) 
 
-# (m <- MuMIn::dredge(tempslopemod1, beta = "partial.sd", m.lim = c(0, 8)))
+(m <- MuMIn::dredge(tempslopemod1, beta = "partial.sd", m.lim = c(0, 6)))
 summary(tempslopemod1)
 
+# # trends
+# tempslopemod <- lmerTest::lmer(slope ~ 
+#     age +
+#     Latitude +
+#     Schooling + # Zone +
+#     Trophic +
+#     max_mass_scaled +
+#     depth_iqr_scaled +
+#     Latitude * max_mass_scaled  +
+#     age * max_mass_scaled +
+#     Schooling * depth_iqr_scaled +
+#     Latitude * depth_iqr_scaled  +
+#     Trophic * depth_iqr_scaled +
+#     age * depth_iqr_scaled +
+#     chopstick + 
+#     (1|species) + (1|species_age), na.action = na.fail, REML = F, 
+#   data = ddat) 
 
-tempslopemod <- lmerTest::lmer(slope ~ 
-    age +
-    Latitude +
-    Schooling + # Zone +
-    Trophic +
-    max_mass_scaled +
-    depth_iqr_scaled +
-    Latitude * max_mass_scaled  +
-    age * max_mass_scaled +
-    Schooling * depth_iqr_scaled +
-    Latitude * depth_iqr_scaled  +
-    Trophic * depth_iqr_scaled +
-    age * depth_iqr_scaled +
-    chopstick + 
-    (1|species) + (1|species_age), na.action = na.fail, REML = F, 
-  data = ddat) 
+### velocity
+# tempslopemod <- lmerTest::lmer(slope ~ 
+#     age +
+#     Zone + Schooling + 
+#     Specialist + Trophic +
+#     max_mass_scaled +
+#     # depth_iqr_scaled +
+#     Trophic * max_mass_scaled  +
+#     chopstick * max_mass_scaled +
+#     Schooling * depth_mean_scaled +
+#     Zone * depth_mean_scaled  +
+#     Trophic * depth_mean_scaled +
+#     Specialist * depth_mean_scaled +
+#     Schooling * chopstick +
+#     Zone * chopstick +
+#     Trophic * chopstick +
+#     Specialist * chopstick +
+#     chopstick + 
+#     (1|species) + (1|species_age), na.action = na.fail, REML = F, 
+#   data = ddat) 
+# 
+# (m <- MuMIn::dredge(tempslopemod, beta = "partial.sd", m.lim = c(0, 6)))
 
-(m <- MuMIn::dredge(tempslopemod, beta = "partial.sd", m.lim = c(0, 5)))
-
-tempslopemod <- lmerTest::lmer(slope_trim ~ 
-    Latitude +
-    Schooling + # Zone +
-    Trophic +
-    # max_mass_scaled +
-    depth_iqr_scaled +
-    Schooling * depth_iqr_scaled +
-    Latitude * depth_iqr_scaled  +
-    Trophic * depth_iqr_scaled +
-    # depth_iqr_scaled * chopstick + 
-    Schooling * chopstick + 
-    Latitude * chopstick + 
-    Trophic * chopstick + 
-    chopstick + 
-    (1|species) + (1|species_age),  na.action = na.fail, REML = F, 
-  data = ddat) 
-
-(m <- MuMIn::dredge(tempslopemod, beta = "partial.sd", m.lim = c(0, 5)))
-
+# tempslopemod <- lmerTest::lmer(slope_trim ~ 
+#     Latitude +
+#     Schooling + # Zone +
+#     Trophic +
+#     # max_mass_scaled +
+#     depth_iqr_scaled +
+#     Schooling * depth_iqr_scaled +
+#     Latitude * depth_iqr_scaled  +
+#     Trophic * depth_iqr_scaled +
+#     # depth_iqr_scaled * chopstick + 
+#     # Schooling * age + 
+#     # Latitude * age +
+#     # Trophic * age + 
+#     chopstick + 
+#     (1|species) + (1|species_age),  na.action = na.fail, REML = F, 
+#   data = ddat) 
+# 
+# (m <- MuMIn::dredge(tempslopemod, beta = "partial.sd", m.lim = c(0, 3)))
+# 
 
 ddat1 <- filter(ddat, chopstick == "high")
 
@@ -1153,8 +1403,7 @@ tempslopemod <- lmerTest::lmer(slope_trim ~
     Latitude +
     Schooling + # Zone +
     Trophic +
-    # max_mass_scaled +
-    depth_iqr_scaled +
+    max_mass_scaled +
     # Latitude * max_mass_scaled  +
     # age * max_mass_scaled +
     Schooling * depth_iqr_scaled +
@@ -1166,7 +1415,7 @@ tempslopemod <- lmerTest::lmer(slope_trim ~
     (1|species), na.action = na.fail, REML = F, 
   data = ddat1) 
 
-(mb <- MuMIn::dredge(tempslopemod, beta = "partial.sd", m.lim = c(0, 3)))
+(mb <- MuMIn::dredge(tempslopemod, beta = "partial.sd", m.lim = c(0, 4)))
 
 # seems like each of these variables in combination with depth range shows some weak, non-sig patterns...
 # some become sig when combined with eachother, but sample size too small to trust those results
@@ -1198,6 +1447,8 @@ do_slopes2 <- do_slopes %>% ungroup() %>%
   mutate(age = factor(age, levels = c("Mature", "Immature")) ) %>% 
   filter(chopstick == "low")
 
+
+
 ddatdo <- do_slopes %>% 
   select(slope, slope_est, slope_se, slope_trim, 
     depth_iqr_scaled, depth_mean_scaled, 
@@ -1206,51 +1457,51 @@ ddatdo <- do_slopes %>%
     age, max_mass_scaled,
     chopstick, species, species_age)
 
-# doslopemod1 <- lmerTest::lmer(slope ~ 
-#     Latitude +
-#     Zone +
-#     Schooling +
-#     Trophic +
-#     # Specialist + # lacks generalist representatives in North
-#     Rockfish +
-#     max_mass_scaled +
-#     depth_iqr_scaled +
-#     depth_mean_scaled +
+doslopemod1 <- lmerTest::lmer(slope ~
+    Latitude +
+    Zone +
+    Schooling +
+    Trophic +
+    # Specialist + # lacks generalist representatives in North
+    Rockfish +
+    max_mass_scaled +
+    depth_iqr_scaled +
+    depth_mean_scaled +
+    age +
+    chopstick +
+    (1|species) + (1|species_age)
+  , na.action = na.fail, REML = F,
+  data = ddatdo)
+
+(m <- MuMIn::dredge(doslopemod1, beta = "partial.sd", m.lim = c(0, 4)))
+# summary(doslopemod1)
+# 
+# doslopemod <- lmerTest::lmer(slope ~ 
 #     age +
-#     # chopstick + 
-#     (1|species) #+ (1|species_age)
+#     age * max_mass_scaled +
+#     depth_mean_scaled * max_mass_scaled +
+#     depth_mean_scaled * age +
+#     Latitude +
+#     Schooling + 
+#     Zone +
+#     Trophic +
+#     # max_mass_scaled +
+#     depth_mean_scaled +
+#     # Latitude * max_mass_scaled  +
+#     # age * max_mass_scaled +
+#     Schooling * depth_mean_scaled +
+#     Latitude * depth_mean_scaled  +
+#     Trophic * depth_mean_scaled +
+#     Zone * depth_mean_scaled +
+#     chopstick * max_mass_scaled +
+#     chopstick * depth_mean_scaled * max_mass_scaled +
+#     chopstick * depth_mean_scaled * age +
+#     chopstick +
+#     (1|species) + (1|species_age)
 #   , na.action = na.fail, REML = F, 
 #   data = ddatdo) 
 # 
-# # (m <- MuMIn::dredge(tempslopemod1, beta = "partial.sd", m.lim = c(0, 8)))
-# summary(doslopemod1)
-
-doslopemod <- lmerTest::lmer(slope ~ 
-    age +
-    age * max_mass_scaled +
-    depth_mean_scaled * max_mass_scaled +
-    depth_mean_scaled * age +
-    Latitude +
-    Schooling + 
-    Zone +
-    Trophic +
-    # max_mass_scaled +
-    depth_mean_scaled +
-    # Latitude * max_mass_scaled  +
-    # age * max_mass_scaled +
-    Schooling * depth_mean_scaled +
-    Latitude * depth_mean_scaled  +
-    Trophic * depth_mean_scaled +
-    Zone * depth_mean_scaled +
-    chopstick * max_mass_scaled +
-    chopstick * depth_mean_scaled * max_mass_scaled +
-    chopstick * depth_mean_scaled * age +
-    chopstick +
-    (1|species) + (1|species_age)
-  , na.action = na.fail, REML = F, 
-  data = ddatdo) 
-
-(m <- MuMIn::dredge(doslopemod, beta = "partial.sd", m.lim = c(0, 4)))
+# (m <- MuMIn::dredge(doslopemod, beta = "partial.sd", m.lim = c(0, 4)))
 
 # set for most extreme slopes
 ddatdo <- ddatdo %>% mutate(chopstick = factor(chopstick, levels = c( "low", "high")) )
@@ -1275,11 +1526,22 @@ ddatdo1 <- ddatdo %>% filter(chopstick == "low")
 ##### TEMP ###############
 #### for high temp slopes #### 
 # low temp slopes are currently removed entirely
-#### LATITUDE ####
 
+
+# should raw data points be trimmed ones?
+# # if yes, run this 
+# ddat <- ddat %>% mutate(slope_est = slope_trim)
+# ddatdo <- ddatdo %>% mutate(slope_est = slope_trim)
+# # if no, run this
+ddat <- ddat %>% mutate(slope_est = slope)
+ddatdo <- ddatdo %>% mutate(slope_est = slope)
+
+#### LATITUDE ####
+### trend ###
 tempslopemod <- lmerTest::lmer(slope_trim ~ 
     Latitude +
-    depth_iqr_scaled +
+    depth_mean_scaled +
+    # depth_iqr_scaled +
     # Latitude * depth_iqr_scaled  +
     chopstick +
     # age +
@@ -1300,7 +1562,8 @@ tempslopemod <- lmerTest::lmer(slope_trim ~
 tempslopemod %>% summary()
 
 (p_depth_lat <- interactions::interact_plot(tempslopemod,
-  pred = depth_iqr_scaled, modx = Latitude,
+  pred = depth_iqr_scaled,
+  modx = Latitude,
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5,
   outcome.scale = "response", 
   #partial.residuals = T,
@@ -1359,8 +1622,9 @@ tempslopemod %>% summary()
     scale_x_continuous(labels = function(x)
       paste0(round(exp(x * attributes(temp_slopes$depth_iqr_scaled)[[3]] +
           attributes(temp_slopes$depth_iqr_scaled)[[2]])))) +
-    coord_cartesian(ylim = c(-5,3)) +
-    ylab("Biotic trend ~ warming rate at high temp") +
+    coord_cartesian(ylim = c(-6,3)) +
+    ylab(expression(~italic("R")~"~ warming rate at high temp")) + 
+    # ylab("Biotic trend ~ warming rate at high temp") +
     xlab("Depth range (IQR)") +
     ggtitle("Latitude") +
     # labs(tag = "D") +
@@ -1372,14 +1636,86 @@ tempslopemod %>% summary()
       legend.title = element_blank(),
       # legend.position = "none")
       # legend.position = c(0.8,0.15))
-      legend.position = c(0.2,0.85))
+      legend.position = c(0.15,0.85))
 )
+#### vel #### 
+tempslopemod <- lmerTest::lmer(slope_est ~ 
+    Latitude +
+    depth_mean_scaled +
+    chopstick +
+    # age +
+    (1|species) + (1|species_age), REML = T, 
+  data = ddat) 
+
+tempslopemod %>% summary()
+
+(p_depth_lat <- interactions::interact_plot(tempslopemod,
+  pred = depth_mean_scaled, 
+  modx = Latitude,
+  interval = TRUE, int.type = c("prediction"), line.thickness = 0.5,
+  outcome.scale = "response", 
+  #partial.residuals = T,
+  # plot.points = T, 
+  point.alpha = 0.2, 
+  point.shape = T,
+  # legend.main = "age",
+  modx.values = c("North", "South"),
+  vary.lty =TRUE
+) + 
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Latitude == "North"),
+      aes(depth_mean_scaled, slope_trim), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
+      inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Latitude == "North"),
+      aes(depth_mean_scaled, slope_trim), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
+      inherit.aes = F) +
+    geom_linerange(data = filter(ddat, chopstick == "high" & Latitude == "North"),
+      aes(x = depth_mean_scaled,
+        ymin = (slope_trim - slope_se * 1.96),
+        ymax = (slope_trim + slope_se * 1.96)), alpha = 1, colour = "royalblue4", fatten = 1, inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Latitude == "South"),
+      aes(depth_mean_scaled, slope_trim), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+      inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Latitude == "South"),
+      aes(depth_mean_scaled, slope_trim), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+      inherit.aes = F) +
+    geom_linerange(data = filter(ddat, chopstick == "high" & Latitude == "South"), 
+      aes(x = depth_mean_scaled,
+        ymin = (slope_trim - slope_se * 1.96),
+        ymax = (slope_trim + slope_se * 1.96)), alpha = 1, colour = "deepskyblue3", fatten = 1, inherit.aes = F) +
+  scale_colour_manual(values = c("white", "white")) +
+    scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
+    scale_shape_manual(values = c(19, 19)) +
+    # back transform axis labels on scaled depth iqr
+    scale_x_continuous(labels = function(x)
+      paste0(round(exp(x * attributes(temp_slopes$depth_mean_scaled)[[3]] +
+          attributes(temp_slopes$depth_mean_scaled)[[2]])))) +
+    # coord_cartesian(ylim = c(-6,3)) +
+    # ylab(expression(~italic("R")~"~ warming rate at high temp")) + 
+    ylab(expression(~italic("R")~"~ warming velocity at high temp"))+ 
+    # ylab("Biotic trend ~ warming rate at high temp") +
+    xlab("Depth range (IQR)") +
+    ggtitle("Latitude") +
+    # labs(tag = "D") +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0.1, 0.2, 0.3, "cm"),
+      plot.tag.position = c(0.225,0.925),
+      legend.title.align=0,
+      axis.title.x = element_blank(),
+      legend.title = element_blank(),
+      axis.text.x =element_blank(),
+      axis.ticks.x=element_blank(),
+      # legend.position = "none")
+      # legend.position = c(0.8,0.15))
+      legend.position = c(0.75,0.15))
+) 
+
 ###
 #### FORAGING ZONE ####
 tempslopemod <- lmerTest::lmer(slope_trim ~ 
     Zone +
     depth_iqr_scaled +
-    # Zone * depth_iqr_scaled  +
+    # depth_mean_scaled +
+    Zone * depth_iqr_scaled  +
     chopstick +
     # age +
     (1|species) + (1|species_age), REML = T, 
@@ -1393,7 +1729,7 @@ tempslopemod <- lmerTest::lmer(slope_trim ~
 #   data = ddat1)
 
 tempslopemod %>% summary()
-
+#### trend ####
 (p_depth_zone <- interactions::interact_plot(tempslopemod,
   pred = depth_iqr_scaled, modx = Zone,
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5,
@@ -1404,18 +1740,26 @@ tempslopemod %>% summary()
   point.shape = T,
   modx.values = c("Demersal", "Benthopelagic"),
   vary.lty =TRUE
-) + geom_point(data = filter(ddat, chopstick == "high" & age == "Mature"),
-      aes(depth_iqr_scaled, slope, colour = Zone), alpha = 1, size = 1.5, shape = 19,
+) + geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Zone == "Demersal"),
+  aes(depth_iqr_scaled, slope_trim), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
+  inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Zone == "Demersal"),
+      aes(depth_iqr_scaled, slope_trim), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
       inherit.aes = F) +
-    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature"),
-      aes(depth_iqr_scaled, slope, colour = Zone), alpha = 1, size = 1.5, shape = 21,
-      inherit.aes = F) +
-    geom_linerange(data = filter(temp_slopes, chopstick == "high"),
+    geom_linerange(data = filter(ddat, chopstick == "high" & Zone == "Demersal"),
       aes(x = depth_iqr_scaled,
-        ymin = (slope_est - slope_se * 1.96),
-        ymax = (slope_est + slope_se * 1.96),
-        colour = Zone,
-        ), alpha = 1, fatten = 1, inherit.aes = F) +
+        ymin = (slope_trim - slope_se * 1.96),
+        ymax = (slope_trim + slope_se * 1.96)), alpha = 1, colour = "royalblue4", fatten = 1, inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Zone == "Benthopelagic"),
+      aes(depth_iqr_scaled, slope_trim), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+      inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Zone == "Benthopelagic"),
+      aes(depth_iqr_scaled, slope_trim), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+      inherit.aes = F) +
+    geom_linerange(data = filter(ddat, chopstick == "high" & Zone == "Benthopelagic"), 
+      aes(x = depth_iqr_scaled,
+        ymin = (slope_trim - slope_se * 1.96),
+        ymax = (slope_trim + slope_se * 1.96)), alpha = 1, colour = "deepskyblue3", fatten = 1, inherit.aes = F) +
     # geom_linerange(data = filter(temp_slopes, chopstick == "low"),
     #   aes(x = depth_iqr_scaled,
     #     ymin = (slope_est - slope_se * 1.96),
@@ -1423,7 +1767,7 @@ tempslopemod %>% summary()
     #     colour = Zone,
     #     ), alpha = 0.2, fatten = 1, inherit.aes = F) +
     
-    scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
+    scale_colour_manual(values = c("white", "white")) +
     scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
     # scale_colour_manual(values = c("royalblue4", "red 4")) +
     # scale_fill_manual(values = c("royalblue4", "red 3")) +
@@ -1435,7 +1779,7 @@ tempslopemod %>% summary()
     scale_x_continuous(labels = function(x)
       paste0(round(exp(x * attributes(temp_slopes$depth_iqr_scaled)[[3]] +
           attributes(temp_slopes$depth_iqr_scaled)[[2]])))) +
-    coord_cartesian(ylim = c(-10,5)) +
+    coord_cartesian(ylim = c(-6,3)) +
     ggtitle("Foraging zone") +
     # ylab("Peak Frequency") +
     xlab("Depth range (IQR)") +
@@ -1449,15 +1793,81 @@ tempslopemod %>% summary()
       legend.title.align=0,
       legend.title = element_blank(),
       # legend.position = "none")
-      legend.position = c(0.25,0.85))
+      legend.position = c(0.2,0.85))
 )
+
+## vel ####
+tempslopemod <- lmerTest::lmer(slope ~ 
+    Zone +
+    depth_mean_scaled +
+    chopstick +
+    # age +
+    (1|species) + (1|species_age), REML = T, 
+  data = ddat) 
+
+tempslopemod %>% summary()
+
+(p_depth_zone <- interactions::interact_plot(tempslopemod,
+  pred = depth_mean_scaled, modx = Zone,
+  interval = TRUE, int.type = c("prediction"), line.thickness = 0.5,
+  outcome.scale = "response", 
+  # plot.points = TRUE,
+  #partial.residuals = T,
+  point.alpha = 0.005,
+  point.shape = T,
+  modx.values = c("Demersal", "Benthopelagic"),
+  vary.lty =TRUE
+) + geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Zone == "Demersal"),
+  aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
+  inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Zone == "Demersal"),
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
+      inherit.aes = F) +
+    geom_linerange(data = filter(ddat, chopstick == "high" & Zone == "Demersal"),
+      aes(x = depth_mean_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "royalblue4", fatten = 1, inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Zone == "Benthopelagic"),
+      aes(depth_mean_scaled, slope_trim), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+      inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Zone == "Benthopelagic"),
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+      inherit.aes = F) +
+    geom_linerange(data = filter(ddat, chopstick == "high" & Zone == "Benthopelagic"), 
+      aes(x = depth_mean_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "deepskyblue3", fatten = 1, inherit.aes = F) +
+    scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
+    scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
+    scale_shape_manual(values = c(19, 19)) +
+    # back transform axis labels on scaled depth iqr
+    scale_x_continuous(labels = function(x)
+      paste0(round(exp(x * attributes(temp_slopes$depth_mean_scaled)[[3]] +
+          attributes(temp_slopes$depth_mean_scaled)[[2]])))) +
+    # coord_cartesian(ylim = c(-6,3)) +
+    ggtitle("Foraging zone") +
+    # ylab("Peak Frequency") +
+    xlab("Depth range (IQR)") +
+    # labs(tag = "D") +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
+      axis.title=element_blank(),
+      axis.text=element_blank(),
+      axis.ticks=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title.align=0,
+      legend.title = element_blank(),
+      # legend.position = "none")
+      legend.position = c(0.75,0.15))
+)
+
 ###
 #### TROPHIC LEVEL ####
 
 tempslopemod <- lmerTest::lmer(slope ~
     Trophic +
     depth_iqr_scaled +
-    Trophic * depth_iqr_scaled +
+    # Trophic * depth_iqr_scaled +
     chopstick +
     # age +
     (1|species) + (1|species_age), REML = T,
@@ -1487,20 +1897,20 @@ tempslopemod %>% summary()
   vary.lty =TRUE
 ) + 
     geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Trophic == "Lower"),
-      aes(depth_iqr_scaled, slope), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
+      aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
       inherit.aes = F) +
     geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Trophic == "Lower"),
-      aes(depth_iqr_scaled, slope), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
+      aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
       inherit.aes = F) +
     geom_linerange(data = filter(ddat, chopstick == "high" & Trophic == "Lower"),
       aes(x = depth_iqr_scaled,
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "royalblue4", fatten = 1, inherit.aes = F) +
     geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Trophic == "Higher"),
-      aes(depth_iqr_scaled, slope), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+      aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
       inherit.aes = F) +
     geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Trophic == "Higher"),
-      aes(depth_iqr_scaled, slope), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+      aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
       inherit.aes = F) +
     geom_linerange(data = filter(ddat, chopstick == "high" & Trophic == "Higher"), 
       aes(x = depth_iqr_scaled,
@@ -1522,7 +1932,7 @@ tempslopemod %>% summary()
     scale_x_continuous(labels = function(x) 
       paste0(round(exp(x * attributes(temp_slopes$depth_iqr_scaled)[[3]] + 
           attributes(temp_slopes$depth_iqr_scaled)[[2]])))) +
-    coord_cartesian(ylim = c(-10,5)) +
+    coord_cartesian(ylim = c(-6,3)) +
     ggtitle("Trophic level") +
     # ylab("Peak Frequency") +
     xlab("Depth range (IQR)") +
@@ -1537,7 +1947,79 @@ tempslopemod %>% summary()
       legend.title = element_blank(),
       # legend.position = "none")
       # legend.position = c(0.8,0.15))
-      legend.position = c(0.2,0.85))
+      legend.position = c(0.15,0.85))
+)
+
+### vel ####
+tempslopemod <- lmerTest::lmer(slope ~
+    Trophic +
+    depth_mean_scaled +
+    # Trophic * depth_mean_scaled +
+    chopstick +
+    # age +
+    (1|species) + (1|species_age), REML = T,
+  data = ddat)
+
+tempslopemod %>% summary()
+
+(p_depth_troph <- interactions::interact_plot(tempslopemod, 
+  pred = depth_mean_scaled, modx = Trophic, 
+  interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
+  outcome.scale = "response", 
+  # plot.points = TRUE,
+  #partial.residuals = T, 
+  point.alpha = 0.01,
+  point.shape = T, 
+  # legend.main = "Trophic level",
+  modx.values = c("Lower", "Higher"),
+  vary.lty =TRUE
+) + 
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Trophic == "Lower"),
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
+      inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Trophic == "Lower"),
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
+      inherit.aes = F) +
+    geom_linerange(data = filter(ddat, chopstick == "high" & Trophic == "Lower"),
+      aes(x = depth_mean_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "royalblue4", fatten = 1, inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Trophic == "Higher"),
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+      inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Trophic == "Higher"),
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+      inherit.aes = F) +
+    geom_linerange(data = filter(ddat, chopstick == "high" & Trophic == "Higher"), 
+      aes(x = depth_mean_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "deepskyblue3", fatten = 1, inherit.aes = F) +
+    # scale_colour_manual(values = c("white", "white")) +
+    scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
+    scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
+    # scale_colour_manual(values = c("royalblue4", "red 4")) +
+    # scale_fill_manual(values = c("royalblue4", "red 3")) +
+    scale_shape_manual(values = c(19, 19)) +
+    # back transform axis labels on scaled depth iqr
+    scale_x_continuous(labels = function(x) 
+      paste0(round(exp(x * attributes(temp_slopes$depth_mean_scaled)[[3]] + 
+          attributes(temp_slopes$depth_mean_scaled)[[2]])))) +
+    # coord_cartesian(ylim = c(-6,3)) +
+    ggtitle("Trophic level") +
+    # ylab("Peak Frequency") +
+    xlab("Depth range (IQR)") +
+    # labs(tag = "D") + 
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0.2, 0.2, 0.1, "cm"),
+      axis.title=element_blank(),
+      axis.text=element_blank(),
+      axis.ticks=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title.align=0,
+      legend.title = element_blank(),
+      # legend.position = "none")
+      # legend.position = c(0.8,0.15))
+      legend.position = c(0.75,0.15))
 )
 
 ###
@@ -1547,8 +2029,8 @@ tempslopemod <- lmerTest::lmer(slope_trim ~
     # Latitude +
     Schooling +
     depth_iqr_scaled +
-    Schooling * depth_iqr_scaled +
-    chopstick +
+    # Schooling * depth_iqr_scaled +
+    # chopstick +
     # age +
     (1|species) + (1|species_age), REML = T,
   data = ddat) 
@@ -1575,20 +2057,20 @@ tempslopemod %>% summary()
   modx.values = c("Solitary", "Schooling"),
   vary.lty =TRUE
 ) + geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Schooling == "Solitary"),
-  aes(depth_iqr_scaled, slope), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
+  aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
   inherit.aes = F) +
     geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Schooling == "Solitary"),
-      aes(depth_iqr_scaled, slope), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
+      aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
       inherit.aes = F) +
     geom_linerange(data = filter(ddat, chopstick == "high" & Schooling == "Solitary"),
       aes(x = depth_iqr_scaled,
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "royalblue4", fatten = 1, inherit.aes = F) +
     geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Schooling == "Schooling"),
-      aes(depth_iqr_scaled, slope), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+      aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
       inherit.aes = F) +
     geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Schooling == "Schooling"),
-      aes(depth_iqr_scaled, slope), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+      aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
       inherit.aes = F) +
     geom_linerange(data = filter(ddat, chopstick == "high" & Schooling == "Schooling"), 
       aes(x = depth_iqr_scaled,
@@ -1611,7 +2093,7 @@ tempslopemod %>% summary()
     scale_x_continuous(labels = function(x) 
       paste0(round(exp(x * attributes(temp_slopes$depth_iqr_scaled)[[3]] + 
           attributes(temp_slopes$depth_iqr_scaled)[[2]])))) +
-    coord_cartesian(ylim = c(-10,5)) +
+    # coord_cartesian(ylim = c(-6,3)) +
     ggtitle("Sociality") + 
     # ylab("Peak Frequency") +
     xlab("Depth range (IQR)") +
@@ -1626,9 +2108,250 @@ tempslopemod %>% summary()
       legend.title = element_blank(),
       # legend.position = "none")
       # legend.position = c(0.8,0.15))
-      legend.position = c(0.2,0.85))
+      legend.position = c(0.15,0.85))
 )
 
+### vel ####
+tempslopemod <- lmerTest::lmer(slope ~
+    # Latitude +
+    Schooling +
+    depth_mean_scaled +
+    # Schooling * depth_mean_scaled +
+    # chopstick +
+    # age +
+    (1|species) + (1|species_age), REML = T,
+  data = ddat) 
+
+tempslopemod %>% summary()
+
+(p_depth_sch <- interactions::interact_plot(tempslopemod, 
+  pred = depth_mean_scaled, modx = Schooling, 
+  interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
+  outcome.scale = "response", 
+  plot.points = TRUE,
+  #partial.residuals = T, 
+  point.alpha = 0.005,
+  point.shape = T, 
+  # colors = c("white", "white"),
+  # legend.main = "Trophic level",
+  modx.values = c("Solitary", "Schooling"),
+  vary.lty =TRUE
+) + geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Schooling == "Solitary"),
+  aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
+  inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Schooling == "Solitary"),
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
+      inherit.aes = F) +
+    geom_linerange(data = filter(ddat, chopstick == "high" & Schooling == "Solitary"),
+      aes(x = depth_mean_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "royalblue4", fatten = 1, inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Schooling == "Schooling"),
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+      inherit.aes = F) +
+    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Schooling == "Schooling"),
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+      inherit.aes = F) +
+    geom_linerange(data = filter(ddat, chopstick == "high" & Schooling == "Schooling"), 
+      aes(x = depth_mean_scaled,
+        ymin = (slope_est - slope_se * 1.96),
+        ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "deepskyblue3", fatten = 1, inherit.aes = F) +
+    # geom_linerange(data = filter(temp_slopes, chopstick == "low"), 
+    #   aes(x = depth_mean_scaled,
+    #     ymin = (slope_est - slope_se * 1.96),
+    #     ymax = (slope_est + slope_se * 1.96),
+    #     colour = Schooling, shape = Schooling), alpha = 0.2, fatten = 1, inherit.aes = F) +
+    scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
+    scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
+    # scale_colour_manual(values = c("royalblue4", "red 4")) +
+    # scale_fill_manual(values = c("royalblue4", "red 3")) +
+    ## alternate colours 
+    # scale_colour_manual(values = c("darkorchid4", "maroon")) +
+    # scale_fill_manual(values = c("white", "white")) +
+    scale_shape_manual(values = c(19, 19)) +
+    # back transform axis labels on scaled depth iqr
+    scale_x_continuous(labels = function(x) 
+      paste0(round(exp(x * attributes(temp_slopes$depth_mean_scaled)[[3]] + 
+          attributes(temp_slopes$depth_mean_scaled)[[2]])))) +
+    # coord_cartesian(ylim = c(-6,3)) +
+    ggtitle("Sociality") + 
+    # ylab("Peak Frequency") +
+    xlab("Depth range (IQR)") +
+    # labs(tag = "D") + 
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
+      axis.title=element_blank(),
+      axis.text=element_blank(),
+      axis.ticks=element_blank(),
+      plot.tag.position = c(0.225,0.925),
+      legend.title.align=0,
+      legend.title = element_blank(),
+      # legend.position = "none")
+      # legend.position = c(0.8,0.15))
+      legend.position = c(0.75,0.15))
+)
+###
+#### SPECIALIZATION ####
+tempslopemod <- lmerTest::lmer(slope ~
+    Specialist +
+    depth_iqr_scaled +
+    # Trophic * depth_iqr_scaled +
+    chopstick +
+    # age +
+    (1|species) + (1|species_age), REML = T,
+  data = ddat)
+
+# tempslopemod <- lmerTest::lmer(slope ~
+#     # Schooling +
+#     Trophic +
+#     depth_iqr_scaled +
+#     Trophic * depth_iqr_scaled +
+#     # Schooling * depth_iqr_scaled +
+#     (1|species), REML = T,
+#   data = ddat1)
+
+tempslopemod %>% summary()
+# 
+# (p_depth_troph <- interactions::interact_plot(tempslopemod, 
+#   pred = depth_iqr_scaled, modx = Specialist, 
+#   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
+#   outcome.scale = "response", 
+#   # plot.points = TRUE,
+#   #partial.residuals = T, 
+#   point.alpha = 0.01,
+#   point.shape = T, 
+#   # legend.main = "Specialist level",
+#   modx.values = c("Lower", "Higher"),
+#   vary.lty =TRUE
+# ) + 
+#     geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Specialist == "Lower"),
+#       aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
+#       inherit.aes = F) +
+#     geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Specialist == "Lower"),
+#       aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
+#       inherit.aes = F) +
+#     geom_linerange(data = filter(ddat, chopstick == "high" & Specialist == "Lower"),
+#       aes(x = depth_iqr_scaled,
+#         ymin = (slope_est - slope_se * 1.96),
+#         ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "royalblue4", fatten = 1, inherit.aes = F) +
+#     geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Specialist == "Higher"),
+#       aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+#       inherit.aes = F) +
+#     geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Specialist == "Higher"),
+#       aes(depth_iqr_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+#       inherit.aes = F) +
+#     geom_linerange(data = filter(ddat, chopstick == "high" & Specialist == "Higher"), 
+#       aes(x = depth_iqr_scaled,
+#         ymin = (slope_est - slope_se * 1.96),
+#         ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "deepskyblue3", fatten = 1, inherit.aes = F) +
+#     # geom_linerange(data = filter(temp_slopes, chopstick == "low"), 
+#     #   aes(x = depth_iqr_scaled,
+#     #     ymin = (slope_est - slope_se * 1.96),
+#     #     ymax = (slope_est + slope_se * 1.96),
+#     #     colour = Specialist, shape = Specialist), alpha = 0.2, fatten = 1, inherit.aes = F) +
+#     
+#     scale_colour_manual(values = c("white", "white")) +
+#     # scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
+#     scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
+#     # scale_colour_manual(values = c("royalblue4", "red 4")) +
+#     # scale_fill_manual(values = c("royalblue4", "red 3")) +
+#     scale_shape_manual(values = c(19, 19)) +
+#     # back transform axis labels on scaled depth iqr
+#     scale_x_continuous(labels = function(x) 
+#       paste0(round(exp(x * attributes(temp_slopes$depth_iqr_scaled)[[3]] + 
+#           attributes(temp_slopes$depth_iqr_scaled)[[2]])))) +
+#     coord_cartesian(ylim = c(-6,3)) +
+#     ggtitle("Specialist level") +
+#     # ylab("Peak Frequency") +
+#     xlab("Depth range (IQR)") +
+#     # labs(tag = "D") + 
+#     gfplot::theme_pbs() + theme(
+#       plot.margin = margin(0.2, 0.2, 0.2, 0.1, "cm"),
+#       axis.title=element_blank(),
+#       axis.text.y=element_blank(),
+#       axis.ticks.y=element_blank(),
+#       plot.tag.position = c(0.225,0.925),
+#       legend.title.align=0,
+#       legend.title = element_blank(),
+#       # legend.position = "none")
+#       # legend.position = c(0.8,0.15))
+#       legend.position = c(0.15,0.85))
+# )
+
+### vel ####
+tempslopemod <- lmerTest::lmer(slope ~
+    Specialist +
+    depth_mean_scaled +
+    # Specialist * depth_mean_scaled +
+    chopstick +
+    # age +
+    (1|species) + (1|species_age), REML = T,
+  data = ddat)
+
+tempslopemod %>% summary()
+# 
+# (p_depth_troph <- interactions::interact_plot(tempslopemod, 
+#   pred = depth_mean_scaled, modx = Specialist, 
+#   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
+#   outcome.scale = "response", 
+#   # plot.points = TRUE,
+#   #partial.residuals = T, 
+#   point.alpha = 0.01,
+#   point.shape = T, 
+#   # legend.main = "Specialist level",
+#   # modx.values = c("Lower", "Higher"),
+#   vary.lty =TRUE
+# ) + 
+#     geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Specialist == "Generalist"),
+#       aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
+#       inherit.aes = F) +
+#     geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Specialist == "Generalist"),
+#       aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
+#       inherit.aes = F) +
+#     geom_linerange(data = filter(ddat, chopstick == "high" & Specialist == "Generalist"),
+#       aes(x = depth_mean_scaled,
+#         ymin = (slope_est - slope_se * 1.96),
+#         ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "royalblue4", fatten = 1, inherit.aes = F) +
+#     geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Specialist == "Specialist"),
+#       aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+#       inherit.aes = F) +
+#     geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Specialist == "Specialist"),
+#       aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+#       inherit.aes = F) +
+#     geom_linerange(data = filter(ddat, chopstick == "high" & Specialist == "Specialist"), 
+#       aes(x = depth_mean_scaled,
+#         ymin = (slope_est - slope_se * 1.96),
+#         ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "deepskyblue3", fatten = 1, inherit.aes = F) +
+#     scale_colour_manual(values = c("white", "white")) +
+#     # scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
+#     scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
+#     # scale_colour_manual(values = c("royalblue4", "red 4")) +
+#     # scale_fill_manual(values = c("royalblue4", "red 3")) +
+#     scale_shape_manual(values = c(19, 19)) +
+#     # back transform axis labels on scaled depth iqr
+#     scale_x_continuous(labels = function(x) 
+#       paste0(round(exp(x * attributes(temp_slopes$depth_mean_scaled)[[3]] + 
+#           attributes(temp_slopes$depth_mean_scaled)[[2]])))) +
+#     # coord_cartesian(ylim = c(-6,3)) +
+#     ggtitle("Specialist level") +
+#     # ylab("Peak Frequency") +
+#     xlab("Depth range (IQR)") +
+#     # labs(tag = "D") + 
+#     gfplot::theme_pbs() + theme(
+#       plot.margin = margin(0.2, 0.2, 0.2, 0.1, "cm"),
+#       axis.title=element_blank(),
+#       axis.text=element_blank(),
+#       axis.ticks=element_blank(),
+#       plot.tag.position = c(0.225,0.925),
+#       legend.title.align=0,
+#       legend.title = element_blank(),
+#       # legend.position = "none")
+#       # legend.position = c(0.8,0.15))
+#       legend.position = c(0.15,0.85))
+# )
+
+###
+#
 ### schooling violin ####
 # 
 # (p_sch <- effect_plot(tempslopemod, pred = Schooling,
@@ -1673,21 +2396,23 @@ ddat %>% mutate(pearson = residuals(tempslopemod,type="pearson"),
   # x = Zone
   x = depth_iqr_scaled
   ) %>% 
-ggplot(aes(x ,y=pearson)) +
-  geom_point() +
-  theme_bw()
+# ggplot(aes(x ,y=pearson)) +
+#   geom_point() +
+#   theme_bw()
 
 ##### DO ################
 #### for low DO slopes #### 
 #### LATITUDE ####
-doslopemod <- lmerTest::lmer(slope_trim ~
+
+doslopemod <- lmerTest::lmer(slope_est ~
     Latitude +
     depth_mean_scaled +
-    Latitude * depth_mean_scaled  +
+    # Latitude * depth_mean_scaled  +
     chopstick +
     # age +
     (1|species) + (1|species_age), REML = T,
-  data = ddatdo) 
+    data = ddatdo) 
+
 
 # doslopemod <- lmerTest::lmer(slope ~
 #     Latitude +
@@ -1712,20 +2437,20 @@ doslopemod %>% summary()
   vary.lty = TRUE
 ) + 
     geom_point(data = filter(ddatdo, chopstick == "low" & age == "Mature" & Latitude == "North"),
-      aes(depth_mean_scaled, slope), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
       inherit.aes = F) +
     geom_point(data = filter(ddatdo, chopstick == "low" & age == "Immature" & Latitude == "North"),
-      aes(depth_mean_scaled, slope), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
       inherit.aes = F) +
     geom_linerange(data = filter(ddatdo, chopstick == "low" & Latitude == "North"),
       aes(x = depth_mean_scaled,
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "royalblue4", fatten = 1, inherit.aes = F) +
     geom_point(data = filter(ddatdo, chopstick == "low" & age == "Mature" & Latitude == "South"),
-      aes(depth_mean_scaled, slope), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
       inherit.aes = F) +
     geom_point(data = filter(ddatdo, chopstick == "low" & age == "Immature" & Latitude == "South"),
-      aes(depth_mean_scaled, slope), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
       inherit.aes = F) +
     geom_linerange(data = filter(ddatdo, chopstick == "low" & Latitude == "South"), 
       aes(x = depth_mean_scaled,
@@ -1745,7 +2470,9 @@ doslopemod %>% summary()
           attributes(do_slopes$depth_mean_scaled)[[2]])))) +
     # coord_cartesian(ylim = c(-10,5)) +
     gfplot::theme_pbs() + 
-    ylab("Biotic trend ~ DO trend at low DO") +
+    ylab(expression(~italic("R")~"~ DO velocity at low DO")) +
+    # ylab(expression(~italic("R")~"~ DO trend at low DO")) + 
+    # ylab("Biotic trend ~ DO trend at low DO") +
     xlab("Mean depth occupied") +
     # labs(tag = "D") + 
     gfplot::theme_pbs() + theme(
@@ -1757,17 +2484,17 @@ doslopemod %>% summary()
       legend.title.align=0,
       # legend.title = element_blank(),
       legend.position = "none")
-      # legend.position = c(0.8,0.15))
-      # legend.position = c(0.2,0.85))
-)
+  # legend.position = c(0.8,0.15))
+  # legend.position = c(0.2,0.85))
+)  
 ###
 
 #### TROPHIC LEVEL ####
 
-doslopemod <- lmerTest::lmer(slope_trim ~
+doslopemod <- lmerTest::lmer(slope_est ~
     Trophic +
     depth_mean_scaled +
-    Trophic * depth_mean_scaled +
+    # Trophic * depth_mean_scaled +
     chopstick +
     # age +
     (1|species) + (1|species_age), REML = T,
@@ -1786,6 +2513,10 @@ doslopemod <- lmerTest::lmer(slope_trim ~
 doslopemod %>% summary()
 
 
+
+doslopemod %>% summary()
+
+
 (pd_depth_troph <- interactions::interact_plot(doslopemod, 
   pred = depth_mean_scaled, modx = Trophic, 
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
@@ -1794,26 +2525,26 @@ doslopemod %>% summary()
   #partial.residuals = T, 
   point.alpha = 0.01,
   point.shape = T, 
-  # legend.main = "Trophic level",
-  # colors = c("white", "white"),
+  # # legend.main = "Trophic level",
+  # colors = c("royalblue4", "deepskyblue3"),
   modx.values = c("Lower", "Higher"),
   vary.lty =TRUE
 ) +    
     geom_point(data = filter(ddatdo, chopstick == "low" & age == "Mature" & Trophic == "Lower"),
-      aes(depth_mean_scaled, slope), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
       inherit.aes = F) +
     geom_point(data = filter(ddatdo, chopstick == "low" & age == "Immature" & Trophic == "Lower"),
-      aes(depth_mean_scaled, slope), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
       inherit.aes = F) +
     geom_linerange(data = filter(ddatdo, chopstick == "low" & Trophic == "Lower"),
       aes(x = depth_mean_scaled,
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)), alpha = 1, colour = "royalblue4", fatten = 1, inherit.aes = F) +
     geom_point(data = filter(ddatdo, chopstick == "low" & age == "Mature" & Trophic == "Higher"),
-      aes(depth_mean_scaled, slope), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
       inherit.aes = F) +
     geom_point(data = filter(ddatdo, chopstick == "low" & age == "Immature" & Trophic == "Higher"),
-      aes(depth_mean_scaled, slope), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+      aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
       inherit.aes = F) +
     geom_linerange(data = filter(ddatdo, chopstick == "low" & Trophic == "Higher"), 
       aes(x = depth_mean_scaled,
@@ -1824,7 +2555,7 @@ doslopemod %>% summary()
     #     ymin = (slope_est - slope_se * 1.96),
     #     ymax = (slope_est + slope_se * 1.96),
     #     colour = Schooling), alpha = 0.2, fatten = 1, inherit.aes = F) +
-    scale_colour_manual(values = c("white", "white")) +
+    scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
     scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
     # back transform axis labels on scaled depth iqr
     scale_x_continuous(labels = function(x) 
@@ -1844,17 +2575,17 @@ doslopemod %>% summary()
       legend.title.align=0,
       # legend.title = element_blank(),
       legend.position = "none")
-      # legend.position = c(0.8,0.15))
-      # legend.position = c(0.2,0.85))
+  # legend.position = c(0.8,0.15))
+  # legend.position = c(0.2,0.85))
 )
 
 ###
 
 #### FORAGING ZONE ####
-doslopemod <- lmerTest::lmer(slope_trim ~
+doslopemod <- lmerTest::lmer(slope_est ~
     Zone +
     depth_mean_scaled +
-    Zone * depth_mean_scaled +
+    # Zone * depth_mean_scaled +
     chopstick +
     # age +
     (1|species) + (1|species_age), REML = T,
@@ -1881,10 +2612,10 @@ doslopemod %>% summary()
   modx.values = c("Demersal", "Benthopelagic"),
   vary.lty =TRUE
 ) + geom_point(data = filter(ddatdo, chopstick == "low" & age == "Mature"),
-  aes(depth_mean_scaled, slope, colour = Zone), alpha = 1, size = 1.5, shape = 19,
+  aes(depth_mean_scaled, slope_est, colour = Zone), alpha = 1, size = 1.5, shape = 19,
   inherit.aes = F) +
     geom_point(data = filter(ddatdo, chopstick == "low" & age == "Immature"),
-      aes(depth_mean_scaled, slope, colour = Zone), alpha = 1, size = 1.5, shape = 21,
+      aes(depth_mean_scaled, slope_est, colour = Zone), alpha = 1, size = 1.5, shape = 21,
       inherit.aes = F) +
     geom_linerange(data = filter(ddatdo, chopstick == "low"), 
       aes(x = depth_mean_scaled,
@@ -1926,10 +2657,10 @@ doslopemod %>% summary()
 
 #### SCHOOLING ####
 
-doslopemod <- lmerTest::lmer(slope_trim ~
+doslopemod <- lmerTest::lmer(slope_est ~
     Schooling +
     depth_mean_scaled +
-    Schooling * depth_mean_scaled +
+    # Schooling * depth_mean_scaled +
     chopstick +
     # age +
     (1|species) + (1|species_age), REML = T,
@@ -1956,10 +2687,10 @@ doslopemod %>% summary()
   modx.values = c("Solitary", "Schooling"),
   vary.lty =TRUE
 ) + geom_point(data = filter(ddatdo, chopstick == "low" & age == "Mature"),
-      aes(depth_mean_scaled, slope, colour = Schooling), alpha = 1, size = 1.5, shape = 19,
+      aes(depth_mean_scaled, slope_est, colour = Schooling), alpha = 1, size = 1.5, shape = 19,
       inherit.aes = F) +
     geom_point(data = filter(ddatdo, chopstick == "low" & age == "Immature"),
-      aes(depth_mean_scaled, slope, colour = Schooling), alpha = 1, size = 1.5, shape = 21,
+      aes(depth_mean_scaled, slope_est, colour = Schooling), alpha = 1, size = 1.5, shape = 21,
       inherit.aes = F) +
     geom_linerange(data = filter(ddatdo, chopstick == "low"), 
       aes(x = depth_mean_scaled,
@@ -2020,14 +2751,14 @@ ddatdo %>% mutate(pearson = residuals(doslopemod,type="pearson"),
 #     just = 1, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 2, heights = c(1, 0.02))
 
 # ggsave(here::here("ms", "figs", "ecology-slope-model-2.pdf"), width = 10, height = 3.5)
-
-(p_depth_lat + p_depth_troph + p_depth_zone + p_depth_sch +
-    plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Depth range (IQR)",
-      just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 2, heights = c(1, 0.02)) 
-
-ggsave(here::here("ms", "figs", "ecology-slope-model-4-trimmed.pdf"), width = 12, height = 3.5)
-
-
+# 
+# (p_depth_lat + p_depth_troph + p_depth_zone + p_depth_sch +
+#     plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Depth range (IQR)",
+#       just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 2, heights = c(1, 0.02)) 
+# 
+# ggsave(here::here("ms", "figs", "ecology-slope-model-4-trimmed.pdf"), width = 12, height = 3.5)
+# 
+# 
 
 
 ((p_depth_lat + p_depth_troph + p_depth_zone + p_depth_sch +
@@ -2039,7 +2770,16 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-4-trimmed.pdf"), width = 12
 
 ggsave(here::here("ms", "figs", "ecology-slope-model-trimmed.pdf"), width = 12, height =7)
 
-ggsave(here::here("ms", "figs", "ecology-slope-models-all2.pdf"), width = 12, height = 7)
+((p_depth_lat + p_depth_troph + p_depth_zone + p_depth_sch +
+    plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("",
+      just = 0.3, gp = grid::gpar(fontsize = 1))/
+    (pd_depth_lat + pd_depth_troph + pd_depth_zone + pd_depth_sch +
+        plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Mean depth occupied",
+          just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 4, heights = c(1, 0.001, 1, 0.02))) 
+
+ggsave(here::here("ms", "figs", "ecology-slope-model-vel.pdf"), width = 12, height =7)
+
+# ggsave(here::here("ms", "figs", "ecology-slope-models-all2.pdf"), width = 12, height = 7)
 
 
 ##### effect code for factors or without interactions #####

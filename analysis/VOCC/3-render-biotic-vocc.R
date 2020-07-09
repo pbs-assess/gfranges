@@ -78,7 +78,7 @@ for (r_h in seq_along(list_regions)) {
         output_file = paste0(
           "html/VOCC-plots/vocc-w-do-", spp,
           # "-imm",
-          covs, "-", reg, "-updated-climate.html"
+          covs, "-", reg, "-more2016.html"
         ),
         envir = env
       )
@@ -105,7 +105,7 @@ for (r_h in seq_along(list_regions)) {
         output_file = paste0(
           "html/VOCC-plots/vocc-w-do-", spp,
           "-imm",
-          covs, "-", reg, "-updated-climate.html"
+          covs, "-", reg, "-more2016.html"
         ),
         envir = env
       )
