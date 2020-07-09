@@ -108,7 +108,7 @@ add_missing_depths <- function(dat, survey, years, bath) {
 #' Scale survey predictors
 #'
 #' @param dat Dataframe.
-#' @param predictors List of variable names must be wrapped in 'quo()'.
+#' @param predictors List of variable names, each of which must be wrapped in 'quo()'.
 #'
 #' @export
 #'
