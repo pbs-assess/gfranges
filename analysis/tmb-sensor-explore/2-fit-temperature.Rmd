@@ -8,7 +8,7 @@ editor_options:
 ```{r setup}
 library(tidyverse)
 library(sdmTMB)
-library(future)
+# library(future)
 library(dplyr)
 ```
 
@@ -92,6 +92,51 @@ sum(abs(predictions$residuals))
 # 2908.879-2789.322
 # 119.557/2908.879 # 4% reduction in abs errors
 ```
+
+```{r eval=F}
+# test against ROMS
+events_roms <- readRDS("data/roms_temp_by_events2.rds") %>% select(fishing_event_id, roms, year)
+ 
+predictions <- left_join(predictions, events_roms)
+
+cor(predictions$roms, predictions$est, use = "pairwise.complete.obs")
+cor(predictions$roms, predictions$temperature_c, use = "pairwise.complete.obs")
+
+ggplot(predictions, aes(roms, est, colour = -depth)) + geom_point(alpha=0.3) + 
+  facet_wrap(~year) + coord_cartesian(xlim = c(2,13), ylim = c(2,13)) +
+  geom_abline(intercept = 0, slope = 1) +
+  gfplot::theme_pbs()
+
+ggplot(predictions, aes(roms, temperature_c, colour = DOY)) + geom_point(alpha=0.3) +
+  facet_wrap(~year) + coord_cartesian(xlim = c(2,13), ylim = c(2,13)) +
+  geom_abline(intercept = 0, slope = 1) +
+  scale_colour_viridis_c() +
+  gfplot::theme_pbs()
+
+ggplot(predictions, aes(DOY, (roms-temperature_c), colour = -depth)) + geom_point(alpha=0.3) +
+  facet_wrap(~year) + #coord_cartesian(xlim = c(2,13), ylim = c(2,13)) +
+  geom_abline(intercept = 0, slope = 0) +
+  scale_colour_viridis_c() +
+  gfplot::theme_pbs()
+
+ggplot(predictions, aes(DOY, (est-roms), colour = -depth)) + geom_point(alpha=0.3) +
+  facet_wrap(~year) + #coord_cartesian(xlim = c(2,13), ylim = c(2,13)) +
+  geom_abline(intercept = 0, slope = 0) +
+  scale_colour_viridis_c() +
+  gfplot::theme_pbs()
+
+p_nd <- readRDS((here::here("analysis/VOCC/data/predicted-DO-2020-06-20-more2016-roms.rds")))
+
+cor(p_nd$roms_temp, p_nd$temp, use = "pairwise.complete.obs")
+
+ggplot(p_nd, aes(roms_temp, temp, colour = -depth)) + geom_point(alpha=0.04) + 
+  facet_wrap(~year) + coord_cartesian(xlim = c(2,13), ylim = c(2,13)) +
+  geom_abline(intercept = 0, slope = 1) +
+  gfplot::theme_pbs()
+
+```
+
+
 
 Model diagnostics functions
 ```{r}
