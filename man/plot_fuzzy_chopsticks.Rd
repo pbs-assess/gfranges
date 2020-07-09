@@ -15,7 +15,7 @@ plot_fuzzy_chopsticks(
   global_col = "gray30",
   choose_species = NULL,
   choose_age = NULL,
-  order_var = "species",
+  order_by_chops = c("low", "high"),
   slopes = NULL,
   imm_model = NULL,
   imm_slopes = NULL,
@@ -43,8 +43,6 @@ plot_fuzzy_chopsticks(
 
 \item{choose_age}{Option to choose just one age class}
 
-\item{order_var}{Varible to order plots by}
-
 \item{slopes}{Df of slopes from chopstick_slopes function}
 
 \item{imm_model}{Add immature data from separate model}
@@ -52,6 +50,8 @@ plot_fuzzy_chopsticks(
 \item{imm_slopes}{Add separate slope df for immatures}
 
 \item{rug}{Logical for adding rug}
+
+\item{order_var}{Varible to order plots by}
 }
 \description{
 Plot interactions with confidence intervals

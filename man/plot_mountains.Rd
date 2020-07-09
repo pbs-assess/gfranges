@@ -14,7 +14,8 @@ plot_mountains(
 )
 }
 \arguments{
-\item{dat}{Dataframe of density estimates containing x, y_hat, year, and type}
+\item{dat}{Dataframe of density estimates containing x, y_hat, year, and type
+Create using density functions: fixed_density or time_varying_density}
 
 \item{time_varying}{Logical for if the parameter of interest is time-varying}
 

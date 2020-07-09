@@ -177,8 +177,8 @@ fixed_density <- function(m,
   fixed_params = 1, 
   quadratics_only = TRUE 
   ) {
-  
-  get_y_hat <- function(b0, b1, b2, year, 
+  browser()
+  get_y_hat <- function(b0, b1, b2, time, 
     predictor, mean_column, sd_column
   ) {
     
@@ -207,7 +207,7 @@ fixed_density <- function(m,
         x = (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]]), 
         # leave these values as predicted for un-trawled zone
         y_hat = exp(b0 + b1 * x_pred + b2 * x_pred^2), 
-        year = year
+        time = time
       )
       
     } else {
@@ -220,7 +220,7 @@ fixed_density <- function(m,
       x = (x_pred * m$data[[sd_column]][[1]] + m$data[[mean_column]][[1]]), 
       # leave these values as predicted for un-trawled zone
       y_hat = exp(b0 + b1 * x_pred + b2 * x_pred^2), 
-      year = year
+      time = time
     )
     #  browser()  
     }
@@ -245,7 +245,7 @@ fixed_density <- function(m,
       b0 = b_j[.t],
       b1 = b1,
       b2 = b2,
-      year = time_steps[.t],
+      time = time_steps[.t],
       sd_column = paste0(predictor, "_sd"),
       mean_column = paste0(predictor, "_mean"),
       predictor = paste0(predictor, "_scaled")

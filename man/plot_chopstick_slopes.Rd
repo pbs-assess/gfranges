@@ -17,6 +17,7 @@ plot_chopstick_slopes(
   alpha_range = c(0.4, 0.99),
   add_grey_bars = F,
   name_chop_type = T,
+  order_by_chops = NULL,
   colours = NULL
 )
 }
