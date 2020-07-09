@@ -13,9 +13,9 @@ params:
     # species: "Sablefish"
     species: "Arrowtooth Flounder"
     immature: T
-    # region: "West Coast Vancouver Island"
+    region: "West Coast Vancouver Island"
     # region: "both odd year surveys"
-    region: "West Coast Haida Gwaii"
+    # region: "West Coast Haida Gwaii"
     covs: "-tv-depth-only"
     climate_mod: "2020-06-20-more2016"
     scrambled_years: FALSE
@@ -175,7 +175,7 @@ if (scrambled_years) {
 
 #### Load climate data
 ```{r}
-nd_all <- readRDS(paste0("data/predicted-DO-", climate_mod, ".rds")) %>% select(X, Y, year, temp, do_est) 
+nd_all <- readRDS(paste0("data/predicted-DO-", climate_mod, "-roms.rds")) %>% select(X, Y, year, temp, do_est, roms_temp) 
 
 d <- left_join(d, nd_all, by = c("X", "Y", "year"))
 
@@ -268,9 +268,109 @@ temp_median_sd <- median(gf2$sd, na.rm = T) # [1] 0.2882
 # temp_sd_choice <- temp_min_sd
 # lower_change_t <- temp_sd_choice*2
 # upper_change_t <- temp_sd_choice*2
-
-
 ```
+
+
+### Annual temperature (ROMS)
+```{r}
+rm(roms)
+try({roms <- readRDS(paste0("data/_climate_vocc/annual-temp-vocc-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
+})
+
+if(!exists("roms")){
+
+roms <- vocc_gradient_calc(d, "roms_temp",
+  scale_fac = scale_fac,
+  # all layers with max indice will be averaged for spatial gradient
+  # if default (NULL) will use all years
+  indices = indices,
+  # divisor = 1, #default of 10 gives per decade
+  quantile_cutoff = 0.05
+)
+
+roms <- roms %>%
+  mutate(
+    ## these are only relevant if divisor = 1 
+    # trend_per_year = trend,
+    # trend_per_decade = trend_per_year * 10,
+    trend_per_year = trend/10,
+    trend_per_decade = trend_per_year * 10,
+    velocity = velocity
+  ) %>%
+  dplyr::mutate(X = x, Y = y)
+
+# # FULL DATASET
+# # mean(roms$sd, na.rm = T) # [1] 0.3434
+# # min(roms$sd, na.rm = T) # [1] 0.1266
+# # max(roms$sd, na.rm = T) # [1] 1.12
+# # median(roms$sd, na.rm = T) # [1] 0.287
+# # 
+# # 2008 DATASET
+# mean(roms$sd, na.rm = T) # [1] 0.3274
+# temp_min_sd <- min(roms$sd, na.rm = T) # [1] 0.1035
+# max(roms$sd, na.rm = T) # [1] 1.248
+# temp_median_sd <- median(roms$sd, na.rm = T) # [1] 0.2882
+# 
+# temp_sd_choice <- temp_min_sd
+# lower_change_t <- temp_sd_choice*2
+# upper_change_t <- temp_sd_choice*2
+# 
+# dvocc_t <- make_vector_data(d,
+#   variable_names = c("temp"),
+#   ssid = model_ssid,
+#   input_cell_size = 2,
+#   scale_fac = scale_fac,
+#   min_dist = 0,
+#   delta_t_total = years_sampled,
+#   delta_t_step = 2,
+#   indices = indices,
+#   min_thresholds = lower_change_t,
+#   max_thresholds = upper_change_t,
+#   round_fact = 10
+# )
+# 
+# dvocc_t <- dvocc_t %>% mutate(dvocc = if_else(slope < 0, -km_per_decade, km_per_decade), trend = slope)
+# dvocc_t <- dvocc_t %>% mutate(dvocc = if_else(dvocc > (max_dist_all_years/ year_range)*10, 
+#   (max_dist_all_years/ year_range)*10, dvocc))
+# dvocc_t <- mutate(dvocc_t, dvocc = if_else(dvocc < -(max_dist_all_years / year_range)*10,
+#   -(max_dist_all_years / year_range)*10, dvocc))
+# 
+# dv_t <- dvocc_t %>% select(icell, x, y, dvocc) %>% unique()
+# 
+# # glimpse(dv_t)
+# # glimpse(roms)
+# 
+# # roms$dvocc <- dv_t$dvocc
+# 
+# roms <- left_join(roms, dv_t)
+
+saveRDS(roms, file = paste0("data/_climate_vocc/annual-temp-vocc-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
+
+# mine <- gf2 %>% select(x, y, temp_trend = trend, temp_vel = velocity, temp_grad= gradient)
+# other <- roms %>% select(x, y, roms_temp_trend = trend, roms_temp_vel = velocity, roms_temp_grad= gradient)
+# 
+# check <- left_join(mine, other)
+# 
+# ggplot(check, aes(roms_temp_trend, temp_trend)) + 
+#   geom_point(alpha=0.2) +
+#   coord_cartesian(xlim = c(-1,2.5), ylim = c(-1,2.5)) +
+#   geom_abline(intercept = 0, slope = 1) +
+#   gfplot::theme_pbs()
+
+}
+```
+
+
+```{r}
+# ggplot(check, aes(roms_temp_vel, temp_vel)) + 
+#   geom_point(alpha=0.2) +
+#   coord_cartesian(xlim = c(-20,80), ylim = c(-20,80)) +
+#   geom_abline(intercept = 0, slope = 1) +
+#   gfplot::theme_pbs()
+```
+
+
+
 
 ### Dissolved Oxygen
 ```{r }

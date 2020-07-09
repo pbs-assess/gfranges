@@ -1,4 +1,7 @@
 # ### JUST CLIMATE AND FISHING COVARIATES
+library(tidyverse)
+library(sdmTMB)
+library(gfranges)
 
 setwd(here::here("analysis", "VOCC"))
 
@@ -42,9 +45,35 @@ d <- left_join(fished, DO_values)
 d <- left_join(d, t_values)
 
 
+# ANNUAL TEMP
+at16 <- readRDS(paste0("data/_climate_vocc/annual-temp-vocc-2020-06-20-more2016-scale-2-ssid16-years-6.rds"))
+at1n3 <- readRDS(paste0("data/_climate_vocc/annual-temp-vocc-2020-06-20-more2016-scale-2-ssid1n3-years-5.rds"))
+at4 <- readRDS(paste0("data/_climate_vocc/annual-temp-vocc-2020-06-20-more2016-scale-2-ssid4-years-6.rds"))
+
+at_vocc <- rbind(at16, at1n3, at4)
+
+at_values <- at_vocc %>%
+  rename(
+    ann_temp_vel = velocity,
+    # ann_temp_dvocc = dvocc,
+    ann_temp_trend = trend_per_decade,
+    ann_temp_grad = gradient,
+    ann_mean_temp = mean
+  ) %>%
+  select(x, y, ann_temp_vel, #ann_temp_dvocc, 
+    ann_temp_trend, ann_temp_grad, ann_mean_temp)
+
+
+d <- left_join(d, at_values)
+
+
 #### PREP DATA ####
 d$squashed_temp_vel <- collapse_outliers(d$temp_vel, c(0.005, 0.995)) #99th quantile and then droped to be less than 100km
 hist(d$squashed_temp_vel, breaks = 100)
+
+d$squashed_ann_temp_vel <- collapse_outliers(d$ann_temp_vel, c(0.005, 0.995)) #99th quantile and then droped to be less than 100km
+hist(d$squashed_ann_temp_vel, breaks = 100)
+
 d$squashed_DO_vel <- collapse_outliers(d$DO_vel, c(0.025, 0.975)) #95th quantile and then droped to be less than 100km
 hist(d$squashed_DO_vel, breaks = 100)
 
@@ -113,4 +142,27 @@ d$log_effort_scaled <- scale(d$log_effort, center = F)
 
 
 saveRDS(d, file = paste0("data/all-newclim-untrimmed.rds"))
+
+
+cor(d$ann_temp_trend, d$temp_trend, use = "pairwise.complete.obs")
+
+ggplot(d, aes(ann_temp_trend, temp_trend)) + 
+  geom_point(alpha=0.2) +
+  coord_cartesian(xlim = c(-1,2.5), ylim = c(-1,2.5)) +
+  geom_abline(intercept = 0, slope = 1) +
+  gfplot::theme_pbs()
+
+
+ggplot(d, aes(squashed_ann_temp_vel, squashed_temp_vel)) + 
+  geom_point(alpha=0.2) +
+  # coord_cartesian(xlim = c(-1,2.5), ylim = c(-1,2.5)) +
+  geom_abline(intercept = 0, slope = 1) +
+  gfplot::theme_pbs()
+
+ggplot(d, aes(ann_temp_grad, temp_grad)) + 
+  geom_point(alpha=0.2) +
+  coord_cartesian(xlim = c(0,1), ylim = c(0,1)) +
+  geom_abline(intercept = 0, slope = 1) +
+  gfplot::theme_pbs()
+
 
