@@ -58,6 +58,16 @@ d <- filter(d, X > 180)
 d <- filter(d, Y < 6100) 
 d <- filter(d, Y > 5300) 
 
+#### TODO: maybe should redo? to exactly match grid?
+# range(grid$X)
+# range(grid$Y)
+# d <- filter(d, X < 808) 
+# d <- filter(d, X > 166) 
+# d <- filter(d, Y < 6060) 
+# d <- filter(d, Y > 5346) 
+
+
+
 plot(d$X,d$Y)
 
 d$X <- 2 * round(d$X/2)
@@ -68,8 +78,11 @@ d <- st_set_geometry(d, NULL)
 
 dat <- inner_join(d, grid) 
 dat <- filter(dat, effort <= 9) # or max 6 hours?
+quantile(dat$effort, .975)
 
 hist(dat$effort)
+
+
 data <- dat %>% group_by(X, Y) %>% mutate(effort = sum(effort)) %>% select(-fishing_event_id) %>% distinct() %>% filter(year < 2019) %>% mutate(log_effort = log(effort))
 
 saveRDS(data, file = "analysis/VOCC/data/_fishing_effort/fishing-effort-grid.rds")
