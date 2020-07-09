@@ -28,7 +28,8 @@ max(model_vel$sdr$gradient.fixed)
 model_fish <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-w-fishing-1-500.rds")
 max(model_fish$sdr$gradient.fixed)
 
-stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
+# stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
+stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds"))
 
 # model2 <- add_colours(model$coefs, species_data = stats)
 # model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"
