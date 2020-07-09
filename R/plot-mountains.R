@@ -1,6 +1,7 @@
 #' Predicted curves for parameters in sdmTMB models
 #'
 #' @param dat Dataframe of density estimates containing x, y_hat, year, and type
+#'     Create using density functions: fixed_density or time_varying_density 
 #' @param time_varying Logical for if the parameter of interest is time-varying
 #' @param variable_label Descriptive label for parameter "x"
 #' @param xlimits X-axis limits. Default is c(0, max(dat$x))
@@ -9,7 +10,8 @@
 #'
 #' @export
 #'
-plot_mountains <- function(dat, time_varying = TRUE, 
+plot_mountains <- function(dat, 
+  time_varying = TRUE, 
   variable_label = "Depth", 
   xlimits = c(0, max(dat$x)), 
   x_breaks = waiver(),
@@ -164,10 +166,17 @@ time_varying_density <- function(m, predictor = "depth") {
 #'
 #' @param m Output of sdmTMB model
 #' @param predictor Prefix for scaled parameter in model
-#' @param fixed_param Number in sequence if model contains multiple quadratic fixed effects
+#' @param time Variable containing time_steps with separate intercepts
+#' @param fixed_params 
+#' @param quadratics_only If True doesn't plot 'happy face' quadratics.
 #'
 #' @export
-fixed_density <- function(m, predictor = "temp", fixed_params = 1, quadratics_only = TRUE) {
+fixed_density <- function(m, 
+  predictor = "temp", 
+  time = "year",
+  fixed_params = 1, 
+  quadratics_only = TRUE 
+  ) {
   
   get_y_hat <- function(b0, b1, b2, year, 
     predictor, mean_column, sd_column
@@ -222,8 +231,8 @@ fixed_density <- function(m, predictor = "temp", fixed_params = 1, quadratics_on
   coefs <- as.data.frame(summary(m$sd_report))
   coefs$name <- rownames(summary(m$sd_report))
   b_j <- c(coefs[coefs$name == "b_j", 1 ])
-  yrs <- sort(unique(m$data$year))
-  n_t <- length(yrs)
+  time_steps <- sort(unique(m$data[[time]]))
+  n_t <- length(time_steps)
   n <- 0
   if (fixed_params>1) {
     n <- (fixed_params-1)*2
@@ -236,7 +245,7 @@ fixed_density <- function(m, predictor = "temp", fixed_params = 1, quadratics_on
       b0 = b_j[.t],
       b1 = b1,
       b2 = b2,
-      year = yrs[.t],
+      year = time_steps[.t],
       sd_column = paste0(predictor, "_sd"),
       mean_column = paste0(predictor, "_mean"),
       predictor = paste0(predictor, "_scaled")
