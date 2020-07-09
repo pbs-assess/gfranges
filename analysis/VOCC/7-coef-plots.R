@@ -2,12 +2,13 @@ library(TMB)
 library(dplyr)
 library(ggplot2)
 library(gfranges)
-setwd(here::here("analysis", "VOCC"))
-compile("vocc_regression.cpp")
-dyn.load(dynlib("vocc_regression"))
-source("vocc-regression-functions.R")
+setwd(here::here())
+compile("analysis/VOCC/vocc_regression.cpp")
+dyn.load(dynlib("analysis/VOCC/vocc_regression"))
+source("analysis/VOCC/vocc-regression-functions.R")
 
-stats <- readRDS(paste0("data/life-history-behav.rds"))
+# stats <- readRDS(paste0("data/life-history-behav.rds"))
+stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds"))
 # 
 # stats$rockfish <- if_else(stats$group == "ROCKFISH", "rockfish", "other fishes")
 # stats <- stats %>% separate(species_science_name, " ", into = c("genus", "specific"))
@@ -22,18 +23,24 @@ stats <- readRDS(paste0("data/life-history-behav.rds"))
 
 ##############################
 #### LOAD MODELS ####
-model <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/trend-all-95-all-do-04-01-trend-with-do-1-500.rds")
+
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-with-do-1-500.rds") # full
+model <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") # full dataset 
+
 
 #### ONE JUST BUILT
 model <- new_model
 
-# null
-model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-1-500-DO.rds")
-model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-2-500-DO.rds")
-model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-3-500-DO.rds")
+# nulls that are currently illustrated
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-07-01-trend-with-do-sim-3-500-DO.rds") 
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-30-trend-with-do-sim-4-500-DO.rds") 
+model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-07-01-trend-with-do-sim-5-500-DO.rds")
 
-model <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-1-200-DO.rds")
-model <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-2-200-DO.rds")
+model <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-3-350-DO.rds") 
+model <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-4-350.rds")
+model <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-5-350-DO.rds")
+
+
 
 nrow(model$data)
 
@@ -47,18 +54,23 @@ manipulate::manipulate({
   as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
 )
 
-ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null6nb.pdf"), width = 12.5, height = 8.5)
+
+ggsave(here::here("ms", "figs", "supp-all-trend-coefs.pdf"), width = 12.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-all-vel-coefs.pdf"), width = 12.5, height = 8.5)
+
+# ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null6nb.pdf"), width = 12.5, height = 8.5)
 ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null5nb.pdf"), width = 12.5, height = 8.5)
 ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null4nb.pdf"), width = 12.5, height = 8.5)
 ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null3nb.pdf"), width = 12.5, height = 8.5)
-ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
-ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
+# ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
+# ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
 
 
-ggsave(here::here("ms", "figs", "supp-all-trend-coefs.pdf"), width = 12.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null5nb.pdf"), width = 12.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null4nb.pdf"), width = 12.5, height = 8.5)
 ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null3nb.pdf"), width = 12.5, height = 8.5)
-ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
-ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
+# ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
+# ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
 
 #### fishing model ####
 
