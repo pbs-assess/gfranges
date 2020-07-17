@@ -150,7 +150,10 @@ saveRDS(newdata, file = paste0("data/all-biotic-null-", null_number, "-untrimmed
 # age <- "mature"
 # age <- "immature"
 # newdata <- readRDS(paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
-newdata <- readRDS(paste0("data/all-biotic-null-", null_number, "-untrimmed.rds"))
+newdata <- readRDS(paste0("data/all-biotic-null-", null_number, "-untrimmed.rds")) %>% select(
+  -fishing_trend,  -mean_effort,  -fishing_vel,  -fishing_grad,
+  -DO_vel,  -DO_dvocc,  -DO_trend,  -DO_grad,  -mean_DO,  -dvocc_both,
+  -temp_vel,  -temp_dvocc,  -temp_trend,  -temp_grad,  -mean_temp)
 
 trimmed.dat <- list()
 for (i in seq_along(all_species)) {
@@ -165,10 +168,7 @@ data <- do.call(rbind, trimmed.dat)
 
 
 #### add in globally scaled and squashed climate data 
-vars <- readRDS(("data/all-newclim-untrimmed.rds")) %>% select(
-    -fishing_trend,  -mean_effort,  -fishing_vel,  -fishing_grad,
-    -DO_vel,  -DO_dvocc,  -DO_trend,  -DO_grad,  -mean_DO,  -dvocc_both,
-    -temp_vel,  -temp_dvocc,  -temp_trend,  -temp_grad,  -mean_temp) %>% rename(cell_depth = depth)
+vars <- readRDS(("data/all-newclim-untrimmed-2.rds"))  %>% rename(cell_depth = depth)
 
 data <- left_join(data, vars) %>% select(-X.1)
 

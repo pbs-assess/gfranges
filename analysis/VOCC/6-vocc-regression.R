@@ -47,9 +47,10 @@ y_type <- "vel"
 
 # model_type <- "-vel-temp"
 # model_type <- "-vel-do"
-# model_type <- "-dist-vel-temp"
-model_type <- "-vel-both"
+# model_type <- "-vel-both"
 
+# model_type <- "-dist-vel-temp"
+model_type <- "-dist-vel-both"
 
 ### LOAD VOCC DATA
 if (age != "both") {
@@ -129,6 +130,14 @@ hist(d$squashed_biotic_vel)
 hist(d$squashed_temp_vel_scaled, breaks = 100)
 
 d$squashed_biotic_dvocc <- collapse_outliers(d$biotic_dvocc, c(0.005, 0.995))
+hist(d$squashed_biotic_dvocc , breaks = 100)
+hist(d$squashed_temp_dvocc , breaks = 100)
+
+hist(d$DO_dvocc , breaks = 100)
+hist(d$squashed_DO_dvocc , breaks = 100)
+hist(d$temp_dvocc , breaks = 100)
+hist(d$squashed_temp_dvocc , breaks = 100)
+
 d$fake_vel <- d$fake_trend / d$biotic_grad
 hist(d$fake_vel)
 d$squashed_fake_vel <- collapse_outliers(d$fake_vel, c(0.005, 0.98))
@@ -343,8 +352,8 @@ if (model_type == "-dist-vel-temp") {
   formula <- ~ squashed_temp_dvocc_scaled +
     mean_temp_scaled +
     squashed_temp_dvocc_scaled:mean_temp_scaled +
-    log_effort_scaled + fishing_trend_scaled +
-    fishing_trend_scaled:log_effort_scaled +
+    # log_effort_scaled + fishing_trend_scaled +
+    # fishing_trend_scaled:log_effort_scaled +
     log_biomass_scaled # + log_biomass_scaled2
   # squashed_temp_vel_scaled:log_biomass_scaled
 
@@ -369,7 +378,7 @@ if (model_type == "-dist-vel-both") {
 
   temp_chopstick <- T
   DO_chopstick <- T
-  x_type <- "vel"
+  x_type <- "dvocc"
 }
 
 

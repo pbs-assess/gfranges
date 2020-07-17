@@ -13,9 +13,9 @@ params:
     # species: "Sablefish"
     species: "Arrowtooth Flounder"
     immature: T
-    region: "West Coast Vancouver Island"
+    # region: "West Coast Vancouver Island"
     # region: "both odd year surveys"
-    # region: "West Coast Haida Gwaii"
+    region: "West Coast Haida Gwaii"
     covs: "-tv-depth-only"
     climate_mod: "2020-06-20-more2016"
     scrambled_years: FALSE
@@ -219,6 +219,7 @@ gf2 <- gf2 %>%
 # median(gf2$sd, na.rm = T) # [1] 0.287
 # 
 # 2008 DATASET
+# values currently depend on survey region
 mean(gf2$sd, na.rm = T) # [1] 0.3274
 temp_min_sd <- min(gf2$sd, na.rm = T) # [1] 0.1035
 max(gf2$sd, na.rm = T) # [1] 1.248
@@ -264,6 +265,11 @@ saveRDS(gf2, file = paste0("data/_climate_vocc/temp-vocc-", climate_mod, "-scale
 temp_min_sd <- min(gf2$sd, na.rm = T) # [1] 0.1035
 # max(gf2$sd, na.rm = T) # [1] 1.248
 temp_median_sd <- median(gf2$sd, na.rm = T) # [1] 0.2882
+
+print( paste("min SD =", round(temp_min_sd, digits = 3)))
+print( paste("median SD =", round(temp_median_sd, digits = 3)))
+
+print( paste("treshold chosen =", round(temp_min_sd*2, digits = 3), "degrees C"))
 
 # temp_sd_choice <- temp_min_sd
 # lower_change_t <- temp_sd_choice*2
@@ -374,8 +380,8 @@ saveRDS(roms, file = paste0("data/_climate_vocc/annual-temp-vocc-", climate_mod,
 
 ### Dissolved Oxygen
 ```{r }
-
 rm(gf0)
+
 try({gf0 <- readRDS(paste0("data/_climate_vocc/DO-vocc-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
 })
 
@@ -412,8 +418,9 @@ max(gf0$sd, na.rm = T)
 # [1] 1.531
 do_median_sd <- median(gf0$sd, na.rm = T)
 # [1] 0.2343
-
-do_sd_choice <- do_median_sd
+do_min_sd
+do_median_sd 
+do_sd_choice <- do_min_sd
 
 
 lower_change_d <- c(do_sd_choice*2) 
@@ -508,7 +515,13 @@ saveRDS(gf0, file = paste0("data/_climate_vocc/DO-vocc-", climate_mod, "-scale-"
 
 do_min_sd <- min(gf0$sd, na.rm = T)
 do_median_sd <- median(gf0$sd, na.rm = T)
-do_sd_choice <- do_median_sd
+do_sd_choice <- do_min_sd
+
+print( paste("min SD =", round(do_min_sd, digits = 3)))
+print( paste("median SD =", round(do_median_sd, digits = 3)))
+
+print( paste("treshold chosen =", round(do_min_sd*2, digits = 3), "ml/L"))
+
 ```
 
 

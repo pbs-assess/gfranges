@@ -141,7 +141,7 @@ hist(log(d$mean_effort + 1))
 d$log_effort_scaled <- scale(d$log_effort, center = F)
 
 
-saveRDS(d, file = paste0("data/all-newclim-untrimmed.rds"))
+saveRDS(d, file = paste0("data/all-newclim-untrimmed-2.rds"))
 
 
 cor(d$ann_temp_trend, d$temp_trend, use = "pairwise.complete.obs")
@@ -165,4 +165,19 @@ ggplot(d, aes(ann_temp_grad, temp_grad)) +
   geom_abline(intercept = 0, slope = 1) +
   gfplot::theme_pbs()
 
+ggplot(d, aes(abs(temp_dvocc), abs(squashed_temp_vel))) + 
+  geom_point(alpha=0.2) +
+  # coord_cartesian(xlim = c(-1,2.5), ylim = c(-1,2.5)) +
+  geom_smooth() +
+  geom_abline(intercept = 0, slope = 1) +
+  gfplot::theme_pbs()
 
+ggplot(d, aes(abs(DO_dvocc), abs(squashed_DO_vel))) + 
+  geom_point(alpha=0.2) +
+  geom_smooth() +
+  # coord_cartesian(xlim = c(-1,2.5), ylim = c(-1,2.5)) +
+  geom_abline(intercept = 0, slope = 1) +
+  gfplot::theme_pbs()
+
+
+hist(d$DO_dvocc , breaks = 100)
