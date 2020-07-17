@@ -666,9 +666,12 @@ temp_vel_slopes <- chopstick_slopes(model_vel,
   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled",
   type = "temp"
 ) 
+
 temp_vel_slopes <- temp_vel_slopes %>% 
-  mutate(sort_var = slope_est)
+  # mutate(sort_var = slope_est)
+  mutate(sort_var = (diff))
   # mutate(sort_var = abs(diff))
+
 temp_vel_slopes$species[temp_vel_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 do_vel_slopes <- chopstick_slopes(model_vel,
@@ -676,21 +679,27 @@ do_vel_slopes <- chopstick_slopes(model_vel,
   interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
 ) 
 do_vel_slopes <- do_vel_slopes %>%  mutate(sort_var = (diff))
+
 do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
-# p_temp_worm2 <- plot_chopstick_slopes(temp_vel_slopes, type = "temp",
-#   legend_position = c(.25,.95)) + coord_flip(ylim =c(-14,7.75)) +
-#   theme(axis.title.x = element_blank()) +
-#   ggtitle("temperature")
-# p_do_worm2 <- plot_chopstick_slopes(do_vel_slopes, type = "DO",
-#   legend_position = c(.25,.95)) + coord_flip(ylim =c(-4.5,3.25)) +
-#   ggtitle("DO") +
-#   # ylab("slopes")
-#   theme(axis.title.x = element_blank())
-#
-# (p_temp_worm2 | p_do_worm2) / grid::textGrob("slope of biomass velocity relative to climate velocity", just = 0.31) +
-#   plot_layout(height = c(10.5, 0.25))
-# ggsave(here::here("ms", "figs", "worm-plot-vel.pdf"), width = 8, height = 6)
+p_temp_worm2 <- plot_chopstick_slopes(temp_vel_slopes, type = "temp",
+  add_grey_bars = T,
+  legend_position = c(.25,.95)) + #coord_flip(ylim =c(-14,7.75)) +
+  theme(axis.title.x = element_blank(),
+    legend.position = "none") + 
+  ggtitle("a. Temperature")
+p_do_worm2 <- plot_chopstick_slopes(do_vel_slopes, type = "DO",
+  add_grey_bars = T,
+  legend_position = c(.25,.95)) + #coord_flip(ylim =c(-4.5,3.25)) +
+  ggtitle("b. Dissolved oxygen") +
+  scale_x_discrete(position = "top") +
+  # ylab("slopes")
+  theme(axis.title.x = element_blank(),
+    legend.position = "none")
+
+(p_temp_worm2 | p_do_worm2) / grid::textGrob(expression(~Delta~"biotic velocity with a SD change in climate velocity"), just = 0.5) +
+  plot_layout(height = c(10.5, 0.25))
+ggsave(here::here("ms", "figs", "worm-plot-vel.pdf"), width = 8, height = 6)
 
 #### IF WE WANT PLOT OF BOTH TREND AND VELOCITY SLOPES TOGETHER ####
 
@@ -1558,7 +1567,7 @@ d <- temp_slopes %>% filter(chopstick == "high" & type == "temp" & age == "immat
 #   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 # ))
 
-ggsave(here::here("ms", "figs", "supp-age-growth.pdf"), width = 4, height = 4)
+# ggsave(here::here("ms", "figs", "supp-age-growth.pdf"), width = 4, height = 4)
 
 (p_iqr <- temp_slopes %>% filter(chopstick == "high") %>% 
     mutate(labs = if_else(age == "mature",  gsub(" Rockfish", "", species), NA_character_)) %>%
@@ -1719,6 +1728,63 @@ layout <- "
 ggsave(here::here("ms", "figs", "slope-by-depth-w-newclim-vel.png"), width = 9, height = 9)
 
 #########################
+
+# REMOVE TREND SLOPES
+#### add facet tags and save ####
+
+p_iqr <- p_iqr %>% egg::tag_facet(
+  tag_pool = c("a"),
+  open = "", close = ".", 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+)
+
+
+
+temp_high5 <- temp_high2 %>% egg::tag_facet(
+  tag_pool = c("b"),
+  open = "", close = ".", 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+)
+
+
+do_low5 <- do_low2 %>% egg::tag_facet( 
+  tag_pool = c("c"),
+  open = "", close = ".", 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+)
+
+depth_t2 <- p_depth_t %>% egg::tag_facet(
+  tag_pool = c("d"),
+  open = "", close = ".", 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+)
+depth_do2 <- p_depth_do %>% egg::tag_facet(
+  tag_pool = c("e"),
+  open = "", close = ".", 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+)
+# p_growth <- growth %>% egg::tag_facet(
+#   open = "", close = ".", tag_pool = c("b"),
+#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+# )
+
+# ggsave(here::here("ms", "figs", "supp-depth-iqr.pdf"), width = 5, height = 3.5)
+
+layout <- "
+      AB
+      CD
+      EF
+      "
+
+(p_iqr + p_iqr2 + temp_high5 + do_low5 + depth_t2 + depth_do2 + plot_layout(design = layout, heights = c(0.6, 0.5, 0.5))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + 
+  plot_layout(nrow = 2, heights = c(1, 0.02))
+
+# ggsave(here::here("ms", "figs", "slope-by-depth-quad-iqr.png"), width = 8, height = 5)
+ggsave(here::here("ms", "figs", "slope-by-depth-vel-only.png"), width = 9, height = 7)
+
+
+
+
 #########################
 #### COEFFICIENT SCATTERPLOTS AGAINST LIFE HISTORY ####
 
