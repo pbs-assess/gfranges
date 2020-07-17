@@ -504,7 +504,7 @@ p
     # scale_colour_manual(values = c("white", "white")) +
     theme(  
       plot.margin = margin(0.2, 0.2, 0, 0.3, "cm"),
-      axis.title=element_blank(),
+      # axis.title=element_blank(),
       axis.text=element_blank(),
       axis.ticks=element_blank(),
       plot.tag.position = c(0.225,0.925),
@@ -752,7 +752,7 @@ p
     scale_colour_manual(values = c("white", "white")) +
     theme(
       plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
-      axis.title.y=element_blank(),
+      # axis.title.y=element_blank(),
       axis.text.y=element_blank(),
       axis.ticks.y=element_blank(),
       plot.tag.position = c(0.225,0.925),
@@ -806,11 +806,13 @@ p
            legend.position = "none"))
      
      ( vp_depth_iqr <-  vp_depth_iqr +
-         labs(tag = "a.")  +
+         labs(tag = "a.")  + 
+         ylab(" ") +
          coord_cartesian(ylim = c(-5.5,9.5)) + # 95 trim
          theme(
            plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
-           axis.title.x =element_blank(),
+           axis.title.x =  =element_blank(),
+           axis.title.y =element_blank(),
            axis.text.x=element_blank(),
            axis.ticks.x=element_blank(),
            plot.tag.position = c(0.92,0.92),
@@ -820,12 +822,13 @@ p
          # labs(tag = "f.")  + 
          labs(tag = "b.")  + #99 trim
          coord_cartesian(ylim = c(-5.5,9.5)) + # 95 trim
+         scale_y_continuous(position = "right") + ylab("Temperature") +
          theme( 
            plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
            axis.title.x=element_blank(),
            axis.text.x=element_blank(),
            axis.ticks.x=element_blank(),
-           plot.tag.position = c(0.92,0.92),
+           plot.tag.position = c(0.82,0.92),
            legend.position = "none"))
      
      (vp_growth_rate <- vp_growth_rate + 
@@ -849,10 +852,12 @@ p
      
      ( vpd_depth_iqr <-  vpd_depth_iqr +
          labs(tag = "c.")  +
+         ylab(" ") +
          coord_cartesian(ylim = c(-9.5,5.5)) + # 95 trim
          theme(
            plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
            plot.tag.position = c(0.92,0.92),
+           axis.title.y =element_blank(),
            legend.title.align=0,
            legend.position = "none"))
      
@@ -860,9 +865,10 @@ p
      (vpd_log_age <- vpd_log_age + 
          labs(tag = "d.")  + 
          coord_cartesian(ylim = c(-9.5,5.5)) + # 95 trim
+         scale_y_continuous(position = "right") + ylab("DO") +
          theme( 
            plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
-           plot.tag.position = c(0.92,0.92),
+           plot.tag.position = c(0.82,0.92),
            legend.position = "none"))
      (vpd_growth_rate <- vpd_growth_rate + 
          labs(tag = "f.")  + 
@@ -871,8 +877,12 @@ p
            plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
            plot.tag.position = c(0.92,0.92),
            legend.position = "none"))
-     ygrob <- grid::textGrob(("Slopes"),
-       gp = grid::gpar(fontsize = 13), hjust = 0.5, rot = 90
+     
+     
+     # ygrob <- grid::textGrob(("Slopes"),
+     # ygrob <- grid::textGrob(("Relationship between biotic and climate velocities"),
+      ygrob <- grid::textGrob((expression(~Delta~"biotic velocity with a SD change in climate velocity")),
+       gp = grid::gpar(fontsize = 12), hjust = 0.45, rot = 90
      )
      
      layout <- "
@@ -886,7 +896,7 @@ p
        vpd_depth_iqr , vpd_log_age #, vpd_growth_rate
        ) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1))
      
-     ggsave(here::here("ms", "figs", "depth-age-models-vel-only.png"), width = 6, height = 6) 
+     ggsave(here::here("ms", "figs", "depth-age-models-vel-only2.png"), width = 6.5, height = 6) 
      
      
      
