@@ -632,7 +632,7 @@ temp_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_temp_vel_scaled",
   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp"
 ) %>%
-  mutate(sort_var = abs(diff))
+  mutate(sort_var = (diff))
   # mutate(sort_var = slope_est)
 
 do_vel_slopes <- chopstick_slopes(model_vel,
@@ -644,6 +644,7 @@ do_vel_slopes <- chopstick_slopes(model_vel,
 
 (p_temp_vel_chops <- plot_fuzzy_chopsticks(model_vel,
   x_variable = "squashed_temp_vel_scaled", type = "temp",
+  # x_variable = "squashed_temp_dvocc_scaled", type = "temp",
   y_label = "Predicted mature biomass vel",
   slopes = temp_vel_slopes # if add, the global slope can be included for insig
 ) + coord_cartesian(xlim = c(-0.25, 4), ylim = c(-30, 37)) +
@@ -652,6 +653,7 @@ do_vel_slopes <- chopstick_slopes(model_vel,
 
 p_do_vel_chops <- plot_fuzzy_chopsticks(model_vel,
   x_variable = "squashed_DO_vel_scaled", type = "DO",
+  # x_variable = "squashed_DO_dvocc_scaled", type = "DO",
   y_label = "Predicted mature biomass vel",
   slopes = do_vel_slopes # if add, the global slope can be included for insig.
 ) + coord_cartesian(ylim = c(-30, 37)) +
@@ -662,15 +664,15 @@ do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish C
 
 p_temp_all_vel_slopes <- plot_chopstick_slopes(temp_vel_slopes,
   type = "temp", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
-  legend_position = c(.7, .95)
-) +
+  legend_position = c(.7, .93)
+) + 
   ylab(" ") +
   coord_flip(ylim =c(-6,11))
   # coord_flip()
 
 p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
   type = "DO", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
-  legend_position = c(.25, .95)
+  legend_position = c(.25, .08)
 ) +
   ylab("slopes") +
   # coord_flip(ylim =c(-3,3.5))
@@ -680,6 +682,7 @@ p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
 cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes, p_do_vel_chops, ncol = 2, rel_widths = c(1, 2.5))
 
 ggsave(here::here("ms", "figs", "supp-vel-chopsticks-ordered.pdf"), width = 14, height = 10)
+# ggsave(here::here("ms", "figs", "supp-dvocc-chopsticks-ordered.pdf"), width = 14, height = 10)
 
 
 #########################
@@ -687,6 +690,39 @@ ggsave(here::here("ms", "figs", "supp-vel-chopsticks-ordered.pdf"), width = 14, 
 #########################
 #### SLOPE SCATTERPLOTS
 ###
+
+temp_slopes$model <- "trend"
+do_slopes$model <- "trend"
+
+temp_vel_slopes$model <- "vel"
+do_vel_slopes$model <- "vel"
+
+all_slopes <- rbind(temp_slopes, do_slopes, temp_vel_slopes, do_vel_slopes) %>% 
+  select(model, age, species, type, chopstick, slope_est, all_global_slope) %>%
+  pivot_wider( c(age, species, type, chopstick ), 
+    names_from = model, 
+    values_from = c(slope_est, all_global_slope)) 
+
+all_slopes$slope_est_trend2 = scale(collapse_outliers(all_slopes$slope_est_trend, c(0.025, 0.975)), center = F)
+all_slopes$slope_est_vel2 = scale(collapse_outliers(all_slopes$slope_est_vel, c(0.025, 0.975)), center = F)
+
+
+
+ggplot(all_slopes, aes(slope_est_vel2, slope_est_trend2)) + 
+  geom_point() + 
+  geom_vline(xintercept = 0, colour= "grey") +
+  geom_hline(yintercept = 0, colour= "grey") +
+  geom_abline(intercept = 0, slope = 1) +
+  gfplot::theme_pbs() + 
+  facet_grid(type~chopstick) 
+  # facet_grid(chopstick~type, scales = "free") 
+
+
+
+ggplot(all_slopes, aes(all_global_slope_trend, all_global_slope_vel)) + 
+  geom_point() + 
+  facet_grid(type~chopstick)
+
 ### investigate interaction slopes by mean age ####
 # temp_slopes <- left_join(temp_slopes, stats)
 # do_slopes <- left_join(do_slopes, stats)
