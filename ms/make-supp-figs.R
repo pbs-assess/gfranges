@@ -698,15 +698,13 @@ temp_vel_slopes$model <- "vel"
 do_vel_slopes$model <- "vel"
 
 all_slopes <- rbind(temp_slopes, do_slopes, temp_vel_slopes, do_vel_slopes) %>% 
-  select(model, age, species, type, chopstick, slope_est, all_global_slope) %>%
+  select(model, age, species, type, chopstick, slope_est, all_global_slope, diff) %>%
   pivot_wider( c(age, species, type, chopstick ), 
     names_from = model, 
-    values_from = c(slope_est, all_global_slope)) 
+    values_from = c(slope_est, all_global_slope, diff)) 
 
 all_slopes$slope_est_trend2 = scale(collapse_outliers(all_slopes$slope_est_trend, c(0.025, 0.975)), center = F)
 all_slopes$slope_est_vel2 = scale(collapse_outliers(all_slopes$slope_est_vel, c(0.025, 0.975)), center = F)
-
-
 
 ggplot(all_slopes, aes(slope_est_vel2, slope_est_trend2)) + 
   geom_point() + 
@@ -715,9 +713,19 @@ ggplot(all_slopes, aes(slope_est_vel2, slope_est_trend2)) +
   geom_abline(intercept = 0, slope = 1) +
   gfplot::theme_pbs() + 
   facet_grid(type~chopstick) 
-  # facet_grid(chopstick~type, scales = "free") 
+# facet_grid(chopstick~type, scales = "free") 
 
+all_slopes$diff_trend2 = scale(collapse_outliers(all_slopes$diff_trend, c(0.005, 0.995)), center = F)
+all_slopes$diff_vel2 = scale(collapse_outliers(all_slopes$diff_vel, c(0.005, 0.995)), center = F)
 
+ggplot(all_slopes, aes(diff_trend2, diff_vel2)) + 
+  geom_point() + 
+  geom_vline(xintercept = 0, colour= "grey") +
+  geom_hline(yintercept = 0, colour= "grey") +
+  geom_abline(intercept = 0, slope = 1) +
+  gfplot::theme_pbs() + 
+  # facet_grid(type~chopstick) 
+  facet_grid(chopstick~type, scales = "free")
 
 ggplot(all_slopes, aes(all_global_slope_trend, all_global_slope_vel)) + 
   geom_point() + 
@@ -729,7 +737,7 @@ ggplot(all_slopes, aes(all_global_slope_trend, all_global_slope_vel)) +
 all_slopes <- rbind(temp_slopes, do_slopes)
 all_slopes <- rbind(temp_slopes, do_slopes) %>% mutate(growth_rate = length_50_mat_f / age_mat)
 
-slope_depth <- slope_scatterplot(all_slopes, "depth",
+(slope_depth <- slope_scatterplot(all_slopes, "depth",
   col_group = "age", point_size = 3
 ) +
   # geom_smooth(
@@ -750,7 +758,7 @@ slope_depth <- slope_scatterplot(all_slopes, "depth",
     plot.subtitle = element_text(hjust = 0.5, vjust = 0.4)
     # axis.text.y = element_blank(),
     # axis.ticks = element_blank()
-  )
+  ))
 
 slope_age <- slope_scatterplot(all_slopes, "age_mean",
   col_group = "age", point_size = 3
