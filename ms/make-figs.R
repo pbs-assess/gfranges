@@ -21,27 +21,8 @@ max(model_vel$sdr$gradient.fixed)
 # stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
 stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds"))
 
-alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-untrimmed.rds"))
-
-#### SAVE TEX VALUES FOR CLIMATE IQRs ####
-
-# # temperature
-# write_tex(signif(quantile(alldata$temp_trend, 0.025), digits = 2), "lowTquantile")
-# write_tex(signif(quantile(alldata$temp_trend, 0.975), digits = 2), "highTquantile")
-# # DO
-# write_tex(signif(quantile(alldata$DO_trend, 0.025), digits = 2), "lowDOquantile")
-# write_tex(signif(quantile(alldata$DO_trend, 0.975), digits = 2), "highDOquantile")
-# # SD for scaled variables
-# write_tex(signif(attributes(alldata$temp_trend_scaled)[[2]], digits = 2), "temptrendSD")
-# write_tex(signif(attributes(alldata$DO_trend_scaled)[[2]], digits = 2), "DOtrendSD")
-# write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelSD")
-# write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelSD")
-
-#########################
-#########################
-#### CLIMATE MAPS ####
-# 
-# # test filter of cells by observed depth, DO and temp values 
+alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-untrimmed-dvocc-med.rds"))
+## FILTER TO DEPTHS SAMPLED
 # range(survey_sets$depth_m, na.rm = T) 
 #   18 1308
 # quantile(survey_sets$depth_m, c(0.005, 0.995), na.rm = T)
@@ -50,6 +31,27 @@ alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-untrimmed.rds"))
 # alldata2 <- alldata %>% filter(depth > 18) %>% filter(depth < 1308)
 alldata <- alldata %>% filter(depth > 23) %>% filter(depth < 1112) # 99th
 # alldata2 <- alldata %>% filter(depth > 31) %>% filter(depth < 523.8) # 95th
+
+#### SAVE TEX VALUES FOR CLIMATE IQRs ####
+
+# temperature
+write_tex(signif(quantile(alldata$temp_trend, 0.025), digits = 2), "lowTquantile")
+write_tex(signif(quantile(alldata$temp_trend, 0.975), digits = 2), "highTquantile")
+# DO
+write_tex(signif(quantile(alldata$DO_trend, 0.025), digits = 2), "lowDOquantile")
+write_tex(signif(quantile(alldata$DO_trend, 0.975), digits = 2), "highDOquantile")
+# SD for scaled variables
+write_tex(signif(attributes(alldata$temp_trend_scaled)[[2]], digits = 2), "temptrendSD")
+write_tex(signif(attributes(alldata$DO_trend_scaled)[[2]], digits = 2), "DOtrendSD")
+write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelSD")
+write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelSD")
+
+#########################
+#########################
+#### CLIMATE MAPS ####
+# 
+# # test filter of cells by observed DO and temp values 
+
 # alldata <- alldata %>% filter(mean_DO > 0.23) %>% filter(mean_DO < 7.91) # full range
 alldata <- alldata %>%
   filter(mean_DO > 0.28) %>%
@@ -121,6 +123,7 @@ alldata <- alldata %>%
   # mid_fill = "lavenderblush1", grey_water = F,
   low_fill = "royalblue4", # low_fill = "#5E4FA2",
   high_fill = "Red 3",
+  # transform_col = sqrt,
   axis_lables = T, tag_text = "e.",
   legend_position = c(0.15, 0.3)
 ) + ylab("Velocities per decade") +
@@ -168,6 +171,7 @@ alldata <- alldata %>%
   # mid_fill = "azure", grey_water = F,
   high_fill = "gold",
   low_fill = "darkcyan",
+  # transform_col = sqrt,
   axis_lables = F, tag_text = "f.",
   legend_position = c(0.15, 0.3)
 ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
@@ -177,12 +181,94 @@ alldata <- alldata %>%
     axis.title.x = element_blank(), axis.title.y = element_blank()
   ))
 
+(depth_map <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "depth", fill_label = "m",
+  raster_cell_size = 4, na_colour = "navyblue", #white_zero = TRUE,
+  grey_water = F, 
+  viridis_dir = -1, 
+  raster_limits = c(20,800),
+  transform_col = log10,
+  axis_lables = T, tag_text = "e.",
+  legend_position = c(0.15, 0.3)
+) + ylab("Velocities per decade") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank()
+    ))
 
-mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + plot_layout(ncol = 2)
+(dvocc_temp <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "squashed_temp_dvocc", fill_label = "km",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
+  # mid_fill = "ghostwhite", grey_water = F,
+  mid_fill = "mistyrose1", grey_water = F,
+  # mid_fill = "lavenderblush1", grey_water = F,
+  low_fill = "royalblue4", # low_fill = "#5E4FA2",
+  high_fill = "Red 3",
+  axis_lables = T, tag_text = "g.",
+  legend_position = c(0.15, 0.3)
+) + ylab("Analog-distance velocities") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank()
+    ))
+
+(dvocc_do <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "squashed_DO_dvocc", fill_label = "km",
+  raster_cell_size = 4,
+  na_colour = "lightgrey", white_zero = TRUE,
+  # mid_fill = "lightcyan1", grey_water = F,
+  mid_fill = "honeydew", grey_water = F,
+  # mid_fill = "lightyellow", grey_water = F,
+  # mid_fill = "azure", grey_water = F,
+  high_fill = "gold",
+  low_fill = "darkcyan",
+  axis_lables = F, tag_text = "h.",
+  legend_position = c(0.15, 0.3)
+) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+
+
+(dvocc_both <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "dvocc_both", fill_label = "km",
+  raster_cell_size = 4,
+  na_colour = "lightgrey", white_zero = TRUE,
+  # mid_fill = "lightcyan1", grey_water = F,
+  mid_fill = "honeydew", grey_water = F,
+  # mid_fill = "lightyellow", grey_water = F,
+  # mid_fill = "azure", grey_water = F,
+  high_fill = "gold",
+  low_fill = "darkcyan",
+  axis_lables = F, tag_text = "h.",
+  legend_position = c(0.15, 0.3)
+) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+
+mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + 
+  plot_layout(ncol = 2)
 # colorblindr::cvd_grid(trend_do)
 # ggsave(here::here("ms", "figs", "climate-maps-newclim.png"), width = 5, height = 7.5)
 ggsave(here::here("ms", "figs", "climate-maps-newclim-trimmed-99.png"), width = 5, height = 7.5)
 
+mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + 
+  dvocc_temp + dvocc_do +
+  plot_layout(ncol = 2)
+ggsave(here::here("ms", "figs", "climate-maps-w-dvocc.png"), width = 5, height = 9.5)
 
 #### FISHING EFFORT MAPS ####
 (mean_fish <- plot_vocc(alldata,
@@ -328,10 +414,10 @@ overall_betas <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas$model <- "Trend"
 
 # ### SAVE TEX VALUES FOR TEMPERATURE TREND ESTIMATES ###
-# write_tex(signif(overall_betas$betas[overall_betas$coef_names == "change in T"], 2), "betaTtrend")
-# write_tex(signif(abs(overall_betas$betas[overall_betas$coef_names == "change in T"]), 2), "ABSbetaTtrend")
-# write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "change in T"], 2), "lowerTtrend")
-# write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "change in T"], 2), "upperTtrend")
+write_tex(signif(overall_betas$betas[overall_betas$coef_names == "change in T"], 2), "betaTtrend")
+write_tex(signif(abs(overall_betas$betas[overall_betas$coef_names == "change in T"]), 2), "ABSbetaTtrend")
+write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "change in T"], 2), "lowerTtrend")
+write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "change in T"], 2), "upperTtrend")
 
 
 #### get velocity model betas and save tex ####
@@ -352,10 +438,10 @@ overall_betas_vel <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel$model <- "Velocity"
 
 # ### SAVE TEX VALUES FOR TEMPERATURE VELOCITY ESTIMATES ###
-# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"], 2), "betaTvel")
-# write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
-# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTvel")
-# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTvel")
+write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"], 2), "betaTvel")
+write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
+write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTvel")
+write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTvel")
 
 #### ADD NULLS AND MAKE VIOLIN PLOT ####
 # TODO: run nulls on full dataset
@@ -383,7 +469,11 @@ vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-28-vel-both-sim
 vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-3-350-DO.rds") 
 vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-4-350.rds")
 vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-5-350-DO.rds")
+
+max(vnull01$sdr$gradient.fixed)
 max(vnull03$sdr$gradient.fixed)
+max(vnull04$sdr$gradient.fixed)
+max(vnull05$sdr$gradient.fixed)
 
 # # # old nulls with incorrect climate data too
 # # vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-1-200-DO.rds")
@@ -407,10 +497,15 @@ vnull03$coefs$model <- "vnull03"
 vnull04$coefs$model <- "vnull04"
 vnull05$coefs$model <- "vnull05"
 
+# custom_order <- c(
+#   "Intercept", "log_biomass",
+#   "temp", "temp_trend", "temp_vel", "temp_trend:temp", "temp_vel:temp",
+#   "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO"
+# )
 custom_order <- c(
   "Intercept", "log_biomass",
-  "temp", "temp_trend", "temp_vel", "temp_trend:temp", "temp_vel:temp",
-  "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO"
+  "temp", "temp_trend", "temp_vel", "temp_dvocc", "temp_trend:temp", "temp_vel:temp", "temp_dvocc:temp",
+  "DO", "DO_trend", "DO_vel", "DO_dvocc", "DO_trend:DO", "DO_vel:DO", "DO_dvocc:DO"
 )
 
 nulls <- rbind(model$coefs, 
@@ -486,9 +581,10 @@ nulls <- rbind(model$coefs,
     legend.position = c(0.025, 0.018)
   ))
 
-vnulls <- rbind(model_vel$coefs,
+vnulls <- rbind(
   vnull02$coefs, vnull03$coefs, vnull04$coefs, vnull05$coefs,
-  vnull01$coefs) %>%
+  vnull01$coefs,
+  model_vel$coefs) %>%
   mutate(
     term = factor(shortener(coefficient),
       levels = as.character(custom_order)
@@ -558,7 +654,8 @@ vnulls <- rbind(model_vel$coefs,
 (null_coefs | vnull_coefs) / grid::textGrob("Species-specific coefficient estimates", 
   just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "null-spp-violin-newclim-w-nulls.pdf"), width = 9, height = 4)
+# ggsave(here::here("ms", "figs", "null-spp-violin-newclim-w-nulls.pdf"), width = 9, height = 4)
+ggsave(here::here("ms", "figs", "null-spp-violin-w-dvocc.pdf"), width = 9, height = 4)
 
 #########################
 #########################
@@ -666,6 +763,11 @@ temp_vel_slopes <- chopstick_slopes(model_vel,
   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled",
   type = "temp"
 ) 
+# temp_vel_slopes <- chopstick_slopes(model_vel,
+#   x_variable = "squashed_temp_dvocc_scaled",
+#   interaction_column = "squashed_temp_dvocc_scaled:mean_temp_scaled",
+#   type = "temp"
+# )
 
 temp_vel_slopes <- temp_vel_slopes %>% 
   # mutate(sort_var = slope_est)
@@ -678,7 +780,14 @@ do_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_DO_vel_scaled",
   interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
 ) 
-do_vel_slopes <- do_vel_slopes %>%  mutate(sort_var = (diff))
+# do_vel_slopes <- chopstick_slopes(model_vel,
+#   x_variable = "squashed_DO_dvocc_scaled",
+#   interaction_column = "squashed_DO_dvocc_scaled:mean_DO_scaled", type = "DO"
+# )
+
+do_vel_slopes <- do_vel_slopes %>%  
+  # mutate(sort_var = slope_est)
+  mutate(sort_var = (diff))
 
 do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
@@ -700,6 +809,7 @@ p_do_worm2 <- plot_chopstick_slopes(do_vel_slopes, type = "DO",
 (p_temp_worm2 | p_do_worm2) / grid::textGrob(expression(~Delta~"biotic velocity with a SD change in climate velocity"), just = 0.5) +
   plot_layout(height = c(10.5, 0.25))
 ggsave(here::here("ms", "figs", "worm-plot-vel.pdf"), width = 8, height = 6)
+# ggsave(here::here("ms", "figs", "worm-plot-dvocc-med-by-est.pdf"), width = 8, height = 6)
 
 #### IF WE WANT PLOT OF BOTH TREND AND VELOCITY SLOPES TOGETHER ####
 
