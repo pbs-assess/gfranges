@@ -518,7 +518,7 @@ temp_slopes <- chopstick_slopes(model,
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
 ) %>%
   mutate(sort_var = -(all_global_slope))
-  # mutate(sort_var = (diff))
+  # mutate(sort_var = -(diff))
   # mutate(sort_var = -slope_est)
 
 do_slopes <- chopstick_slopes(model,
@@ -526,7 +526,7 @@ do_slopes <- chopstick_slopes(model,
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
 )%>%
   mutate(sort_var = -(all_global_slope))
-  # mutate(sort_var = (diff))
+  # mutate(sort_var = -(diff))
   # mutate(sort_var = -slope_est)
 
 temp_slopes <- left_join(temp_slopes, stats)
@@ -535,7 +535,7 @@ do_slopes <- left_join(do_slopes, stats)
 (p_temp_chops <- plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
   y_label = "Predicted % change in biomass",
-  # order_by_chops = c("high"),
+  order_by_chops = NULL,
   slopes = temp_slopes # if add, the global slope can be included for insig.
 ) + coord_cartesian(ylim = c(-4.5, 6)) +
   xlab("Temperature trend (scaled)") + theme(legend.position = "none"))
@@ -543,7 +543,7 @@ do_slopes <- left_join(do_slopes, stats)
 p_do_chops <- plot_fuzzy_chopsticks(model,
   x_variable = "DO_trend_scaled", type = "DO",
   y_label = "Predicted % change in biomass",
-  # order_by_chops = c("low"),
+  order_by_chops = NULL,
   slopes = do_slopes
 ) + coord_cartesian(ylim = c(-4, 5)) +
   xlab("DO trend (scaled)") + theme(legend.position = "none")
@@ -632,20 +632,21 @@ temp_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_temp_vel_scaled",
   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp"
 ) %>%
-  mutate(sort_var = (diff))
+  mutate(sort_var = -(diff)) # orders by high - low slopes
   # mutate(sort_var = slope_est)
 
 do_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_DO_vel_scaled",
   interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
 ) %>%
-  mutate(sort_var = (diff))
+  mutate(sort_var = -(diff))
   # mutate(sort_var = slope_est)
 
 (p_temp_vel_chops <- plot_fuzzy_chopsticks(model_vel,
   x_variable = "squashed_temp_vel_scaled", type = "temp",
   # x_variable = "squashed_temp_dvocc_scaled", type = "temp",
   y_label = "Predicted mature biomass vel",
+  order_by_chops = NULL,
   slopes = temp_vel_slopes # if add, the global slope can be included for insig
 ) + coord_cartesian(xlim = c(-0.25, 4), ylim = c(-30, 37)) +
   xlab("Temperature velocity (scaled)") + theme(legend.position = "none")
@@ -655,6 +656,7 @@ p_do_vel_chops <- plot_fuzzy_chopsticks(model_vel,
   x_variable = "squashed_DO_vel_scaled", type = "DO",
   # x_variable = "squashed_DO_dvocc_scaled", type = "DO",
   y_label = "Predicted mature biomass vel",
+  order_by_chops = NULL,
   slopes = do_vel_slopes # if add, the global slope can be included for insig.
 ) + coord_cartesian(ylim = c(-30, 37)) +
   xlab("DO velocity (scaled)") + theme(legend.position = "none")
@@ -718,7 +720,7 @@ ggplot(all_slopes, aes(slope_est_vel2, slope_est_trend2)) +
 all_slopes$diff_trend2 = scale(collapse_outliers(all_slopes$diff_trend, c(0.005, 0.995)), center = F)
 all_slopes$diff_vel2 = scale(collapse_outliers(all_slopes$diff_vel, c(0.005, 0.995)), center = F)
 
-ggplot(all_slopes, aes(diff_trend2, diff_vel2)) + 
+ggplot(all_slopes, aes(diff_vel2, diff_trend2)) + 
   geom_point() + 
   geom_vline(xintercept = 0, colour= "grey") +
   geom_hline(yintercept = 0, colour= "grey") +
