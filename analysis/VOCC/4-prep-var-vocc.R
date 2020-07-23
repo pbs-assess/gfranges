@@ -141,7 +141,7 @@ hist(log(d$mean_effort + 1))
 d$log_effort_scaled <- scale(d$log_effort, center = F)
 
 
-saveRDS(d, file = paste0("data/all-newclim-untrimmed-2.rds"))
+saveRDS(d, file = paste0("data/all-newclim-untrimmed-dvocc-med.rds"))
 
 
 cor(d$ann_temp_trend, d$temp_trend, use = "pairwise.complete.obs")

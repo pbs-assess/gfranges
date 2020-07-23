@@ -168,7 +168,7 @@ data <- do.call(rbind, trimmed.dat)
 
 
 #### add in globally scaled and squashed climate data 
-vars <- readRDS(("data/all-newclim-untrimmed-2.rds"))  %>% rename(cell_depth = depth)
+vars <- readRDS(("data/all-newclim-untrimmed-dvocc-med.rds"))  %>% rename(cell_depth = depth)
 
 data <- left_join(data, vars) %>% select(-X.1)
 

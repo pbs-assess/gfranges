@@ -14,8 +14,8 @@ params:
     species: "Arrowtooth Flounder"
     immature: T
     # region: "West Coast Vancouver Island"
-    # region: "both odd year surveys"
-    region: "West Coast Haida Gwaii"
+    region: "both odd year surveys"
+    # region: "West Coast Haida Gwaii"
     covs: "-tv-depth-only"
     climate_mod: "2020-06-20-more2016"
     scrambled_years: FALSE
@@ -187,8 +187,10 @@ glimpse(d)
 ### Temperature
 ```{r}
 rm(gf2)
-try({gf2 <- readRDS(paste0("data/_climate_vocc/temp-vocc-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
-})
+
+# try({
+#   gf2 <- readRDS(paste0("data/_climate_vocc/temp-vocc-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
+# })
 
 if(!exists("gf2")){
 
@@ -220,14 +222,23 @@ gf2 <- gf2 %>%
 # 
 # 2008 DATASET
 # values currently depend on survey region
-mean(gf2$sd, na.rm = T) # [1] 0.3274
-temp_min_sd <- min(gf2$sd, na.rm = T) # [1] 0.1035
-max(gf2$sd, na.rm = T) # [1] 1.248
+temp_mean_sd <- mean(gf2$sd, na.rm = T) # [1] 0.3274
+temp_mean_sd 
 temp_median_sd <- median(gf2$sd, na.rm = T) # [1] 0.2882
+temp_median_sd
+temp_min_sd <- min(gf2$sd, na.rm = T) # [1] 0.1035
+temp_min_sd*2
+max(gf2$sd, na.rm = T) # [1] 1.248
 
-temp_sd_choice <- temp_min_sd
-lower_change_t <- temp_sd_choice*2
-upper_change_t <- temp_sd_choice*2
+# temp_sd_choice <- temp_min_sd*2
+# temp_sd_choice <- temp_mean_sd
+temp_sd_choice <- temp_median_sd
+
+# lower_change_t <- temp_sd_choice
+lower_change_t <- Inf
+upper_change_t <- temp_sd_choice
+
+rm(dvocc_t)
 
 dvocc_t <- make_vector_data(d,
   variable_names = c("temp"),
@@ -259,23 +270,48 @@ dv_t <- dvocc_t %>% select(icell, x, y, dvocc) %>% unique()
 gf2 <- left_join(gf2, dv_t)
 
 saveRDS(gf2, file = paste0("data/_climate_vocc/temp-vocc-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
+# saveRDS(gf2, file = paste0("data/_climate_vocc/temp-dvocc-min2SD-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
+# saveRDS(gf2, file = paste0("data/_climate_vocc/temp-dvocc-medSDasy-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
 }
 
 # mean(gf2$sd, na.rm = T) # [1] 0.3274
-temp_min_sd <- min(gf2$sd, na.rm = T) # [1] 0.1035
+temp_min_sd <- round(min(gf2$sd, na.rm = T), digits = 3) # 
+
+# temp_mean_sd <- mean(gf2$sd, na.rm = T) # 
 # max(gf2$sd, na.rm = T) # [1] 1.248
-temp_median_sd <- median(gf2$sd, na.rm = T) # [1] 0.2882
+temp_median_sd <- round(median(gf2$sd, na.rm = T), digits = 3) # [1] 0.2882
+temp_mean_sd <- round(mean(gf2$sd, na.rm = T), digits = 3) # 
 
-print( paste("min SD =", round(temp_min_sd, digits = 3)))
-print( paste("median SD =", round(temp_median_sd, digits = 3)))
-
-print( paste("treshold chosen =", round(temp_min_sd*2, digits = 3), "degrees C"))
-
-# temp_sd_choice <- temp_min_sd
-# lower_change_t <- temp_sd_choice*2
-# upper_change_t <- temp_sd_choice*2
+print( paste("min SD =", round(temp_min_sd, digits = 2)))
+print( paste("median SD =", round(temp_median_sd, digits = 2)))
+print( paste("mean SD =", round(temp_mean_sd, digits = 2)))
+print( paste("treshold chosen =", round(temp_mean_sd, digits = 2), "degrees C"))
 ```
 
+```{r eval=F}
+plot_vocc(gf2,
+    raster_cell_size = 4,
+  coast = TRUE,
+  vec_aes = NULL,
+  NA_label = "NA",
+  fill_col = "dvocc",
+  fill_label = "temperature \nkm/decade",
+  raster_alpha = 1,
+  na_colour = "white",
+  mid_fill = "mistyrose1", grey_water = F,
+  # mid_fill = "lavenderblush1", grey_water = F,
+  low_fill = "royalblue4", # low_fill = "#5E4FA2",
+  high_fill = "Red 3",
+  raster_limits = c(0, 100),
+  white_zero = TRUE,
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = sqrt #
+) + labs(
+    title = "distance-based temp velocity",
+  subtitle = paste0(min(d$year), "-", max(d$year), " mean temp SD = ", signif(temp_mean_sd, digits = 2), " for min threshold of change")
+)
+```
 
 ### Annual temperature (ROMS)
 ```{r}
@@ -382,7 +418,8 @@ saveRDS(roms, file = paste0("data/_climate_vocc/annual-temp-vocc-", climate_mod,
 ```{r }
 rm(gf0)
 
-try({gf0 <- readRDS(paste0("data/_climate_vocc/DO-vocc-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
+try({
+  gf0 <- readRDS(paste0("data/_climate_vocc/DO-vocc-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
 })
 
 if(!exists("gf0")){
@@ -418,13 +455,18 @@ max(gf0$sd, na.rm = T)
 # [1] 1.531
 do_median_sd <- median(gf0$sd, na.rm = T)
 # [1] 0.2343
+
+do_mean_sd <- mean(gf0$sd, na.rm = T)
+
 do_min_sd
 do_median_sd 
-do_sd_choice <- do_min_sd
+do_mean_sd 
 
+# do_sd_choice <- do_min_sd*2
+do_sd_choice <- do_median_sd
 
-lower_change_d <- c(do_sd_choice*2) 
-upper_change_d <- c(do_sd_choice*2) 
+lower_change_d <- c(do_sd_choice) 
+upper_change_d <- c(do_sd_choice) 
 
 # variable_names <- c("temp")
 # input_cell_size <- 2
@@ -467,8 +509,8 @@ dv_d <- dvocc_d %>% select(icell, x, y, dvocc) %>% unique()
 gf0 <- left_join(gf0, dv_d)
 
 
-lower_change_td <- c(Inf, do_sd_choice*2) 
-upper_change_td <- c(temp_sd_choice*2, do_sd_choice*2) 
+lower_change_td <- c(Inf, do_sd_choice) 
+upper_change_td <- c(temp_sd_choice, do_sd_choice) 
 
 # variable_names <- c("temp")
 # input_cell_size <- 2
@@ -509,22 +551,74 @@ dv_td <- dvocc_td %>% select(icell, x, y, dvocc_both = dvocc) %>% unique()
 # gf0$dvocc_both <- dv_td$dvocc
 
 gf0 <- left_join(gf0, dv_td)
-
+# 
 saveRDS(gf0, file = paste0("data/_climate_vocc/DO-vocc-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
+# saveRDS(gf0, file = paste0("data/_climate_vocc/DO-dvocc-min2SD-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
+# saveRDS(gf0, file = paste0("data/_climate_vocc/DO-dvocc-meanSD-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
+# saveRDS(gf0, file = paste0("data/_climate_vocc/DO-dvocc-medSD-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
 }
 
-do_min_sd <- min(gf0$sd, na.rm = T)
-do_median_sd <- median(gf0$sd, na.rm = T)
-do_sd_choice <- do_min_sd
+do_min_sd <- round(min(gf0$sd, na.rm = T), digits = 3)
+do_mean_sd <- round(mean(gf0$sd, na.rm = T), digits = 3)
+do_median_sd <- round(median(gf0$sd, na.rm = T), digits = 3)
 
-print( paste("min SD =", round(do_min_sd, digits = 3)))
-print( paste("median SD =", round(do_median_sd, digits = 3)))
+print( paste("min SD =", do_min_sd))
+print( paste("mean SD =", do_mean_sd))
+print( paste("median SD =", do_median_sd))
 
-print( paste("treshold chosen =", round(do_min_sd*2, digits = 3), "ml/L"))
+do_sd_choice <- do_mean_sd
+print( paste("treshold chosen =", signif(do_sd_choice, digits = 2), "ml/L"))
 
 ```
 
+```{r eval=F}
+plot_vocc(gf0,
+    raster_cell_size = 4,
+  coast = TRUE,
+  vec_aes = NULL,
+  NA_label = "NA",
+  fill_col = "dvocc",
+  fill_label = "km/decade",
+  raster_alpha = 1,
+  na_colour = "white",
+  mid_fill = "honeydew", grey_water = F,
+  # mid_fill = "lightyellow", grey_water = F,
+  # mid_fill = "azure", grey_water = F,
+  high_fill = "gold",
+  low_fill = "darkcyan", # "lightseagreen",
+  white_zero = TRUE,
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = sqrt #
+) + labs(
+ title = "distance-based DO velocity",
+  subtitle = paste0(min(d$year), "-", max(d$year), " DO SD = ", signif(do_sd_choice, 2), " for min threshold of DO change")
+)
+```
 
+```{r eval=F}
+plot_vocc(gf0,
+    raster_cell_size = 4,
+  coast = TRUE,
+  vec_aes = NULL,
+  NA_label = "NA",
+  fill_col = "dvocc_both",
+  fill_label = "km/decade",
+  raster_alpha = 1,
+  na_colour = "white",
+  mid_fill = "honeydew", grey_water = F,
+  # mid_fill = "lightyellow", grey_water = F,
+  # mid_fill = "azure", grey_water = F,
+  high_fill = "gold",
+  low_fill = "darkcyan", # "lightseagreen",
+  white_zero = TRUE,
+  vec_alpha = 0.35,
+  axis_lables = FALSE,
+  transform_col = sqrt #
+) + labs(
+ title = "distance-based temp and DO velocity"
+)
+```
 ### BIOTIC VECTORS
 ```{r}
 gf3 <- vocc_gradient_calc(d, "est",
@@ -895,7 +989,7 @@ plot_vocc(vocc_t,
   transform_col = sqrt #
 ) + labs(
     title = "distance-based temp velocity",
-  subtitle = paste0(min(d$year), "-", max(d$year), " min temp SD = ", temp_min_sd, " x 2 for 95% min threshold of change")
+  subtitle = paste0(min(d$year), "-", max(d$year), " min temp SD = ", temp_mean_sd, " for 95% min threshold of change")
 )
 ```
 
