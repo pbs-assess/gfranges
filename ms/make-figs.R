@@ -46,6 +46,9 @@ write_tex(signif(attributes(alldata$DO_trend_scaled)[[2]], digits = 2), "DOtrend
 write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelSD")
 write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelSD")
 
+mean(alldata$squashed_temp_vel_scaled)
+
+
 #########################
 #########################
 #### CLIMATE MAPS ####
@@ -442,6 +445,11 @@ write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change
 write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
 write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTvel")
 write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTvel")
+
+write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"], 3), "betaTVinteract")
+write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"]), 3), "ABSbetaTVinteract")
+write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "lowerTVinteract")
+write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "upperTVinteract")
 
 #### ADD NULLS AND MAKE VIOLIN PLOT ####
 # TODO: run nulls on full dataset
@@ -2102,3 +2110,80 @@ ggsave(here::here("ms", "figs", "coef-scatterplots-allspp2.pdf"), width = 7, hei
 
 #########################
 #########################
+
+
+library(dplyr)
+library(ggplot2)
+
+model_vel$pred_dat %>%
+  filter(type == "temp") %>% 
+  group_by(genus, species, chopstick) %>% 
+  filter(squashed_temp_vel_scaled == max(squashed_temp_vel_scaled)) %>% 
+  summarise(est = est_p, se = se_p) %>% 
+  ggplot(aes(est, species, xmax = est + 2 * se, xmin = est - 2 * se, colour = chopstick)) + 
+  geom_pointrange()
+
+
+model_vel$pred_dat %>%
+  filter(type == "temp") %>% 
+  group_by(genus, species, chopstick) %>% 
+  filter(squashed_temp_vel_scaled == max(squashed_temp_vel_scaled)) %>% 
+  summarise(est = est_p, se = se_p) %>%
+  group_by(genus, species) %>%
+  mutate(m = mean(est), r = max(est) - min(est)) %>% 
+  ungroup() %>%
+  mutate(species = forcats::fct_reorder(species, -r)) %>% 
+  ggplot(aes(est, species, xmax = est + 2 * se, xmin = est - 2 * se, colour = chopstick)) + 
+  geom_pointrange() +
+  geom_vline(xintercept = 0, lty = 2) +
+  theme_light()
+
+
+model_vel$pred_dat %>%
+  filter(type == "temp") %>% 
+  group_by(genus, species, chopstick) %>% 
+  filter(squashed_temp_vel_scaled == max(squashed_temp_vel_scaled)) %>% 
+  summarise(est = est_p, se = se_p) %>% 
+  ggplot(aes(chopstick, est, colour = chopstick)) + 
+  geom_boxplot()
+
+model_vel$pred_dat %>%
+  filter(type == "temp") %>% 
+  group_by(genus, species, chopstick) %>% 
+  filter(squashed_temp_vel_scaled == min(squashed_temp_vel_scaled)) %>% 
+  summarise(est = est_p, se = se_p) %>% 
+  ggplot(aes(chopstick, est, colour = chopstick)) + 
+  geom_boxplot()
+
+model_vel$pred_dat %>%
+  filter(type == "temp") %>% 
+  group_by(genus, species, chopstick) %>% 
+  filter(squashed_temp_vel_scaled == mean(squashed_temp_vel_scaled)) %>% 
+  summarise(est = est_p, se = se_p) %>% 
+  ggplot(aes(chopstick, est, colour = chopstick)) + 
+  geom_boxplot()
+
+model_vel$pred_dat %>%
+  filter(type == "DO") %>% 
+  group_by(genus, species, chopstick) %>% 
+  filter(squashed_DO_vel_scaled == max(squashed_DO_vel_scaled)) %>% 
+  summarise(est = est_p, se = se_p) %>% 
+  ggplot(aes(chopstick, est, colour = chopstick)) + 
+  geom_boxplot()
+
+model$pred_dat %>%
+  filter(type == "temp") %>% 
+  group_by(genus, species, chopstick) %>% 
+  filter(temp_trend_scaled == max(temp_trend_scaled)) %>% 
+  summarise(est = est_p, se = se_p) %>% 
+  ggplot(aes(chopstick, est, colour = chopstick)) + 
+  geom_boxplot()
+
+model$pred_dat %>%
+  filter(type == "DO") %>% 
+  group_by(genus, species, chopstick) %>% 
+  filter(DO_trend_scaled == max(DO_trend_scaled)) %>% 
+  summarise(est = est_p, se = se_p) %>% 
+  ggplot(aes(chopstick, est, colour = chopstick)) +
+  geom_violin() + 
+  geom_boxplot() 
