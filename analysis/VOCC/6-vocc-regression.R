@@ -42,7 +42,7 @@ null_number <- "-1"
 
 
 ### for velocities ###
-knots <- 350
+knots <- 200
 y_type <- "vel"
 
 # model_type <- "-vel-temp"
@@ -51,6 +51,7 @@ y_type <- "vel"
 
 # model_type <- "-dist-vel-temp"
 model_type <- "-dist-vel-both"
+# model_type <- "-dist-vel-combined" # doesn't converg
 
 ### LOAD VOCC DATA
 if (age != "both") {
@@ -131,17 +132,23 @@ hist(d$squashed_temp_vel_scaled, breaks = 100)
 
 d$squashed_biotic_dvocc <- collapse_outliers(d$biotic_dvocc, c(0.005, 0.995))
 hist(d$squashed_biotic_dvocc , breaks = 100)
-hist(d$squashed_temp_dvocc , breaks = 100)
 
+hist(d$squashed_temp_dvocc, breaks = 100)
 hist(d$DO_dvocc , breaks = 100)
 hist(d$squashed_DO_dvocc , breaks = 100)
 hist(d$temp_dvocc , breaks = 100)
 hist(d$squashed_temp_dvocc , breaks = 100)
 
 d$fake_vel <- d$fake_trend / d$biotic_grad
-hist(d$fake_vel)
+# hist(d$fake_vel)
 d$squashed_fake_vel <- collapse_outliers(d$fake_vel, c(0.005, 0.98))
 hist(d$squashed_fake_vel)
+
+
+hist(abs(d$dvocc_both), breaks = 100)
+d$dvocc_both_scaled <- scale(d$dvocc_both, center = FALSE)
+hist(abs(d$dvocc_both_scaled), breaks = 100)
+
 ### other possible response variables
 # hist((d$sd_est))
 # hist(log(d$sd_est))
@@ -360,7 +367,7 @@ if (model_type == "-dist-vel-temp") {
   x <- model.matrix(formula, data = d)
 
   temp_chopstick <- T
-  x_type <- "vel"
+  x_type <- "dvocc"
 }
 
 if (model_type == "-dist-vel-both") {
@@ -381,6 +388,20 @@ if (model_type == "-dist-vel-both") {
   x_type <- "dvocc"
 }
 
+if (model_type == "-dist-vel-combined") {
+  formula <- ~ dvocc_both_scaled +
+    mean_temp_scaled +
+    dvocc_both_scaled:mean_temp_scaled +
+    mean_DO_scaled +
+    dvocc_both_scaled:mean_DO_scaled +
+    log_biomass_scaled
+  
+  x <- model.matrix(formula, data = d)
+  
+  temp_chopstick <- T
+  DO_chopstick <- T
+  x_type <- "dvocc"
+}
 
 if (no_chopsticks) {
   temp_chopstick <- T
@@ -414,8 +435,13 @@ if (DO_chopstick) {
       interaction_column <- "squashed_DO_vel_scaled:mean_DO_scaled"
       main_effect_column <- "squashed_DO_vel_scaled"
     } else {
+      if (model_type == "-dist-vel-combined") {
+        interaction_column <- "dvocc_both_scaled:mean_DO_scaled"
+        main_effect_column <- "dvocc_both_scaled"
+      } else {
       interaction_column <- "squashed_DO_dvocc_scaled:mean_DO_scaled"
       main_effect_column <- "squashed_DO_dvocc_scaled"
+      }
     }
   }
 
@@ -601,8 +627,13 @@ if (temp_chopstick) {
       interaction_column <- "squashed_temp_vel_scaled:mean_temp_scaled"
       main_effect_column <- "squashed_temp_vel_scaled"
     } else {
+      if (model_type == "-dist-vel-combined") {
+        interaction_column <- "dvocc_both_scaled:mean_temp_scaled"
+        main_effect_column <- "dvocc_both_scaled"
+      } else {
       interaction_column <- "squashed_temp_dvocc_scaled:mean_temp_scaled"
       main_effect_column <- "squashed_temp_dvocc_scaled"
+      }
     }
   }
 
