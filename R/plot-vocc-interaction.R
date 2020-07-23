@@ -244,12 +244,14 @@ plot_fuzzy_chopsticks <- function(model,
       pred_dat <- filter(pred_dat, age == !!check_age)
     }
   } else {
+    if(!is.null(order_by_chops)) {
     # order species by values in a column named 'sort_var'  
     slopes <- slopes %>% filter(chopstick %in% order_by_chops) %>% 
       ungroup () %>% mutate(species = as.factor(species)) %>%
         mutate(species_ordered = forcats::fct_reorder(species, sort_var, mean, 
           .desc = F, na.rm = TRUE))
     pred_dat <- pred_dat %>% mutate(species = factor(species, levels = levels(slopes$species_ordered)))
+    }
     if (!is.null(choose_age)) {
       check_age <- choose_age
       pred_dat <- filter(pred_dat, age == !!check_age)
