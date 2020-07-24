@@ -2115,28 +2115,57 @@ ggsave(here::here("ms", "figs", "coef-scatterplots-allspp2.pdf"), width = 7, hei
 library(dplyr)
 library(ggplot2)
 
-model_vel$pred_dat %>%
-  filter(type == "temp") %>% 
-  group_by(genus, species, chopstick) %>% 
-  filter(squashed_temp_vel_scaled == max(squashed_temp_vel_scaled)) %>% 
-  summarise(est = est_p, se = se_p) %>% 
-  ggplot(aes(est, species, xmax = est + 2 * se, xmin = est - 2 * se, colour = chopstick)) + 
-  geom_pointrange()
+
+plot_chop_est(model_vel, type = "temp",  x_variable = "squashed_temp_vel_scaled", 
+  where_on_x = "max",
+  # sort_var = "range",
+  legend_position = "none") + xlab("Biotic velocity at max temperature velocity experienced")
+
+p_temp_est_worm <- plot_chop_est(model_vel, type = "temp",  x_variable = "squashed_temp_vel_scaled", 
+  where_on_x = "middle",
+  add_grey_bars = T,
+  sort_var = "min",
+  legend_position = "none") +
+  #xlab("Biotic velocity at midpoint of temperature velocities experienced")
+  theme(axis.title = element_blank()) 
+
+(p_do_est_worm <- plot_chop_est(model_vel, type = "DO",  x_variable = "squashed_DO_vel_scaled", 
+  where_on_x = "middle",
+  add_grey_bars = T,
+  sort_var = "min",
+  legend_position = "none") + 
+  scale_y_discrete(expand = expansion(mult = .02), position = "right") +
+  # xlab("Biotic velocity at middle of DO velocities experienced")
+  theme(axis.title = element_blank()) 
+)
+
+(p_temp_est_worm | p_do_est_worm ) / grid::textGrob("Biotic velocity at midpoint of climate velocities experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
+
+ggsave(here::here("ms", "figs", "worm-plot-ests-vel.pdf"), width = 9, height = 6)
 
 
-model_vel$pred_dat %>%
-  filter(type == "temp") %>% 
-  group_by(genus, species, chopstick) %>% 
-  filter(squashed_temp_vel_scaled == max(squashed_temp_vel_scaled)) %>% 
-  summarise(est = est_p, se = se_p) %>%
-  group_by(genus, species) %>%
-  mutate(m = mean(est), r = max(est) - min(est)) %>% 
-  ungroup() %>%
-  mutate(species = forcats::fct_reorder(species, -r)) %>% 
-  ggplot(aes(est, species, xmax = est + 2 * se, xmin = est - 2 * se, colour = chopstick)) + 
-  geom_pointrange() +
-  geom_vline(xintercept = 0, lty = 2) +
-  theme_light()
+p_temp_est_worm <- plot_chop_est(model, type = "temp",  x_variable = "temp_trend_scaled", 
+  where_on_x = "middle",
+  add_grey_bars = T,
+  sort_var = "min",
+  legend_position = "none") +
+  #xlab("Biotic velocity at midpoint of temperature velocities experienced")
+  theme(axis.title = element_blank()) 
+
+(p_do_est_worm <- plot_chop_est(model, type = "DO",  x_variable = "DO_trend_scaled", 
+  where_on_x = "middle",
+  add_grey_bars = T,
+  sort_var = "min",
+  legend_position = "none") + 
+    scale_y_discrete(expand = expansion(mult = .02), position = "right") +
+    # xlab("Biotic velocity at middle of DO velocities experienced")
+    theme(axis.title = element_blank()) 
+)
+
+(p_temp_est_worm | p_do_est_worm ) / grid::textGrob("Biomass trend at midpoint of climate trend experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
+
+ggsave(here::here("ms", "figs", "worm-plot-ests-trend.pdf"), width = 9, height = 6)
+
 
 
 model_vel$pred_dat %>%
