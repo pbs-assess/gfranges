@@ -2110,42 +2110,112 @@ ggsave(here::here("ms", "figs", "coef-scatterplots-allspp2.pdf"), width = 7, hei
 
 #########################
 #########################
+#### WORM OF BIOTIC ESTIMATES ####
+### TEMPERATURE: 3 levels of change
+(p_temp_est_min <- plot_chop_est(model_vel, type = "temp",  x_variable = "squashed_temp_vel_scaled", 
+  # where_on_x = "middle",
+  where_on_x = "min",
+  add_grey_bars = T,
+  # sort_var = "min",
+  alt_order = T, 
+  legend_position = "none",
+  # legend_position = c(.75, .93),
+  # alpha_range = c(0.99, 0.99)) +
+    alpha_range = c(0.5, 0.99)) +
+    # alpha_range = c(0.2, 0.99)) +
+    xlim(-40,60) +
+    ggtitle("a. Minimum warming") +
+  # xlab("Biotic velocity at midpoint of temperature velocities experienced")
+  # xlab("Biotic velocity at max velocities")
+  theme(
+    # legend.position = "top",
+    # legend.margin = unit(0, "cm"),
+    # legend.spacing.y = unit(0.2, "cm"),
+    axis.title = element_blank())
+)
 
-
-library(dplyr)
-library(ggplot2)
-
-
-plot_chop_est(model_vel, type = "temp",  x_variable = "squashed_temp_vel_scaled", 
-  where_on_x = "max",
-  # sort_var = "range",
-  legend_position = "none") + xlab("Biotic velocity at max temperature velocity experienced")
-
-p_temp_est_worm <- plot_chop_est(model_vel, type = "temp",  x_variable = "squashed_temp_vel_scaled", 
+(p_temp_est_mean <- plot_chop_est(model_vel, type = "temp",  x_variable = "squashed_temp_vel_scaled", 
   where_on_x = "middle",
   add_grey_bars = T,
-  sort_var = "min",
-  legend_position = "none") +
-  #xlab("Biotic velocity at midpoint of temperature velocities experienced")
-  theme(axis.title = element_blank()) 
+  # sort_var = "min",
+  alt_order = T, 
+  legend_position = "none",
+  # alpha_range = c(0.99, 0.99)) +
+  alpha_range = c(0.5, 0.99)) +
+  # alpha_range = c(0.2, 0.99)) +
+    xlim(-40,60) +
+    ggtitle("b. Midpoint warming") +
+    # xlab("Biotic velocity at midpoint of temperature velocities experienced")
+    # xlab("Biotic velocity at max velocities")
+    theme(    
+      # legend.position = "top",
+      axis.title = element_blank(),
+      axis.ticks.y = element_blank(),
+      axis.text.y = element_blank())
+)
 
+
+(p_temp_est_worm <- plot_chop_est(model_vel, type = "temp",  x_variable = "squashed_temp_vel_scaled", 
+  # where_on_x = "middle",
+  # where_on_x = "min",
+  add_grey_bars = T,
+  # sort_var = "min",
+  legend_position = "none",
+  # alpha_range = c(0.99, 0.99)) +
+  alpha_range = c(0.5, 0.99)) +
+    # alpha_range = c(0.2, 0.99)) +
+    xlim(-40,60) +
+    scale_y_discrete(expand = expansion(mult = .02), position = "right") +
+    # xlab("Biotic velocity at midpoint of temperature velocities experienced")
+    # xlab("Biotic velocity at max velocities")
+    ggtitle("c. Maximum warming") +
+    # coord_flip() +
+  theme(
+    # legend.position = "top",
+    axis.title = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text.y = element_blank())
+)
+# ggsave(here::here("ms", "figs", "worm-temp-ests-vel-max.pdf"), width = 4.5, height = 6)
+  
+(
+  (p_temp_est_min |p_temp_est_mean| p_temp_est_worm ) + plot_layout(guides = 'collect')& theme(
+  legend.position = "top",  
+    legend.justification='left',
+    legend.direction = "horizontal",
+    legend.box = "horizontal",
+    legend.margin=margin(t = 0.2, l= 0, r = 1.3, unit='cm'),
+    # legend.margin = unit(1.5, "cm"),
+    legend.spacing.x = unit(.1, "cm")
+  )
+  ) / grid::textGrob("Estimated biotic velocity (km per decade)", just = 0.3, gp = grid::gpar(fontsize = 11))  + plot_layout(height = c(10, 0.02))
+
+ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max.pdf"), width = 8, height = 8)
+ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max-faded.pdf"), width = 8, height = 8)
+
+
+
+### TEMPERATURE vs DO at max level of change
 (p_do_est_worm <- plot_chop_est(model_vel, type = "DO",  x_variable = "squashed_DO_vel_scaled", 
-  where_on_x = "middle",
+  # where_on_x = "middle",
+  # where_on_x = "min",
   add_grey_bars = T,
-  sort_var = "min",
+  # sort_var = "min",
+  alpha_range = c(0.4, 0.99),
   legend_position = "none") + 
   scale_y_discrete(expand = expansion(mult = .02), position = "right") +
   # xlab("Biotic velocity at middle of DO velocities experienced")
   theme(axis.title = element_blank()) 
 )
 
-(p_temp_est_worm | p_do_est_worm ) / grid::textGrob("Biotic velocity at midpoint of climate velocities experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
+(p_temp_est_worm | p_do_est_worm ) / grid::textGrob("Biotic velocity at min of climate velocities experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "worm-plot-ests-vel.pdf"), width = 9, height = 6)
+# ggsave(here::here("ms", "figs", "worm-plot-ests-vel-max.pdf"), width = 9, height = 6)
 
 
+### TEMPERATURE vs DO TRENDS at max level of change
 p_temp_est_worm <- plot_chop_est(model, type = "temp",  x_variable = "temp_trend_scaled", 
-  where_on_x = "middle",
+  # where_on_x = "middle",
   add_grey_bars = T,
   sort_var = "min",
   legend_position = "none") +
@@ -2153,7 +2223,7 @@ p_temp_est_worm <- plot_chop_est(model, type = "temp",  x_variable = "temp_trend
   theme(axis.title = element_blank()) 
 
 (p_do_est_worm <- plot_chop_est(model, type = "DO",  x_variable = "DO_trend_scaled", 
-  where_on_x = "middle",
+  # where_on_x = "middle",
   add_grey_bars = T,
   sort_var = "min",
   legend_position = "none") + 
@@ -2164,10 +2234,10 @@ p_temp_est_worm <- plot_chop_est(model, type = "temp",  x_variable = "temp_trend
 
 (p_temp_est_worm | p_do_est_worm ) / grid::textGrob("Biomass trend at midpoint of climate trend experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "worm-plot-ests-trend.pdf"), width = 9, height = 6)
+# ggsave(here::here("ms", "figs", "worm-plot-ests-trend.pdf"), width = 9, height = 6)
 
 
-
+### exploratory boxplots
 model_vel$pred_dat %>%
   filter(type == "temp") %>% 
   group_by(genus, species, chopstick) %>% 
