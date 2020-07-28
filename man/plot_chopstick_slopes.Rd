@@ -28,7 +28,7 @@ plot_chopstick_slopes(
 
 \item{x_variable}{Which variable on x-axis}
 
-\item{legend_position}{Given legend position}
+\item{legend_position}{Give legend position}
 
 \item{hack}{Logical for comparing with hacked slope estimate w interaction SE}
 

@@ -458,7 +458,7 @@ chopstick_slopes <- function(model,
 #' @param slopedat Df from chopstick_slopes function
 #' @param type Select type if more than one interaction in model
 #' @param x_variable Which variable on x-axis
-#' @param legend_position Given legend position
+#' @param legend_position Give legend position
 #' @param hack Logical for comparing with hacked slope estimate w interaction SE
 #' @param imm_slopes Add immature data
 #' @param add_global Logical for including global slope estimates
@@ -683,6 +683,13 @@ plot_chopstick_slopes <- function(slopedat,
 #' @param where_on_x Where on the x-axis to select estimate to plot. 
 #'    Options include max, min, mean.
 #' @param sort_var Defaults to "mean", current alternatives are "NULL" or "range". 
+#' @param alt_order Logical, if T plots will be ordered by mean for "where_on_x" = "max". 
+#' @param legend_position Give legend position
+#' @param point_size Change point size
+#' @param alpha_range Choose alpha for non-sig and sig slopes
+#' @param add_grey_bars Add grey stripes to alternating species
+#' @param name_chop_type Add type to chopstick name in legend
+#' @param colours Add custom colours.
 #' 
 #' @export
 plot_chop_est <- function(model,
@@ -691,18 +698,16 @@ plot_chop_est <- function(model,
   x_variable = "temp_trend_scaled",
   where_on_x = "max",
   sort_var = "mean",
+  alt_order = F, 
   legend_position = c(.7, .95),
-  # add_global = T,
-  global_col = "gray30",
   point_size = 0.75,
   alpha_range = c(0.5, 0.99),
   add_grey_bars = F,
   name_chop_type = T, 
-  # order_by_chops = NULL,
   colours = NULL) {
 
     pred_dat <- model$pred_dat
-    pred_dat <- pred_dat %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+    pred_dat <- pred_dat %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature"))
     pred_dat <- pred_dat %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
 
     if (is.null(pred_dat$est_p)) {
@@ -714,7 +719,7 @@ plot_chop_est <- function(model,
     
     if (!is.null(model$deltas)) {
       deltas <- model$deltas %>% 
-        mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+        mutate(age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature"))
       deltas <- deltas %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
       
       deltas <- deltas %>%
@@ -736,7 +741,7 @@ plot_chop_est <- function(model,
       diffs <- model$delta_diff %>%
         rename(diff = est, diff_se = se) %>%
         mutate(min_diff = abs(diff) - diff_se * 1.96, sig_diff = if_else(min_diff <= 0, "N", "Y"))
-      diffs <- diffs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+      diffs <- diffs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature"))
       diffs <- diffs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
       # browser()
       pred_dat <- left_join(pred_dat, diffs)
@@ -747,40 +752,18 @@ plot_chop_est <- function(model,
     
     if (!is.null(type)) {
       pred_dat <- filter(pred_dat, type == !!type)
-      
-      # global_coefs <- filter(model$coefs, coefficient == !!x_variable) %>%
-      #   select(-species_id, -coefficient) %>%
-      #   rename(global_slope = Estimate, global_se = `Std. Error`)
-      # global_coefs <- global_coefs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
-      # global_coefs <- global_coefs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
-      # all_global <- global_coefs %>% rename(all_global_slope = global_slope, all_global_se = global_se) %>% 
-      #   select(species, age, all_global_slope, all_global_se)
-      
-      # if (!is.null(model$deltas)) {
-      #   diffs <- filter(diffs, type == !!type)
-      #   global_slopes <- filter(diffs, sig_diff == "N") %>% select(species, age)
-      #   # global <- left_join(global_slopes, global_coefs)
-      #   # diffs <- left_join(diffs, global)
-      #   # 
-      # } else {
-      #   diffs <- filter(model$coefs, coefficient == !!interaction_column) %>%
-      #     select(-species_id, -coefficient) %>%
-      #     rename(diff = Estimate, diff_se = `Std. Error`) %>%
-      #     mutate(min_diff = abs(diff) - diff_se * 1.96, sig_diff = if_else(min_diff <= 0, "N", "Y"))
-      #   diffs <- diffs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
-      #   diffs <- diffs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
-      #   global_slopes <- filter(diffs, sig_diff == "N") %>% select(species, age)
-      #   # global <- left_join(global_slopes, global_coefs)
-      #   # diffs <- left_join(diffs, global)
-      # }
     }
     
     if (where_on_x == "max"){
-        pred_dat <- pred_dat %>%
-      group_by(genus, species, age, chopstick, sig_diff) %>% 
+        pred_dat2 <- pred_dat %>%
+      group_by(genus, species, age, type, chopstick, sig_diff) %>% 
       rename(x = x_variable) %>%
       filter(x == max(x)) %>% 
-      summarise(est = est_p, se = se_p) %>%
+      summarise(est = est_p, se = se_p) %>% 
+      mutate(
+        min_diff = abs(est) - se * 1.96, 
+        sig_est = if_else(min_diff <= 0, "N", "Y")
+        ) %>%
       group_by(genus, species) %>%
       mutate(mean = mean(est), 
         range = max(est) - min(est), 
@@ -789,11 +772,15 @@ plot_chop_est <- function(model,
     }
     
     if (where_on_x == "min"){
-      pred_dat <- pred_dat %>%
-        group_by(genus, species, age, chopstick, sig_diff) %>% 
+      pred_dat2 <- pred_dat %>%
+        group_by(genus, species, age,  type, chopstick, sig_diff) %>% 
         rename(x = x_variable) %>%
         filter(x == min(x)) %>% 
         summarise(est = est_p, se = se_p) %>%
+        mutate(
+          min_diff = abs(est) - se * 1.96, 
+          sig_est = if_else(min_diff <= 0, "N", "Y")
+        ) %>%
         group_by(genus, species) %>%
         mutate(mean = mean(est), 
           range = max(est) - min(est), 
@@ -803,11 +790,15 @@ plot_chop_est <- function(model,
     
     if (where_on_x == "middle"){
       # browser()
-      pred_dat <- pred_dat %>%
-        group_by(genus, species, age, chopstick, sig_diff) %>% 
+      pred_dat2 <- pred_dat %>%
+        group_by(genus, species, age, type, chopstick, sig_diff) %>% 
         rename(x = x_variable) %>%
         filter(x == median(x)) %>% 
         summarise(est = est_p, se = se_p) %>%
+        mutate(
+          min_diff = abs(est) - se * 1.96, 
+          sig_est = if_else(min_diff <= 0, "N", "Y")
+        ) %>%
         group_by(genus, species) %>%
         mutate(mean = mean(est), 
           range = max(est) - min(est), 
@@ -817,20 +808,44 @@ plot_chop_est <- function(model,
     
     if (!is.null(sort_var)) {
       if (sort_var == "range") {
-        pred_dat <- pred_dat %>% mutate(sort_var = range) %>%
+        pred_dat2 <- pred_dat2 %>% mutate(sort_var = range) %>%
           mutate(species = forcats::fct_reorder(species, -sort_var))
       } else {
         if (sort_var == "min") {
-          pred_dat <- pred_dat %>% mutate(sort_var = min) %>%
+          pred_dat2 <- pred_dat2 %>% mutate(sort_var = min) %>%
             mutate(species = forcats::fct_reorder(species, -sort_var))
           } else{
-        pred_dat <- pred_dat %>% mutate(sort_var = mean) %>%
-          mutate(species = forcats::fct_reorder(species, -sort_var))
+            
+            if(alt_order) {
+            order_value <- pred_dat %>%
+              group_by(genus, species, age,  type, chopstick) %>% 
+              rename(x = x_variable) %>%
+              filter(x == max(x)) %>% 
+              summarise(est = est_p, se = se_p) %>%
+              group_by(genus, species) %>%
+              mutate(sort_var = mean(est)) %>% 
+              ungroup() %>% select(-est, -se)
+            # browser()
+            pred_dat2 <- left_join(pred_dat2, order_value) %>%
+              mutate(species = forcats::fct_reorder(species, -sort_var)) 
+            
+            } else {
+              
+            pred_dat2 <- pred_dat2 %>% mutate(sort_var = mean) %>%
+              mutate(species = forcats::fct_reorder(species, -sort_var))
+            }
       }
      }
     }
+    
+    
+
     if (name_chop_type) {
-      pred_dat <- pred_dat %>% mutate(chopstick = paste(chopstick, type))
+      # browser()
+      pred_dat2$type[pred_dat2$type == "temp"] <- "temperature"
+      pred_dat2$chopstick[pred_dat2$chopstick == "high"] <- "High"
+      pred_dat2$chopstick[pred_dat2$chopstick == "low"] <- "Low"
+      pred_dat2 <- pred_dat2 %>% mutate(chopstick = paste(chopstick, type))
     }
     
     if (is.null(colours)) {
@@ -846,11 +861,12 @@ plot_chop_est <- function(model,
       }
     }
   
-  p <- pred_dat %>%
+  p <- pred_dat2 %>%
     ggplot(aes(est, species, 
       xmax = est + 2 * se, xmin = est - 2 * se, 
       colour = chopstick, 
-      alpha = sig_diff,
+      # alpha = sig_diff,
+      alpha = sig_est,
       shape = age)) + 
     geom_vline(xintercept = 0, colour = "black", alpha = 0.7) 
     
@@ -882,30 +898,18 @@ plot_chop_est <- function(model,
         legend.text = element_text(size = 10) # ,
         # legend.direction = "vertical"
       )
-    
-    # if (add_global) {
-    #   p <- p + scale_alpha_discrete(range = c(0.0, 0.99), guide = F) +
-    #     geom_pointrange(aes(species,
-    #       global_slope,
-    #       ymin = global_slope - 1.96 * global_se,
-    #       ymax = global_slope + 1.96 * global_se, linetype = age, shape = age
-    #     ),
-    #       # alpha = 0.5,
-    #       position = position_dodge(width = 0.5), # dodge.width = 0.4
-    #       size = point_size, fatten = 1.5,
-    #       colour = global_col, fill = "white",
-    #       inherit.aes = F
-    #     )
-    # } else {
+
       p <- p + scale_alpha_discrete(range = alpha_range, guide = F)
-    # }
-    
-    if (length(unique(pred_dat$age)) > 1) {
+
+    if (length(unique(pred_dat2$age)) > 1) {
       # p <- p + scale_linetype_manual(values=c("dashed", "solid"), guide = F) +
       p <- p + scale_linetype_manual(values = c("solid", "solid"), guide = F) +
         scale_y_discrete(expand = expansion(mult = .02)) +
-        guides(colour = guide_legend(override.aes = list(size = 0.4))) +
-        scale_shape_manual(values = c(21, 19), guide = F)
+        guides(
+          shape = guide_legend(override.aes = list(size = 0.5, linetype = 0)), 
+          colour = guide_legend(override.aes = list(size = 0.5, linetype = 0))
+          ) +
+        scale_shape_manual(values = c(21, 19))
     } else {
       p <- p + scale_linetype_manual(values = c("solid"), guide = F) +
         scale_y_discrete(expand = expansion(mult = .02)) +
