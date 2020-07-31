@@ -535,7 +535,7 @@ do_slopes <- left_join(do_slopes, stats)
 (p_temp_chops <- plot_fuzzy_chopsticks(model,
   x_variable = "temp_trend_scaled", type = "temp",
   y_label = "Predicted % change in biomass",
-  order_by_chops = NULL,
+  # order_by_chops = NULL,
   slopes = temp_slopes # if add, the global slope can be included for insig.
 ) + coord_cartesian(ylim = c(-4.5, 6)) +
   xlab("Temperature trend (scaled)") + theme(legend.position = "none"))
@@ -543,7 +543,7 @@ do_slopes <- left_join(do_slopes, stats)
 p_do_chops <- plot_fuzzy_chopsticks(model,
   x_variable = "DO_trend_scaled", type = "DO",
   y_label = "Predicted % change in biomass",
-  order_by_chops = NULL,
+  # order_by_chops = NULL,
   slopes = do_slopes
 ) + coord_cartesian(ylim = c(-4, 5)) +
   xlab("DO trend (scaled)") + theme(legend.position = "none")
@@ -646,7 +646,7 @@ do_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_temp_vel_scaled", type = "temp",
   # x_variable = "squashed_temp_dvocc_scaled", type = "temp",
   y_label = "Predicted mature biomass vel",
-  order_by_chops = NULL,
+  # order_by_chops = NULL,
   slopes = temp_vel_slopes # if add, the global slope can be included for insig
 ) + coord_cartesian(xlim = c(-0.25, 4), ylim = c(-30, 37)) +
   xlab("Temperature velocity (scaled)") + theme(legend.position = "none")
@@ -656,7 +656,7 @@ p_do_vel_chops <- plot_fuzzy_chopsticks(model_vel,
   x_variable = "squashed_DO_vel_scaled", type = "DO",
   # x_variable = "squashed_DO_dvocc_scaled", type = "DO",
   y_label = "Predicted mature biomass vel",
-  order_by_chops = NULL,
+  # order_by_chops = NULL,
   slopes = do_vel_slopes # if add, the global slope can be included for insig.
 ) + coord_cartesian(ylim = c(-30, 37)) +
   xlab("DO velocity (scaled)") + theme(legend.position = "none")
@@ -852,13 +852,18 @@ ggsave(here::here("ms", "figs", "supp-slope-scatterplots.pdf"), width = 8, heigh
 #########################
 #### BIOTIC MAPS
 
+# age <- "immature"
+# d2 <- readRDS(here::here(paste0("analysis/vocc/data/", age, "-optimized-vocc.rds"))) %>% mutate(age_class = "immature") %>% mutate(species_only = species, age = age_class)
+# 
+# model$data <- d2
+
 biotic_maps <- function(model, 
 trends = T,
 legend_position =  c(0.02, 0.85),  
 maturity = "mature"  
 ){
-
-dat_all <- model$data 
+  
+dat_all <- model$data #%>% filter(species != "mature Shortbelly Rockfish")
 dat_all$squashed_biotic_trend <- collapse_outliers(dat_all$biotic_trend, c(0.05, 0.95))
 dat <- dat_all %>%  filter(age_class == maturity)  
 
@@ -912,16 +917,16 @@ biotic_maps + facet_wrap(~species_only, ncol = 9) +
   ) + ggtitle(paste("  Biotic", change_var, "for", maturity, "groundfish species"))
 }
 
-biotic_maps(model)
+biotic_maps(model_vel)
 ggsave(here::here("ms", "figs", "supp-biotic-maps-mature.png"), width = 15, height = 10)
 
-biotic_maps(model, maturity = "immature")
+biotic_maps(model_vel, maturity = "immature")
 ggsave(here::here("ms", "figs", "supp-biotic-maps-immature.png"), width = 15, height = 10)
 
-biotic_maps(model, trends = F)
+biotic_maps(model_vel, trends = F)
 ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-mature.png"), width = 15, height = 10)
 
-biotic_maps(model, trends = F, maturity = "immature")
+biotic_maps(model_vel, trends = F, maturity = "immature")
 ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-immature.png"), width = 15, height = 10)
 
 #########################
@@ -939,7 +944,10 @@ data$species_only[data$species_only == "Rougheye/Blackspotted Rockfish Complex"]
 data %>%
   filter(age == 0) %>%
   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2() + gfplot::theme_pbs() +
+  scale_fill_gradient2(
+    # trans = fourth_root_power, #breaks=scales::extended_breaks(n = 9),
+    # mid = "lavenderblush1"
+    mid = "aliceblue") + gfplot::theme_pbs() +
   theme(
     legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
     axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
@@ -951,7 +959,9 @@ ggsave(here::here("ms", "figs", "supp-mat-residuals.pdf"), width = 7, height = 7
 data %>%
   filter(age == 1) %>%
   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2() + gfplot::theme_pbs() +
+  scale_fill_gradient2(# trans = fourth_root_power, #breaks=scales::extended_breaks(n = 9),
+    # mid = "lavenderblush1"
+    mid = "aliceblue") + gfplot::theme_pbs() +
   theme(
     legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
     axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
@@ -963,31 +973,44 @@ ggsave(here::here("ms", "figs", "supp-imm-residuals.pdf"), width = 7, height = 6
 
 ### for velocity model ####
 data2 <- model_vel$data %>%
-  mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
-  mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
+  # mutate(resid_upper = quantile(model$data$residual, probs = 0.99999)) %>% # compress tails
+  # mutate(resid_lower = quantile(model$data$residual, probs = 0.00001)) %>% # compress tails
+  mutate(resid_upper = 45) %>% # compress tails
+  mutate(resid_lower = -45) %>% # compress tails
   mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
   mutate(residual = if_else(residual < resid_lower, resid_lower, residual))
+
 
 data2$species_only[data2$species_only == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"
 
 data2 %>%
   filter(age_class == "mature") %>%
   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2() + gfplot::theme_pbs() +
+  scale_fill_gradient2(
+    # trans = fourth_root_power, #breaks=scales::extended_breaks(n = 9),
+    # mid = "lavenderblush1"
+    mid = "aliceblue"
+  ) + gfplot::theme_pbs() +
   theme(
-    legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
+    legend.position = "bottom", legend.text = element_text(size = 5),
+    panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
     axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
   ) +
   facet_wrap(~species_only, strip.position = "bottom") +
   ggtitle("Mature fish biomass velocity residuals")
 ggsave(here::here("ms", "figs", "supp-mat-vel-residuals.pdf"), width = 7, height = 7)
 
-data %>%
+data2 %>%
   filter(age_class == "immature") %>%
   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2() + gfplot::theme_pbs() +
+  scale_fill_gradient2(  
+    # trans = fourth_root_power, #breaks=scales::extended_breaks(n = 9),
+    # mid = "lavenderblush1"
+    mid = "aliceblue"
+      ) + gfplot::theme_pbs() +
   theme(
-    legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
+    legend.position = "bottom", legend.text = element_text(size = 5),
+    panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
     axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
   ) +
   facet_wrap(~species_only, strip.position = "bottom") +
