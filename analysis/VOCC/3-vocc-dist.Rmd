@@ -6,16 +6,17 @@ output: html_document
 params: 
     # species: "Redbanded Rockfish"
     # species: "Widow Rockfish"
-    # species: "Canary Rockfish"
+    species: "Sharpchin Rockfish"
     # species: "English Sole"
     # species: "Dover Sole"
     # species: "Flathead Sole"
     # species: "Sablefish"
-    species: "Arrowtooth Flounder"
-    immature: T
+    # species: "Shortbelly Rockfish"
+    # species: "Arrowtooth Flounder"
+    immature: F
     # region: "West Coast Vancouver Island"
-    region: "both odd year surveys"
-    # region: "West Coast Haida Gwaii"
+    # region: "both odd year surveys"
+    region: "West Coast Haida Gwaii"
     covs: "-tv-depth-only"
     climate_mod: "2020-06-20-more2016"
     scrambled_years: FALSE
@@ -94,20 +95,20 @@ if (immature) {
   age <- "immature"
   d_all <- readRDS(paste0(
     "data/", spp,
-    "/predictions-", spp, covs, "-1n3n4n16-imm-biomass-prior-FALSE.rds"
+    "/predictions-", spp, covs, "-1n3n4n16-imm-biomass.rds" #-prior-FALSE.rds"
   )) %>% filter(year >= start_year )
 } else {
   age <- "mature"
   try({
     d_all <- readRDS(paste0(
       "data/", spp,
-      "/predictions-", spp, covs, "-1n3n4n16-total-biomass-prior-FALSE.rds"
+      "/predictions-", spp, covs, "-1n3n4n16-total-biomass.rds"
     )) %>% filter(year >= start_year )
   })
   try({
     d_all <- readRDS(paste0(
       "data/", spp,
-      "/predictions-", spp, covs, "-1n3n4n16-mature-biomass-prior-FALSE.rds"
+      "/predictions-", spp, covs, "-1n3n4n16-mature-biomass.rds"
     )) %>% filter(year >= start_year )
   })
 }
@@ -188,9 +189,9 @@ glimpse(d)
 ```{r}
 rm(gf2)
 
-# try({
-#   gf2 <- readRDS(paste0("data/_climate_vocc/temp-vocc-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
-# })
+try({
+  gf2 <- readRDS(paste0("data/_climate_vocc/temp-vocc-", climate_mod, "-scale-", scale_fac, "-ssid", ssid_string, "-years-", years_sampled, ".rds"))
+})
 
 if(!exists("gf2")){
 
@@ -712,7 +713,7 @@ gf3 <- left_join(gf3, dv_b)
 gf3t <- filter(gf3, mean_biomass > lower_density_threshold)
 ```
 
-```{r eval=T}
+```{r eval=F}
 gradbv <- plot_vocc(gf3t,
   raster_cell_size = 4,
   # theme = "black",
@@ -741,7 +742,7 @@ gradbv <- plot_vocc(gf3t,
 gradbv
 ``` 
 
-```{r eval=T}
+```{r eval=F}
 gf3t$squashed_velocity <- collapse_outliers(gf3t$velocity, c(0.005, 0.995))
 
 grad3 <- gfranges::plot_vocc(gf3t,
@@ -770,7 +771,7 @@ grad3 <- gfranges::plot_vocc(gf3t,
 grad3
 ```
 
-```{r eval=T}
+```{r eval=F}
 # gf3t$squashed_velocity <- collapse_outliers(gf3t$velocity, c(0.005, 0.995))
 
 grad3 <- gfranges::plot_vocc(gf3t,
@@ -798,7 +799,7 @@ grad3 <- gfranges::plot_vocc(gf3t,
 grad3
 ```
 
-```{r eval=T}
+```{r eval=F}
 #raster_max <- quantile(gf3$mean_biomass, 0.995, na.rm = T)
 gf3$mean_biomass2 <- collapse_outliers(gf3$mean_biomass, c(0, 0.995))
 grad4 <- gfranges::plot_vocc(gf3,
@@ -826,7 +827,7 @@ grad4 <- gfranges::plot_vocc(gf3,
 grad4
 ```
 
-```{r eval=T}
+```{r eval=F}
 grad5 <- gfranges::plot_vocc(gf3t,
   raster_cell_size = 4,
   # theme = "black",
@@ -853,7 +854,7 @@ grad5 <- gfranges::plot_vocc(gf3t,
 grad5
 ```
 
-```{r eval=T}
+```{r eval=F}
 grad6 <- gfranges::plot_vocc(gf3t,
   raster_cell_size = 4,
   # theme = "black",
@@ -956,13 +957,13 @@ vocc <- left_join(vocc, temp_values) # add temp
 vocc <- mutate(vocc, species = !!species, method = "both")
 
 write.csv(vocc, file = paste0(
-  "data/_more2016_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
+  "data/_optimized_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
 ))
 ```
 
 ```{r}
 vocc  <- read.csv(paste0(
-  "data/_more2016_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
+  "data/_optimized_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
 ))
 vocc_t <- filter(vocc, mean_biomass > lower_density_threshold)
 ```
@@ -1199,7 +1200,6 @@ plot_vocc(vocc_t,
   subtitle = paste0(min(d$year), "-", max(d$year))
 )
 
-
 plot_vocc(vocc_t,
     raster_cell_size = 4,# theme_black = TRUE,
   coast = TRUE,
@@ -1222,7 +1222,5 @@ plot_vocc(vocc_t,
   title = "Fishing trend",
   subtitle = paste0(min(d$year), "-", max(d$year))
 )
-
-
 ```
 

@@ -70,14 +70,12 @@ for (r_h in seq_along(list_regions)) {
       rmarkdown::render("3-vocc-dist.Rmd",
         params = list(
           species = list_species[spp_i],
-          # immature = TRUE,
           immature = FALSE,
           region = list_regions[r_h],
           covs = covs
         ),
         output_file = paste0(
           "html/VOCC-plots/vocc-w-do-", spp,
-          # "-imm",
           covs, "-", reg, "-more2016.html"
         ),
         envir = env
@@ -86,6 +84,27 @@ for (r_h in seq_along(list_regions)) {
   }
 }
 }
+
+######
+# TODO: will need to rerun these imm
+######
+list_species <- c(
+  "Rougheye/Blackspotted Rockfish Complex",
+  "Widow Rockfish",
+  "Quillback Rockfish",
+  "Yelloweye Rockfish"
+)
+
+list_species <- c(
+  "Bocaccio"
+)
+
+list_regions <- c(
+  "West Coast Haida Gwaii",
+  "West Coast Vancouver Island",
+  "both odd year surveys"
+  #   "All synoptic surveys"
+)
 
 age <- "immature"
 if (age == "immature") {

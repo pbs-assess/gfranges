@@ -21,11 +21,16 @@ if (trim_threshold == 0.5) { trim_percent <- 50}
 # age <- "immature"
 # d2 <- readRDS(paste0("data/", age, "-all-do-dvocc.rds")) %>% mutate(age = "immature")
 
+# age <- "mature"
+# d1 <- readRDS(paste0("data/", age, "-all-do-newclim3.rds")) %>% mutate(age = "mature")
+# 
+# age <- "immature"
+# d2 <- readRDS(paste0("data/", age, "-all-do-newclim3.rds")) %>% mutate(age = "immature")
 age <- "mature"
-d1 <- readRDS(paste0("data/", age, "-all-do-newclim3.rds")) %>% mutate(age = "mature")
+d1 <- readRDS(paste0("data/", age, "-optimized-vocc.rds")) %>% mutate(age = "mature")
 
 age <- "immature"
-d2 <- readRDS(paste0("data/", age, "-all-do-newclim3.rds")) %>% mutate(age = "immature")
+d2 <- readRDS(paste0("data/", age, "-optimized-vocc.rds")) %>% mutate(age = "immature")
 
 
 d <- rbind(d1, d2) 
@@ -142,7 +147,7 @@ newdata <- do.call(rbind, with_nulls)
 
 # saveRDS(newdata, file = paste0("data/mature-all-temp-with-null-1-untrimmed.rds"))
 # saveRDS(newdata, file = paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed.rds"))
-saveRDS(newdata, file = paste0("data/all-biotic-null-", null_number, "-untrimmed.rds"))
+saveRDS(newdata, file = paste0("data/optimized-biotic-null-", null_number, "-untrimmed.rds"))
 
 
 ##########################################
@@ -150,7 +155,10 @@ saveRDS(newdata, file = paste0("data/all-biotic-null-", null_number, "-untrimmed
 # age <- "mature"
 # age <- "immature"
 # newdata <- readRDS(paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
-newdata <- readRDS(paste0("data/all-biotic-null-", null_number, "-untrimmed.rds")) %>% select(
+newdata <- readRDS(
+  # paste0("data/all-biotic-null-", null_number, "-untrimmed.rds")
+  paste0("data/optimized-biotic-null-", null_number, "-untrimmed.rds")
+  ) %>% select(
   -fishing_trend,  -mean_effort,  -fishing_vel,  -fishing_grad,
   -DO_vel,  -DO_dvocc,  -DO_trend,  -DO_grad,  -mean_DO,  -dvocc_both,
   -temp_vel,  -temp_dvocc,  -temp_trend,  -temp_grad,  -mean_temp)
@@ -191,7 +199,10 @@ data <- data %>%
   filter(mean_temp > 3.07) %>%
   filter(mean_temp < 11.3) # 0.005 and 0.995
 
-saveRDS(data, file = paste0("data/all-", trim_percent, "-all-newclim-with-null-", null_number, ".rds"))
+# Might need to remove longspine again...
+data <- filter(data, species_age != "mature Longspine Thornyhead")
+
+saveRDS(data, file = paste0("data/all-", trim_percent, "-optimized2-with-null-", null_number, ".rds"))
 # saveRDS(data, file = paste0("data/all-", trim_percent, "-newclim-more2016-with-null-", null_number, ".rds"))
 # saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-temp-with-null-", null_number, ".rds"))
 # saveRDS(data, file = paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
@@ -238,8 +249,8 @@ plots[[i]] <- cowplot::plot_grid(o, n)
 }
 
 # pdf(paste0(age, "-null-", null_number, "-trends-new.pdf"))
-pdf(paste0("all-null-", null_number, "-trends-newclim3.pdf"))
-
+# pdf(paste0("all-null-", null_number, "-trends-newclim3.pdf"))
+pdf(paste0("all-null-", null_number, "-trends-optimized2.pdf"))
 plots
 dev.off()
 
