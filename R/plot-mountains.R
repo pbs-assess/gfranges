@@ -177,7 +177,7 @@ fixed_density <- function(m,
   fixed_params = 1, 
   quadratics_only = TRUE 
   ) {
-  browser()
+
   get_y_hat <- function(b0, b1, b2, time, 
     predictor, mean_column, sd_column
   ) {
