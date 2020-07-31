@@ -4,13 +4,9 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    # species: "Redbanded Rockfish"
-    #species: "Pacific Ocean Perch"
-    #species: "Pacific Cod"
-    #species: "Petrale Sole"
-    # species: "Widow Rockfish"
-    species: "Bocaccio"
-    # species: "Sablefish"
+    species: "Redbanded Rockfish"
+    # species: "Redstripe Rockfish"
+    # species: "Shortbelly Rockfish"
     region: "All synoptic surveys"
     knots: 500
     covariates: "" # +as.factor(ssid)
@@ -151,6 +147,8 @@ if (params$update_model) {
       #ar1_fields = TRUE,
       include_spatial = TRUE,
       # reml = TRUE,
+      nlminb_loops = 2,
+      newton_steps = 2,
       enable_priors = priors,
       control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
       silent = FALSE
@@ -174,9 +172,11 @@ if (params$update_model) {
       time_varying = ~ 0 + depth_scaled + depth_scaled2, #+ trawled
       time = "year", spde = spde,
       family = tweedie(link = "log"),
-      ar1_fields = TRUE, # changed to TRUE on Oct 17 2019
+      # ar1_fields = TRUE, # changed to FALSE July 2020
       # reml = TRUE,
       include_spatial = TRUE,
+      nlminb_loops = 2, 
+      newton_steps = 2,
       enable_priors = priors,
       control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
       silent = FALSE
@@ -184,7 +184,7 @@ if (params$update_model) {
 
     saveRDS(imm_biomass,
       file = paste0("data/", spp, "/mod-imm-biomass-", 
-        spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+        spp, covs, "-", ssid_string, ".rds"))
    })
     
   } else {
@@ -196,8 +196,10 @@ if (params$update_model) {
       time_varying = ~ 0 + depth_scaled + depth_scaled2, # + trawled
       time = "year", spde = spde,
       family = tweedie(link = "log"),
-      ar1_fields = TRUE,
+      # ar1_fields = TRUE, # all off in July 2020
       include_spatial = TRUE,
+      nlminb_loops = 2, 
+      newton_steps = 2,
       enable_priors = priors,
       control = sdmTMBcontrol(step.min = 0.01, step.max = 1),
       silent = FALSE
@@ -205,7 +207,7 @@ if (params$update_model) {
 
     saveRDS(total_biomass, file = paste0(
       "data/", spp,
-      "/model-total-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
+      "/model-total-biomass-", spp, covs, "-", ssid_string, ".rds"
     ))
   }
   tictoc::toc()
@@ -290,7 +292,7 @@ if (any(names(data) == "adult_density")) {
     adult_predictions <- predict(adult_biomass, newdata = nd)
     saveRDS(adult_predictions, file = paste0(
       "data/", spp,
-      "/predictions-", spp, covs, "-", ssid_string, "-mature-biomass-prior-", priors, ".rds"
+      "/predictions-", spp, covs, "-", ssid_string, "-mature-biomass.rds"
     ))
   })
 
@@ -309,7 +311,7 @@ if (any(names(data) == "adult_density")) {
     imm_predictions <- predict(imm_biomass, newdata = nd)
     saveRDS(imm_predictions, file = paste0(
       "data/", spp,
-      "/predictions-", spp, covs, "-", ssid_string, "-imm-biomass-prior-", priors, ".rds"
+      "/predictions-", spp, covs, "-", ssid_string, "-imm-biomass.rds"
     ))
   })
 } else {
@@ -328,7 +330,7 @@ if (any(names(data) == "adult_density")) {
   predictions <- predict(total_biomass, newdata = nd)
   saveRDS(predictions, file = paste0(
     "data/", spp,
-    "/predictions-", spp, covs, "-", ssid_string, "-total-biomass-prior-", priors, ".rds"
+    "/predictions-", spp, covs, "-", ssid_string, "-total-biomass.rds"
   ))
 }
 }
@@ -524,7 +526,68 @@ dev.off()
 depth_model_list
 ```
 
+
 ```{r}
-sdmTMB:::get_convergence_diagnostics(depth_model_list[[1]])
+write_grads <- function(x, macro, ...) {
+  paste0("\\newcommand{\\", macro, "}{", x, "}") %>%
+    readr::write_lines("model-grads.tex", append = TRUE)
+}
+```
+
+
+```{r}
+write_grads(signif(max(depth_model_list$adult$gradients), digits = 8), paste0(spp, "-mat"))
+write_grads(signif(max(depth_model_list$imm$gradients), digits = 8), paste0(spp, "-imm"))
+write_grads(signif(max(depth_model_list$total$gradients), digits = 8), paste0(spp, "-total"))
+```
+
+
+```{r eval = FALSE}
+try({
+  if(max(depth_model_list$adult$gradients)>0.001) {
+    adult_biomass <- sdmTMB:::run_extra_optimization(depth_model_list$adult, nlminb_loops = 2, newton_steps = 2)
+    write_grads(signif(max(adult_biomass$gradients), digits = 8), paste0(spp, "-mat2"))
+  }
+})
+```
+
+```{r eval = FALSE}
+try({
+  if(max(depth_model_list$imm$gradients)>0.001) {
+    imm_biomass <- sdmTMB::run_extra_optimization(depth_model_list$imm, nlminb_loops = 2, newton_steps = 2)
+    write_grads(signif(max(imm_biomass$gradients), digits = 8), paste0(spp, "-imm2"))
+  }
+})
+```
+
+```{r eval = FALSE}
+try({
+  if(max(depth_model_list$total$gradients)>0.001) {
+    total_biomass <- sdmTMB::run_extra_optimization(depth_model_list$total, nlminb_loops = 2, newton_steps = 2)
+    write_grads(signif(max(total_biomass$gradients), digits = 8), paste0(spp, "-total2"))
+  }
+})
+```
+
+```{r eval = FALSE}
+ if (any(names(data) == "adult_density")) {
+   
+    saveRDS(adult_biomass,
+      file = paste0(
+        "data/", spp,
+        "/mod-mat-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
+      )
+    )
+
+    saveRDS(imm_biomass,
+      file = paste0("data/", spp, "/mod-imm-biomass-", 
+        spp, covs, "-", ssid_string, "-prior-", priors, ".rds"))
+    
+  } else {
+    saveRDS(total_biomass, file = paste0(
+      "data/", spp,
+      "/model-total-biomass-", spp, covs, "-", ssid_string, "-prior-", priors, ".rds"
+    ))
+  }
 ```
 

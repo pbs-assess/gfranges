@@ -10,7 +10,7 @@ list_species <- c(
   "Spotted Ratfish",
   # "Pacific Tomcod",
   "Walleye Pollock",
-  # "Pacific Cod",
+  "Pacific Cod",
   "Sablefish",
   "Lingcod",
   # "Pacific Hake",
@@ -18,34 +18,34 @@ list_species <- c(
   "Redstripe Rockfish",
   "Yellowmouth Rockfish",
   # "Harlequin Rockfish",
-  # "Bocaccio", # winter-birthing, overfished
+# "Bocaccio", # winter-birthing, overfished
   "Canary Rockfish", # schooling, winter-birthing
   # "Copper Rockfish", # small sample
   "Darkblotched Rockfish",
   "Greenstriped Rockfish",
-  # "Pacific Ocean Perch", # schooling
+  "Pacific Ocean Perch", # schooling
   "Quillback Rockfish",
-  # "Redbanded Rockfish",
+  "Redbanded Rockfish",
   "Sharpchin Rockfish",
   "Shortbelly Rockfish", # small sample
   "Silvergray Rockfish",
   "Splitnose Rockfish",
   "Widow Rockfish", # schooling
   "Yellowtail Rockfish", # schooling
-   "Longspine Thornyhead",
+   # "Longspine Thornyhead",
   "Shortspine Thornyhead",
-  #"Arrowtooth Flounder",
+  "Arrowtooth Flounder",
   "Rex Sole",
-  # "Petrale Sole",
-  # "English Sole",
+  "Petrale Sole",
+  "English Sole",
   "Dover Sole",
   "Southern Rock Sole",
   "Flathead Sole",
   "Curlfin Sole",
-  "Sand Sole",
+  # "Sand Sole",
   # "Slender Sole",
   # "Pacific Sanddab",
-  # "Pacific Halibut"
+  "Pacific Halibut"
 )
 
 ### SUBSETS OF SPECIES
@@ -56,17 +56,14 @@ list_species <- c(
   "Pacific Halibut"
 )
 
-#   # "Arrowtooth Flounder"
-#   # "Petrale Sole",
-#   # "English Sole",
 
  
  list_species <- c(
-   "Redstripe Rockfish",
+   # "Redstripe Rockfish",
    "Rougheye/Blackspotted Rockfish Complex",
-   "Widow Rockfish",
-   "Quillback Rockfish",
-   "Bocaccio",
+   # "Widow Rockfish",
+   # "Quillback Rockfish",
+   # "Bocaccio",
    "Shortraker Rockfish",
    "Yelloweye Rockfish"
  )
@@ -83,6 +80,8 @@ list_species <- c(
   "Bocaccio"
 )
 
+
+
 ### build time-varying depth models
 list_regions <- c("All synoptic surveys")
 # dir.create(file.path("html/biomass-by-depth"))
@@ -98,12 +97,223 @@ for (r_h in seq_along(list_regions)) {
           region = list_regions[r_h],
           covariates = "", # additional non-climate variables
           covs = covs,
-          knots = 500,
-          update_model = TRUE # FALSE #
+          knots = 300, # 500 for most 
+          update_model = TRUE, # FALSE #
+          update_predictions = FALSE, 
+          update_model_check = FALSE 
         ),
         output_file = paste0(
           "html/biomass-by-depth/biomass-by",
+          covs, "-", spp, "-300.html"
+        ),
+        envir = env
+      )
+    })
+  }
+}
+
+
+### save gradients from models run before July 27 2020
+list_regions <- c("All synoptic surveys")
+# dir.create(file.path("html/biomass-by-depth"))
+for (r_h in seq_along(list_regions)) {
+  for (spp_i in seq_along(list_species)) {
+    spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+    covs <- "-tv-depth-only" # string describing model covariates
+    # covs <- "-ssid-only"
+    try({
+      rmarkdown::render("2-biomass-depth-only-model.Rmd",
+        params = list(
+          species = list_species[spp_i],
+          region = list_regions[r_h],
+          covariates = "", # additional non-climate variables
+          covs = covs,
+          knots = 500,
+          update_model = FALSE, #
+          update_predictions = FALSE, 
+          update_model_check = FALSE 
+        ),
+        output_file = paste0(
+          "html/save-grad",
           covs, "-", spp, "-500.html"
+        ),
+        envir = env
+      )
+    })
+  }
+}
+
+
+
+getwd()
+setwd(here::here("/analysis/VOCC"))
+env <- new.env() # parent = baseenv()
+
+# all species
+list_species <- c(
+  "Big Skate",
+  "Longnose Skate",
+  "Spotted Ratfish",
+  "North Pacific Spiny Dogfish",
+  # "Pacific Tomcod",
+  "Walleye Pollock",
+  "Pacific Cod",
+  "Sablefish",
+  "Lingcod",
+  # "Pacific Hake",
+  # "Rosethorn Rockfish",
+  "Yellowmouth Rockfish",
+  # "Harlequin Rockfish",
+  "Canary Rockfish", # schooling, winter-birthing
+  # "Copper Rockfish", # small sample
+  "Darkblotched Rockfish",
+  "Greenstriped Rockfish",
+  "Pacific Ocean Perch", # schooling
+  "Redbanded Rockfish",
+  "Sharpchin Rockfish",
+  "Shortbelly Rockfish", # small sample
+  "Silvergray Rockfish",
+  "Splitnose Rockfish",
+  "Yellowtail Rockfish", # schooling
+  # "Longspine Thornyhead",
+  "Shortspine Thornyhead",
+  "Arrowtooth Flounder",
+  "Rex Sole",
+  "Petrale Sole",
+  "English Sole",
+  "Dover Sole",
+  "Southern Rock Sole",
+  "Flathead Sole",
+  "Curlfin Sole",
+  # "Sand Sole",
+  # "Slender Sole",
+  # "Pacific Sanddab",
+  "Pacific Halibut",
+  "Redstripe Rockfish",
+  "Rougheye/Blackspotted Rockfish Complex",
+  "Widow Rockfish",
+  "Quillback Rockfish",
+  "Bocaccio",
+  "Shortraker Rockfish",
+  "Yelloweye Rockfish"
+)
+
+### check biomass model convergence 
+list_regions <- c("All synoptic surveys")
+# dir.create(file.path("html/biomass-by-depth"))
+for (r_h in seq_along(list_regions)) {
+  for (spp_i in seq_along(list_species)) {
+    spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+    covs <- "-tv-depth-only" # string describing model covariates
+    try({
+      rmarkdown::render("2-check-biomass-grads.Rmd",
+        params = list(
+          species = list_species[spp_i],
+          region = list_regions[r_h],
+          covariates = "", # additional non-climate variables
+          covs = covs
+        ),
+        output_file = paste0(
+          "html/check-grads",
+          covs, "-", spp, ".html"
+        ),
+        envir = env
+      )
+    })
+  }
+}
+
+
+### attempt to improve biomass model convergence 
+list_regions <- c("All synoptic surveys")
+# dir.create(file.path("html/biomass-by-depth"))
+for (r_h in seq_along(list_regions)) {
+  for (spp_i in seq_along(list_species)) {
+    spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+    covs <- "-tv-depth-only" # string describing model covariates
+    try({
+      rmarkdown::render("2-improve-biomass-models.Rmd",
+        params = list(
+          species = list_species[spp_i],
+          region = list_regions[r_h],
+          covariates = "", # additional non-climate variables
+          covs = covs
+        ),
+        output_file = paste0(
+          "html/improve-grad",
+          covs, "-", spp, ".html"
+        ),
+        envir = env
+      )
+    })
+  }
+}
+
+
+# # double check these
+# list_species <- c(
+# "Shortbelly Rockfish", 
+# # "Redstripe Rockfish"
+#   "Bocaccio"
+# )
+
+### rebuild predictions from better models
+list_regions <- c("All synoptic surveys")
+# dir.create(file.path("html/biomass-by-depth"))
+for (r_h in seq_along(list_regions)) {
+  for (spp_i in seq_along(list_species)) {
+    spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+    covs <- "-tv-depth-only" # string describing model covariates
+    # covs <- "-ssid-only"
+    try({
+      rmarkdown::render("2-biomass-depth-only-model.Rmd",
+        params = list(
+          species = list_species[spp_i],
+          region = list_regions[r_h],
+          covariates = "", # additional non-climate variables
+          covs = covs,
+          knots = 300,
+          update_model = FALSE,
+          update_predictions = TRUE, 
+          update_model_check = TRUE 
+        ),
+        output_file = paste0(
+          "html/biomass-by-depth/biomass-by",
+          covs, "-", spp, "-predict-only.html"
+        ),
+        envir = env
+      )
+    })
+  }
+}
+
+# list_species <- c(
+#   "Bocaccio"
+# )
+
+### rebuild imm and total models without AR1
+list_regions <- c("All synoptic surveys")
+# dir.create(file.path("html/biomass-by-depth"))
+for (r_h in seq_along(list_regions)) {
+  for (spp_i in seq_along(list_species)) {
+    spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+    covs <- "-tv-depth-only" # string describing model covariates
+    # covs <- "-ssid-only
+    try({
+      rmarkdown::render("2-biomass-depth-only-model2.Rmd",
+        params = list(
+          species = list_species[spp_i],
+          region = list_regions[r_h],
+          covariates = "", # additional non-climate variables
+          covs = covs,
+          knots = 250,
+          update_model = TRUE,
+          update_predictions = TRUE, 
+          update_model_check = TRUE 
+        ),
+        output_file = paste0(
+          "html/biomass-by-depth/biomass-by",
+          covs, "-", spp, "-no-AR1-250.html"
         ),
         envir = env
       )
