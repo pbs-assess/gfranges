@@ -30,7 +30,7 @@ null_number <- "-1"
 # ## for trends ###
 # knots <- 500
 # y_type <- "trend"
-# # 
+# #
 # # # model_type <- "-trend" # just temp
 # # # model_type <- "-trend-do-only" # just DO
 # # # model_type <- "-trend-w-age" # an experiment that lacks true chops for imm
@@ -42,15 +42,15 @@ null_number <- "-1"
 
 
 ### for velocities ###
-knots <- 200
+knots <- 350
 y_type <- "vel"
 
 # model_type <- "-vel-temp"
 # model_type <- "-vel-do"
-# model_type <- "-vel-both"
+model_type <- "-vel-both"
 
 # model_type <- "-dist-vel-temp"
-model_type <- "-dist-vel-both"
+# model_type <- "-dist-vel-both"
 # model_type <- "-dist-vel-combined" # doesn't converg
 
 ### LOAD VOCC DATA
@@ -68,7 +68,9 @@ if (age == "both") {
   # data_type <- paste0("all-95-all-do")
   # data_type <- paste0("all-95-newclim2")
   # data_type <- paste0("all-95-newclim-more2016")
-  data_type <- paste0("all-95-all-newclim")
+  # data_type <- paste0("all-95-all-newclim")
+  data_type <- paste0("all-95-optimized2")
+  
 }
 
 d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
@@ -83,6 +85,7 @@ if (w_family) {
 d <- as_tibble(d) %>%
   # filter(species != "Bocaccio") %>%
   # filter(species != "Sand Sole") %>%
+  filter(species != "Shortbelly Rockfish") %>%
   filter(species_age != "immature Shortraker Rockfish") %>%
   filter(species != "Longspine Thornyhead")
 
