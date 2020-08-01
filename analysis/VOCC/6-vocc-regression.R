@@ -42,12 +42,13 @@ null_number <- "-1"
 
 
 ### for velocities ###
-knots <- 350
+knots <- 400
 y_type <- "vel"
 
 # model_type <- "-vel-temp"
 # model_type <- "-vel-do"
 model_type <- "-vel-both"
+model_type <- "-vel-w-age"
 
 # model_type <- "-dist-vel-temp"
 # model_type <- "-dist-vel-both"
@@ -358,6 +359,74 @@ if (model_type == "-vel-both") {
   x_type <- "vel"
 }
 
+#### VEL with age effects
+if (model_type == "-vel-w-age") {
+  formula <- ~ age +
+    squashed_temp_vel_scaled +
+    mean_temp_scaled +
+    squashed_temp_vel_scaled:mean_temp_scaled +
+    # temp_grad_scaled +
+    squashed_DO_vel_scaled +
+    mean_DO_scaled +
+    squashed_DO_vel_scaled:mean_DO_scaled +
+    age:squashed_temp_vel_scaled +
+    age:mean_temp_scaled +
+    age:squashed_temp_vel_scaled:mean_temp_scaled +
+    age:squashed_DO_vel_scaled +
+    age:mean_DO_scaled +
+    age:squashed_DO_vel_scaled:mean_DO_scaled +
+    log_biomass_scaled #+ age:log_biomass_scaled 
+  
+  x <- model.matrix(formula, data = d)
+  
+  temp_chopstick <- T
+  DO_chopstick <- T
+  x_type <- "vel"
+}
+
+if (model_type == "-vel-w-age2") {
+  formula <- ~ age +
+    squashed_temp_vel_scaled +
+    mean_temp_scaled +
+    squashed_temp_vel_scaled:mean_temp_scaled +
+    # temp_grad_scaled +
+    squashed_DO_vel_scaled +
+    mean_DO_scaled +
+    squashed_DO_vel_scaled:mean_DO_scaled +
+    age:squashed_temp_vel_scaled +
+    age:mean_temp_scaled +
+    # age:temp_vel_scaled:mean_temp_scaled +
+    age:squashed_DO_vel_scaled +
+    age:mean_DO_scaled +
+    # age:DO_vel_scaled:mean_DO_scaled +
+    log_biomass_scaled #+ age:log_biomass_scaled 
+  
+  x <- model.matrix(formula, data = d)
+  
+  temp_chopstick <- T
+  DO_chopstick <- T
+  x_type <- "vel"
+}
+
+if (model_type == "-vel-w-fishing") {
+  formula <- ~ squashed_temp_vel_scaled +
+    mean_temp_scaled +
+    squashed_temp_vel_scaled:mean_temp_scaled +
+    log_effort_scaled + squashed_fishing_vel_scaled +
+    log_effort_scaled:squashed_fishing_vel_scaled +
+    squashed_DO_vel_scaled +
+    mean_DO_scaled +
+    squashed_DO_vel_scaled:mean_DO_scaled +
+    log_biomass_scaled
+  
+  x <- model.matrix(formula, data = d)
+  
+  temp_chopstick <- T
+  DO_chopstick <- T
+  x_type <- "vel"
+}
+
+### DVOCC ###
 if (model_type == "-dist-vel-temp") {
   formula <- ~ squashed_temp_dvocc_scaled +
     mean_temp_scaled +
