@@ -8,16 +8,23 @@
 plot_coefs <- function(coloured_coefs,
   grouping_taxa = "species",
   order_by_trait = FALSE,
-  order_by = "scale(do_vel_squashed)",
+  order_by = "temp_vel",
   increasing = F,
   grid_facets = F,
   add_grey_bars = F,
   fixed_scales = TRUE
 ) {
-  
+
   if(is.null(coloured_coefs$age)) {
     coloured_coefs$age <- "both"
-  }
+    coloured_coefs <- coloured_coefs %>% 
+    mutate(coefficient = shortener(coefficient)) %>%
+      mutate(coefficient = factor(coefficient, levels = c("Intercept", "log_biomass",
+        "temp", "temp_trend", "temp_vel",  "temp_trend:temp", "temp_vel:temp",
+        "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO",
+        "log_effort", "fishing_trend", "log_effort:fishing_trend")))
+    
+  } else {
   
   coloured_coefs <- coloured_coefs %>% #filter(coefficient != "(Intercept)") %>% 
     mutate(coefficient = shortener(coefficient)) %>%
@@ -26,6 +33,7 @@ plot_coefs <- function(coloured_coefs,
       "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO",
       "log_effort", "fishing_trend", "log_effort:fishing_trend")), 
       age = factor(age, levels = c("mature", "immature"))) 
+  }
   
   if (order_by_trait) {
     order_values <- coloured_coefs %>% rename(order = !!order_by) %>% select(!!grouping_taxa, order)
@@ -54,7 +62,7 @@ plot_coefs <- function(coloured_coefs,
     gfplot:::theme_pbs()  
   
   if(add_grey_bars) {
-    .n <- length(unique(coloured_coefs$species))
+    .n <- length(unique(coloured_coefs[[grouping_taxa]]))
     .w <- 0.5
     p <- p + annotate(
       geom = "rect", xmin = seq(1, .n, by = 2) - .w, xmax = seq(1, .n, by = 2) + .w,
@@ -64,8 +72,14 @@ plot_coefs <- function(coloured_coefs,
   
   
   if (grid_facets) {
+    if(length(unique(coloured_coefs$age))>1){
     p <- p + facet_grid(age~coefficient, scales = "free") +
       scale_shape_manual(values=c(16, 16), guide = F)
+    } else {
+      p <- p + facet_grid(~coefficient, scales = "free") +
+        scale_shape_manual(values=c(16, 16), guide = F)
+    }
+    
   } else {
     
     if(length(unique(coloured_coefs$age))>1) {  
