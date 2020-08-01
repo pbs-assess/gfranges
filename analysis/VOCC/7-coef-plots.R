@@ -195,6 +195,21 @@ manipulate::manipulate({
   as.list(sort(unique(shortener(model3$coefficient))), decreasing=F))
 )
 
+#### FAMILY COEF PLOTS ####
+
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-family-1-350.rds")
+
+model_vel$coefs_genus$genus <-  stringr::str_to_title(model_vel$coefs_genus$genus)
+model3 <- add_colours(model_vel$coefs_genus, col_var = "genus", add_spp_data = F) 
+colour_list <- unique(model3$colours)
+manipulate::manipulate({
+  plot_coefs(model3, grouping_taxa = "genus", fixed_scales = F, order_by = order_by) 
+}, order_by = manipulate::picker( 
+  as.list(sort(unique(shortener(model3$coefficient))), decreasing=F))
+)
+plot_coefs(model3, grouping_taxa = "genus", order_by = "temp_vel", fixed_scales = F)
+ggsave(here::here("ms", "figs", "supp-coefs-family.pdf"), width = 8, height = 6)
+
 ### SAVE PLOT WITH SELECTED PARAMS
 # model3 <- plot_coefs(model2, order_by = "squashed_temp_vel_scaled)")
 # model_plot <- model3 +
