@@ -25,7 +25,8 @@ w_genus <- F
 w_family <- F
 is_null <- F
 
-null_number <- "-1"
+null_number <- "-1" # 2 failed, 3 NA
+
 
 # ## for trends ###
 # knots <- 500
@@ -45,10 +46,11 @@ null_number <- "-1"
 knots <- 400
 y_type <- "vel"
 
-# model_type <- "-vel-temp"
-# model_type <- "-vel-do"
-model_type <- "-vel-both"
-model_type <- "-vel-w-age"
+# # model_type <- "-vel-temp"
+# # model_type <- "-vel-do"
+# model_type <- "-vel-both"
+# # model_type <- "-vel-w-age"
+model_type <- "-vel-w-fishing"
 
 # model_type <- "-dist-vel-temp"
 # model_type <- "-dist-vel-both"
@@ -359,6 +361,25 @@ if (model_type == "-vel-both") {
   x_type <- "vel"
 }
 
+if (model_type == "-vel-w-fishing") {
+  formula <- ~ squashed_temp_vel_scaled +
+    squashed_DO_vel_scaled +
+    mean_temp_scaled +
+    squashed_temp_vel_scaled:mean_temp_scaled +
+    mean_DO_scaled +
+    squashed_DO_vel_scaled:mean_DO_scaled +
+    log_effort_scaled + fishing_trend_scaled +
+    log_effort_scaled:fishing_trend_scaled +
+    log_biomass_scaled
+  
+  x <- model.matrix(formula, data = d)
+  
+  temp_chopstick <- T
+  DO_chopstick <- T
+  x_type <- "vel"
+}
+
+
 #### VEL with age effects
 if (model_type == "-vel-w-age") {
   formula <- ~ age +
@@ -408,23 +429,23 @@ if (model_type == "-vel-w-age2") {
   x_type <- "vel"
 }
 
-if (model_type == "-vel-w-fishing") {
-  formula <- ~ squashed_temp_vel_scaled +
-    mean_temp_scaled +
-    squashed_temp_vel_scaled:mean_temp_scaled +
-    log_effort_scaled + squashed_fishing_vel_scaled +
-    log_effort_scaled:squashed_fishing_vel_scaled +
-    squashed_DO_vel_scaled +
-    mean_DO_scaled +
-    squashed_DO_vel_scaled:mean_DO_scaled +
-    log_biomass_scaled
-  
-  x <- model.matrix(formula, data = d)
-  
-  temp_chopstick <- T
-  DO_chopstick <- T
-  x_type <- "vel"
-}
+# if (model_type == "-vel-w-fishing") {
+#   formula <- ~ squashed_temp_vel_scaled +
+#     mean_temp_scaled +
+#     squashed_temp_vel_scaled:mean_temp_scaled +
+#     log_effort_scaled + squashed_fishing_vel_scaled +
+#     log_effort_scaled:squashed_fishing_vel_scaled +
+#     squashed_DO_vel_scaled +
+#     mean_DO_scaled +
+#     squashed_DO_vel_scaled:mean_DO_scaled +
+#     log_biomass_scaled
+#   
+#   x <- model.matrix(formula, data = d)
+#   
+#   temp_chopstick <- T
+#   DO_chopstick <- T
+#   x_type <- "vel"
+# }
 
 ### DVOCC ###
 if (model_type == "-dist-vel-temp") {
