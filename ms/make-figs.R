@@ -10,18 +10,24 @@ write_tex <- function(x, macro, ...) {
     readr::write_lines("ms/values.tex", append = TRUE)
 }
 
-# load appropriate final models
-
-model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-with-do-1-500.rds") # full dataset 
-max(model$sdr$gradient.fixed)
-
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") # full dataset 
-max(model_vel$sdr$gradient.fixed)
-
+# load supplementary data
 # stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
 stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds"))
-
 alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-untrimmed-dvocc-med.rds"))
+
+# load appropriate final models
+# model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-with-do-1-500.rds")
+model <- readRDS("analysis/VOCC/data/trend-all-95-optimized2-08-01-trend-with-do-1-500.rds") # optimized
+max(model$sdr$gradient.fixed)
+
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") # un-optimized biomass
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-07-31-vel-both-1-350.rds") # not converged
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-family-1-350.rds")
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-1-400.rds") # optimized and converges
+
+max(model_vel$sdr$gradient.fixed)
+
+
 ## FILTER TO DEPTHS SAMPLED
 # range(survey_sets$depth_m, na.rm = T) 
 #   18 1308
@@ -34,19 +40,33 @@ alldata <- alldata %>% filter(depth > 23) %>% filter(depth < 1112) # 99th
 
 #### SAVE TEX VALUES FOR CLIMATE IQRs ####
 
-# temperature
-write_tex(signif(quantile(alldata$temp_trend, 0.025), digits = 2), "lowTquantile")
-write_tex(signif(quantile(alldata$temp_trend, 0.975), digits = 2), "highTquantile")
-# DO
-write_tex(signif(quantile(alldata$DO_trend, 0.025), digits = 2), "lowDOquantile")
-write_tex(signif(quantile(alldata$DO_trend, 0.975), digits = 2), "highDOquantile")
-# SD for scaled variables
-write_tex(signif(attributes(alldata$temp_trend_scaled)[[2]], digits = 2), "temptrendSD")
-write_tex(signif(attributes(alldata$DO_trend_scaled)[[2]], digits = 2), "DOtrendSD")
-write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelSD")
-write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelSD")
-
-mean(alldata$squashed_temp_vel_scaled)
+# # # temperature
+# write_tex(signif(quantile(alldata$temp_trend, 0.025), digits = 2), "lowTquantile")
+# write_tex(signif(quantile(alldata$temp_trend, 0.975), digits = 2), "highTquantile")
+# # DO
+# write_tex(signif(quantile(alldata$DO_trend, 0.025), digits = 2), "lowDOquantile")
+# write_tex(signif(quantile(alldata$DO_trend, 0.975), digits = 2), "highDOquantile")
+# # SD for scaled variables
+# write_tex(signif(attributes(alldata$temp_trend_scaled)[[2]], digits = 2), "temptrendSD")
+# write_tex(signif(attributes(alldata$DO_trend_scaled)[[2]], digits = 2), "DOtrendSD")
+# write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelSD")
+# write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelSD")
+# 
+# write_tex(signif(mean(alldata$squashed_temp_vel_scaled), digits = 2), "tempvelmean")
+# write_tex(signif(range(alldata$squashed_temp_vel_scaled)[[1]], digits = 2), "tempvelmin")
+# write_tex(signif(range(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelmax")
+# 
+# range_temp_vel <- range(alldata$squashed_temp_vel_scaled)[[2]]-range(alldata$squashed_temp_vel_scaled)[[1]]
+# midpoint_temp_vel <- range(alldata$squashed_temp_vel_scaled)[[2]]-range_temp_vel/2
+# write_tex(signif(midpoint_temp_vel, digits = 2), "tempvelmid")
+# 
+# write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[1]], digits = 2), "DOvelmean")
+# write_tex(signif(range(alldata$squashed_DO_vel_scaled)[[1]], digits = 2), "DOvelmin")
+# write_tex(signif(range(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelmax")
+# 
+# range_DO_vel <- range(alldata$squashed_DO_vel_scaled)[[2]]-range(alldata$squashed_DO_vel_scaled)[[1]]
+# midpoint_DO_vel <- range(alldata$squashed_DO_vel_scaled)[[2]]-range_DO_vel/2
+# write_tex(signif(midpoint_DO_vel, digits = 2), "DOvelmid")
 
 
 #########################
@@ -354,51 +374,11 @@ ggsave(here::here("ms", "figs", "fishing-maps-trimmed-99.png"), width = 3, heigh
 #########################
 #### GLOBAL COEFS ####
 #########################
-# other iterations of main models for optional comparisons ####
-#
-# without WCHG
-# model <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds") # without WCHG, no taxonic groups
-# max(model$sdr$gradient.fixed)
-# 
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-22-vel-both-1-300.rds") # without WCHG, no taxonic groups
-# max(model_vel$sdr$gradient.fixed)
-#
-## nulls without WCHG, no taxonic groups
-# null01 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-sim-1-500-DO.rds")
-# null02 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-23-trend-with-do-sim-2-500-DO.rds")
-# null03 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-23-trend-with-do-sim-3-500-DO.rds") # not converged
-# null04 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-23-trend-with-do-sim-4-500-DO.rds") # not converged
-# null05 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-23-trend-with-do-sim-5-500-DO.rds")
-# 
-# vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-1-300.rds")
-# vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-2-300-DO.rds") ### not converged
-# vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-3-300-DO.rds")
-# vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-4-300-DO.rds")
-# vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-24-vel-both-sim-5-300-DO.rds")
-#
-#### explore comparisons with other model configurations
-#
-## simulation test in 200 knot models
-# model <- readRDS("analysis/VOCC/data/trend-all-95-newclim2-06-20-trend-with-do-1-200.rds") # 200 knots, 500 kn temp, no 2016 WCVI
-# null02 <- readRDS("analysis/VOCC/data/trend-all-95-newclim2-06-20-trend-with-do-sim-1-200.rds")
-#
-## check change in violins between 500 and 200 knot models
-# model <- readRDS("analysis/VOCC/data/trend-all-95-newclim2-06-20-trend-with-do-1-500.rds") # 500 knots, 500 kn temp, no 2016 WCVI
-# null01 <- readRDS("analysis/VOCC/data/trend-all-95-newclim2-06-20-trend-with-do-1-200.rds")
-# 
-## check change in violins between 350 and 250 knot models
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") # 
-# vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-26-vel-both-1-250.rds") # 
-# vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-300.rds") # not converged
-# 
-# check change in violins with taxonomic (family) random effect
-# model <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-1-500.rds") # without WCHG, no taxonic groups
-# null01 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-family-1-500-DO.rds") # without WCHG, with family
-#
+
 # check change in violins with age effect
 # model <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-1-500.rds") # without WCHG, no taxonic groups
 # null01 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age-1-500-DO.rds")
-#
+
 #### get trend model betas and save tex ####
 coef_names <- shortener(unique(model$coefs$coefficient))
 betas <- signif(as.list(model$sdr, "Estimate")$b_j, digits = 3)
@@ -416,11 +396,11 @@ coef_names <- c(
 overall_betas <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas$model <- "Trend"
 
-# ### SAVE TEX VALUES FOR TEMPERATURE TREND ESTIMATES ###
-write_tex(signif(overall_betas$betas[overall_betas$coef_names == "change in T"], 2), "betaTtrend")
-write_tex(signif(abs(overall_betas$betas[overall_betas$coef_names == "change in T"]), 2), "ABSbetaTtrend")
-write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "change in T"], 2), "lowerTtrend")
-write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "change in T"], 2), "upperTtrend")
+# # ### SAVE TEX VALUES FOR TEMPERATURE TREND ESTIMATES ####
+# write_tex(signif(overall_betas$betas[overall_betas$coef_names == "change in T"], 2), "betaTtrend")
+# write_tex(signif(abs(overall_betas$betas[overall_betas$coef_names == "change in T"]), 2), "ABSbetaTtrend")
+# write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "change in T"], 2), "lowerTtrend")
+# write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "change in T"], 2), "upperTtrend")
 
 
 #### get velocity model betas and save tex ####
@@ -439,21 +419,20 @@ coef_names <- c(
 )
 overall_betas_vel <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel$model <- "Velocity"
-
-# ### SAVE TEX VALUES FOR TEMPERATURE VELOCITY ESTIMATES ###
-write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"], 2), "betaTvel")
-write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
-write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTvel")
-write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTvel")
-
-write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"], 3), "betaTVinteract")
-write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"]), 3), "ABSbetaTVinteract")
-write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "lowerTVinteract")
-write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "upperTVinteract")
+###
+# # ### SAVE TEX VALUES FOR TEMPERATURE VELOCITY ESTIMATES ####
+# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"], 2), "betaTvel")
+# write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
+# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTvel")
+# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTvel")
+# 
+# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"], 3), "betaTVinteract")
+# write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"]), 3), "ABSbetaTVinteract")
+# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "lowerTVinteract")
+# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "upperTVinteract")
 
 #### ADD NULLS AND MAKE VIOLIN PLOT ####
-# TODO: run nulls on full dataset
-null01 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-TODO-trend-with-do-sim-1-500-DO.rds") # full dataset 
+# 95-all-newclim is full dataset while 95-newclim-more2016 is former with WCHG missing
 
 # # currently partial dataset nulls are standin
 null01 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-30-trend-with-do-sim-1-500.rds") # not converged 0.004
@@ -462,30 +441,22 @@ null03 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-07-01-trend-with-
 null04 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-30-trend-with-do-sim-4-500-DO.rds") # not converged 0.002
 null05 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-07-01-trend-with-do-sim-5-500-DO.rds")
 max(null04$sdr$gradient.fixed)
-# # # old nulls with incorrect climate data too
-# # null01 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-1-500-DO.rds")
-# # null02 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-2-500-DO.rds") # not converged
-# # null03 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-3-500-DO.rds") # not converged
-# # null04 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-4-500-DO.rds")
-# # null05 <- readRDS("analysis/VOCC/data/trend-all-95-all-do-04-29-trend-with-do-sim-5-500-DO.rds")
-# 
 
-
-# max(null01$sdr$gradient.fixed)
-vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-28-vel-both-sim-1-350.rds")
-# vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-2-300-DO.rds") ### new one would not converged
-vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-3-350-DO.rds") 
-vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-4-350.rds")
-vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-5-350-DO.rds")
-
-max(vnull01$sdr$gradient.fixed)
-max(vnull03$sdr$gradient.fixed)
-max(vnull04$sdr$gradient.fixed)
-max(vnull05$sdr$gradient.fixed)
+# # max(null01$sdr$gradient.fixed)
+vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-03-vel-both-sim-1-400.rds")
+# # vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-2-300-DO.rds") 
+# vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-3-350-DO.rds")
+# vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-4-350.rds")
+# vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-5-350-DO.rds")
+# # 
+# max(vnull01$sdr$gradient.fixed)
+# max(vnull03$sdr$gradient.fixed)
+# max(vnull04$sdr$gradient.fixed)
+# max(vnull05$sdr$gradient.fixed)
 
 # # # old nulls with incorrect climate data too
 # # vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-1-200-DO.rds")
-vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-2-200-DO.rds")
+# vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-2-200-DO.rds")
 # vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-3-200-DO.rds")
 # # vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-4-200-DO.rds")
 # # vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-30-vel-both-sim-5-200-DO.rds")
@@ -575,11 +546,12 @@ nulls <- rbind(model$coefs,
   # scale_colour_manual(name = "Model type", values = c("#FDAE61", "#D53E4F")) +
   geom_vline(xintercept = 0, colour = "grey60") +
   geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI),
-    size = 1.15, shape = "|", fatten = 6,
+    # size = 1.15, shape = "|", fatten = 6,
+    size = 0.5, fatten = 1,
     inherit.aes = F,
     data = overall_t
   ) + 
-  coord_cartesian(xlim = c(-3, 3.4)) +
+  coord_cartesian(xlim = c(-4, 2.7)) +
   ggtitle("a. Trend-based models") +
   guides(color = guide_legend(reverse = TRUE)) +
   gfplot::theme_pbs() + theme(
@@ -590,7 +562,8 @@ nulls <- rbind(model$coefs,
   ))
 
 vnulls <- rbind(
-  vnull02$coefs, vnull03$coefs, vnull04$coefs, vnull05$coefs,
+  # vnull02$coefs, 
+  # vnull03$coefs, vnull04$coefs, vnull05$coefs,
   vnull01$coefs,
   model_vel$coefs) %>%
   mutate(
@@ -614,26 +587,26 @@ vnulls <- rbind(
   # geom_violin(#aes(estimate, term), inherit.aes = F ,
   #   scale = "width", # scale = "count", # scale = "area",
   #   alpha = 0.1, data = filter(vnulls, model != "velocity")) +
-  # geom_violin(
-  #   scale = "width", fill= NA,
-  #   alpha = 0.1, data = filter(vnulls, model == "vnull01")
-  # ) +
+  geom_violin(
+    scale = "width", fill= NA,
+    alpha = 0.1, data = filter(vnulls, model == "vnull01")
+  ) +
   # # geom_violin(
   # #   scale = "width",
   # #   alpha = 0.1, data = filter(vnulls, model == "vnull02")
   # # ) +
-  geom_violin(
-    scale = "width", fill= NA,
-    alpha = 0.1, data = filter(vnulls, model == "vnull03")
-  ) +
-  geom_violin(
-    scale = "width", fill= NA,
-    alpha = 0.1, data = filter(vnulls, model == "vnull04")
-  ) +
-  geom_violin(
-    scale = "width", fill= NA,
-    alpha = 0.1, data = filter(vnulls, model == "vnull05")
-  ) +
+  # geom_violin(
+  #   scale = "width", fill= NA,
+  #   alpha = 0.1, data = filter(vnulls, model == "vnull03")
+  # ) +
+  # geom_violin(
+  #   scale = "width", fill= NA,
+  #   alpha = 0.1, data = filter(vnulls, model == "vnull04")
+  # ) +
+  # geom_violin(
+  #   scale = "width", fill= NA,
+  #   alpha = 0.1, data = filter(vnulls, model == "vnull05")
+  # ) +
   scale_y_discrete(
     limits = rev(unique(sort(vnulls$term))),
     labels = c(
@@ -645,11 +618,12 @@ vnulls <- rbind(
   scale_colour_manual(name = "Model type", values = c("gray80", "#5E4FA2")) + # "#ABDDA4",  green
   geom_vline(xintercept = 0, colour = "gray60") +
   geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI),
-    size = 1.05, shape = "|", fatten = 6,
+    size = 0.5, fatten = 1,
+    #size = 1.05, shape = "|", fatten = 6,
     inherit.aes = F,
     data = overall_v
   ) +
-  coord_cartesian(xlim = c(-12, 12)) +
+  coord_cartesian(xlim = c(-8.5, 5.5)) +
   ggtitle("b. Velocity-based models") +
   guides(color = guide_legend(reverse = TRUE)) +
   gfplot::theme_pbs() + theme(
@@ -662,8 +636,8 @@ vnulls <- rbind(
 (null_coefs | vnull_coefs) / grid::textGrob("Species-specific coefficient estimates", 
   just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-# ggsave(here::here("ms", "figs", "null-spp-violin-newclim-w-nulls.pdf"), width = 9, height = 4)
-ggsave(here::here("ms", "figs", "null-spp-violin-w-dvocc.pdf"), width = 9, height = 4)
+ggsave(here::here("ms", "figs", "violin-newclim-w-nulls.pdf"), width = 9, height = 4)
+# ggsave(here::here("ms", "figs", "null-spp-violin-w-dvocc.pdf"), width = 9, height = 4)
 
 #########################
 #########################
@@ -704,36 +678,36 @@ do_slopes <- left_join(do_slopes, stats)
 temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
-p_temp_worm <- plot_chopstick_slopes(temp_slopes,
+(p_temp_worm <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
-  legend_position = c(.25, .95),
+  legend_position = c(.25, .85),
   name_chop_type = F,
   add_grey_bars = T
 ) +  coord_flip() + 
-  coord_flip(ylim = c(-7.75, 3)) +
+  coord_flip(ylim = c(-10, 3)) +
   # annotate("rect", ymin = lowerT[[1]], ymax = upperT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
   geom_hline(yintercept = estT[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   theme(
     legend.position = "none",
     axis.title.x = element_blank()) +
-  ggtitle("a. Temperature")
+  ggtitle("a. Temperature"))
 
-p_do_worm <- plot_chopstick_slopes(do_slopes,
+(p_do_worm <- plot_chopstick_slopes(do_slopes,
   type = "DO",
   legend_position = c(.25, .95),
   name_chop_type = F,
   add_grey_bars = T
 ) + 
   coord_flip() +
-  # coord_flip(ylim = c(-2, 1.5)) +
+  coord_flip(ylim = c(-2, 2.8)) +
   # annotate("rect", ymin = lowerD[[1]], ymax = upperD[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
   geom_hline(yintercept = estD[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   ggtitle("b. DO") +
   # ylab("slopes")
   scale_x_discrete(position = "top") +
   theme(
-    legend.position = "none",
-    axis.title.x = element_blank())
+    # legend.position = "none",
+    axis.title.x = element_blank()))
 
 # colorblindr::cvd_grid(p_temp_worm)
 # colorblindr::cvd_grid(p_do_worm)
@@ -802,7 +776,8 @@ do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish C
 p_temp_worm2 <- plot_chopstick_slopes(temp_vel_slopes, type = "temp",
   add_grey_bars = T,
   legend_position = c(.25,.95)) + #coord_flip(ylim =c(-14,7.75)) +
-  theme(axis.title.x = element_blank(),
+  theme(axis.title = element_blank(),
+    plot.margin = margin(0, 0.2, 0, 0.2, "cm"),
     legend.position = "none") + 
   ggtitle("a. Temperature")
 p_do_worm2 <- plot_chopstick_slopes(do_vel_slopes, type = "DO",
@@ -811,12 +786,27 @@ p_do_worm2 <- plot_chopstick_slopes(do_vel_slopes, type = "DO",
   ggtitle("b. Dissolved oxygen") +
   scale_x_discrete(position = "top") +
   # ylab("slopes")
-  theme(axis.title.x = element_blank(),
+  theme(axis.title = element_blank(),
+    plot.margin = margin(0, 0.2, 0, 0.2, "cm"),
     legend.position = "none")
 
-(p_temp_worm2 | p_do_worm2) / grid::textGrob(expression(~Delta~"biotic velocity with a SD change in climate velocity"), just = 0.5) +
-  plot_layout(height = c(10.5, 0.25))
-ggsave(here::here("ms", "figs", "worm-plot-vel.pdf"), width = 8, height = 6)
+(((p_temp_worm2 | p_do_worm2)/ 
+    grid::textGrob(expression(~Delta~"biotic velocity with a SD change in climate velocity"), vjust = -0.25, hjust = 0.5) +
+  plot_layout(height = c(10, 0.1))) + plot_layout(guides = 'collect') & theme(
+  legend.text = element_text(size = 9),
+  legend.position = "bottom",
+  # legend.justification='left',
+  # legend.position = c(0, 1),
+  # legend.justification = c(0, 0),
+  legend.text.align = 1,
+  legend.margin=margin(t = 0.4, l= 0, r = 0.1, b=0, unit='cm'),
+  # legend.margin = unit(1.5, "cm"),
+  # legend.spacing.x = unit(.1, "cm"),
+    legend.direction = "horizontal",
+    legend.box = "horizontal"
+)) 
+
+ggsave(here::here("ms", "figs", "worm-plot-vel.pdf"), width = 7, height = 7)
 # ggsave(here::here("ms", "figs", "worm-plot-dvocc-med-by-est.pdf"), width = 8, height = 6)
 
 #### IF WE WANT PLOT OF BOTH TREND AND VELOCITY SLOPES TOGETHER ####
@@ -1248,7 +1238,7 @@ species_panels <- function(species, model, x_type,
   chop_label = T, #leftmost = T, 
   model, "DO"))
 
-(p4 <- species_panels("immature Flathead Sole", 
+(p4 <- species_panels("mature Flathead Sole", 
   trends = F,
   # chop_label = T, 
   model, "DO"))
@@ -1276,142 +1266,141 @@ ygrob3 <- grid::textGrob(("Mean climate"),
 
 wrap_plots(ygrob1, ygrob2, ygrob3, p1, p2, p3, p4) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1))
 
-ggsave(here::here("ms", "figs", "species-map-panels-vel.pdf"), width = 11, height = 11)
+# ggsave(here::here("ms", "figs", "species-map-panels-vel.pdf"), width = 11, height = 11)
 ggsave(here::here("ms", "figs", "species-map-panels-vel.png"), width = 11, height = 11)
 
 
-# trend-based example chops
-
-(p1 <- species_panels("mature Spotted Ratfish", model, "temp",
-  chop_label = T, 
-  leftmost = T#, alpha_range = c(0.1, 0.9)
-))
-
-(p1 <- species_panels("mature Spotted Ratfish", model, "temp",
-  chop_label = T, 
-  leftmost = T#, alpha_range = c(0.1, 0.9)
-))
-
-(p1b <- species_panels("mature Yelloweye Rockfish", model, "temp",
-  # trends = F,
-  chop_label = T, 
-  leftmost = T, alpha_range = c(0.1, 0.9)
-))
-
-# (p1c <- species_panels("immature Yelloweye Rockfish", model, "temp",
+# # trend-based example chops ####
+# 
+# (p1 <- species_panels("mature Spotted Ratfish", model, "temp",
 #   chop_label = T, 
 #   leftmost = T#, alpha_range = c(0.1, 0.9)
 # ))
-
- (p2 <- species_panels("immature Widow Rockfish", model, "temp"))
-
-(p2 <- species_panels("mature Bocaccio", model, "temp"#, alpha_range = c(0.1, 0.9)
-))
-# (p2 <- species_panels("mature Canary Rockfish", model, "temp"))
-(p2b <- species_panels("immature Shortspine Thornyhead", model, "temp"))
-
-(p3 <- species_panels("mature Flathead Sole", model, "temp" #, alpha_range = c(0.1, 0.9)
-))
-
-# (p3b <- species_panels("mature English Sole", model, "temp", alpha_range = c(0.1, 0.9)
+# 
+# (p1 <- species_panels("mature Spotted Ratfish", model, "temp",
+#   chop_label = T, 
+#   leftmost = T#, alpha_range = c(0.1, 0.9)
 # ))
-# (p4 <- species_panels("mature Arrowtooth Flounder", model, "temp"))
-# (p4 <- species_panels("mature Pacific Halibut", model, "temp", alpha_range = c(0.25, 0.9)))
-
-(p5 <- species_panels("mature North Pacific Spiny Dogfish", 
-  # trends = F,
-  chop_label = T, model, "DO"))
-
-(p6 <- species_panels("mature Sablefish", model, "DO")) #, alpha_range = c(0.25, 0.9)))
-# (p7 <- species_panels("mature Shortspine Thornyhead", model, "DO"))
-# (p7 <- species_panels("immature Shortspine Thornyhead", model, "DO"))
-(p7 <- species_panels("mature Widow Rockfish", model, "DO", alpha_range = c(0.25, 0.9)))
-(p7b <- species_panels("immature Silvergray Rockfish", model, "DO", alpha_range = c(0.25, 0.9)))
-
-(p7c <- species_panels("immature Lingcod", model, "DO", alpha_range = c(0.25, 0.9)))
-# wrap_plots(p1, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(1.05, 1, 1, 1, 1), design = layout)
-
-# ygrob <- grid::textGrob(("Predicted % change in biomass per decade"),
-#   gp = grid::gpar(fontsize = 12), rot = 90,
-#   hjust = -1
+# 
+# (p1b <- species_panels("mature Yelloweye Rockfish", model, "temp",
+#   # trends = F,
+#   chop_label = T, 
+#   leftmost = T, alpha_range = c(0.1, 0.9)
+# ))
+# 
+# # (p1c <- species_panels("immature Yelloweye Rockfish", model, "temp",
+# #   chop_label = T, 
+# #   leftmost = T#, alpha_range = c(0.1, 0.9)
+# # ))
+# 
+#  (p2 <- species_panels("immature Widow Rockfish", model, "temp"))
+# 
+# (p2 <- species_panels("mature Bocaccio", model, "temp"#, alpha_range = c(0.1, 0.9)
+# ))
+# # (p2 <- species_panels("mature Canary Rockfish", model, "temp"))
+# (p2b <- species_panels("immature Shortspine Thornyhead", model, "temp"))
+# 
+# (p3 <- species_panels("mature Flathead Sole", model, "temp" #, alpha_range = c(0.1, 0.9)
+# ))
+# 
+# # (p3b <- species_panels("mature English Sole", model, "temp", alpha_range = c(0.1, 0.9)
+# # ))
+# # (p4 <- species_panels("mature Arrowtooth Flounder", model, "temp"))
+# # (p4 <- species_panels("mature Pacific Halibut", model, "temp", alpha_range = c(0.25, 0.9)))
+# 
+# (p5 <- species_panels("mature North Pacific Spiny Dogfish", 
+#   # trends = F,
+#   chop_label = T, model, "DO"))
+# 
+# (p6 <- species_panels("mature Sablefish", model, "DO")) #, alpha_range = c(0.25, 0.9)))
+# # (p7 <- species_panels("mature Shortspine Thornyhead", model, "DO"))
+# # (p7 <- species_panels("immature Shortspine Thornyhead", model, "DO"))
+# (p7 <- species_panels("mature Widow Rockfish", model, "DO", alpha_range = c(0.25, 0.9)))
+# (p7b <- species_panels("immature Silvergray Rockfish", model, "DO", alpha_range = c(0.25, 0.9)))
+# 
+# (p7c <- species_panels("immature Lingcod", model, "DO", alpha_range = c(0.25, 0.9)))
+# # wrap_plots(p1, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(1.05, 1, 1, 1, 1), design = layout)
+# 
+# # ygrob <- grid::textGrob(("Predicted % change in biomass per decade"),
+# #   gp = grid::gpar(fontsize = 12), rot = 90,
+# #   hjust = -1
+# # )
+# # wrap_plots(wrap_elements(ygrob), p1, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(0.05, 1, 1, 1, 1, 1))
+# 
+# layout <- "
+#       ADEFGHI
+#       ADEFGHI
+#       BDEFGHI
+#       CDEFGHI
+#       "
+# 
+# ygrob1 <- grid::textGrob(("Biotic trend (Y)"),
+#   gp = grid::gpar(fontsize = 12),
+#   hjust = 0.4,
+#   rot = 90
 # )
-# wrap_plots(wrap_elements(ygrob), p1, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(0.05, 1, 1, 1, 1, 1))
-
-layout <- "
-      ADEFGHI
-      ADEFGHI
-      BDEFGHI
-      CDEFGHI
-      "
-
-ygrob1 <- grid::textGrob(("Biotic trend (Y)"),
-  gp = grid::gpar(fontsize = 12),
-  hjust = 0.4,
-  rot = 90
-)
-
-ygrob2 <- grid::textGrob(("Climate trend"),
-  gp = grid::gpar(fontsize = 12), hjust = 0, rot = 90
-)
-
-
-ygrob3 <- grid::textGrob(("Mean climate"),
-  gp = grid::gpar(fontsize = 12), hjust = 0.25, rot = 90
-)
-
-wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p2, p3, p5, p6, p7c) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1, 1, 1))
-
-ggsave(here::here("ms", "figs", "species-map-panels.pdf"), width = 17, height = 11)
-
-###
-#### OTHER SPECIES PANEL OPTIONS ####
-species_panels("mature Arrowtooth Flounder", model, "temp")
-species_panels("immature Arrowtooth Flounder", model, "temp")
-species_panels("mature Curlfin Sole", model, "temp")
-species_panels("mature Flathead Sole", model, "temp")
-species_panels("immature Flathead Sole", model, "temp")
-species_panels ("mature Dover Sole", model, "temp")
-species_panels ("immature Dover Sole", model, "temp")
-species_panels("mature English Sole", model, "temp")
-species_panels("mature Pacific Halibut", model, "temp")
-
-species_panels("immature English Sole", model, "temp", alpha_range = c(0.25, 0.9))
-#
-species_panels("mature Pacific Cod", model, "temp", alpha_range = c(0.25, 0.9))
-species_panels("mature Walleye Pollock", model, "temp")
-
-# species_panels("mature Canary Rockfish", model, "temp", alpha_range = c(0.25, 0.9))
-# species_panels("mature Widow Rockfish", model, "temp")
-# species_panels("mature Bocaccio", model, "temp")
-# species_panels("mature Shortspine Thornyhead", model, "temp")
-
-# species_panels("mature Sablefish", model, "DO")
-# species_panels("mature Pacific Cod", model, "DO")
-#
-# species_panels("mature Canary Rockfish", model, "DO", alpha_range = c(0.25, 0.9))
-# species_panels("mature Yelloweye Rockfish", model, "DO", alpha_range = c(0.25, 0.9))
-species_panels("mature Bocaccio", model, "DO", alpha_range = c(0.25, 0.9))
-species_panels("mature Pacific Ocean Perch", model, "DO", alpha_range = c(0.25, 0.9))
-# species_panels("immature Quillback Rockfish", model, "DO", alpha_range = c(0.25, 0.9))
-
-species_panels("mature Dover Sole", model, "DO", alpha_range = c(0.25, 0.9))
-species_panels("immature Lingcod", model, "DO", alpha_range = c(0.25, 0.9))
-# species_panels("mature Redbanded Rockfish", model, "DO")
-# species_panels("mature Widow Rockfish", model, "DO")
-species_panels("mature Petrale Sole", model, "DO")
-#
-#
-# species_panels("mature Pacific Halibut", model, "DO")
-# species_panels("mature English Sole", model, "DO")
-species_panels("immature Flathead Sole", model, "DO")
-species_panels("immature Arrowtooth Flounder", model, "DO")
+# 
+# ygrob2 <- grid::textGrob(("Climate trend"),
+#   gp = grid::gpar(fontsize = 12), hjust = 0, rot = 90
+# )
+# 
+# 
+# ygrob3 <- grid::textGrob(("Mean climate"),
+#   gp = grid::gpar(fontsize = 12), hjust = 0.25, rot = 90
+# )
+# 
+# wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p2, p3, p5, p6, p7c) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1, 1, 1))
+# 
+# ggsave(here::here("ms", "figs", "species-map-panels.pdf"), width = 17, height = 11)
+# 
+# ###
+# #### OTHER SPECIES PANEL OPTIONS ####
+# species_panels("mature Arrowtooth Flounder", model, "temp")
+# species_panels("immature Arrowtooth Flounder", model, "temp")
+# species_panels("mature Curlfin Sole", model, "temp")
+# species_panels("mature Flathead Sole", model, "temp")
+# species_panels("immature Flathead Sole", model, "temp")
+# species_panels ("mature Dover Sole", model, "temp")
+# species_panels ("immature Dover Sole", model, "temp")
+# species_panels("mature English Sole", model, "temp")
+# species_panels("mature Pacific Halibut", model, "temp")
+# 
+# species_panels("immature English Sole", model, "temp", alpha_range = c(0.25, 0.9))
+# #
+# species_panels("mature Pacific Cod", model, "temp", alpha_range = c(0.25, 0.9))
+# species_panels("mature Walleye Pollock", model, "temp")
+# 
+# # species_panels("mature Canary Rockfish", model, "temp", alpha_range = c(0.25, 0.9))
+# # species_panels("mature Widow Rockfish", model, "temp")
+# # species_panels("mature Bocaccio", model, "temp")
+# # species_panels("mature Shortspine Thornyhead", model, "temp")
+# 
+# # species_panels("mature Sablefish", model, "DO")
+# # species_panels("mature Pacific Cod", model, "DO")
+# #
+# # species_panels("mature Canary Rockfish", model, "DO", alpha_range = c(0.25, 0.9))
+# # species_panels("mature Yelloweye Rockfish", model, "DO", alpha_range = c(0.25, 0.9))
+# species_panels("mature Bocaccio", model, "DO", alpha_range = c(0.25, 0.9))
+# species_panels("mature Pacific Ocean Perch", model, "DO", alpha_range = c(0.25, 0.9))
+# # species_panels("immature Quillback Rockfish", model, "DO", alpha_range = c(0.25, 0.9))
+# 
+# species_panels("mature Dover Sole", model, "DO", alpha_range = c(0.25, 0.9))
+# species_panels("immature Lingcod", model, "DO", alpha_range = c(0.25, 0.9))
+# # species_panels("mature Redbanded Rockfish", model, "DO")
+# # species_panels("mature Widow Rockfish", model, "DO")
+# species_panels("mature Petrale Sole", model, "DO")
+# #
+# #
+# # species_panels("mature Pacific Halibut", model, "DO")
+# # species_panels("mature English Sole", model, "DO")
+# species_panels("immature Flathead Sole", model, "DO")
+# species_panels("immature Arrowtooth Flounder", model, "DO")
 
 
 #########################
 #########################
 #### DEPTH SCATTERPLOTS ####
 ### prep data ####
-
 
 # do_data1 <- readRDS(paste0("analysis/VOCC/data/predicted-DO-june-2020.rds")) %>%
 temp_slopes <- chopstick_slopes(model,
@@ -1422,6 +1411,18 @@ do_slopes <- chopstick_slopes(model,
   x_variable = "DO_trend_scaled",
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
 )
+
+
+temp_vel_slopes <- chopstick_slopes(model_vel,
+  x_variable = "squashed_temp_vel_scaled",
+  interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled",
+  type = "temp"
+) 
+
+do_vel_slopes <- chopstick_slopes(model_vel,
+  x_variable = "squashed_DO_vel_scaled",
+  interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
+) 
 
 temp_slopes <- left_join(temp_slopes, stats)
 temp_vel_slopes2 <- left_join(temp_vel_slopes, stats)
@@ -1489,8 +1490,8 @@ temp_slopes$species_lab <- gsub("Rockfish", "", temp_slopes$species_lab)
     ylab(expression(~Delta~"trend at high temp")) +
     scale_y_continuous(breaks = c(3, 0, -3, -6, -9)) +
     # coord_cartesian( xlim = c(15, 450)) + #ylim = c(-11, 5.5),
-    coord_cartesian(expand = F, 
-      # ylim = c(-6.5, 3), 
+    coord_cartesian(expand = F,
+      # ylim = c(-6.5, 3),
       xlim = c(15, 450)) +
     scale_colour_manual(values = c("Red 3", "Red 3")) +
     # scale_colour_manual(values = c("#D53E4F","#D53E4F")) +
@@ -1532,9 +1533,6 @@ temp_slopes$species_lab <- gsub("Rockfish", "", temp_slopes$species_lab)
       axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_blank()
     ))
 
-
-
-
 (temp_high2 <- slope_scatterplot(
   filter(temp_vel_slopes2, chopstick == "high"), "depth",
   col_group = "age",
@@ -1551,7 +1549,8 @@ temp_slopes$species_lab <- gsub("Rockfish", "", temp_slopes$species_lab)
   #   # nudge_x = 15,
   #   na.rm = T, min.segment.length = 4
   # ) +
-    ylab( expression(~Delta~"velocity at high temp")) +
+    ylab(expression(~Delta~"biotic velocity with SD change in T")) +
+    # ylab( expression(~Delta~"velocity at high temp")) +
   scale_y_continuous(breaks = c(3, 0, -3, -6, -9)) +
   # coord_cartesian( xlim = c(15, 450)) + #ylim = c(-11, 5.5),
   coord_cartesian(expand = F, 
@@ -1578,7 +1577,8 @@ temp_slopes$species_lab <- gsub("Rockfish", "", temp_slopes$species_lab)
   # geom_linerange(aes(xmin=depth25, xmax = depth75), alpha = 0.2, size = 2) +
   geom_point(size = 1, fill = "white") +
   xlab("Mean depth for species") +
-  ylab(expression(~Delta~"velocity at low DO")) + # guides(colour = F) +
+  ylab(expression(~Delta~"biotic velocity for SD change in DO")) +
+  # ylab(expression(~Delta~"velocity at low DO")) + # guides(colour = F) +
   # coord_cartesian(xlim = c(15, 450)) +
   coord_cartesian(expand = F, 
     # ylim = c(-2.5, 2.5),
@@ -1639,7 +1639,6 @@ do_data <- readRDS(paste0("analysis/VOCC/data/predicted-DO-2020-06-20-more2016.r
     plot.margin = margin(0, 0.3, 0.1, 0, "cm"), legend.position = "none",
     axis.title.x = element_blank()
   ))
-
 
 d <- temp_slopes %>% filter(chopstick == "high" & type == "temp" & age == "immature") 
 
@@ -1758,13 +1757,11 @@ d <- temp_slopes %>% filter(chopstick == "high" & type == "temp" & age == "immat
     ))  
 
 #### add facet tags and save ####
-
 p_iqr <- p_iqr %>% egg::tag_facet(
   tag_pool = c("a"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
-
 
 temp_high3 <- temp_high %>% egg::tag_facet(
   tag_pool = c("b"),
@@ -1786,16 +1783,12 @@ do_low3 <- do_low %>% egg::tag_facet(
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
-
 temp_high4 <- temp_high2 %>% egg::tag_facet(
   tag_pool = c("d"),
   # tag_pool = c("c"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
-
-
-
 
 
 do_low2 <- do_low2 + scale_y_continuous(position = "right") + theme(
@@ -1810,7 +1803,6 @@ do_low4 <- do_low2 %>% egg::tag_facet(
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
-
 
 depth_t <- p_depth_t %>% egg::tag_facet(
   tag_pool = c("f"),
@@ -1856,14 +1848,11 @@ p_iqr <- p_iqr %>% egg::tag_facet(
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
-
-
 temp_high5 <- temp_high2 %>% egg::tag_facet(
   tag_pool = c("b"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
-
 
 do_low5 <- do_low2 %>% egg::tag_facet( 
   tag_pool = c("c"),
@@ -1894,12 +1883,35 @@ layout <- "
       EF
       "
 
-(p_iqr + p_iqr2 + temp_high5 + do_low5 + depth_t2 + depth_do2 + plot_layout(design = layout, heights = c(0.6, 0.5, 0.5))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + 
+(p_iqr + p_iqr2 + temp_high5 + do_low5 + depth_t2 + depth_do2 + plot_layout(design = layout, heights = c(0.6, 0.7, 0.5))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + 
   plot_layout(nrow = 2, heights = c(1, 0.02))
 
 # ggsave(here::here("ms", "figs", "slope-by-depth-quad-iqr.png"), width = 8, height = 5)
 ggsave(here::here("ms", "figs", "slope-by-depth-vel-only.png"), width = 9, height = 7)
 
+
+### remove slope plots
+layout <- "
+      AB
+      CD
+      "
+
+
+depth_t_B <- p_depth_t %>% egg::tag_facet(
+  tag_pool = c("b"),
+  open = "", close = ".", 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+)
+depth_do_C <- p_depth_do %>% egg::tag_facet(
+  tag_pool = c("c"),
+  open = "", close = ".", 
+  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+)
+
+(p_iqr + p_iqr2 + depth_t_B + depth_do_C + plot_layout(design = layout, heights = c(0.6, 0.6))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 2, heights = c(1, 0.02))
+
+# ggsave(here::here("ms", "figs", "slope-by-depth-quad-iqr.png"), width = 8, height = 5)
+ggsave(here::here("ms", "figs", "depth-only.png"), width = 9, height = 5)
 
 
 
@@ -2120,10 +2132,10 @@ ggsave(here::here("ms", "figs", "coef-scatterplots-allspp2.pdf"), width = 7, hei
   alt_order = T, 
   legend_position = "none",
   # legend_position = c(.75, .93),
-  # alpha_range = c(0.99, 0.99)) +
-    alpha_range = c(0.5, 0.99)) +
+  alpha_range = c(0.99, 0.99)) +
+    # alpha_range = c(0.5, 0.99)) +
     # alpha_range = c(0.2, 0.99)) +
-    xlim(-40,60) +
+    coord_cartesian(xlim = c(-30,60)) +
     ggtitle("a. Minimum warming") +
   # xlab("Biotic velocity at midpoint of temperature velocities experienced")
   # xlab("Biotic velocity at max velocities")
@@ -2140,10 +2152,10 @@ ggsave(here::here("ms", "figs", "coef-scatterplots-allspp2.pdf"), width = 7, hei
   # sort_var = "min",
   alt_order = T, 
   legend_position = "none",
-  # alpha_range = c(0.99, 0.99)) +
-  alpha_range = c(0.5, 0.99)) +
+  alpha_range = c(0.99, 0.99)) +
+  # alpha_range = c(0.5, 0.99)) +
   # alpha_range = c(0.2, 0.99)) +
-    xlim(-40,60) +
+    coord_cartesian(xlim = c(-30,60)) +
     ggtitle("b. Midpoint warming") +
     # xlab("Biotic velocity at midpoint of temperature velocities experienced")
     # xlab("Biotic velocity at max velocities")
@@ -2161,10 +2173,10 @@ ggsave(here::here("ms", "figs", "coef-scatterplots-allspp2.pdf"), width = 7, hei
   add_grey_bars = T,
   # sort_var = "min",
   legend_position = "none",
-  # alpha_range = c(0.99, 0.99)) +
-  alpha_range = c(0.5, 0.99)) +
+  alpha_range = c(0.99, 0.99)) +
+  # alpha_range = c(0.5, 0.99)) +
     # alpha_range = c(0.2, 0.99)) +
-    xlim(-40,60) +
+    coord_cartesian(xlim = c(-30,60)) +
     scale_y_discrete(expand = expansion(mult = .02), position = "right") +
     # xlab("Biotic velocity at midpoint of temperature velocities experienced")
     # xlab("Biotic velocity at max velocities")
@@ -2178,7 +2190,7 @@ ggsave(here::here("ms", "figs", "coef-scatterplots-allspp2.pdf"), width = 7, hei
 )
 # ggsave(here::here("ms", "figs", "worm-temp-ests-vel-max.pdf"), width = 4.5, height = 6)
   
-(
+(# with midpoint plot
   (p_temp_est_min |p_temp_est_mean| p_temp_est_worm ) + plot_layout(guides = 'collect')& theme(
   legend.position = "top",  
     legend.justification='left',
@@ -2190,9 +2202,40 @@ ggsave(here::here("ms", "figs", "coef-scatterplots-allspp2.pdf"), width = 7, hei
   )
   ) / grid::textGrob("Estimated biotic velocity (km per decade)", just = 0.3, gp = grid::gpar(fontsize = 11))  + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max.pdf"), width = 8, height = 8)
-ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max-faded.pdf"), width = 8, height = 8)
+# ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max.pdf"), width = 8, height = 8)
+# ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max-faded.pdf"), width = 8, height = 8)
 
+
+p_temp_est_min <- p_temp_est_min + ggtitle("a. Minimum warming experienced")
+p_temp_est_worm <- p_temp_est_worm + ggtitle("b. Maximum warming experienced")
+
+# ( # top legend
+#   (p_temp_est_min | p_temp_est_worm ) + plot_layout(guides = 'collect')& theme(
+#     legend.position = "top",  
+#     legend.justification='left',
+#     legend.direction = "horizontal",
+#     legend.box = "horizontal",
+#     legend.margin=margin(t = 0.2, l= 0, r = 1.4, unit='cm'),
+#     # legend.margin = unit(1.5, "cm"),
+#     legend.spacing.x = unit(.1, "cm")
+#   )
+# ) / grid::textGrob("Estimated biotic velocity (km per decade)",  hjust = 0.3, gp = grid::gpar(fontsize = 11))  + plot_layout(height = c(10, 0.02))
+
+((p_temp_est_min | p_temp_est_worm ) 
+  / grid::textGrob("Estimated biotic velocity (km per decade)", vjust = -0.8, just = 0.3, gp = grid::gpar(fontsize = 11)) + 
+    plot_layout(height = c(10, 0.02), guides = 'collect')& theme(
+      legend.text = element_text(size = 9),
+  legend.position = "bottom",  
+  legend.justification='left',
+  legend.direction = "horizontal",
+  legend.box = "horizontal",
+  legend.margin=margin(t = 0.5, l= 1, r = 0, unit='cm'),
+  # legend.margin = unit(1.5, "cm"),
+  legend.spacing.x = unit(.1, "cm")
+))  
+
+ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-b.pdf"), width = 7, height = 7)
+# ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-faded.pdf"), width = 8, height = 8)
 
 
 ### TEMPERATURE vs DO at max level of change
@@ -2234,7 +2277,7 @@ p_temp_est_worm <- plot_chop_est(model, type = "temp",  x_variable = "temp_trend
 
 (p_temp_est_worm | p_do_est_worm ) / grid::textGrob("Biomass trend at midpoint of climate trend experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-# ggsave(here::here("ms", "figs", "worm-plot-ests-trend.pdf"), width = 9, height = 6)
+ggsave(here::here("ms", "figs", "worm-plot-ests-trend.pdf"), width = 9, height = 6)
 
 
 ### exploratory boxplots
@@ -2270,6 +2313,15 @@ model_vel$pred_dat %>%
   ggplot(aes(chopstick, est, colour = chopstick)) + 
   geom_boxplot()
 
+model_vel$pred_dat %>%
+  filter(type == "DO") %>% 
+  group_by(genus, species, chopstick) %>% 
+  filter(squashed_DO_vel_scaled == min(squashed_DO_vel_scaled)) %>% 
+  summarise(est = est_p, se = se_p) %>% 
+  ggplot(aes(chopstick, est, colour = chopstick)) + 
+  geom_boxplot()
+
+
 model$pred_dat %>%
   filter(type == "temp") %>% 
   group_by(genus, species, chopstick) %>% 
@@ -2282,6 +2334,15 @@ model$pred_dat %>%
   filter(type == "DO") %>% 
   group_by(genus, species, chopstick) %>% 
   filter(DO_trend_scaled == max(DO_trend_scaled)) %>% 
+  summarise(est = est_p, se = se_p) %>% 
+  ggplot(aes(chopstick, est, colour = chopstick)) +
+  geom_violin() + 
+  geom_boxplot() 
+
+model$pred_dat %>%
+  filter(type == "DO") %>% 
+  group_by(genus, species, chopstick) %>% 
+  filter(DO_trend_scaled == min(DO_trend_scaled)) %>% 
   summarise(est = est_p, se = se_p) %>% 
   ggplot(aes(chopstick, est, colour = chopstick)) +
   geom_violin() + 
