@@ -152,6 +152,14 @@ manipulate::manipulate({
 )
 
 # Just mature
+
+model_age <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-w-age-1-400-DO.rds")
+
+model2 <- add_colours(model_age$coefs) 
+
+model2$species[model2$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+
+
 unique(model2$coefficient)
 model3 <- model2 %>% filter(age == "mature") %>%
   filter(coefficient != "age") %>%
@@ -161,7 +169,12 @@ model3 <- model2 %>% filter(age == "mature") %>%
   filter(coefficient != "age:mean_DO_scaled"  ) %>%
   filter(coefficient != "age:temp_trend_scaled:mean_temp_scaled" ) %>%
   filter(coefficient != "age:DO_trend_scaled:mean_DO_scaled") %>%   
-  filter(coefficient != "log_biomass_scaled" ) %>%   
+  
+  filter(coefficient != "age:squashed_temp_vel_scaled") %>%
+  filter(coefficient != "age:squashed_DO_vel_scaled") %>%
+  filter(coefficient != "age:squashed_temp_vel_scaled:mean_temp_scaled" ) %>%
+  filter(coefficient != "age:squashed_DO_vel_scaled:mean_DO_scaled") %>%   
+  
   filter(coefficient != "log_biomass_scaled" )
                 
 manipulate::manipulate({
@@ -174,7 +187,21 @@ ggsave(here::here("ms", "figs", "supp-coefs-mat.pdf"), width = 8, height = 10)
 
 
 # Just immature
+
 model4 <- model2 %>% filter(coefficient != "log_biomass_scaled" )
+
+# model4 <- model2 %>% filter(age == "immature") %>%
+#   filter(coefficient != "temp_trend_scaled") %>%
+#   filter(coefficient != "mean_temp_scaled" ) %>%
+#   filter(coefficient != "DO_trend_scaled") %>%
+#   filter(coefficient != "mean_DO_scaled"  ) %>%
+#   filter(coefficient != "temp_trend_scaled:mean_temp_scaled" ) %>%
+#   filter(coefficient != "DO_trend_scaled:mean_DO_scaled") %>%   
+#   filter(coefficient != "squashed_temp_vel_scaled") %>%
+#   filter(coefficient != "squashed_DO_vel_scaled") %>%
+#   filter(coefficient != "squashed_temp_vel_scaled:mean_temp_scaled" ) %>%
+#   filter(coefficient != "squashed_DO_vel_scaled:mean_DO_scaled") %>%   
+#   filter(coefficient != "log_biomass_scaled" )
 
 manipulate::manipulate({
   plot_coefs(filter(model4, age == "immature"), grid_facets = T, fixed_scales = F, order_by = order_by) 
@@ -199,6 +226,8 @@ manipulate::manipulate({
 
 model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-family-1-350.rds")
 
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-02-vel-both-family-1-400.rds")
+
 model_vel$coefs_genus$genus <-  stringr::str_to_title(model_vel$coefs_genus$genus)
 model3 <- add_colours(model_vel$coefs_genus, col_var = "genus", add_spp_data = F) 
 colour_list <- unique(model3$colours)
@@ -208,7 +237,7 @@ manipulate::manipulate({
   as.list(sort(unique(shortener(model3$coefficient))), decreasing=F))
 )
 plot_coefs(model3, grouping_taxa = "genus", order_by = "temp_vel", fixed_scales = F)
-ggsave(here::here("ms", "figs", "supp-coefs-family.pdf"), width = 8, height = 6)
+ggsave(here::here("ms", "figs", "supp-coefs-family-400.pdf"), width = 8, height = 6)
 
 ### SAVE PLOT WITH SELECTED PARAMS
 # model3 <- plot_coefs(model2, order_by = "squashed_temp_vel_scaled)")
