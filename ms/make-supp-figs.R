@@ -21,11 +21,11 @@ max(model$sdr$gradient.fixed)
 # model_vel <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-22-vel-both-1-300.rds") # without WCHG
 # 
 # model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-300.rds") # on full dataset 
-
 model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") # on full dataset 
 max(model_vel$sdr$gradient.fixed)
 
 model_fish <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-w-fishing-1-500.rds")
+model_age <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-w-age-1-400-DO.rds")
 max(model_fish$sdr$gradient.fixed)
 
 # stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
@@ -45,9 +45,10 @@ stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds"))
 #########################
 #########################
 #### EXPLORE GRADIENTS ####
-alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim2-with-null-NA-untrimmed-allvars.rds"))
+alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-untrimmed-dvocc-med.rds"))
+# alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim2-with-null-NA-untrimmed-allvars.rds"))
 ### Gradient maps ####
-grad_do <- plot_vocc(alldata,
+(grad_do <- plot_vocc(alldata,
   vec_aes = NULL, grey_water = F,
   fill_col = "DO_grad", fill_label = "ml/L per km",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
@@ -60,9 +61,9 @@ grad_do <- plot_vocc(alldata,
     plot.margin = margin(0, 0, 0.2, 0, "cm"),
     axis.text = element_blank(), axis.ticks = element_blank(),
     axis.title.x = element_blank(), axis.title.y = element_blank()
-  )
+  ))
 
-grad_temp <- plot_vocc(alldata,
+(grad_temp <- plot_vocc(alldata,
   vec_aes = NULL, grey_water = F,
   fill_col = "temp_grad", fill_label = "ºC per km",
   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
@@ -77,9 +78,9 @@ grad_temp <- plot_vocc(alldata,
     plot.margin = margin(0, 0, 0.2, 0, "cm"),
     axis.text = element_blank(), axis.ticks = element_blank(),
     axis.title.x = element_blank()
-  )
+  ))
 
-grad_rockfish <- plot_vocc(filter(
+(grad_rockfish <- plot_vocc(filter(
   model$data,
   # species == "mature Widow Rockfish"),
   # species == "mature Canary Rockfish"),
@@ -102,9 +103,9 @@ legend_position = c(0.175, 0.25)
     plot.margin = margin(0, 0, 0, 0, "cm"),
     axis.text = element_blank(), axis.ticks = element_blank(),
     axis.title.x = element_blank()
-  )
+  ))
 
-grad_flatfish <- plot_vocc(filter(
+(grad_flatfish <- plot_vocc(filter(
   model$data, 
   # species == "mature Flathead Sole"),
   species == "mature Dover Sole"
@@ -125,7 +126,8 @@ legend_position = c(0.175, 0.25)
     plot.margin = margin(0, 0, 0, 0, "cm"),
     axis.text = element_blank(), axis.ticks = element_blank(),
     axis.title.x = element_blank(), axis.title.y = element_blank()
-  )
+  ))
+
 # grad_sable <- plot_vocc(filter(model$data,
 #   species == "mature Sablefish"),
 #   vec_aes = NULL,
@@ -148,10 +150,10 @@ grad_temp + grad_do + grad_rockfish + grad_flatfish + plot_layout(ncol = 2)
 ggsave(here::here("ms", "figs", "supp-gradient-maps.png"), width = 6.5, height = 7)
 
 ### Scatterplots of coorelation btw biotic & temperature gradients ####
-
+model$data$family <-  stringr::str_to_title(model$data$family)
 (ggplot(filter(model$data, age_class == "mature"), aes(temp_grad, biotic_grad)) + 
-  geom_point(alpha = 0.1) +
-  geom_smooth(method = "lm", alpha = 0.5, colour = "darkgray") +
+  geom_point(alpha = 0.05) +
+  geom_smooth(method = "lm", alpha = 0.3, colour = "grey40") +
   # facet_grid(species~rockfish) +
   # facet_wrap(~true_genus*species_only) +
   # facet_wrap(~true_genus) +
@@ -159,6 +161,8 @@ ggsave(here::here("ms", "figs", "supp-gradient-maps.png"), width = 6.5, height =
   coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) +
   # scale_x_continuous(trans = fourth_root_power) +
   # scale_y_continuous(trans = fourth_root_power) +
+  xlab("Temperature gradients between each cell and its neighbours") +
+  ylab("Biotic gradients of mature populations") +
   gfplot::theme_pbs())
 
 ggsave(here::here("ms", "figs", "supp-gradient-cor-family.png"), width = 6, height = 6)
@@ -197,7 +201,7 @@ model_grad <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-tr
 # max(model_grad$sdr$gradient.fixed)
 model_do <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-do-only-1-500-DO.rds")
 # max(model_do$sdr$gradient.fixed)
-model_age <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age-1-500-DO.rds")
+# model_age <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age-1-500-DO.rds")
 # max(model_age$sdr$gradient.fixed)
 model_age2 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age2-1-500-DO.rds")
 model_vel <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-22-vel-both-1-300.rds")
@@ -316,7 +320,7 @@ overall_betas_age$model <- "Maturity (3-way)"
 
 # # version with only 2-way interactions
 
-model_age2 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age2-1-500-DO.rds")
+# model_age2 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age2-1-500-DO.rds")
 coef_names <- shortener(unique(model_age2$coefs$coefficient))
 coef_names <- c(
   "intercept", "immature", "change in T", "mean T", "change in DO", "mean DO",
@@ -338,7 +342,7 @@ overall_betas_g$model_type <- "trend"
 overall_betas_vel$model_type <- "velocity"
 overall_betas_vel_t$model_type <- "velocity"
 overall_betas_vel_d$model_type <- "velocity"
-overall_betas_age$model_type <- "trend"
+overall_betas_age$model_type <- "velocity"
 overall_betas_age2$model_type <- "trend"
 
 custom_order <- c(
@@ -356,7 +360,7 @@ custom_order <- c(
 
 ### compare trends and velocities
 overall <- rbind.data.frame(
-  overall_betas, overall_betas_t, 
+  overall_betas, overall_betas_t,
   overall_betas_g,
   overall_betas_vel, #overall_betas_vel_t, overall_betas_vel_d,
   overall_betas_d
@@ -397,7 +401,8 @@ global_vel
 # ggsave(here::here("ms", "figs", "supp-global-coefs-vel.pdf"), width = 5, height = 4)
 
 # look for sig age effects
-overall3 <- rbind.data.frame(overall_betas, overall_betas_age2, 
+overall3 <- rbind.data.frame(overall_betas_vel, 
+  # overall_betas_age2, 
   overall_betas_age)
 overall3 <- overall3 %>%
   mutate(term = firstup(as.character(coef_names))) %>%
@@ -419,7 +424,8 @@ global_age <- dotwhisker::dwplot(overall3) + # xlim(-10,10) +
       "#D53E4F", "#F46D43",
       "#FDAE61" # , "#FEE08B", "#3288BD", "#5E4FA2"
     )
-  ) + coord_cartesian(xlim = c(-1, 1)) +
+  ) + 
+  # coord_cartesian(xlim = c(-1, 1)) +
   ggtitle("b. Global maturity effects") +
   scale_y_discrete(position = "right") +
   gfplot::theme_pbs() + theme(
@@ -428,7 +434,7 @@ global_age <- dotwhisker::dwplot(overall3) + # xlim(-10,10) +
     legend.title = element_blank(),
     legend.position = c(0.2, 0.9)
   )
-# globel_age
+global_age
 # ggsave(here::here("ms", "figs", "supp-global-coefs-w-age.pdf"), width = 5, height = 4)
 
 (global_vel | global_age) / grid::textGrob("Coefficient estimate with 95% CI", 
@@ -674,6 +680,7 @@ p_temp_all_vel_slopes <- plot_chopstick_slopes(temp_vel_slopes,
 
 p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
   type = "DO", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
+  # legend_position = "none"
   legend_position = c(.25, .08)
 ) +
   ylab("slopes") +
@@ -683,7 +690,24 @@ p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
 
 cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes, p_do_vel_chops, ncol = 2, rel_widths = c(1, 2.5))
 
-ggsave(here::here("ms", "figs", "supp-vel-chopsticks-ordered.pdf"), width = 14, height = 10)
+layout <- "
+      ABBBB
+      CDDDD
+      "
+p_temp_all_vel_slopes + p_temp_vel_chops + p_do_all_vel_slopes + p_do_vel_chops + 
+  plot_layout(design = layout, widths = c(1, 2.5), guides = 'collect')& theme(
+    legend.text = element_text(size = 9),
+    legend.position = "bottom",
+    # legend.justification='left',
+    legend.direction = "horizontal",
+    legend.box = "horizontal",
+    legend.margin=margin(t = 0.5, l= 1, r = 0, unit='cm'),
+    # legend.margin = unit(1.5, "cm"),
+    legend.spacing.x = unit(.1, "cm")
+  )
+
+
+ggsave(here::here("ms", "figs", "supp-vel-chopsticks-ordered-t.pdf"), width = 14, height = 10)
 # ggsave(here::here("ms", "figs", "supp-dvocc-chopsticks-ordered.pdf"), width = 14, height = 10)
 
 
