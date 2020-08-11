@@ -127,7 +127,7 @@ plot_fuzzy_chopsticks <- function(model,
   pred_dat <- model$pred_dat
 
   if (is.null(imm_model)) {
-    pred_dat <- pred_dat %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+    pred_dat <- pred_dat %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature"))
     pred_dat <- pred_dat %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
   }
 
@@ -211,13 +211,18 @@ plot_fuzzy_chopsticks <- function(model,
   }
   
   if (!is.null(type)) {
-    pred_dat <- filter(pred_dat, type == !!type) %>% mutate(chopstick = paste(chopstick, type))
-
+    pred_dat <- filter(pred_dat, type == !!type) 
+    pred_dat$type[pred_dat$type == "temp"] <- "temperature"
+    pred_dat <- pred_dat %>% mutate(chopstick = paste(stringr::str_to_sentence(chopstick), type))
+    
     if (!is.null(imm_model)) {
-      imm_pred_dat <- filter(imm_pred_dat, type == !!type) %>% mutate(chopstick = paste(chopstick, type))
+      imm_pred_dat <- filter(imm_pred_dat, type == !!type) 
+      pred_dat$type[pred_dat$type == "temp"] <- "temperature"
+      pred_dat <- pred_dat %>% mutate(chopstick = paste(stringr::str_to_sentence(chopstick), type))
     }
   } else {
-
+    pred_dat$type[pred_dat$type == "temp"] <- "temperature"
+    pred_dat <- pred_dat %>% mutate(chopstick = paste(stringr::str_to_sentence(chopstick), type))
   }
 
   # pred_dat <- pred_dat %>% group_by(species, chopstick) %>%
@@ -227,7 +232,7 @@ plot_fuzzy_chopsticks <- function(model,
   #   )
 
   if (!is.null(imm_model)) {
-    imm_pred_dat$age <- "immature"
+    imm_pred_dat$age <- "Immature"
     pred_dat <- rbind(pred_dat, imm_pred_dat)
   }
 
@@ -277,7 +282,7 @@ plot_fuzzy_chopsticks <- function(model,
     fill = chopstick,
     ymin = est_p - 1.96 * se_p, ymax = est_p + 1.96 * se_p
   ), alpha = 0.2) +
-    geom_ribbon(data = filter(pred_dat, age == "immature"), aes(
+    geom_ribbon(data = filter(pred_dat, age == "Immature"), aes(
       fill = chopstick,
       ymin = est_p - 1.96 * se_p, ymax = est_p + 1.96 * se_p
     ), alpha = 0.2)
@@ -336,7 +341,7 @@ chopstick_slopes <- function(model,
                              species = NULL) {
   pred_dat <- model$pred_dat
   # if(is.null(imm_model)) {
-  pred_dat <- pred_dat %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+  pred_dat <- pred_dat %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature"))
   pred_dat <- pred_dat %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
   # }
 
@@ -349,7 +354,7 @@ chopstick_slopes <- function(model,
 
   if (!is.null(model$deltas)) {
     deltas <- model$deltas %>% 
-      mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+      mutate(age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature"))
     deltas <- deltas %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
 
     deltas <- deltas %>%
@@ -371,7 +376,7 @@ chopstick_slopes <- function(model,
     diffs <- model$delta_diff %>%
       rename(diff = est, diff_se = se) %>%
       mutate(min_diff = abs(diff) - diff_se * 1.96, sig_diff = if_else(min_diff <= 0, "N", "Y"))
-    diffs <- diffs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+    diffs <- diffs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature"))
     diffs <- diffs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
   }
 
@@ -386,7 +391,7 @@ chopstick_slopes <- function(model,
     global_coefs <- filter(model$coefs, coefficient == !!x_variable) %>%
       select(-species_id, -coefficient) %>%
       rename(global_slope = Estimate, global_se = `Std. Error`)
-    global_coefs <- global_coefs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+    global_coefs <- global_coefs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature"))
     global_coefs <- global_coefs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
     all_global <- global_coefs %>% rename(all_global_slope = global_slope, all_global_se = global_se) %>% 
       select(species, age, all_global_slope, all_global_se)
@@ -402,7 +407,7 @@ chopstick_slopes <- function(model,
         select(-species_id, -coefficient) %>%
         rename(diff = Estimate, diff_se = `Std. Error`) %>%
         mutate(min_diff = abs(diff) - diff_se * 1.96, sig_diff = if_else(min_diff <= 0, "N", "Y"))
-      diffs <- diffs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"))
+      diffs <- diffs %>% mutate(age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature"))
       diffs <- diffs %>% mutate(species = stringr::str_replace(species, ".*mature ", ""))
       global_slopes <- filter(diffs, sig_diff == "N") %>% select(species, age)
       global <- left_join(global_slopes, global_coefs)
@@ -435,7 +440,7 @@ chopstick_slopes <- function(model,
     select(species, `Std. Error`) %>%
     rename(SE = `Std. Error`) %>%
     mutate(
-      age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature"),
+      age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature"),
       species = stringr::str_replace(species, ".*mature ", "")
     )
 
@@ -484,8 +489,10 @@ plot_chopstick_slopes <- function(slopedat,
                                   name_chop_type = T, 
                                   order_by_chops = NULL,
                                   colours = NULL) {
+  
   if (!is.null(imm_slopes)) {
-    imm_slopes$age <- "immature"
+    imm_slopes$age <- "Immature"
+    
     if (!is.null(scale_imm)) {
       imm_slopes$slope_est <- imm_slopes$slope_est * scale_imm
       imm_slopes$slope_se <- imm_slopes$slope_se * scale_imm
@@ -511,12 +518,13 @@ plot_chopstick_slopes <- function(slopedat,
     slopedat <- left_join(slopedat, trimmed_sort_var)
   }
 
+ 
   
   if (!is.null(type)) {
     slopedat <- filter(slopedat, type == !!type) %>% ungroup()
-    
     if (name_chop_type) {
-    slopedat <- slopedat %>% mutate(chopstick = paste(chopstick, type))
+      slopedat$type[slopedat$type == "temp"] <- "temperature"
+      slopedat <- slopedat %>% mutate(chopstick = paste(stringr::str_to_sentence(chopstick), type))
     }
     
     if (is.null(colours)) {
@@ -662,12 +670,15 @@ plot_chopstick_slopes <- function(slopedat,
       # p <- p + scale_linetype_manual(values=c("dashed", "solid"), guide = F) +
       p <- p + scale_linetype_manual(values = c("solid", "solid"), guide = F) +
         scale_x_discrete(expand = expansion(mult = .02)) +
-        guides(colour = guide_legend(override.aes = list(size = 0.4))) +
+        guides(colour = guide_legend(override.aes = list(size = 0.4, linetype = 0)),
+          shape = guide_legend(override.aes = list(size = 0.5, linetype = 0))
+        ) +
         scale_shape_manual(values = c(21, 19), guide = F)
     } else {
       p <- p + scale_linetype_manual(values = c("solid"), guide = F) +
         scale_x_discrete(expand = expansion(mult = .02)) +
-        guides(colour = guide_legend(override.aes = list(size = 0.4))) +
+        guides(colour = guide_legend(override.aes = list(size = 0.4, linetype = 0))
+          ) +
         scale_shape_manual(values = c(16), guide = F)
     }
   }
@@ -838,8 +849,6 @@ plot_chop_est <- function(model,
      }
     }
     
-    
-
     if (name_chop_type) {
       # browser()
       pred_dat2$type[pred_dat2$type == "temp"] <- "temperature"
