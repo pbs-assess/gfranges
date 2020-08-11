@@ -8,7 +8,7 @@ plot_coefs(
   coloured_coefs,
   grouping_taxa = "species",
   order_by_trait = FALSE,
-  order_by = "scale(do_vel_squashed)",
+  order_by = "temp_vel",
   increasing = F,
   grid_facets = F,
   add_grey_bars = F,
