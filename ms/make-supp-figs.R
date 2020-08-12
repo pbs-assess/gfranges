@@ -35,16 +35,16 @@ stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds"))
 #########################
 #### GLOBAL COEFS
 ### 
-# load a set of models for comparisons ####
-# currently all built without WCHG using the climate data herein
-# alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-more2016-with-null-NA-untrimmed-allvars.rds"))
-model_trend <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds")
-# max(model_trend$sdr$gradient.fixed)
-# model_temp <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-1-500.rds")
+# # load a set of models for comparisons ####
+# # currently all built without WCHG using the climate data herein
+# # alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-more2016-with-null-NA-untrimmed-allvars.rds"))
+# model_trend <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds")
+# # max(model_trend$sdr$gradient.fixed)
+# # model_temp <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-1-500.rds")
 model_grad <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-w-grad-1-500.rds")
-# max(model_grad$sdr$gradient.fixed)
-model_do <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-do-only-1-500-DO.rds")
-# max(model_do$sdr$gradient.fixed)
+# # max(model_grad$sdr$gradient.fixed)
+# model_do <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-do-only-1-500-DO.rds")
+# # max(model_do$sdr$gradient.fixed)
 
 model_trend <- model
 model_temp <- readRDS("data/vel-all-95-optimized2-08-11-vel-temp-1-400.rds")
@@ -55,8 +55,10 @@ model_temp <- readRDS("data/vel-all-95-optimized2-08-11-vel-temp-1-400.rds")
 # max(model_do$sdr$gradient.fixed)
 
 model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-1-400.rds") # optimized and converges
-# model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-TODO-temp.rds") # currently running
-# model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-TODO-do.rds") # still needed
+model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-11-vel-temp-1-400-temp.rds")
+max(model_vel_t$sdr$gradient.fixed)
+model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-12-vel-do-1-400-DO.rds")
+max(model_vel_d$sdr$gradient.fixed)
 model_age <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-02-vel-w-age-1-400.rds")
 # model_fish <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-11-vel-w-fishing-1-400-DO.rds")
 
@@ -66,30 +68,33 @@ coef_names <- c(
   "intercept", "change in T", "mean T", "change in DO", "mean DO",
   "biomass", "interaction (T)", "interaction (DO)"
 )
-betas <- signif(as.list(model_trend$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model_trend$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+betas <- signif(as.list(model_trend$sdr, "Estimate")$b_j, digits = 3)/ sd(model_trend$y_i)
+SE <- signif(as.list(model_trend$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_trend$y_i)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_trend$y_i)
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_trend$y_i)
 overall_betas <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas$model <- "trend"
+
+# overall_betas_std <- overall_betas/ sd(model_trend$y_i)
+
 
 ## trend model with temp only ####
 coef_names <- shortener(unique(model_temp$coefs$coefficient))
 coef_names <- c("intercept", "change in T", "mean T", "biomass", "interaction (T)")
-betas <- signif(as.list(model_temp$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model_temp$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+betas <- signif(as.list(model_temp$sdr, "Estimate")$b_j, digits = 3)/ sd(model_temp$y_i)
+SE <- signif(as.list(model_temp$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_temp$y_i)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_temp$y_i)
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_temp$y_i)
 overall_betas_t <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_t$model <- "trend (T only)"
 
 ## trend model with DO only ####
 coef_names <- shortener(unique(model_do$coefs$coefficient))
 coef_names <- c("intercept", "change in DO", "mean DO", "biomass", "interaction (DO)")
-betas <- signif(as.list(model_do$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model_do$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+betas <- signif(as.list(model_do$sdr, "Estimate")$b_j, digits = 3)/ sd(model_do$y_i)
+SE <- signif(as.list(model_do$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_do$y_i)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_do$y_i)
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_do$y_i)
 overall_betas_d <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_d$model <- "trend (DO only)"
 
@@ -107,10 +112,10 @@ coef_names <- c(
   "mean T:Gradient", "change in T:Gradient", "interaction (T):Gradient"
 )
 
-betas <- signif(as.list(model_grad$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model_grad$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+betas <- signif(as.list(model_grad$sdr, "Estimate")$b_j, digits = 3)/ sd(model_grad$y_i)
+SE <- signif(as.list(model_grad$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_grad$y_i)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_grad$y_i)
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_grad$y_i)
 overall_betas_g <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_g$model <- "trend (T w gradient)"
 
@@ -120,10 +125,10 @@ coef_names <- c(
   "intercept", "change in T", "change in DO", "mean T", "mean DO",
   "biomass", "interaction (T)", "interaction (DO)"
 )
-betas <- signif(as.list(model_vel$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model_vel$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+betas <- signif(as.list(model_vel$sdr, "Estimate")$b_j, digits = 3)/ sd(model_vel$y_i)
+SE <- signif(as.list(model_vel$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_vel$y_i)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_vel$y_i)
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_vel$y_i)
 overall_betas_vel <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel$model <- "velocity"
 
@@ -133,10 +138,10 @@ coef_names <- c(
   "intercept", "change in T", "mean T",
   "biomass", "interaction (T)"
 )
-betas <- signif(as.list(model_vel_t$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model_vel_t$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+betas <- signif(as.list(model_vel_t$sdr, "Estimate")$b_j, digits = 3)/ sd(model_vel_t$y_i)
+SE <- signif(as.list(model_vel_t$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_vel_t$y_i)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_vel_t$y_i)
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_vel_t$y_i)
 overall_betas_vel_t <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel_t$model <- "velocity (T only)"
 
@@ -146,10 +151,10 @@ coef_names <- c(
   "intercept", "change in DO", "mean DO",
   "biomass", "interaction (DO)"
 )
-betas <- signif(as.list(model_vel_d$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model_vel_d$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+betas <- signif(as.list(model_vel_d$sdr, "Estimate")$b_j, digits = 3)/ sd(model_vel_d$y_i)
+SE <- signif(as.list(model_vel_d$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_vel_d$y_i)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_vel_d$y_i)
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_vel_d$y_i)
 overall_betas_vel_d <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel_d$model <- "velocity (DO only)"
 
@@ -163,10 +168,10 @@ coef_names <- c(
   "change in DO:immature", "mean DO:immature", "interaction (T):immature", "interaction (DO):immature"
 )
 
-betas <- signif(as.list(model_age$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model_age$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+betas <- signif(as.list(model_age$sdr, "Estimate")$b_j, digits = 3)/ sd(model_age$y_i)
+SE <- signif(as.list(model_age$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_age$y_i)
+lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_age$y_i)
+upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_age$y_i)
 overall_betas_age <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_age$model <- "Maturity (3-way)"
 
@@ -212,10 +217,11 @@ custom_order <- c(
 
 ### compare trends and velocities
 overall <- rbind.data.frame(
-  overall_betas, overall_betas_t,
-  overall_betas_g,
-  overall_betas_vel, #overall_betas_vel_t, overall_betas_vel_d,
-  overall_betas_d
+  overall_betas_vel, 
+  overall_betas_vel_t, overall_betas_vel_d,  
+  # overall_betas_g,
+  # overall_betas_t, overall_betas_d,
+  overall_betas
 )
 overall <- mutate(overall, term = firstup(as.character(coef_names)))
 overall2 <- overall %>% rename(
@@ -238,11 +244,15 @@ global_vel <- dotwhisker::dwplot(overall2) + # xlim(-10,10) +
       "#D53E4F",
       "#F46D43",
       "#FDAE61",
-      "#FEE08B",
-      "#ABDDA4", "#3288BD", "#5E4FA2"
+      # "#FEE08B",
+      # "#ABDDA4",
+      "#3288BD"
+      # "#5E4FA2"
     )
-  ) + coord_cartesian(xlim = c(-2, 1.2)) +
-  ggtitle("a. Trend versus velocity models") +
+  ) +   
+  coord_cartesian(xlim = c(-0.4, 0.3)) +
+  # coord_cartesian(xlim = c(-2, 1.2)) +
+  ggtitle("a. Velocity versus trend models") +
   gfplot::theme_pbs() + theme(
     # plot.margin = margin(0.1, 0, 0, 0, "cm"),
     axis.title = element_blank(),
@@ -273,11 +283,13 @@ global_age <- dotwhisker::dwplot(overall3) + # xlim(-10,10) +
   scale_colour_manual(
     name = "Model",
     values = c(
-      "#D53E4F", "#F46D43",
-      "#FDAE61" # , "#FEE08B", "#3288BD", "#5E4FA2"
+      "#D53E4F", #"#F46D43",
+      # "#FDAE61" , 
+      "#FEE08B" #, "#3288BD", 
+      # "#5E4FA2"
     )
   ) + 
-  # coord_cartesian(xlim = c(-1, 1)) +
+  coord_cartesian(xlim = c(-0.2, 0.2)) +
   ggtitle("b. Global maturity effects") +
   scale_y_discrete(position = "right") +
   gfplot::theme_pbs() + theme(
@@ -289,7 +301,7 @@ global_age <- dotwhisker::dwplot(overall3) + # xlim(-10,10) +
 global_age
 # ggsave(here::here("ms", "figs", "supp-global-coefs-w-age.pdf"), width = 5, height = 4)
 
-(global_vel | global_age) / grid::textGrob("Coefficient estimate with 95% CI", 
+(global_vel | global_age) / grid::textGrob("Standardized coefficient estimate with 95% CI", 
   just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
 ggsave(here::here("ms", "figs", "supp-global-coefs.pdf"), width = 10, height = 5)
