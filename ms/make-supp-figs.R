@@ -30,150 +30,7 @@ stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds"))
 
 #########################
 #########################
-#########################
-#### EXPLORE GRADIENTS ####
-alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-untrimmed-dvocc-med.rds"))
-# alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim2-with-null-NA-untrimmed-allvars.rds"))
-### Gradient maps ####
-(grad_do <- plot_vocc(alldata,
-  vec_aes = NULL, grey_water = F,
-  fill_col = "DO_grad", fill_label = "ml/L per km",
-  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
-  axis_lables = F,
-  transform_col = fourth_root_power,
-  legend_position = c(0.175, 0.25)
-) + ggtitle("Dissolved oxygen") +
-  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-  theme(
-    plot.margin = margin(0, 0, 0.2, 0, "cm"),
-    axis.text = element_blank(), axis.ticks = element_blank(),
-    axis.title.x = element_blank(), axis.title.y = element_blank()
-  ))
 
-(grad_temp <- plot_vocc(alldata,
-  vec_aes = NULL, grey_water = F,
-  fill_col = "temp_grad", fill_label = "ºC per km",
-  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
-  viridis_option = "C",
-  axis_lables = T,
-  transform_col = fourth_root_power,
-  legend_position = c(0.175, 0.25)
-) + ggtitle("Temperature") +
-  ylab("Climate gradient") +
-  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-  theme(
-    plot.margin = margin(0, 0, 0.2, 0, "cm"),
-    axis.text = element_blank(), axis.ticks = element_blank(),
-    axis.title.x = element_blank()
-  ))
-
-(grad_rockfish <- plot_vocc(filter(
-  model$data,
-  # species == "mature Widow Rockfish"),
-  # species == "mature Canary Rockfish"),
-  species == "mature Shortspine Thornyhead"
-),
-vec_aes = NULL, grey_water = F,
-fill_col = "biotic_grad", fill_label = "% biomass \nper km",
-raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
-viridis_option = "B",
-axis_lables = T,
-transform_col = fourth_root_power,
-legend_position = c(0.175, 0.25)
-) +
-  # ggtitle("Widow Rockfish") +
-  # ggtitle("Canary Rockfish") +
-  ggtitle("Shortspine Thornyhead") +
-  ylab("Biotic gradient") +
-  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-  theme(
-    plot.margin = margin(0, 0, 0, 0, "cm"),
-    axis.text = element_blank(), axis.ticks = element_blank(),
-    axis.title.x = element_blank()
-  ))
-
-(grad_flatfish <- plot_vocc(filter(
-  model$data, 
-  # species == "mature Flathead Sole"),
-  species == "mature Dover Sole"
-),
-vec_aes = NULL, grey_water = F,
-fill_col = "biotic_grad", fill_label = "% biomass \nper km",
-raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
-viridis_option = "B",
-axis_lables = T,
-transform_col = fourth_root_power,
-legend_position = c(0.175, 0.25)
-) +
-  # ggtitle("Flathead Sole") +
-  ggtitle("Dover Sole") +
-  # # ylab("gradient") +
-  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-  theme(
-    plot.margin = margin(0, 0, 0, 0, "cm"),
-    axis.text = element_blank(), axis.ticks = element_blank(),
-    axis.title.x = element_blank(), axis.title.y = element_blank()
-  ))
-
-# grad_sable <- plot_vocc(filter(model$data,
-#   species == "mature Sablefish"),
-#   vec_aes = NULL,
-#   fill_col = "biotic_grad", fill_label = "% biomass \nper km",
-#   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
-#   viridis_option = "B",
-#   axis_lables = T,
-#   transform_col = fourth_root_power,
-#   legend_position = c(0.15, 0.25)
-# ) +
-#   ggtitle("Sablefish") +
-#   # # ylab("gradient") +
-#   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-#   theme(
-#     plot.margin = margin(0, 0, 0, 0, "cm"),
-#     axis.text = element_blank(), axis.ticks = element_blank(),
-#     axis.title.x = element_blank(), axis.title.y = element_blank()
-#   )
-grad_temp + grad_do + grad_rockfish + grad_flatfish + plot_layout(ncol = 2)
-ggsave(here::here("ms", "figs", "supp-gradient-maps.png"), width = 6.5, height = 7)
-
-### Scatterplots of coorelation btw biotic & temperature gradients ####
-model$data$family <-  stringr::str_to_title(model$data$family)
-(ggplot(filter(model$data, age_class == "mature"), aes(temp_grad, biotic_grad)) + 
-  geom_point(alpha = 0.05) +
-  geom_smooth(method = "lm", alpha = 0.3, colour = "grey40") +
-  # facet_grid(species~rockfish) +
-  # facet_wrap(~true_genus*species_only) +
-  # facet_wrap(~true_genus) +
-  facet_wrap(~family) +
-  coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) +
-  # scale_x_continuous(trans = fourth_root_power) +
-  # scale_y_continuous(trans = fourth_root_power) +
-  xlab("Temperature gradients between each cell and its neighbours") +
-  ylab("Biotic gradients of mature populations") +
-  gfplot::theme_pbs())
-
-ggsave(here::here("ms", "figs", "supp-gradient-cor-family.png"), width = 6, height = 6)
-
-# ggplot(filter(model$data, age == "mature" & genus_id == 7), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) +
-#   geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") +
-#   # facet_grid(species~rockfish) +
-#   facet_wrap(~forcats::fct_reorder(species_only, genus_id)) +
-#   # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) +
-#   # scale_x_continuous(trans = fourth_root_power) +
-#   # scale_y_continuous(trans = fourth_root_power) +
-#   gfplot::theme_pbs()
-#
-# ggplot(filter(model$data, age == "mature" & genus_id == 5), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) +
-#   geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") +
-#   # facet_grid(species~rockfish) +
-#   facet_wrap(~species_only) +
-#   # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) +
-#   # scale_x_continuous(trans = fourth_root_power) +
-#   # scale_y_continuous(trans = fourth_root_power) +
-#   gfplot::theme_pbs()
-
-
-#########################
 #########################
 #########################
 #### GLOBAL COEFS
@@ -1142,4 +999,148 @@ data2 %>%
 ggsave(here::here("ms", "figs", "supp-imm-vel-residuals.pdf"), width = 7, height = 6)
 
 #########################
+#########################
+#########################
+#### EXPLORE GRADIENTS ####
+alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-untrimmed-dvocc-med.rds"))
+# alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim2-with-null-NA-untrimmed-allvars.rds"))
+### Gradient maps ####
+(grad_do <- plot_vocc(alldata,
+  vec_aes = NULL, grey_water = F,
+  fill_col = "DO_grad", fill_label = "ml/L per km",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  axis_lables = F,
+  transform_col = fourth_root_power,
+  legend_position = c(0.175, 0.25)
+) + ggtitle("Dissolved oxygen") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0.2, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+
+(grad_temp <- plot_vocc(alldata,
+  vec_aes = NULL, grey_water = F,
+  fill_col = "temp_grad", fill_label = "ºC per km",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  viridis_option = "C",
+  axis_lables = T,
+  transform_col = fourth_root_power,
+  legend_position = c(0.175, 0.25)
+) + ggtitle("Temperature") +
+    ylab("Climate gradient") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0.2, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank()
+    ))
+
+(grad_rockfish <- plot_vocc(filter(
+  model$data,
+  # species == "mature Widow Rockfish"),
+  # species == "mature Canary Rockfish"),
+  species == "mature Shortspine Thornyhead"
+),
+  vec_aes = NULL, grey_water = F,
+  fill_col = "biotic_grad", fill_label = "% biomass \nper km",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  viridis_option = "B",
+  axis_lables = T,
+  transform_col = fourth_root_power,
+  legend_position = c(0.175, 0.25)
+) +
+    # ggtitle("Widow Rockfish") +
+    # ggtitle("Canary Rockfish") +
+    ggtitle("Shortspine Thornyhead") +
+    ylab("Biotic gradient") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank()
+    ))
+
+(grad_flatfish <- plot_vocc(filter(
+  model$data, 
+  # species == "mature Flathead Sole"),
+  species == "mature Dover Sole"
+),
+  vec_aes = NULL, grey_water = F,
+  fill_col = "biotic_grad", fill_label = "% biomass \nper km",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  viridis_option = "B",
+  axis_lables = T,
+  transform_col = fourth_root_power,
+  legend_position = c(0.175, 0.25)
+) +
+    # ggtitle("Flathead Sole") +
+    ggtitle("Dover Sole") +
+    # # ylab("gradient") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+
+# grad_sable <- plot_vocc(filter(model$data,
+#   species == "mature Sablefish"),
+#   vec_aes = NULL,
+#   fill_col = "biotic_grad", fill_label = "% biomass \nper km",
+#   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+#   viridis_option = "B",
+#   axis_lables = T,
+#   transform_col = fourth_root_power,
+#   legend_position = c(0.15, 0.25)
+# ) +
+#   ggtitle("Sablefish") +
+#   # # ylab("gradient") +
+#   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+#   theme(
+#     plot.margin = margin(0, 0, 0, 0, "cm"),
+#     axis.text = element_blank(), axis.ticks = element_blank(),
+#     axis.title.x = element_blank(), axis.title.y = element_blank()
+#   )
+grad_temp + grad_do + grad_rockfish + grad_flatfish + plot_layout(ncol = 2)
+ggsave(here::here("ms", "figs", "supp-gradient-maps.png"), width = 6.5, height = 7)
+
+### Scatterplots of coorelation btw biotic & temperature gradients ####
+model$data$family <-  stringr::str_to_title(model$data$family)
+(ggplot(filter(model$data, age_class == "mature"), aes(temp_grad, biotic_grad)) + 
+    geom_point(alpha = 0.05) +
+    geom_smooth(method = "lm", alpha = 0.3, colour = "grey40") +
+    # facet_grid(species~rockfish) +
+    # facet_wrap(~true_genus*species_only) +
+    # facet_wrap(~true_genus) +
+    facet_wrap(~family) +
+    coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) +
+    # scale_x_continuous(trans = fourth_root_power) +
+    # scale_y_continuous(trans = fourth_root_power) +
+    xlab("Temperature gradients between each cell and its neighbours") +
+    ylab("Biotic gradients of mature populations") +
+    gfplot::theme_pbs())
+
+ggsave(here::here("ms", "figs", "supp-gradient-cor-family.png"), width = 6, height = 6)
+
+# ggplot(filter(model$data, age == "mature" & genus_id == 7), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) +
+#   geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") +
+#   # facet_grid(species~rockfish) +
+#   facet_wrap(~forcats::fct_reorder(species_only, genus_id)) +
+#   # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) +
+#   # scale_x_continuous(trans = fourth_root_power) +
+#   # scale_y_continuous(trans = fourth_root_power) +
+#   gfplot::theme_pbs()
+#
+# ggplot(filter(model$data, age == "mature" & genus_id == 5), aes(temp_grad, biotic_grad)) + geom_point(alpha=.1) +
+#   geom_smooth(method = "lm", alpha= 0.5, colour = "darkgray") +
+#   # facet_grid(species~rockfish) +
+#   facet_wrap(~species_only) +
+#   # coord_cartesian(xlim = c(0,0.3), ylim = c(0,1)) +
+#   # scale_x_continuous(trans = fourth_root_power) +
+#   # scale_y_continuous(trans = fourth_root_power) +
+#   gfplot::theme_pbs()
+
+
 #########################
