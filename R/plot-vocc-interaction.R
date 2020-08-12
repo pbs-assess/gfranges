@@ -1,3 +1,5 @@
+
+
 #' Make prediction dataframe for chopsticks
 #'
 #' @param data The data frame used to make the model matrix.
@@ -8,7 +10,8 @@
 #' @param use_quantiles If TRUE, plots lines for 2.5th and 97.5th quantile of
 #'    splitting varible values occupied by each species.
 #'    If FALSE, use min and max values occupied by each species.
-#' @param N Number of increments
+#' @param N Number of increments 
+#' @importFrom purrr map_df
 #'
 #' @export
 interaction_df <- function(
@@ -100,6 +103,8 @@ interaction_df <- function(
 #' @param imm_model Add immature data from separate model
 #' @param imm_slopes Add separate slope df for immatures
 #' @param rug Logical for adding rug
+#' 
+#' @importFrom stringr str_replace
 #'
 #' @examples
 #' plot_fuzzy_chopsticks(model,
@@ -213,16 +218,16 @@ plot_fuzzy_chopsticks <- function(model,
   if (!is.null(type)) {
     pred_dat <- filter(pred_dat, type == !!type) 
     pred_dat$type[pred_dat$type == "temp"] <- "temperature"
-    pred_dat <- pred_dat %>% mutate(chopstick = paste(stringr::str_to_sentence(chopstick), type))
+    pred_dat <- pred_dat %>% mutate(chopstick = paste(firstup(chopstick), type))
     
     if (!is.null(imm_model)) {
       imm_pred_dat <- filter(imm_pred_dat, type == !!type) 
       pred_dat$type[pred_dat$type == "temp"] <- "temperature"
-      pred_dat <- pred_dat %>% mutate(chopstick = paste(stringr::str_to_sentence(chopstick), type))
+      pred_dat <- pred_dat %>% mutate(chopstick = paste(firstup(chopstick), type))
     }
   } else {
     pred_dat$type[pred_dat$type == "temp"] <- "temperature"
-    pred_dat <- pred_dat %>% mutate(chopstick = paste(stringr::str_to_sentence(chopstick), type))
+    pred_dat <- pred_dat %>% mutate(chopstick = paste(firstup(chopstick), type))
   }
 
   # pred_dat <- pred_dat %>% group_by(species, chopstick) %>%
@@ -245,7 +250,8 @@ plot_fuzzy_chopsticks <- function(model,
     spp <- choose_species
     pred_dat <- filter(pred_dat, species == !!spp)
     if (!is.null(choose_age)) {
-      check_age <- choose_age
+      
+      check_age <- firstup(choose_age)
       pred_dat <- filter(pred_dat, age == !!check_age)
     }
   } else {
@@ -258,7 +264,7 @@ plot_fuzzy_chopsticks <- function(model,
     pred_dat <- pred_dat %>% mutate(species = factor(species, levels = levels(slopes$species_ordered)))
     }
     if (!is.null(choose_age)) {
-      check_age <- choose_age
+      check_age <- firstup(choose_age)
       pred_dat <- filter(pred_dat, age == !!check_age)
     }
   }
@@ -278,7 +284,7 @@ plot_fuzzy_chopsticks <- function(model,
       legend.position = "top"
     )
   p <- p + geom_hline(yintercept = 0, colour = "gray", linetype = "solid") +
-    geom_ribbon(data = filter(pred_dat, age == "mature"), aes(
+    geom_ribbon(data = filter(pred_dat, age == "Mature"), aes(
     fill = chopstick,
     ymin = est_p - 1.96 * se_p, ymax = est_p + 1.96 * se_p
   ), alpha = 0.2) +
@@ -314,18 +320,18 @@ plot_fuzzy_chopsticks <- function(model,
 
   if (rug) {
     histdat <- model$data %>%
-      mutate(age = if_else(gsub(" .*", "", species) == "immature", "immature", "mature")) %>%
+      mutate(age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature")) %>%
       mutate(species = stringr::str_replace(species, ".*mature ", ""))
 
     # Shorten the one very long species name...
     histdat$species[histdat$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
     p <- p + geom_rug(
-      data = filter(histdat, age == "immature"), aes_string(x_variable),
+      data = filter(histdat, age == "Immature"), aes_string(x_variable),
       alpha = 0.2, inherit.aes = F
     ) +
       geom_rug(
-        data = filter(histdat, age == "mature"), aes_string(x_variable),
+        data = filter(histdat, age == "Mature"), aes_string(x_variable),
         sides = "tl", alpha = 0.2, inherit.aes = F
       )
   }
@@ -952,15 +958,19 @@ slope_scatterplot <- function(slopes_w_traits, x,
                               point_shapes = c(21, 19),
                               pointrange = T,
                               regression = F) {
+  
   p <- ggplot(slopes_w_traits, aes_string(x, slope_var, shape = shape_group, colour = col_group)) +
     geom_hline(yintercept = 0, colour = "black", alpha = 0.75, linetype = "dashed") 
+  
   if (regression) {
     p <- p + geom_smooth(method = "lm", fill = "lightgray")
   }
   
   if (pointrange) {
-  p <- p + geom_pointrange(aes(ymin = (slope_est - slope_se * 1.96),
-    ymax = (slope_est + slope_se * 1.96)), alpha = point_alpha, fatten = 1)
+  p <- p + geom_pointrange(aes(
+    ymin = (slope_est - slope_se * 1.96),
+    ymax = (slope_est + slope_se * 1.96)), 
+    alpha = point_alpha, fatten = 1)
   } else {
     p <- p + geom_point(size = point_size, alpha = point_alpha) 
   }
