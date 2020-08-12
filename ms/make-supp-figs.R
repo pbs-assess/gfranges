@@ -13,33 +13,20 @@ library(tidyverse)
 
 #### load appropriate final models and other data
 
-# model <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds") # without WCHG
-model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-with-do-1-500.rds") # on full dataset 
+model <- readRDS("analysis/VOCC/data/trend-all-95-optimized2-08-01-trend-with-do-1-500.rds") # optimized
 max(model$sdr$gradient.fixed)
 
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-newclim2-06-20-vel-both-1-200.rds") # without WCHG
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-22-vel-both-1-300.rds") # without WCHG
-# 
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-300.rds") # on full dataset 
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") # on full dataset 
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-1-400.rds") # optimized and converges
 max(model_vel$sdr$gradient.fixed)
 
-model_fish <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-w-fishing-1-500.rds")
-model_age <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-w-age-1-400-DO.rds")
-max(model_fish$sdr$gradient.fixed)
+# model_fish <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-w-fishing-1-500.rds")
+# max(model_fish$sdr$gradient.fixed)
+
+model_age <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-02-vel-w-age-1-400.rds")
+max(model_age$sdr$gradient.fixed)
 
 # stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
-stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds"))
-
-# model2 <- add_colours(model$coefs, species_data = stats)
-# model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"
-# model2$group[model2$group == "SKATE"] <- "SHARKS & SKATES"
-# model2 <- model2 %>% group_by(group) %>% mutate(spp_count = length(unique(species))) %>% ungroup()
-# model2 <- model2 %>% mutate(group = forcats::fct_reorder(group, Estimate, .desc=F))
-# model2 <- model2 %>% mutate(rockfish = forcats::fct_reorder(rockfish, Estimate, .desc=F))
-# trendeffects <- model2 %>% filter(coefficient %in% c("temp_trend_scaled","DO_trend_scaled")) %>%
-#   transform(coefficient = factor(coefficient, levels = c("temp_trend_scaled","DO_trend_scaled"), labels = c("temperature", "DO")))
-# trendeffects <- trendeffects %>% mutate(coefficient = forcats::fct_reorder(coefficient, Estimate, .desc=F))
+stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds")) %>% mutate(age = if_else(age == "immature", "Immature", "Mature"))
 
 #########################
 #########################
@@ -196,17 +183,25 @@ ggsave(here::here("ms", "figs", "supp-gradient-cor-family.png"), width = 6, heig
 # alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-more2016-with-null-NA-untrimmed-allvars.rds"))
 model_trend <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds")
 # max(model_trend$sdr$gradient.fixed)
-model_temp <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-1-500.rds")
+# model_temp <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-1-500.rds")
 model_grad <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-w-grad-1-500.rds")
 # max(model_grad$sdr$gradient.fixed)
 model_do <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-do-only-1-500-DO.rds")
 # max(model_do$sdr$gradient.fixed)
-# model_age <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age-1-500-DO.rds")
-# max(model_age$sdr$gradient.fixed)
-model_age2 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age2-1-500-DO.rds")
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-22-vel-both-1-300.rds")
-# model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-all-do-TODO-temp.rds")
-# model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-all-do-TODO-do.rds")
+
+model_trend <- model
+model_temp <- readRDS("data/vel-all-95-optimized2-08-11-vel-temp-1-400.rds")
+# model_grad <- readRDS("analysis/VOCC/data/trend-all-95-TODO-trend-w-grad-1-500.rds")
+# model_do <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-do-only-1-500-DO.rds")
+
+# max(model_grad$sdr$gradient.fixed)
+# max(model_do$sdr$gradient.fixed)
+
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-1-400.rds") # optimized and converges
+# model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-TODO-temp.rds") # currently running
+# model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-TODO-do.rds") # still needed
+model_age <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-02-vel-w-age-1-400.rds")
+# model_fish <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-11-vel-w-fishing-1-400-DO.rds")
 
 ## trend model ####
 coef_names <- shortener(unique(model_trend$coefs$coefficient))
@@ -558,17 +553,19 @@ temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Compl
 do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 (p_temp_all_slopes <- plot_chopstick_slopes(temp_slopes,
-  type = "temp", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
+  type = "temp", add_global = F, point_size = 1, alpha_range = c(0.4, 0.99),
   # order_by_chops = c("high"),
-  legend_position = c(.25, .95)
+  legend_position = "none"
+  # legend_position = c(.25, .95)
 ) +
   coord_flip(ylim = c(-5.5, 3)) + 
   ylab(" "))
 
 p_do_all_slopes <- plot_chopstick_slopes(do_slopes,
-  type = "DO", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
+  type = "DO", add_global = F, point_size = 1, alpha_range = c(0.4, 0.99),
   # order_by_chops = c("low"),
-  legend_position = c(.25, .95)
+  legend_position = "none"
+  # legend_position = c(.25, .95)
 ) +
   coord_flip(ylim = c(-3.1, 2)) + # coord_flip(ylim =c(-3,1)) +
   ylab("slopes")
@@ -578,7 +575,25 @@ cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops,
   labels = c("a.", "", "b.", ""), label_size = 11,
   ncol = 2, rel_widths = c(1, 2.5)
 )
-ggsave(here::here("ms", "figs", "supp-trend-chopsticks-mean-ordered.pdf"), width = 14, height = 10)
+
+# layout <- "
+#       ABBBB
+#       CDDDD
+#       "
+# 
+# p_temp_all_slopes + p_temp_chops + p_do_all_slopes + p_do_chops + 
+#   plot_layout(design = layout, widths = c(1, 2.5), guides = 'collect')& theme(
+#     legend.text = element_text(size = 9),
+#     legend.position = "bottom",
+#     # legend.justification='left',
+#     legend.direction = "horizontal",
+#     legend.box = "horizontal",
+#     legend.margin=margin(t = 0.1, l= 1, r = 0, unit='cm'),
+#     # legend.margin = unit(1.5, "cm"),
+#     legend.spacing.x = unit(.1, "cm")
+#   )
+
+ggsave(here::here("ms", "figs", "supp-trend-chopsticks-ordered.pdf"), width = 14, height = 10)
 # ggsave(here::here("ms", "figs", "supp-trend-chopsticks-fishing.pdf"), width = 14, height = 11)
 
 
@@ -631,8 +646,6 @@ cowplot::plot_grid(p1, p2, rel_widths = c(1, 2.5))
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks-temp-grad.pdf"), width = 14, height = 5.5)
 
 ### ALL VELOCITY CHOPS ####
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-26-vel-both-1-250.rds") # 
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") #
 
 temp_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_temp_vel_scaled",
@@ -647,6 +660,10 @@ do_vel_slopes <- chopstick_slopes(model_vel,
 ) %>%
   mutate(sort_var = -(diff))
   # mutate(sort_var = slope_est)
+
+temp_vel_slopes <- left_join(temp_vel_slopes, stats)
+do_vel_slopes <- left_join(do_vel_slopes, stats)
+
 
 (p_temp_vel_chops <- plot_fuzzy_chopsticks(model_vel,
   x_variable = "squashed_temp_vel_scaled", type = "temp",
@@ -672,7 +689,8 @@ do_vel_slopes$species[do_vel_slopes$species == "Rougheye/Blackspotted Rockfish C
 
 p_temp_all_vel_slopes <- plot_chopstick_slopes(temp_vel_slopes,
   type = "temp", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
-  legend_position = c(.7, .93)
+  legend_position = "none"
+  # legend_position = c(.7, .93)
 ) + 
   ylab(" ") +
   coord_flip(ylim =c(-6,11))
@@ -680,42 +698,43 @@ p_temp_all_vel_slopes <- plot_chopstick_slopes(temp_vel_slopes,
 
 p_do_all_vel_slopes <- plot_chopstick_slopes(do_vel_slopes,
   type = "DO", add_global = F, point_size = 1, alpha_range = c(0.3, 0.99),
-  # legend_position = "none"
-  legend_position = c(.25, .08)
+  legend_position = "none"
+  # legend_position = c(.25, .08)
 ) +
   ylab("slopes") +
   # coord_flip(ylim =c(-3,3.5))
   coord_flip()
 
+cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes, p_do_vel_chops, 
+  labels = c("a.", "", "b.", ""), label_size = 11,
+  ncol = 2, rel_widths = c(1, 2.5)
+)
 
-cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes, p_do_vel_chops, ncol = 2, rel_widths = c(1, 2.5))
-
-layout <- "
-      ABBBB
-      CDDDD
-      "
-p_temp_all_vel_slopes + p_temp_vel_chops + p_do_all_vel_slopes + p_do_vel_chops + 
-  plot_layout(design = layout, widths = c(1, 2.5), guides = 'collect')& theme(
-    legend.text = element_text(size = 9),
-    legend.position = "bottom",
-    # legend.justification='left',
-    legend.direction = "horizontal",
-    legend.box = "horizontal",
-    legend.margin=margin(t = 0.5, l= 1, r = 0, unit='cm'),
-    # legend.margin = unit(1.5, "cm"),
-    legend.spacing.x = unit(.1, "cm")
-  )
+# layout <- "
+#       ABBBB
+#       CDDDD
+#       "
+# p_temp_all_vel_slopes + p_temp_vel_chops + p_do_all_vel_slopes + p_do_vel_chops + 
+#   plot_layout(design = layout, widths = c(1, 2.5), guides = 'collect')& theme(
+#     legend.text = element_text(size = 9),
+#     legend.position = "bottom",
+#     # legend.justification='left',
+#     legend.direction = "horizontal",
+#     legend.box = "horizontal",
+#     legend.margin=margin(t = 0.1, l= 1, r = 0, unit='cm'),
+#     # legend.margin = unit(1.5, "cm"),
+#     legend.spacing.x = unit(.1, "cm")
+#   )
 
 
-ggsave(here::here("ms", "figs", "supp-vel-chopsticks-ordered-t.pdf"), width = 14, height = 10)
+ggsave(here::here("ms", "figs", "supp-vel-chopsticks-ordered.pdf"), width = 14, height = 10)
 # ggsave(here::here("ms", "figs", "supp-dvocc-chopsticks-ordered.pdf"), width = 14, height = 10)
 
 
 #########################
 #########################
 #########################
-#### SLOPE SCATTERPLOTS
-###
+#### SLOPE SCATTERPLOTS ####
 
 temp_slopes$model <- "trend"
 do_slopes$model <- "trend"
@@ -741,8 +760,8 @@ ggplot(all_slopes, aes(slope_est_vel2, slope_est_trend2)) +
   facet_grid(type~chopstick) 
 # facet_grid(chopstick~type, scales = "free") 
 
-all_slopes$diff_trend2 = scale(collapse_outliers(all_slopes$diff_trend, c(0.005, 0.995)), center = F)
-all_slopes$diff_vel2 = scale(collapse_outliers(all_slopes$diff_vel, c(0.005, 0.995)), center = F)
+all_slopes$diff_trend2 = scale(collapse_outliers(all_slopes$diff_trend, c(0.025, 0.975)), center = F)
+all_slopes$diff_vel2 = scale(collapse_outliers(all_slopes$diff_vel, c(0.025, 0.975)), center = F)
 
 ggplot(all_slopes, aes(diff_vel2, diff_trend2)) + 
   geom_point() + 
@@ -785,12 +804,11 @@ all_slopes <- rbind(temp_slopes, do_slopes) %>% mutate(growth_rate = length_50_m
     # axis.text.y = element_blank(),
     # axis.ticks = element_blank()
   ))
-
 slope_age <- slope_scatterplot(all_slopes, "age_mean",
   col_group = "age", point_size = 3
 ) +
   geom_smooth(
-    data = filter(all_slopes, age == "immature"), inherit.aes = F,
+    data = filter(all_slopes, age == "Immature"), inherit.aes = F,
     aes_string("age_mean", "slope_est", colour = "age"), method = "lm", size = 0.5,
     fill = "lightgray"
   ) +
@@ -817,7 +835,7 @@ slope_growth <- slope_scatterplot(all_slopes, "growth_rate",
   col_group = "age", point_size = 3
 ) +
   geom_smooth(
-    data = filter(all_slopes, age == "immature"), inherit.aes = F,
+    data = filter(all_slopes, age == "Immature"), inherit.aes = F,
     aes_string("growth_rate", "slope_est", colour = "age"), method = "lm", size = 0.5,
     fill = "lightgray"
   ) +
@@ -838,6 +856,88 @@ slope_growth <- slope_scatterplot(all_slopes, "growth_rate",
 
 cowplot::plot_grid(slope_age, slope_growth, ncol = 2, rel_widths = c(1, 1))
 ggsave(here::here("ms", "figs", "supp-slope-scatterplots.pdf"), width = 8, height = 4)
+
+###### VEL SLOPES #####
+all_vel_slopes <- rbind(temp_vel_slopes, do_vel_slopes)
+all_vel_slopes <- rbind(temp_vel_slopes, do_vel_slopes) %>% mutate(growth_rate = length_50_mat_f / age_mat)
+
+(slope_depth <- slope_scatterplot(all_vel_slopes, "depth",
+  col_group = "age", point_size = 3
+) +
+    # geom_smooth(
+    #   data = filter(all_slopes, age == "immature"), inherit.aes = F,
+    #   aes_string("depth", "slope_est", colour = "age"), method = "lm", size = 0.5,
+    #   fill = "lightgray"
+    # ) +
+    geom_smooth(method = "lm", size = 0.5, colour = "gray", fill = "lightgray") + # formula = y ~ x + I(x^2),  colour = "gray",
+    geom_hline(yintercept = 0, colour = "black", alpha = 0.5, linetype = "dashed") +
+    xlab("mean depth") +
+    ylab("slope") +
+    facet_grid(type ~ chopstick, scales = "free") +
+    guides(colour = F) +
+    theme(
+      plot.margin = margin(0, 0.15, 0.1, 0, "cm"),
+      strip.background = element_blank(),
+      strip.text.y = element_blank(),
+      plot.subtitle = element_text(hjust = 0.5, vjust = 0.4)
+      # axis.text.y = element_blank(),
+      # axis.ticks = element_blank()
+    ))
+
+### investigate mean age ####
+vel_slope_age <- slope_scatterplot(all_vel_slopes, "age_mean",
+  col_group = "age", point_size = 3
+) +
+  geom_smooth(
+    data = filter(all_slopes, age == "Immature"), inherit.aes = F,
+    aes_string("age_mean", "slope_est", colour = "age"), method = "lm", size = 0.5,
+    fill = "lightgray"
+  ) +
+  # geom_smooth(method= "lm", size = 0.5, fill = "lightgray") + # formula = y ~ x + I(x^2),  colour = "gray",
+  geom_hline(yintercept = 0, colour = "black", alpha = 0.5, linetype = "dashed") +
+  xlab("Mean age") +
+  ylab("Slope") +
+  scale_x_log10() +
+  facet_grid(type ~ chopstick, scales = "free") +
+  # guides(colour = F) +
+  theme(
+    plot.margin = margin(0, 0.15, 0.1, 0, "cm"),
+    strip.background = element_blank(),
+    strip.text.y = element_blank(),
+    # legend.position = "none",
+    legend.position = c(.15, .4), legend.title = element_blank(),
+    # axis.text.y = element_blank(),
+    # axis.ticks = element_blank(),
+    plot.subtitle = element_text(hjust = 0.5, vjust = 0.4)
+  )
+
+### investigate immature growth rate ####
+vel_slope_growth <- slope_scatterplot(all_vel_slopes, "growth_rate",
+  col_group = "age", point_size = 3
+) +
+  geom_smooth(
+    data = filter(all_slopes, age == "Immature"), inherit.aes = F,
+    aes_string("growth_rate", "slope_est", colour = "age"), method = "lm", size = 0.5,
+    fill = "lightgray"
+  ) +
+  # geom_smooth(method= "lm", size = 0.5, fill = "lightgray") +
+  # xlab("Mean age") +
+  ylab("slope") +
+  facet_grid(type ~ chopstick, scales = "free") +
+  guides(colour = F) +
+  scale_x_log10() +
+  theme(
+    plot.margin = margin(0, 0.1, 0.1, 0, "cm"),
+    strip.background = element_blank(),
+    legend.position = "none",
+    # legend.position = c(.75, .15), legend.title = element_blank(),
+    # strip.text = element_blank(),
+    axis.title.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank()
+  )
+
+cowplot::plot_grid(vel_slope_age, vel_slope_growth, ncol = 2, rel_widths = c(1, 1))
+ggsave(here::here("ms", "figs", "supp-vel-slope-scatterplots.pdf"), width = 8, height = 4)
+
 
 #########################
 #########################
@@ -874,7 +974,7 @@ ggsave(here::here("ms", "figs", "supp-slope-scatterplots.pdf"), width = 8, heigh
 
 #########################
 #########################
-#### BIOTIC MAPS
+#### BIOTIC MAPS ####
 
 # age <- "immature"
 # d2 <- readRDS(here::here(paste0("analysis/vocc/data/", age, "-optimized-vocc.rds"))) %>% mutate(age_class = "immature") %>% mutate(species_only = species, age = age_class)
