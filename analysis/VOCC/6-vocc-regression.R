@@ -23,10 +23,10 @@ age <- "both"
 no_chopsticks <- F
 w_genus <- F
 w_family <- F
-is_null <- F
+is_null <- T
 
-null_number <- "-1" # 2 failed, 3 NA
-
+null_number <- "-3" # 2 failed, 3 NA
+setseed <- 42
 
 # ## for trends ###
 # knots <- 500
@@ -46,11 +46,11 @@ null_number <- "-1" # 2 failed, 3 NA
 knots <- 400
 y_type <- "vel"
 
-# # model_type <- "-vel-temp"
-# # model_type <- "-vel-do"
-# model_type <- "-vel-both"
+# model_type <- "-vel-temp"
+# model_type <- "-vel-do"
+model_type <- "-vel-both"
 # # model_type <- "-vel-w-age"
-model_type <- "-vel-w-fishing"
+# model_type <- "-vel-w-fishing"
 
 # model_type <- "-dist-vel-temp"
 # model_type <- "-dist-vel-both"
@@ -379,6 +379,23 @@ if (model_type == "-vel-w-fishing") {
   x_type <- "vel"
 }
 
+# if (model_type == "-vel-w-fishing") {
+#   formula <- ~ squashed_temp_vel_scaled +
+#     mean_temp_scaled +
+#     squashed_temp_vel_scaled:mean_temp_scaled +
+#     log_effort_scaled + squashed_fishing_vel_scaled +
+#     log_effort_scaled:squashed_fishing_vel_scaled +
+#     squashed_DO_vel_scaled +
+#     mean_DO_scaled +
+#     squashed_DO_vel_scaled:mean_DO_scaled +
+#     log_biomass_scaled
+#   
+#   x <- model.matrix(formula, data = d)
+#   
+#   temp_chopstick <- T
+#   DO_chopstick <- T
+#   x_type <- "vel"
+# }
 
 #### VEL with age effects
 if (model_type == "-vel-w-age") {
@@ -429,23 +446,7 @@ if (model_type == "-vel-w-age2") {
   x_type <- "vel"
 }
 
-# if (model_type == "-vel-w-fishing") {
-#   formula <- ~ squashed_temp_vel_scaled +
-#     mean_temp_scaled +
-#     squashed_temp_vel_scaled:mean_temp_scaled +
-#     log_effort_scaled + squashed_fishing_vel_scaled +
-#     log_effort_scaled:squashed_fishing_vel_scaled +
-#     squashed_DO_vel_scaled +
-#     mean_DO_scaled +
-#     squashed_DO_vel_scaled:mean_DO_scaled +
-#     log_biomass_scaled
-#   
-#   x <- model.matrix(formula, data = d)
-#   
-#   temp_chopstick <- T
-#   DO_chopstick <- T
-#   x_type <- "vel"
-# }
+
 
 ### DVOCC ###
 if (model_type == "-dist-vel-temp") {
@@ -560,7 +561,8 @@ if (DO_chopstick) {
     if (w_genus | w_family) {
       DO_model <- vocc_regression(d, y,
         X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
-        knots = knots, group_by_genus = T, student_t = F,
+        knots = knots, 
+        group_by_genus = T, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
         split_effect_column = split_effect_column
@@ -568,7 +570,8 @@ if (DO_chopstick) {
     } else {
       DO_model <- vocc_regression(d, y,
         X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
-        knots = knots, group_by_genus = FALSE, student_t = F,
+        knots = knots, 
+        group_by_genus = FALSE, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
         split_effect_column = split_effect_column
@@ -593,7 +596,8 @@ if (DO_chopstick) {
       if (w_genus | w_family) {
         DO_model <- vocc_regression(d, y,
           X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
-          knots = knots, group_by_genus = T, student_t = T,
+          knots = knots, 
+          group_by_genus = T, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
           split_effect_column = split_effect_column
@@ -601,7 +605,8 @@ if (DO_chopstick) {
       } else {
         DO_model <- vocc_regression(d, y,
           X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
-          knots = knots, group_by_genus = FALSE, student_t = T,
+          knots = knots, setseed = setseed,
+          group_by_genus = FALSE, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
           split_effect_column = split_effect_column

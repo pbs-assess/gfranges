@@ -27,6 +27,7 @@ vocc_regression <- function(dat, y_i, X_ij,
   split_effect_column,
   nlminb_loops = 3,
   newton_steps = 2,
+  setseed = 42,
   par_init = NULL
   ) {
 
@@ -56,9 +57,10 @@ vocc_regression <- function(dat, y_i, X_ij,
   #   X_ij[,2] <- collapse_outliers(X_ij[,2], outliers = outliers)
   # }
 
-  spde <- sdmTMB::make_spde(dat$x, dat$y, n_knots = knots)
-  # map <- sdmTMB::plot_spde(spde)
-
+  spde <- sdmTMB::make_spde(dat$x, dat$y, n_knots = knots, seed = setseed)
+  map <- sdmTMB::plot_spde(spde)
+  map
+  
   n_s <- nrow(spde$mesh$loc)
   n_k <- length(unique(dat$species))
   n_m <- length(unique(dat$genus))
