@@ -791,7 +791,8 @@ p_do_worm2 <- plot_chopstick_slopes(do_vel_slopes, type = "DO",
     legend.position = "none")
 
 (((p_temp_worm2 | p_do_worm2)/ 
-    grid::textGrob(expression(~Delta~"biotic velocity with a SD change in climate velocity"), vjust = -0.25, hjust = 0.5) +
+    grid::textGrob(expression(~Delta~"biotic velocity with a SD change in climate velocity"), 
+      vjust = -0.25, hjust = 0.5) +
   plot_layout(height = c(10, 0.1))) + plot_layout(guides = 'collect') & theme(
   legend.text = element_text(size = 9),
   legend.position = "bottom",
@@ -887,7 +888,8 @@ ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 
 species_panels <- function(species, model, x_type,
                            trends = T,
-                           biotic_lim = c(-20, 25), # currently only applied to 
+                           biotic_lim = c(-20, 25), # currently only applied to
+                           # biotic_lim = c(-40, 40), # currently only applied to 
                            chop_label = F,
                            leftmost = F,
                            alpha_range = c(0.9, 0.9)) {
@@ -1023,7 +1025,7 @@ species_panels <- function(species, model, x_type,
       ) + 
         # scale_x_continuous(labels = function(x) paste0(round(x * 0.6328, 1))) + # TODO: need to make SD always correct...
         # coord_cartesian(xlim = c(-0.2 , 2.6), ylim = c(-3.5, 5.8)) +
-        coord_cartesian(ylim = biotic_lim) + 
+        coord_cartesian(ylim = biotic_lim) +
         theme(
           plot.margin = margin(0, 0.2, 0.1, 0.1, "cm"),
           legend.position = "none",
@@ -1252,16 +1254,21 @@ layout <- "
 
 ygrob1 <- grid::textGrob((expression("Biotic velocity ("~italic("Y")~")")),
   gp = grid::gpar(fontsize = 12),
-  hjust = 1,
+  hjust = 1, 
+  vjust = 0.85,
   rot = 90
 )
 
 ygrob2 <- grid::textGrob((expression("Climate velocity ("~italic("x")~")")),
-  gp = grid::gpar(fontsize = 12), hjust = 1, rot = 90
+  gp = grid::gpar(fontsize = 12), hjust = 1, 
+  vjust = 0.85, 
+  rot = 90
 )
 
 ygrob3 <- grid::textGrob(("Mean climate"),
-  gp = grid::gpar(fontsize = 12), hjust = 0.25, rot = 90
+  gp = grid::gpar(fontsize = 12), hjust = 0.25, 
+  vjust = 0.85, 
+  rot = 90
 )
 
 wrap_plots(ygrob1, ygrob2, ygrob3, p1, p2, p3, p4) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1))
@@ -1270,91 +1277,69 @@ wrap_plots(ygrob1, ygrob2, ygrob3, p1, p2, p3, p4) + plot_layout(design = layout
 ggsave(here::here("ms", "figs", "species-map-panels-vel.png"), width = 11, height = 11)
 
 
-# # trend-based example chops ####
+# two panels only
+
+(p1b <- species_panels("mature Redbanded Rockfish", 
+  trends = F,
+  chop_label = T, 
+  leftmost = T,
+  # biotic_lim = c(-20, 10),
+  model, "temp"
+))
+
+(p2b <- species_panels("mature Flathead Sole", 
+  trends = F,
+  chop_label = T, #leftmost = T, 
+  # biotic_lim = c(-20, 10),
+  model, "DO"))
+
+(p1c <- species_panels("mature Lingcod", 
+  trends = F,
+  chop_label = T, leftmost = T, 
+  biotic_lim = c(-20, 10),
+  model, "temp"))
+
+(p2c <- species_panels("mature Lingcod", 
+  trends = F,
+  chop_label = T, #leftmost = T, 
+  biotic_lim = c(-20, 10),
+  model, "DO"))
+
+
+
+layout <- "
+      ADE
+      BDE
+      BDE
+      CDE
+      "
+wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p2b) + plot_layout(design = layout, widths = c(0.03, 1, 1))
+
+# ggsave(here::here("ms", "figs", "species-map-panels-vel.pdf"), width = 11, height = 11)
+ggsave(here::here("ms", "figs", "species-map-panels-vel2.png"), width = 6, height = 11)
+
+wrap_plots(ygrob1, ygrob2, ygrob3, p1c, p2c) + plot_layout(design = layout, widths = c(0.03, 1, 1))
+
+ggsave(here::here("ms", "figs", "species-map-panels-vel-lingcod.png"), width = 6, height = 11)
+
+### trend-based example chops ####
 # 
-# (p1 <- species_panels("mature Spotted Ratfish", model, "temp",
-#   chop_label = T, 
-#   leftmost = T#, alpha_range = c(0.1, 0.9)
-# ))
-# 
-# (p1 <- species_panels("mature Spotted Ratfish", model, "temp",
-#   chop_label = T, 
-#   leftmost = T#, alpha_range = c(0.1, 0.9)
-# ))
-# 
-# (p1b <- species_panels("mature Yelloweye Rockfish", model, "temp",
-#   # trends = F,
-#   chop_label = T, 
-#   leftmost = T, alpha_range = c(0.1, 0.9)
-# ))
-# 
-# # (p1c <- species_panels("immature Yelloweye Rockfish", model, "temp",
-# #   chop_label = T, 
-# #   leftmost = T#, alpha_range = c(0.1, 0.9)
-# # ))
-# 
-#  (p2 <- species_panels("immature Widow Rockfish", model, "temp"))
-# 
-# (p2 <- species_panels("mature Bocaccio", model, "temp"#, alpha_range = c(0.1, 0.9)
-# ))
-# # (p2 <- species_panels("mature Canary Rockfish", model, "temp"))
+# (p1 <- species_panels("mature Canary Rockfish", model, "temp"))
 # (p2b <- species_panels("immature Shortspine Thornyhead", model, "temp"))
-# 
-# (p3 <- species_panels("mature Flathead Sole", model, "temp" #, alpha_range = c(0.1, 0.9)
-# ))
-# 
-# # (p3b <- species_panels("mature English Sole", model, "temp", alpha_range = c(0.1, 0.9)
-# # ))
-# # (p4 <- species_panels("mature Arrowtooth Flounder", model, "temp"))
-# # (p4 <- species_panels("mature Pacific Halibut", model, "temp", alpha_range = c(0.25, 0.9)))
-# 
-# (p5 <- species_panels("mature North Pacific Spiny Dogfish", 
-#   # trends = F,
-#   chop_label = T, model, "DO"))
-# 
-# (p6 <- species_panels("mature Sablefish", model, "DO")) #, alpha_range = c(0.25, 0.9)))
-# # (p7 <- species_panels("mature Shortspine Thornyhead", model, "DO"))
-# # (p7 <- species_panels("immature Shortspine Thornyhead", model, "DO"))
-# (p7 <- species_panels("mature Widow Rockfish", model, "DO", alpha_range = c(0.25, 0.9)))
-# (p7b <- species_panels("immature Silvergray Rockfish", model, "DO", alpha_range = c(0.25, 0.9)))
-# 
-# (p7c <- species_panels("immature Lingcod", model, "DO", alpha_range = c(0.25, 0.9)))
-# # wrap_plots(p1, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(1.05, 1, 1, 1, 1), design = layout)
-# 
-# # ygrob <- grid::textGrob(("Predicted % change in biomass per decade"),
-# #   gp = grid::gpar(fontsize = 12), rot = 90,
-# #   hjust = -1
-# # )
-# # wrap_plots(wrap_elements(ygrob), p1, p3, p4, p5, p6) + plot_layout(nrow = 1, ncol = 7, widths = c(0.05, 1, 1, 1, 1, 1))
-# 
-# layout <- "
-#       ADEFGHI
-#       ADEFGHI
-#       BDEFGHI
-#       CDEFGHI
-#       "
+# (p3 <- species_panels("mature Flathead Sole", model, "temp" #, alpha_range = c(0.1, 0.9)))
 # 
 # ygrob1 <- grid::textGrob(("Biotic trend (Y)"),
 #   gp = grid::gpar(fontsize = 12),
-#   hjust = 0.4,
+#   hjust = 0.4, vjust = 0.85,
 #   rot = 90
 # )
 # 
-# ygrob2 <- grid::textGrob(("Climate trend"),
-#   gp = grid::gpar(fontsize = 12), hjust = 0, rot = 90
-# )
-# 
-# 
-# ygrob3 <- grid::textGrob(("Mean climate"),
-#   gp = grid::gpar(fontsize = 12), hjust = 0.25, rot = 90
-# )
-# 
-# wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p2, p3, p5, p6, p7c) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1, 1, 1))
+# wrap_plots(ygrob1, ygrob2, ygrob3, p1, p2b, p3, ...) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1))
 # 
 # ggsave(here::here("ms", "figs", "species-map-panels.pdf"), width = 17, height = 11)
 # 
 # ###
-# #### OTHER SPECIES PANEL OPTIONS ####
+#### OTHER SPECIES PANEL OPTIONS ####
 # species_panels("mature Arrowtooth Flounder", model, "temp")
 # species_panels("immature Arrowtooth Flounder", model, "temp")
 # species_panels("mature Curlfin Sole", model, "temp")
@@ -1364,35 +1349,28 @@ ggsave(here::here("ms", "figs", "species-map-panels-vel.png"), width = 11, heigh
 # species_panels ("immature Dover Sole", model, "temp")
 # species_panels("mature English Sole", model, "temp")
 # species_panels("mature Pacific Halibut", model, "temp")
-# 
 # species_panels("immature English Sole", model, "temp", alpha_range = c(0.25, 0.9))
-# #
-# species_panels("mature Pacific Cod", model, "temp", alpha_range = c(0.25, 0.9))
+# species_panels("mature Pacific Cod", model, "temp")
 # species_panels("mature Walleye Pollock", model, "temp")
-# 
-# # species_panels("mature Canary Rockfish", model, "temp", alpha_range = c(0.25, 0.9))
-# # species_panels("mature Widow Rockfish", model, "temp")
-# # species_panels("mature Bocaccio", model, "temp")
-# # species_panels("mature Shortspine Thornyhead", model, "temp")
-# 
-# # species_panels("mature Sablefish", model, "DO")
-# # species_panels("mature Pacific Cod", model, "DO")
-# #
-# # species_panels("mature Canary Rockfish", model, "DO", alpha_range = c(0.25, 0.9))
-# # species_panels("mature Yelloweye Rockfish", model, "DO", alpha_range = c(0.25, 0.9))
-# species_panels("mature Bocaccio", model, "DO", alpha_range = c(0.25, 0.9))
-# species_panels("mature Pacific Ocean Perch", model, "DO", alpha_range = c(0.25, 0.9))
-# # species_panels("immature Quillback Rockfish", model, "DO", alpha_range = c(0.25, 0.9))
-# 
-# species_panels("mature Dover Sole", model, "DO", alpha_range = c(0.25, 0.9))
-# species_panels("immature Lingcod", model, "DO", alpha_range = c(0.25, 0.9))
-# # species_panels("mature Redbanded Rockfish", model, "DO")
-# # species_panels("mature Widow Rockfish", model, "DO")
+# species_panels("mature Canary Rockfish", model, "temp", alpha_range = c(0.25, 0.9))
+# species_panels("mature Widow Rockfish", model, "temp")
+# species_panels("mature Bocaccio", model, "temp")
+# species_panels("mature Shortspine Thornyhead", model, "temp")
+
+# species_panels("mature Sablefish", model, "DO")
+# species_panels("mature Pacific Cod", model, "DO")
+# species_panels("mature Canary Rockfish", model, "DO")
+# species_panels("mature Yelloweye Rockfish", model, "DO")
+# species_panels("mature Bocaccio", model, "DO")
+# species_panels("mature Pacific Ocean Perch", model, "DO")
+# species_panels("immature Quillback Rockfish", model, "DO")
+# species_panels("mature Dover Sole", model, "DO")
+# species_panels("immature Lingcod", model, "DO")
+# species_panels("mature Redbanded Rockfish", model, "DO")
+# species_panels("mature Widow Rockfish", model, "DO")
 # species_panels("mature Petrale Sole", model, "DO")
-# #
-# #
-# # species_panels("mature Pacific Halibut", model, "DO")
-# # species_panels("mature English Sole", model, "DO")
+# species_panels("mature Pacific Halibut", model, "DO")
+# species_panels("mature English Sole", model, "DO")
 # species_panels("immature Flathead Sole", model, "DO")
 # species_panels("immature Arrowtooth Flounder", model, "DO")
 
@@ -1918,7 +1896,35 @@ ggsave(here::here("ms", "figs", "depth-only.png"), width = 9, height = 5)
 #########################
 #### COEFFICIENT SCATTERPLOTS AGAINST LIFE HISTORY ####
 
-model2 <- add_colours(model$coefs, species_data = stats)
+# model_vel$coefs <- model_vel$coefs %>% mutate(
+#   age = if_else(gsub(" .*", "", species) == "immature", "Immature", "Mature"),
+#   species = stringr::str_replace(species, ".*mature ", ""))
+# 
+stats2 <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds"))
+
+### if we want trend coefs ####
+# model2 <- add_colours(model$coefs, species_data = stats2)
+# model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"
+# model2$group[model2$group == "SKATE"] <- "SHARKS & SKATES"
+# model2$rockfish[model2$rockfish == "rockfish"] <- "Rockfish"
+# model2$rockfish[model2$rockfish == "other fishes"] <- "Other fishes"
+# 
+# model2 <- model2 %>%
+#   group_by(group) %>%
+#   mutate(spp_count = length(unique(species))) %>%
+#   ungroup()
+# model2 <- model2 %>% mutate(group = forcats::fct_reorder(group, Estimate, .desc = F))
+# model2 <- model2 %>% mutate(rockfish = forcats::fct_reorder(rockfish, Estimate, .desc = F))
+# trendeffects <- model2 %>%
+#   filter(coefficient %in% c("temp_trend_scaled", "DO_trend_scaled")) %>%
+#   # transform(coefficient = factor(coefficient,
+#   mutate(coefficient = factor(coefficient,
+#     levels = c("temp_trend_scaled", "DO_trend_scaled"),
+#     labels = c("Temperature", "DO")
+#   ), Std..Error = `Std. Error`)
+
+### if we want vel coefs ####
+model2 <- add_colours(model_vel$coefs, species_data = stats2)
 model2$group[model2$group == "DOGFISH"] <- "SHARKS & SKATES"
 model2$group[model2$group == "SKATE"] <- "SHARKS & SKATES"
 model2$rockfish[model2$rockfish == "rockfish"] <- "Rockfish"
@@ -1931,12 +1937,14 @@ model2 <- model2 %>%
 model2 <- model2 %>% mutate(group = forcats::fct_reorder(group, Estimate, .desc = F))
 model2 <- model2 %>% mutate(rockfish = forcats::fct_reorder(rockfish, Estimate, .desc = F))
 trendeffects <- model2 %>%
-  filter(coefficient %in% c("temp_trend_scaled", "DO_trend_scaled")) %>%
+  filter(coefficient %in% c("squashed_temp_vel_scaled", "squashed_DO_vel_scaled")) %>%
   # transform(coefficient = factor(coefficient,
   mutate(coefficient = factor(coefficient,
-    levels = c("temp_trend_scaled", "DO_trend_scaled"),
+    levels = c("squashed_temp_vel_scaled", "squashed_DO_vel_scaled"),
     labels = c("Temperature", "DO")
   ), Std..Error = `Std. Error`)
+
+
 
 trendeffects <- trendeffects %>%
   mutate(coefficient = forcats::fct_reorder(coefficient, Estimate, .desc = F))
@@ -1948,7 +1956,7 @@ trendeffects$allspp <- "All species"
 # cordat <- stats %>% select(species, age, depth, depth_iqr) %>% na.omit()
 # cor(cordat$depth_iqr,cordat$depth)
 
-p_depth <- coef_scatterplot(trendeffects,
+(p_depth <- coef_scatterplot(trendeffects,
   coef = c("Temperature", "DO"),
   x = "depth_iqr", group = "age", regression = F
 ) +
@@ -1975,7 +1983,7 @@ p_depth <- coef_scatterplot(trendeffects,
     plot.subtitle = element_text(hjust = 0.5, vjust = 0.4)
     # axis.text.y = element_blank(),
     # axis.ticks = element_blank()
-  )
+  ))
 # colorblindr::cvd_grid(p_depth)
 
 # # with rockfish split out
@@ -2117,13 +2125,13 @@ p_mat2 <- p_mat %>% egg::tag_facet(
 
 cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 0.9))
 
-ggsave(here::here("ms", "figs", "coef-scatterplots-allspp2.pdf"), width = 7, height = 4)
+# ggsave(here::here("ms", "figs", "coef-scatterplots-allspp2.pdf"), width = 7, height = 4)
 
 
 #########################
 #########################
 #### WORM OF BIOTIC ESTIMATES ####
-### TEMPERATURE: 3 levels of change
+### TEMPERATURE: 2 or 3 levels of change ####
 (p_temp_est_min <- plot_chop_est(model_vel, type = "temp",  x_variable = "squashed_temp_vel_scaled", 
   # where_on_x = "middle",
   where_on_x = "min",
@@ -2238,7 +2246,7 @@ ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-b.pdf"), width = 7, heig
 # ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-faded.pdf"), width = 8, height = 8)
 
 
-### TEMPERATURE vs DO at max level of change
+### TEMPERATURE vs DO at max level of change ####
 (p_do_est_worm <- plot_chop_est(model_vel, type = "DO",  x_variable = "squashed_DO_vel_scaled", 
   # where_on_x = "middle",
   # where_on_x = "min",
@@ -2256,7 +2264,7 @@ ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-b.pdf"), width = 7, heig
 # ggsave(here::here("ms", "figs", "worm-plot-ests-vel-max.pdf"), width = 9, height = 6)
 
 
-### TEMPERATURE vs DO TRENDS at max level of change
+### TEMPERATURE vs DO TRENDS at max level of change ####
 p_temp_est_worm <- plot_chop_est(model, type = "temp",  x_variable = "temp_trend_scaled", 
   # where_on_x = "middle",
   add_grey_bars = T,
@@ -2277,10 +2285,10 @@ p_temp_est_worm <- plot_chop_est(model, type = "temp",  x_variable = "temp_trend
 
 (p_temp_est_worm | p_do_est_worm ) / grid::textGrob("Biomass trend at midpoint of climate trend experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "worm-plot-ests-trend.pdf"), width = 9, height = 6)
+# ggsave(here::here("ms", "figs", "worm-plot-ests-trend.pdf"), width = 9, height = 6)
 
 
-### exploratory boxplots
+### exploratory boxplots ####
 model_vel$pred_dat %>%
   filter(type == "temp") %>% 
   group_by(genus, species, chopstick) %>% 
@@ -2347,3 +2355,4 @@ model$pred_dat %>%
   ggplot(aes(chopstick, est, colour = chopstick)) +
   geom_violin() + 
   geom_boxplot() 
+
