@@ -444,15 +444,23 @@ max(null04$sdr$gradient.fixed)
 
 # # max(null01$sdr$gradient.fixed)
 vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-03-vel-both-sim-1-400.rds")
-# # vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-newclim-more2016-06-23-vel-both-sim-2-300-DO.rds") 
-# vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-3-350-DO.rds")
+vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-13-vel-both-sim-6-400-DO.rds")
+vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-13-vel-both-sim-3-400-DO.rds")
 # vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-4-350.rds")
-# vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-5-350-DO.rds")
+vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-12-vel-both-sim-5-400-DO.rds")
 # # 
-# max(vnull01$sdr$gradient.fixed)
-# max(vnull03$sdr$gradient.fixed)
+max(vnull01$sdr$gradient.fixed)
+max(vnull02$sdr$gradient.fixed)
+max(vnull03$sdr$gradient.fixed)
 # max(vnull04$sdr$gradient.fixed)
-# max(vnull05$sdr$gradient.fixed)
+max(vnull05$sdr$gradient.fixed)
+# 
+# # coef_names <- shortener(unique(vnull02$coefs$coefficient))
+# # betas <- signif(as.list(vnull02$sdr, "Estimate")$b_j, digits = 3)
+# # SE <- signif(as.list(vnull02$sdr, "Std. Error")$b_j, digits = 3)
+# # lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
+# # upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+# # overall_vnull2 <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 
 # # # old nulls with incorrect climate data too
 # # vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-1-200-DO.rds")
@@ -460,7 +468,6 @@ vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-03-vel-both-sim-
 # vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-3-200-DO.rds")
 # # vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-4-200-DO.rds")
 # # vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-30-vel-both-sim-5-200-DO.rds")
-# 
 
 model$coefs$model <- "trend"
 null01$coefs$model <- "null01"
@@ -475,6 +482,7 @@ vnull02$coefs$model <- "vnull02"
 vnull03$coefs$model <- "vnull03"
 vnull04$coefs$model <- "vnull04"
 vnull05$coefs$model <- "vnull05"
+
 
 # custom_order <- c(
 #   "Intercept", "log_biomass",
@@ -516,10 +524,10 @@ nulls <- rbind(model$coefs,
   #   scale = "width", fill= NA,
   #   alpha = 0.1, data = filter(nulls, model == "null01")
   # ) +
-  # geom_violin(
-  #   scale = "width", fill= NA,
-  #   alpha = 0.1, data = filter(nulls, model == "null02")
-  # ) +
+  geom_violin(
+    scale = "width", fill= NA,
+    alpha = 0.1, data = filter(nulls, model == "null02")
+  ) + # this one is strange in it's Mean T coefs...
   geom_violin(
     scale = "width",fill= NA,
     alpha = 0.1, data = filter(nulls, model == "null03")
@@ -562,8 +570,10 @@ nulls <- rbind(model$coefs,
   ))
 
 vnulls <- rbind(
-  # vnull02$coefs, 
-  # vnull03$coefs, vnull04$coefs, vnull05$coefs,
+  vnull02$coefs,
+  vnull03$coefs,
+  # vnull04$coefs, 
+  vnull05$coefs,
   vnull01$coefs,
   model_vel$coefs) %>%
   mutate(
@@ -591,22 +601,22 @@ vnulls <- rbind(
     scale = "width", fill= NA,
     alpha = 0.1, data = filter(vnulls, model == "vnull01")
   ) +
-  # # geom_violin(
-  # #   scale = "width",
-  # #   alpha = 0.1, data = filter(vnulls, model == "vnull02")
-  # # ) +
   # geom_violin(
-  #   scale = "width", fill= NA,
-  #   alpha = 0.1, data = filter(vnulls, model == "vnull03")
+  #   scale = "width",
+  #   alpha = 0.1, data = filter(vnulls, model == "vnull02")
   # ) +
+  geom_violin(
+    scale = "width", fill= NA,
+    alpha = 0.1, data = filter(vnulls, model == "vnull03")
+  ) +
   # geom_violin(
   #   scale = "width", fill= NA,
   #   alpha = 0.1, data = filter(vnulls, model == "vnull04")
   # ) +
-  # geom_violin(
-  #   scale = "width", fill= NA,
-  #   alpha = 0.1, data = filter(vnulls, model == "vnull05")
-  # ) +
+  geom_violin(
+    scale = "width", fill= NA,
+    alpha = 0.1, data = filter(vnulls, model == "vnull05")
+  ) +
   scale_y_discrete(
     limits = rev(unique(sort(vnulls$term))),
     labels = c(
@@ -614,7 +624,7 @@ vnulls <- rbind(
       "T interaction", "T velocity", "Mean T", "Biomass", "Intercept"
     )
   ) +
-  # scale_fill_manual(name = "Model type", values = c("gray90", "#5E4FA2")) + #"#FDAE61" yellow guides(fill = F) +
+  scale_fill_manual(name = "Model type", values = c("gray90", "#5E4FA2"), guide = F) + #"#FDAE61" yellow guides(fill = F) +
   scale_colour_manual(name = "Model type", values = c("gray80", "#5E4FA2")) + # "#ABDDA4",  green
   geom_vline(xintercept = 0, colour = "gray60") +
   geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI),
@@ -636,7 +646,7 @@ vnulls <- rbind(
 (null_coefs | vnull_coefs) / grid::textGrob("Species-specific coefficient estimates", 
   just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "violin-newclim-w-nulls.pdf"), width = 9, height = 4)
+ggsave(here::here("ms", "figs", "violin-optimized-w-nulls.pdf"), width = 9, height = 4)
 # ggsave(here::here("ms", "figs", "null-spp-violin-w-dvocc.pdf"), width = 9, height = 4)
 
 #########################
