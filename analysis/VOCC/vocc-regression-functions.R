@@ -242,7 +242,9 @@ vocc_regression <- function(dat, y_i, X_ij,
 
   list(obj = obj, opt = opt, sdr = sdr, coefs = b_re,
     coefs_genus = b_re_genus, data = nd,
-    group_by_genus = group_by_genus, nu = nu, y_i = y_i, X_ij = X_ij,
+    mesh = spde, seed = setseed,
+    group_by_genus = group_by_genus, 
+    nu = nu, y_i = y_i, X_ij = X_ij,
     X_pj = X_pj, pred_dat = pred_dat,  
     deltas = deltas,
     b_re_species = b_re_species)
