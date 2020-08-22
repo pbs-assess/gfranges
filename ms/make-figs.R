@@ -344,6 +344,171 @@ ggsave(here::here("ms", "figs", "climate-maps-w-dvocc.png"), width = 5, height =
 
 
 
+#########################
+#########################
+#### CLIMATE BY DEPTH
+### TEMP
+
+(p_depth_tf <- ggplot(alldata, aes(depth, mean_temp, colour = mean_temp)) +
+    scale_color_viridis_c( option = "B", end = 0.8 ) +
+    geom_point(alpha = 0.5, shape = 20#, size = 0.432
+    ) +
+    geom_smooth(colour = "black", size = 0.5, se = F) +
+    ylab("Mean (ºC)") +
+    scale_x_reverse() +
+    xlim(450, 15) +
+    ylim(4, 11) +
+    coord_flip(expand = F) +  
+    xlab("Mean cell depth") +
+    ggtitle("Temperature") +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0, 0.3, 0.1, 0, "cm"), 
+      axis.title.x = element_blank(), 
+      legend.position = "none"
+    ))
+
+(p_depth_tt <- ggplot(alldata, aes(depth, temp_trend, colour = temp_trend)) +
+    scale_color_viridis_c( option = "B", end = 0.8 ) +
+    geom_point(alpha = 0.5, shape = 20) +
+    # geom_smooth(colour = "black", size = 0.5, se = F) +
+    # scale_y_continuous(position = "right") +
+    geom_hline(yintercept = 0, colour = "grey60", linetype = "solid") + # 
+    scale_x_reverse() +
+    coord_flip(xlim = c(450, 15), expand = F) +
+    # coord_cartesian(xlim = c(15, 450), ylim = c(0.2, 7.5), expand = F) + # ylim = c(0, 11.5),
+    # ylab("Temperature trend (ºC per decade)") +
+    ylab("Trend per decade") +
+    xlab("Mean depth") +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0, 0.3, 0.1, 0, "cm"), legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.y = element_blank(), axis.title.y = element_blank()
+    ))
+
+(p_depth_tv <- ggplot(alldata, aes(depth, squashed_temp_vel, colour = squashed_temp_vel)) +
+    scale_color_viridis_c( option = "B", begin = 0.25, end = 0.9 
+    ) +
+    geom_point(alpha = 0.5, shape = 20) +
+    geom_hline(yintercept = 0, colour = "grey60", linetype = "solid") + # 
+    scale_x_reverse() +
+    coord_flip(xlim = c(450, 15), expand = F) +
+    # ylab("Temperature velocity (km per decade)") +
+    ylab("Velocity (km per decade)") +
+    xlab("Mean depth") +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0, 0.3, 0.1, 0, "cm"), legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.y = element_blank(), axis.title.y = element_blank()
+    ))
+
+#### DO
+
+(p_depth_dof <- ggplot(alldata, aes(depth, mean_DO, colour = mean_DO)) +
+    scale_color_viridis_c(trans = sqrt, end = 1) +
+    geom_point(alpha = 0.5, shape = 20#, size = 0.432
+    ) +
+    geom_smooth(colour = "black", size = 0.5, se = F) +
+    ylab("Mean") +
+    scale_x_reverse() +
+    xlim(450, 15) +
+    ylim(0, 6.4) +
+    coord_flip(expand = F) +  
+    geom_hline(yintercept = 6.4, colour = "grey", linetype = "dashed") + # 100% saturation at 1 bar, 10 degree C, ~35 salinity
+    geom_hline(yintercept = 1.8, colour = "grey40", linetype = "dashed") + # 30% saturation onset for mild hypoxia
+    # geom_hline(yintercept = 0.64, colour = "black", linetype = "dashed") + # 10% saturation onset for severe hypoxia
+    xlab("Mean cell depth") +
+    ggtitle("DO") +
+    gfplot::theme_pbs() + theme(
+      # axis.text.y = element_blank(), axis.title.y = element_blank(),
+      plot.margin = margin(0, 0.3, 0.1, 0, "cm"), legend.position = "none"
+    ))
+
+(p_depth_dot <- ggplot(alldata, aes(depth, DO_trend, colour = DO_trend)) +
+    scale_color_viridis_c(trans = sqrt, end = 1) +
+    geom_point(alpha = 0.5, shape = 20) +
+    # geom_smooth(colour = "black", size = 0.5, se = F) +
+    # scale_y_continuous(position = "right") +
+    geom_hline(yintercept = 0, colour = "grey60", linetype = "solid") + # 
+    scale_x_reverse() +
+    coord_flip(xlim = c(450, 15), expand = F) +
+    # coord_cartesian(xlim = c(15, 450), ylim = c(0.2, 7.5), expand = F) + # ylim = c(0, 11.5),
+    ylab("Trend per decade") +
+    xlab("Mean depth") +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0, 0.3, 0.1, 0, "cm"), legend.position = "none",
+      # axis.title.x = element_blank()
+      axis.text.y = element_blank(), axis.title.y = element_blank()
+    ))
+
+(p_depth_dov <- ggplot(alldata, aes(depth, squashed_DO_vel, colour = squashed_DO_vel)) +
+    scale_color_viridis_c(trans = sqrt, end = 1) +
+    geom_point(alpha = 0.5, shape = 20) +
+    geom_hline(yintercept = 0, colour = "grey60", linetype = "solid") + # 
+    scale_x_reverse() +
+    coord_flip(xlim = c(450, 15), expand = F) +
+    # coord_cartesian(xlim = c(15, 450), ylim = c(0.2, 7.5), expand = F) + # ylim = c(0, 11.5),
+    ylab("Velocity (km)") +
+    xlab("Mean depth") +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0, 0.3, 0.1, 0, "cm"), legend.position = "none",
+      # axis.title.x = element_blank()
+      axis.text.y = element_blank(), axis.title.y = element_blank()
+    ))
+
+(p_iqr <- temp_slopes %>% filter(chopstick == "high") %>% 
+    mutate(labs = if_else(age == "Mature" & depth > 300 | depth_iqr < 25 | (age == "Mature" & depth_iqr > 100),  gsub(" Rockfish", "", species), NA_character_)) %>%
+    ggplot(aes(depth, depth_iqr)) + 
+    # geom_smooth(method = "lm", colour = "black", size =0.5) +
+    geom_line(aes(group = species), colour = "grey60") +
+    geom_point(aes(shape = age, colour = age), fill = "white", size = 1.5) +
+    scale_colour_manual(values = c("deepskyblue3", "royalblue4")) +
+    # scale_colour_manual(values = c("royalblue4","deepskyblue3" )) +
+    # scale_fill_manual(values = c("cornflowerblue", "deepskyblue")) +
+    # scale_colour_manual(values = c("royalblue4", "darkorchid4")) +
+    # scale_fill_manual(values = c("royalblue4", "darkorchid4")) + 
+    scale_shape_manual(values = c(21, 19)) +
+    coord_cartesian(xlim = c(15, 450), ylim = c(2, 240), expand = F) +
+    # scale_x_log10() +
+    # scale_y_log10() +
+    scale_x_reverse() +
+    coord_flip() +
+    ggrepel::geom_text_repel(
+      aes(label = labs), colour = "royalblue4",
+      point.padding = 0.3, segment.colour = "deepskyblue3", max.iter = 10000,
+      size = 3, force = 20,
+      nudge_y = 2, nudge_x = -2,
+      na.rm = T, min.segment.length = 10, seed = 1000
+    ) +
+    ggtitle("Groundfish species") +
+    ylab("Depth range occupied (IQR)") +
+    xlab("Mean depth occupied") +
+    gfplot::theme_pbs() + theme(
+      plot.margin = margin(0, 0, 0, 0.3, "cm"),
+      legend.position = c(0.8, 0.8),
+      # axis.title.x = element_blank(),
+      # axis.text.x = element_blank(),
+      # axis.ticks.x = element_blank(),
+      legend.title = element_blank()
+    ))  
+
+
+# p_depth_tf + p_depth_tt + p_depth_tv +
+# p_depth_dof + p_depth_dot + p_depth_dov + plot_layout(nrow = 1)
+# 
+# ggsave(here::here("ms", "figs", "climate-depth-plots.png"), width = 11, height = 4)
+layout1 <- "
+      AAA
+      AAA
+      BCD
+      EFG
+      "
+
+p_iqr +
+  p_depth_tf + p_depth_tt + p_depth_tv +
+  p_depth_dof + p_depth_dot + p_depth_dov + 
+  plot_layout(design = layout1)
+
+ggsave(here::here("ms", "figs", "climate-depth-plots-stacked.png"), width = 6, height = 8.5)
 
 #######################
 #######################
