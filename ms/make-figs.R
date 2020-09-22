@@ -626,6 +626,13 @@ overall_betas$model <- "Trend"
 # write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "interaction (T)"], 2), "lowerTTinteract")
 # write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "interaction (T)"], 2), "upperTTinteract")
 
+# write_tex(signif(overall_betas$betas[overall_betas$coef_names == "change in DO"], 2), "betaDOtrend")
+# write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "change in DO"], 2), "lowerDTbeta")
+# write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "change in DO"], 2), "upperDTbeta")
+# write_tex(signif(overall_betas$betas[overall_betas$coef_names == "interaction (DO)"], 2), "betaDTinteract")
+# write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "interaction (DO)"], 2), "lowerDTinteract")
+# write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "interaction (DO)"], 2), "upperDTinteract")
+
 
 #### get velocity model betas and save tex ####
 coef_names <- shortener(unique(model_vel$coefs$coefficient))
@@ -655,6 +662,14 @@ overall_betas_vel$model <- "Velocity"
 # write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"]), 3), "ABSbetaTVinteract")
 # write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "lowerTVinteract")
 # write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "upperTVinteract")
+
+write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in DO"], 2), "betaDOvel")
+write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in DO"], 2), "lowerDVbeta")
+write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in DO"], 2), "upperDVbeta")
+write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (DO)"], 3), "betaDVinteract")
+write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (DO)"], 3), "lowerDVinteract")
+write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (DO)"], 3), "upperDVinteract")
+
 
 #### ADD NULLS AND MAKE VIOLIN PLOT ####
 # 95-all-newclim is full dataset while 95-newclim-more2016 is former with WCHG missing
@@ -1700,7 +1715,7 @@ temp_slopes$species_lab <- gsub("Rockfish", "", temp_slopes$species_lab)
     #   # nudge_x = 15,
     #   na.rm = T, min.segment.length = 4
     # ) +
-    ylab(expression(~Delta~"trend at high temp")) +
+    ylab(expression(~Delta~"% change in biomass with SD change in T")) +
     scale_y_continuous(breaks = c(3, 0, -3, -6, -9)) +
     # coord_cartesian( xlim = c(15, 450)) + #ylim = c(-11, 5.5),
     coord_cartesian(expand = F,
@@ -1727,7 +1742,7 @@ temp_slopes$species_lab <- gsub("Rockfish", "", temp_slopes$species_lab)
     # geom_linerange(aes(xmin=depth25, xmax = depth75), alpha = 0.2, size = 2) +
     geom_point(size = 1, fill = "white") +
     xlab("Mean depth for species") +
-    ylab(expression(~Delta~"trend at low DO")) + # guides(colour = F) +
+    ylab(expression(~Delta~"% change in biomass with SD change in DO")) + # guides(colour = F) +
     # coord_cartesian(xlim = c(15, 450)) +
     coord_cartesian(expand = F, 
       # ylim = c(-2.5, 2.5),
@@ -1856,8 +1871,9 @@ do_data <- readRDS(paste0("analysis/VOCC/data/predicted-DO-2020-06-20-more2016.r
   # geom_hline(yintercept = 0.64, colour = "black", linetype = "dashed") + # 10% saturation onset for severe hypoxia
   xlab("Mean depth") +
   gfplot::theme_pbs() + theme(
-    plot.margin = margin(0, 0.3, 0.1, 0, "cm"), legend.position = "none",
-    axis.title.y = element_blank()
+    plot.margin = margin(0, 0.3, 0.1, 0, "cm"),
+    axis.title.x = element_blank(),
+    legend.position = "none"
   ))
 
 
@@ -1939,54 +1955,53 @@ d <- temp_slopes %>% filter(chopstick == "high" & type == "Temp" & age == "Immat
       axis.ticks.x = element_blank(),
       legend.title = element_blank()
     ))  
-
-(p_iqr2 <- temp_slopes %>% filter(chopstick == "high") %>% 
-    mutate(labs = if_else(age == "Mature",  gsub(" Rockfish", "", species), NA_character_)) %>%
-    ggplot(aes(depth, depth_iqr)) + 
-    # geom_smooth(method = "lm", colour = "black", size =0.5) +
-    # geom_line(aes(group = species), colour = "grey60") +
-    geom_point(aes(shape = age, colour = age, alpha = age), size = 1.5) +
-    scale_colour_manual(values = c("white", "royalblue4")) +
-    scale_alpha_manual(values = c(0, 0.2)) +
-    # scale_colour_manual(values = c("royalblue4","deepskyblue3" )) +
-    # scale_fill_manual(values = c("cornflowerblue", "deepskyblue")) +
-    # scale_colour_manual(values = c("royalblue4", "darkorchid4")) +
-    # scale_fill_manual(values = c("royalblue4", "darkorchid4")) + 
-    scale_shape_manual(values = c(21, 19)) +
-    coord_cartesian(xlim = c(15, 450), ylim = c(2, 240), expand = F) +
-    # scale_x_log10() +
-    # scale_y_log10() +
-    ggrepel::geom_text_repel(
-      aes(label = labs), colour = "royalblue4",
-      point.padding = 0,
-      # segment.colour = "deepskyblue3", 
-      max.iter = 5000,
-      size = 2, 
-      # force = 0.3, 
-      nudge_y = 0, nudge_x = 0,
-      na.rm = T, min.segment.length = 10, seed = 1000
-    ) +
-    ylab("Depth range (IQR)") +
-    xlab("Mean depth") +
-    gfplot::theme_pbs() + theme(
-      plot.margin = margin(0, 0, 0, 0, "cm"),
-      legend.position = "none",
-      axis.title = element_blank(),
-      axis.text = element_blank(),
-      axis.ticks = element_blank(),
-      legend.title = element_blank()
-    ))  
-
-#### add facet tags and save ####
-p_iqr <- p_iqr %>% egg::tag_facet(
-  tag_pool = c("a"),
-  open = "", close = ".", 
-  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
-)
+# 
+# (p_iqr2 <- temp_slopes %>% filter(chopstick == "high") %>% 
+#     mutate(labs = if_else(age == "Mature",  gsub(" Rockfish", "", species), NA_character_)) %>%
+#     ggplot(aes(depth, depth_iqr)) + 
+#     # geom_smooth(method = "lm", colour = "black", size =0.5) +
+#     # geom_line(aes(group = species), colour = "grey60") +
+#     geom_point(aes(shape = age, colour = age, alpha = age), size = 1.5) +
+#     scale_colour_manual(values = c("white", "royalblue4")) +
+#     scale_alpha_manual(values = c(0, 0.2)) +
+#     # scale_colour_manual(values = c("royalblue4","deepskyblue3" )) +
+#     # scale_fill_manual(values = c("cornflowerblue", "deepskyblue")) +
+#     # scale_colour_manual(values = c("royalblue4", "darkorchid4")) +
+#     # scale_fill_manual(values = c("royalblue4", "darkorchid4")) + 
+#     scale_shape_manual(values = c(21, 19)) +
+#     coord_cartesian(xlim = c(15, 450), ylim = c(2, 240), expand = F) +
+#     # scale_x_log10() +
+#     # scale_y_log10() +
+#     ggrepel::geom_text_repel(
+#       aes(label = labs), colour = "royalblue4",
+#       point.padding = 0,
+#       # segment.colour = "deepskyblue3", 
+#       max.iter = 5000,
+#       size = 2, 
+#       # force = 0.3, 
+#       nudge_y = 0, nudge_x = 0,
+#       na.rm = T, min.segment.length = 10, seed = 1000
+#     ) +
+#     ylab("Depth range (IQR)") +
+#     xlab("Mean depth") +
+#     gfplot::theme_pbs() + theme(
+#       plot.margin = margin(0, 0, 0, 0, "cm"),
+#       legend.position = "none",
+#       axis.title = element_blank(),
+#       axis.text = element_blank(),
+#       axis.ticks = element_blank(),
+#       legend.title = element_blank()
+#     ))  
+# 
+# #### add facet tags and save ####
+# p_iqr <- p_iqr %>% egg::tag_facet(
+#   tag_pool = c("a"),
+#   open = "", close = ".", 
+#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
+# )
 
 temp_high3 <- temp_high %>% egg::tag_facet(
-  tag_pool = c("b"),
-  # tag_pool = c("c"),
+  tag_pool = c("a"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
@@ -1998,15 +2013,13 @@ do_low <- do_low + scale_y_continuous(position = "right") + theme(
 )
 
 do_low3 <- do_low %>% egg::tag_facet( 
-  tag_pool = c("c"),
-  # tag_pool = c("d"),
+  tag_pool = c("b"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
 temp_high4 <- temp_high2 %>% egg::tag_facet(
-  tag_pool = c("d"),
-  # tag_pool = c("c"),
+  tag_pool = c("c"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
@@ -2019,21 +2032,18 @@ do_low2 <- do_low2 + scale_y_continuous(position = "right") + theme(
 )
 
 do_low4 <- do_low2 %>% egg::tag_facet( 
-  tag_pool = c("e"),
-  # tag_pool = c("d"),
+  tag_pool = c("d"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
 depth_t <- p_depth_t %>% egg::tag_facet(
-  tag_pool = c("f"),
-  # tag_pool = c("e"),
+  tag_pool = c("e"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 depth_do <- p_depth_do %>% egg::tag_facet(
-  tag_pool = c("g"),
-  # tag_pool = c("f"),
+  tag_pool = c("f"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
@@ -2045,14 +2055,15 @@ depth_do <- p_depth_do %>% egg::tag_facet(
 # ggsave(here::here("ms", "figs", "supp-depth-iqr.pdf"), width = 5, height = 3.5)
 
 layout <- "
-      AF
-      BC
-      GH
-      DE
+      AB
+      CD
+      EF
       "
 
-(p_iqr + temp_high3 + do_low3 +  depth_t + depth_do + p_iqr2 + temp_high4 + do_low4 +
-  plot_layout(design = layout, heights = c(0.6, 0.5, 0.5, 0.5))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + 
+(temp_high3 + do_low3 +  
+    temp_high4 + do_low4 +
+    depth_t + depth_do + 
+  plot_layout(design = layout, heights = c(0.5, 0.5, 0.25))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + 
   plot_layout(nrow = 2, heights = c(1, 0.02))
 
 # ggsave(here::here("ms", "figs", "slope-by-depth-quad-iqr.png"), width = 8, height = 5)
