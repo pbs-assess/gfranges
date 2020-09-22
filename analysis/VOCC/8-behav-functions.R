@@ -12,8 +12,7 @@ library(ggpubr)
 # model <- readRDS("data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
 # model <- readRDS("data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds")
 
-stats <- readRDS(paste0("data/life-history-behav-new-growth.rds"))
-
+stats <- readRDS(paste0("data/life-history-behav-new-growth.rds")) %>% mutate(age = firstup(age))
 #####
 model_vel <- readRDS("data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") 
 
@@ -36,7 +35,7 @@ long_vel_slopes <- rbind(temp_vel_slopes1, do_vel_slopes1) %>% mutate(slope_type
 long_vel_slopes <- long_vel_slopes %>% mutate(
   type = factor(type, levels = c("temp", "DO")),
   species_age = paste(species, age),
-  age = factor(age, levels = c("immature", "mature"),  labels = c("Immature", "Mature")),
+  # age = factor(age, levels = c("Immature", "Mature"),  labels = c("Immature", "Mature")),
   Rockfish = factor(rockfish, levels = c("rockfish", "other fishes"),  labels = c("Rockfish", "Other fishes")),
   slope_type = factor(slope_type, levels = c("high temp", "low temp", "high DO", "low DO")),
   Diet = factor(Diet, levels = c("Zooplankton", "Generalist", "Polychaetes", "Crustaceans", "Fish")),
@@ -78,7 +77,7 @@ temp_vel_slopes %>% lmerTest::lmer(slope ~ 0 + chopstick + (1|species) + (1|spec
 do_vel_slopes %>% lmerTest::lmer(slope ~ 0 + chopstick + (1|species) + (1|species_age), data = .) %>% summary() # *
 
 # high temp and low DO have sig non-zero effects (in both cases negative) 
-best_vel_slopes <- long_vel_slopes %>% filter( slope_type == "high temp" | slope_type == "low DO") 
+best_slopes <- long_vel_slopes %>% filter( slope_type == "high temp" | slope_type == "low DO") 
 ###
 ### DEPTH RANGE AND MEAN DEPTH FOR BOTH MATURITY CLASSES ####
 # best_slopes %>% filter(type == "temp") %>% 
@@ -162,10 +161,15 @@ ggpaired(matched_temp_coef, x = "age", y = "Estimate",
 #### paired test of slopes by age
 # no sig differences by age
 
-matched_temp <- long_slopes %>% filter(species != "Pacific Halibut") %>% filter(species != "Curlfin Sole") %>% filter(species != "Shortbelly Rockfish") %>% filter(species != "Shortraker Rockfish") %>% filter(species != "Spotted Ratfish") %>% filter(parent_taxonomic_unit != "rajidae(skates)") %>% filter(type == "temp")
+matched_temp <- long_vel_slopes %>% 
+  filter(species != "Pacific Halibut") %>% filter(species != "Curlfin Sole") %>%
+  filter(species != "Shortbelly Rockfish") %>% filter(species != "Shortraker Rockfish") %>% filter(species != "Spotted Ratfish") %>%
+  filter(parent_taxonomic_unit != "rajidae(skates)") %>%
+  filter(type == "temp")
+
 compare_means(slope~age, matched_temp, method = "wilcox.test", paired = T, id = "species")
 
-matched_do <- long_slopes %>% filter(species != "Pacific Halibut") %>% filter(species != "Curlfin Sole") %>% filter(species != "Shortbelly Rockfish") %>% filter(species != "Shortraker Rockfish") %>% filter(species != "Spotted Ratfish") %>% filter(parent_taxonomic_unit != "rajidae(skates)") %>% filter(type == "DO")
+matched_do <- long_vel_slopes %>% filter(species != "Pacific Halibut") %>% filter(species != "Curlfin Sole") %>% filter(species != "Shortbelly Rockfish") %>% filter(species != "Shortraker Rockfish") %>% filter(species != "Spotted Ratfish") %>% filter(parent_taxonomic_unit != "rajidae(skates)") %>% filter(type == "DO")
 compare_means(slope~age, matched_do, method = "wilcox.test", paired = T, id = "species")
 
 matched <- rbind(matched_temp, matched_do)
@@ -185,10 +189,12 @@ ggsave(here::here("ms", "figs", "supp-age-effect-by-slope-vel.pdf"), width = 7, 
 
 #### Is there a difference in strength of effect between high and low slopes? ####
 # paired across species and ages
-compare_means(slope~chopstick, temp_slopes, method = "wilcox.test", paired = T, id= "species_age") # **
-compare_means(slope~chopstick, do_slopes, method = "wilcox.test", paired = T, id= "species_age") # **
+compare_means(slope~chopstick, temp_vel_slopes, method = "wilcox.test", paired = T, id= "species_age") # **
+compare_means(slope~chopstick, do_vel_slopes, method = "wilcox.test", paired = T, id= "species_age") # **
 
-ggplot(temp_slopes, aes(chopstick, slope,  colour = slope_type, fill = slope_type )) + 
+
+
+ggplot(temp_vel_slopes, aes(chopstick, slope,  colour = slope_type, fill = slope_type )) + 
   scale_colour_manual(values = c("Red 3", "royalblue4") ) + scale_fill_manual(values = c("Red 3", "royalblue4")) + 
   geom_violin(alpha = 0.1) + #scale = "width",
   geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
@@ -203,7 +209,7 @@ ggplot(temp_slopes, aes(chopstick, slope,  colour = slope_type, fill = slope_typ
 
 
 ## split by age classes 
-ggpaired(long_slopes, x = "chopstick", y = "slope",  color = "slope_type", id = "species_age", ylab = "Slope", line.color = "gray", line.size = 0.4, facet.by = 
+ggpaired(long_vel_slopes, x = "chopstick", y = "slope",  color = "slope_type", id = "species_age", ylab = "Slope", line.color = "gray", line.size = 0.4, facet.by = 
     # c("type", "age") ) +
   c("type") ) + 
   stat_compare_means(
@@ -221,41 +227,41 @@ ggpaired(long_slopes, x = "chopstick", y = "slope",  color = "slope_type", id = 
 #### within more extreme slopes test test unpaired effects of ecology ####
 # t test
 #temp
-compare_means(slope~Latitude, filter(temp_slopes, chopstick == "high"), method = "t.test") # * North - Middle
-compare_means(slope~Rockfish, filter(temp_slopes, chopstick == "high"), method = "t.test")
-compare_means(slope~Schooling, filter(temp_slopes, chopstick == "high"), method = "t.test")
-compare_means(slope~Zone, filter(temp_slopes, chopstick == "high"), method = "t.test") # * Demersal - Benthopelagic
-compare_means(slope~Diet, filter(temp_slopes, chopstick == "high"), method = "t.test") # * Zooplankton - Crustaceans
-compare_means(slope~Trophic, filter(temp_slopes, chopstick == "high"), method = "t.test") # ns
-compare_means(slope~Specialist, filter(temp_slopes, chopstick == "high"), method = "t.test") 
+compare_means(slope~Latitude, filter(temp_vel_slopes, chopstick == "high"), method = "t.test") # * North - Middle
+compare_means(slope~Rockfish, filter(temp_vel_slopes, chopstick == "high"), method = "t.test")
+compare_means(slope~Schooling, filter(temp_vel_slopes, chopstick == "high"), method = "t.test")
+compare_means(slope~Zone, filter(temp_vel_slopes, chopstick == "high"), method = "t.test") # * Demersal - Benthopelagic
+compare_means(slope~Diet, filter(temp_vel_slopes, chopstick == "high"), method = "t.test") # * Zooplankton - Crustaceans
+compare_means(slope~Trophic, filter(temp_vel_slopes, chopstick == "high"), method = "t.test") # ns
+compare_means(slope~Specialist, filter(temp_vel_slopes, chopstick == "high"), method = "t.test") 
 
 # DO
-compare_means(slope~Latitude, filter(do_slopes, chopstick == "low"), method = "t.test")
-compare_means(slope~Rockfish, filter(do_slopes, chopstick == "low"), method = "t.test")
-compare_means(slope~Schooling, filter(do_slopes, chopstick == "low"), method = "t.test")
-compare_means(slope~Zone, filter(do_slopes, chopstick == "low"), method = "t.test") 
-compare_means(slope~Diet, filter(do_slopes, chopstick == "low"), method = "t.test") 
-compare_means(slope~Trophic, filter(do_slopes, chopstick == "low"), method = "t.test") 
-compare_means(slope~Specialist, filter(do_slopes, chopstick == "low"), method = "t.test") 
+compare_means(slope~Latitude, filter(do_vel_slopes, chopstick == "low"), method = "t.test")
+compare_means(slope~Rockfish, filter(do_vel_slopes, chopstick == "low"), method = "t.test")
+compare_means(slope~Schooling, filter(do_vel_slopes, chopstick == "low"), method = "t.test")
+compare_means(slope~Zone, filter(do_vel_slopes, chopstick == "low"), method = "t.test") 
+compare_means(slope~Diet, filter(do_vel_slopes, chopstick == "low"), method = "t.test") 
+compare_means(slope~Trophic, filter(do_vel_slopes, chopstick == "low"), method = "t.test") 
+compare_means(slope~Specialist, filter(do_vel_slopes, chopstick == "low"), method = "t.test") 
 
 # wilcox test
 #temp
-compare_means(slope~Latitude, filter(temp_slopes, chopstick == "high"), method = "wilcox.test")
-compare_means(slope~Rockfish, filter(temp_slopes, chopstick == "high"), method = "wilcox.test")
-compare_means(slope~Schooling, filter(temp_slopes, chopstick == "high"), method = "wilcox.test")
-compare_means(slope~Zone, filter(temp_slopes, chopstick == "high"), method = "wilcox.test") # ** Demersal - Benthopelagic
-compare_means(slope~Diet, filter(temp_slopes, chopstick == "high"), method = "wilcox.test") # * Zooplankton - Crustaceans
-compare_means(slope~Trophic, filter(temp_slopes, chopstick == "high"), method = "wilcox.test") 
-compare_means(slope~Specialist, filter(temp_slopes, chopstick == "high"), method = "wilcox.test") 
+compare_means(slope~Latitude, filter(temp_vel_slopes, chopstick == "high"), method = "wilcox.test")
+compare_means(slope~Rockfish, filter(temp_vel_slopes, chopstick == "high"), method = "wilcox.test")
+compare_means(slope~Schooling, filter(temp_vel_slopes, chopstick == "high"), method = "wilcox.test")
+compare_means(slope~Zone, filter(temp_vel_slopes, chopstick == "high"), method = "wilcox.test") # ** Demersal - Benthopelagic
+compare_means(slope~Diet, filter(temp_vel_slopes, chopstick == "high"), method = "wilcox.test") # * Zooplankton - Crustaceans
+compare_means(slope~Trophic, filter(temp_vel_slopes, chopstick == "high"), method = "wilcox.test") 
+compare_means(slope~Specialist, filter(temp_vel_slopes, chopstick == "high"), method = "wilcox.test") 
 
 # DO
-compare_means(slope~Latitude, filter(do_slopes, chopstick == "low"), method = "wilcox.test")
-compare_means(slope~Rockfish, filter(do_slopes, chopstick == "low"), method = "wilcox.test")
-compare_means(slope~Schooling, filter(do_slopes, chopstick == "low"), method = "wilcox.test")
-compare_means(slope~Zone, filter(do_slopes, chopstick == "low"), method = "wilcox.test") 
-compare_means(slope~Diet, filter(do_slopes, chopstick == "low"), method = "wilcox.test") 
-compare_means(slope~Trophic, filter(do_slopes, chopstick == "low"), method = "wilcox.test") 
-compare_means(slope~Specialist, filter(do_slopes, chopstick == "low"), method = "wilcox.test") 
+compare_means(slope~Latitude, filter(do_vel_slopes, chopstick == "low"), method = "wilcox.test")
+compare_means(slope~Rockfish, filter(do_vel_slopes, chopstick == "low"), method = "wilcox.test")
+compare_means(slope~Schooling, filter(do_vel_slopes, chopstick == "low"), method = "wilcox.test")
+compare_means(slope~Zone, filter(do_vel_slopes, chopstick == "low"), method = "wilcox.test") 
+compare_means(slope~Diet, filter(do_vel_slopes, chopstick == "low"), method = "wilcox.test") 
+compare_means(slope~Trophic, filter(do_vel_slopes, chopstick == "low"), method = "wilcox.test") 
+compare_means(slope~Specialist, filter(do_vel_slopes, chopstick == "low"), method = "wilcox.test") 
 
 
 #### TIME & GROWTH RATE EFFECTS ####
@@ -367,58 +373,58 @@ if(trend){
 if(pred == "depth_iqr_scaled"){
   p <- p + scale_x_continuous(labels = function(x)
     paste0(round(exp(
-      x * attributes(temp_slopes$depth_iqr_scaled)[[3]] +
-        attributes(temp_slopes$depth_iqr_scaled)[[2]])
+      x * attributes(temp_slopes$depth_iqr_scaled)[[2]] +
+        attributes(temp_slopes$depth_iqr_scaled)[[1]])
     ))) 
 }
 if(pred == "depth_mean_scaled"){
   p <- p + scale_x_continuous(labels = function(x)
     paste0(round((
-      x * attributes(temp_slopes$depth_mean_scaled)[[3]] +
-        attributes(temp_slopes$depth_mean_scaled)[[2]])
+      x * attributes(temp_slopes$depth_mean_scaled)[[2]] +
+        attributes(temp_slopes$depth_mean_scaled)[[1]])
     ))) 
 }
 if(pred == "log_age_scaled"){
   p <- p + scale_x_continuous(labels = function(x)
     paste0(round(exp(
-      x * attributes(temp_slopes$log_age_scaled)[[3]] +
-        attributes(temp_slopes$log_age_scaled)[[2]]) - 1
+      x * attributes(temp_slopes$log_age_scaled)[[2]] +
+        attributes(temp_slopes$log_age_scaled)[[1]]) - 1
     ))) 
 }
 if(pred == "growth_rate_scaled"){
   p <- p + scale_x_continuous(labels = function(x)
     paste0(round(exp(
-      x * attributes(temp_slopes$growth_rate_scaled)[[3]] +
-        attributes(temp_slopes$growth_rate_scaled)[[2]])- 1
+      x * attributes(temp_slopes$growth_rate_scaled)[[2]] +
+        attributes(temp_slopes$growth_rate_scaled)[[1]])- 1
     ))) 
 }
 } else {
   if(pred == "depth_iqr_scaled"){
     p <- p + scale_x_continuous(labels = function(x)
       paste0(round(exp(
-        x * attributes(temp_vel_slopes$depth_iqr_scaled)[[3]] +
-          attributes(temp_vel_slopes$depth_iqr_scaled)[[2]])
+        x * attributes(temp_vel_slopes$depth_iqr_scaled)[[2]] +
+          attributes(temp_vel_slopes$depth_iqr_scaled)[[1]])
       ))) 
   }
   if(pred == "depth_mean_scaled"){
     p <- p + scale_x_continuous(labels = function(x)
       paste0(round((
-        x * attributes(temp_vel_slopes$depth_mean_scaled)[[3]] +
-          attributes(temp_vel_slopes$depth_mean_scaled)[[2]])
+        x * attributes(temp_vel_slopes$depth_mean_scaled)[[2]] +
+          attributes(temp_vel_slopes$depth_mean_scaled)[[1]])
       ))) 
   }
   if(pred == "log_age_scaled"){
     p <- p + scale_x_continuous(labels = function(x)
       paste0(round(exp(
-        x * attributes(temp_vel_slopes$log_age_scaled)[[3]] +
-          attributes(temp_vel_slopes$log_age_scaled)[[2]]) - 1
+        x * attributes(temp_vel_slopes$log_age_scaled)[[2]] +
+          attributes(temp_vel_slopes$log_age_scaled)[[1]]) - 1
       ))) 
   }
   if(pred == "growth_rate_scaled"){
     p <- p + scale_x_continuous(labels = function(x)
       paste0(round(exp(
-        x * attributes(temp_vel_slopes$growth_rate_scaled)[[3]] +
-          attributes(temp_vel_slopes$growth_rate_scaled)[[2]])- 1
+        x * attributes(temp_vel_slopes$growth_rate_scaled)[[2]] +
+          attributes(temp_vel_slopes$growth_rate_scaled)[[1]])- 1
       ))) 
   }
 }
@@ -608,62 +614,66 @@ p
          gfplot::theme_pbs() 
        if(trend){
        if(pred == "depth_iqr_scaled"){
-         p <- p + scale_x_continuous(labels = function(x)
-           paste0(round(exp(
-             x * attributes(do_slopes$depth_iqr_scaled)[[3]] +
-               attributes(do_slopes$depth_iqr_scaled)[[2]])
-           ))) 
+         p <- p + #xlim(-2.1, 3) +
+           scale_x_continuous(labels = function(x)
+           paste0(round((
+             x * attributes(do_slopes$depth_iqr_scaled)[[2]] +
+               attributes(do_slopes$depth_iqr_scaled)[[1]])
+           )
+          )
+          ) 
        }
        
        if(pred == "depth_mean_scaled"){
          p <- p + scale_x_continuous(labels = function(x)
            paste0(round((
-             x * attributes(do_slopes$depth_mean_scaled)[[3]] +
-               attributes(do_slopes$depth_mean_scaled)[[2]])
+             x * attributes(do_slopes$depth_mean_scaled)[[2]] +
+               attributes(do_slopes$depth_mean_scaled)[[1]])
            ))) 
        }
        
        if(pred == "log_age_scaled"){
          p <- p + scale_x_continuous(labels = function(x)
            paste0(round(exp(
-             x * attributes(do_slopes$log_age_scaled)[[3]] +
-               attributes(do_slopes$log_age_scaled)[[2]])- 1
+             x * attributes(do_slopes$log_age_scaled)[[2]] +
+               attributes(do_slopes$log_age_scaled)[[1]])- 1
            ))) 
        }
        if(pred == "growth_rate_scaled"){
          p <- p + scale_x_continuous(labels = function(x)
            paste0(round(exp(
-             x * attributes(do_slopes$growth_rate_scaled)[[3]] +
-               attributes(do_slopes$growth_rate_scaled)[[2]])- 1
+             x * attributes(do_slopes$growth_rate_scaled)[[2]] +
+               attributes(do_slopes$growth_rate_scaled)[[1]])- 1
            ))) 
        }
        } else {
          if(pred == "depth_iqr_scaled"){
-           p <- p + scale_x_continuous(labels = function(x)
+           p <- p + xlim(-2.1, 3) + 
+             scale_x_continuous(labels = function(x)
              paste0(round(exp(
-               x * attributes(do_vel_slopes$depth_iqr_scaled)[[3]] +
-                 attributes(do_vel_slopes$depth_iqr_scaled)[[2]])
+               x * attributes(do_vel_slopes$depth_iqr_scaled)[[2]] +
+                 attributes(do_vel_slopes$depth_iqr_scaled)[[1]])
              ))) 
          }
          if(pred == "depth_mean_scaled"){
            p <- p + scale_x_continuous(labels = function(x)
              paste0(round((
-               x * attributes(do_vel_slopes$depth_mean_scaled)[[3]] +
-                 attributes(do_vel_slopes$depth_mean_scaled)[[2]])
+               x * attributes(do_vel_slopes$depth_mean_scaled)[[2]] +
+                 attributes(do_vel_slopes$depth_mean_scaled)[[1]])
              ))) 
          }
          if(pred == "log_age_scaled"){
            p <- p + scale_x_continuous(labels = function(x)
              paste0(round(exp(
-               x * attributes(do_vel_slopes$log_age_scaled)[[3]] +
-                 attributes(do_vel_slopes$log_age_scaled)[[2]])- 1
+               x * attributes(do_vel_slopes$log_age_scaled)[[2]] +
+                 attributes(do_vel_slopes$log_age_scaled)[[1]])- 1
              ))) 
          }
          if(pred == "growth_rate_scaled"){
            p <- p + scale_x_continuous(labels = function(x)
              paste0(round(exp(
-               x * attributes(do_vel_slopes$growth_rate_scaled)[[3]] +
-                 attributes(do_vel_slopes$growth_rate_scaled)[[2]])- 1
+               x * attributes(do_vel_slopes$growth_rate_scaled)[[2]] +
+                 attributes(do_vel_slopes$growth_rate_scaled)[[1]])- 1
              ))) 
          }
          
@@ -671,11 +681,11 @@ p
        p
      }
      
-     
+   ###  
 # MEAN DEPTH ####
      doslopemodv <- lmerTest::lmer(slope_est ~ 1 +
          depth_mean_scaled + chopstick +
-         # depth_mean_scaled * chopstick +
+         depth_mean_scaled * chopstick +
          (1|species) + (1|species_age), REML = T,  data = vddat2do)
      # (1|species),  REML = T, data = filter(vddat2do, age == "Immature"))
      doslopemodv %>% summary()
@@ -706,7 +716,7 @@ p
      # # velocity models
      doslopemodvr <- lmerTest::lmer(slope_est ~ 1 +
          depth_iqr_scaled + chopstick +
-         depth_iqr_scaled * chopstick +
+         # depth_iqr_scaled * chopstick +
          (1|species) + (1|species_age), REML = T,  data = vddat2do)
          # (1|species),  REML = T, data = filter(vddat2do, age == "Immature"))
      doslopemodvr %>% summary()
@@ -811,8 +821,8 @@ p
          coord_cartesian(ylim = c(-5.5,9.5)) + # 95 trim
          theme(
            plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
-           axis.title.x =  =element_blank(),
-           axis.title.y =element_blank(),
+           axis.title.x = element_blank(),
+           axis.title.y = element_blank(),
            axis.text.x=element_blank(),
            axis.ticks.x=element_blank(),
            plot.tag.position = c(0.92,0.92),
@@ -934,7 +944,7 @@ ggsave(here::here("ms", "figs", "immature-growth-rate-vel.pdf"), width = 6, heig
 
 # TWEAK FIG FOR AGE ####
 
-do_young <- filter( temp_slopes , age_mean < 10) %>%  select(
+do_young <- filter( temp_vel_slopes , age_mean < 10) %>%  select(
   slope, slope_est, slope_se, slope_trim,
   age, depth_mean_scaled,  depth_iqr_scaled, Zone,
   log_age_scaled, #growth_rate_scaled, 
@@ -982,8 +992,8 @@ doslope_young %>% summary()
       ), colour = "royalblue4", shape = 21, alpha = 0.5, fatten = 1, inherit.aes = F) +
     # back transform axis labels on scaled log growth rate
     # scale_x_continuous(labels = function(x)
-    #   paste0(round(exp( (x * attributes(temp_slopes$log_age_scaled)[[3]] +
-    #       attributes(temp_slopes$log_age_scaled)[[2]]) + 1)))) +
+    #   paste0(round(exp( (x * attributes(temp_vel_slopes$log_age_scaled)[[2]] +
+    #       attributes(temp_vel_slopes$log_age_scaled)[[1]]) + 1)))) +
     # coord_cartesian(ylim = c(-10,5)) +
     coord_cartesian(xlim = c(-1.8,0))+
     xlab("Mean age ") +
@@ -1012,7 +1022,7 @@ doslope_young %>% summary()
 
 ################
 # ECOLOGICAL EFFECTS FOR BOTH MATURITY CLASSES ####
-# hist(temp_slopes$slope)
+# hist(temp_vel_slopes$slope)
 ### models for just highest temperatures ####
 filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(
   slope ~ 1 + Trophic + age + Zone + Latitude + (1|species), data = .) %>% 
@@ -1065,7 +1075,7 @@ ddat <- ddat %>% mutate(Schooling = factor(Schooling, levels = c("Schooling", "S
 #####
 # MODELS FOR DO #####
 # change order to force dashed line in effect_plots to be for immature
-do_slopes2 <- do_vel_slopes %>% ungroup() %>% 
+do_vel_slopes2 <- do_vel_slopes %>% ungroup() %>% 
   mutate(age = factor(age, levels = c("Mature", "Immature")) ) %>% 
   filter(chopstick == "low")
 
@@ -1119,7 +1129,8 @@ ddatdo <- ddatdo %>% mutate(slope_est = slope)
 tempslopemodL <- lmerTest::lmer(slope_est ~ 
     Latitude +
     depth_iqr_scaled +
-    chopstick +
+    # Latitude*depth_iqr_scaled +
+    chopstick*depth_iqr_scaled +
     # age +
     (1|species) + (1|species_age), REML = T, 
   data = ddat) 
@@ -1158,13 +1169,14 @@ tempslopemodL %>% summary()
       aes(x = depth_iqr_scaled,
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)),  alpha = 0.5, fatten = 1, colour = "deepskyblue3", inherit.aes = F) +
-  scale_colour_manual(values = c("white", "white")) +
+  # scale_colour_manual(values = c("white", "white")) +
+    scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
     scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
     scale_shape_manual(values = c(19, 19)) +
     # back transform axis labels on scaled depth iqr
     scale_x_continuous(labels = function(x)
-      paste0(round(exp(x * attributes(temp_vel_slopes$depth_iqr_scaled)[[3]] +
-          attributes(temp_vel_slopes$depth_iqr_scaled)[[2]])))) +
+      paste0(round(exp(x * attributes(temp_vel_slopes$depth_iqr_scaled)[[2]] +
+          attributes(temp_vel_slopes$depth_iqr_scaled)[[1]])))) +
     coord_cartesian(ylim = c(-6,3)) +
     # ylab(expression(~italic("R")~"~ warming rate at high temp")) + 
     ylab(expression(~italic("Y")~"~ warming velocity at high temp"))+ 
@@ -1236,8 +1248,8 @@ tempslopemod %>% summary()
     scale_shape_manual(values = c(19, 19)) +
     # back transform axis labels on scaled depth iqr
     scale_x_continuous(labels = function(x)
-      paste0(round(exp(x * attributes(temp_vel_slopes$depth_iqr_scaled)[[3]] +
-          attributes(temp_vel_slopes$depth_iqr_scaled)[[2]])))) +
+      paste0(round(exp(x * attributes(temp_vel_slopes$depth_iqr_scaled)[[2]] +
+          attributes(temp_vel_slopes$depth_iqr_scaled)[[1]])))) +
     coord_cartesian(ylim = c(-6,3)) +
     ggtitle("Foraging zone") +
     # ylab("Peak Frequency") +
@@ -1262,7 +1274,7 @@ tempslopemod %>% summary()
 tempslopemod <- lmerTest::lmer(slope ~
     Trophic +
     depth_iqr_scaled +
-    Trophic * depth_iqr_scaled +
+    # Trophic * depth_iqr_scaled +
     depth_iqr_scaled * chopstick +
     chopstick +
     # age +
@@ -1311,8 +1323,8 @@ tempslopemod %>% summary()
     scale_shape_manual(values = c(19, 19)) +
     # back transform axis labels on scaled depth iqr
     scale_x_continuous(labels = function(x) 
-      paste0(round(exp(x * attributes(temp_vel_slopes$depth_iqr_scaled)[[3]] + 
-          attributes(temp_vel_slopes$depth_iqr_scaled)[[2]])))) +
+      paste0(round(exp(x * attributes(temp_vel_slopes$depth_iqr_scaled)[[2]] + 
+          attributes(temp_vel_slopes$depth_iqr_scaled)[[1]])))) +
     coord_cartesian(ylim = c(-6,3)) +
     ggtitle("Trophic level") +
     # ylab("Peak Frequency") +
@@ -1340,7 +1352,7 @@ tempslopemod <- lmerTest::lmer(slope ~
     Schooling +
     depth_iqr_scaled +
     depth_iqr_scaled * chopstick +
-    Schooling * depth_iqr_scaled +
+    # Schooling * depth_iqr_scaled +
     # chopstick +
     # age +
     (1|species) + (1|species_age), REML = T,
@@ -1380,7 +1392,7 @@ tempslopemod %>% summary()
       aes(x = depth_iqr_scaled,
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)),  alpha = 0.5, fatten = 1, colour = "deepskyblue3", inherit.aes = F) +
-    # geom_linerange(data = filter(temp_slopes, chopstick == "low"), 
+    # geom_linerange(data = filter(temp_vel_slopes, chopstick == "low"), 
     #   aes(x = depth_iqr_scaled,
     #     ymin = (slope_est - slope_se * 1.96),
     #     ymax = (slope_est + slope_se * 1.96),
@@ -1395,8 +1407,8 @@ tempslopemod %>% summary()
     scale_shape_manual(values = c(19, 19)) +
     # back transform axis labels on scaled depth iqr
     scale_x_continuous(labels = function(x) 
-      paste0(round(exp(x * attributes(temp_vel_slopes$depth_iqr_scaled)[[3]] + 
-          attributes(temp_vel_slopes$depth_iqr_scaled)[[2]])))) +
+      paste0(round(exp(x * attributes(temp_vel_slopes$depth_iqr_scaled)[[2]] + 
+          attributes(temp_vel_slopes$depth_iqr_scaled)[[1]])))) +
     coord_cartesian(ylim = c(-6,3)) +
     ggtitle("Sociality") + 
     # ylab("Peak Frequency") +
@@ -1431,17 +1443,17 @@ tempslopemod %>% summary()
 
 ### too few schooling demersal fishes so confounded with ZONE ####
 ### model checks ####
-
+# 
 ddat %>% mutate(pearson = residuals(tempslopemod,type="pearson"),
   # x = Schooling
   # x = Latitude
   # x = Trophic
   # x = Zone
   x = depth_iqr_scaled
-  ) %>% 
-# ggplot(aes(x ,y=pearson)) +
-#   geom_point() +
-#   theme_bw()
+  ) %>%
+ggplot(aes(x ,y=pearson)) +
+  geom_point() +
+  theme_bw()
 
 ##### DO ################
 #### for low DO slopes #### 
@@ -1450,7 +1462,7 @@ ddat %>% mutate(pearson = residuals(tempslopemod,type="pearson"),
 doslopemod1 <- lmerTest::lmer(slope_est ~
     Latitude +
     depth_iqr_scaled +
-    Latitude * depth_iqr_scaled  +
+    # Latitude * depth_iqr_scaled  +
     depth_iqr_scaled * chopstick +
     chopstick +
     (1|species) + (1|species_age), REML = T,
@@ -1496,13 +1508,13 @@ doslopemod1 %>% summary()
     #     ymin = (slope_est - slope_se * 1.96),
     #     ymax = (slope_est + slope_se * 1.96),
     #     colour = Schooling), alpha = 0.2, fatten = 1, inherit.aes = F) +
-    scale_colour_manual(values = c("white", "white")) +
-    # scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
+    # scale_colour_manual(values = c("white", "white")) +
+    scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
     scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
     # back transform axis labels on scaled depth iqr
     scale_x_continuous(labels = function(x) 
-      paste0(round(exp(x * attributes(do_vel_slopes$depth_iqr_scaled)[[3]] + 
-          attributes(do_vel_slopes$depth_iqr_scaled)[[2]])))) +
+      paste0(round(exp(x * attributes(do_vel_slopes$depth_iqr_scaled)[[2]] + 
+          attributes(do_vel_slopes$depth_iqr_scaled)[[1]])))) +
     coord_cartesian(ylim = c(-10,5)) +
     gfplot::theme_pbs() + 
     ylab(expression(~italic("Y")~"~ DO velocity at low DO")) +
@@ -1591,8 +1603,8 @@ doslopemod %>% summary()
     scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
     # back transform axis labels on scaled depth iqr
     scale_x_continuous(labels = function(x) 
-      paste0(round(exp(x * attributes(do_vel_slopes$depth_iqr_scaled)[[3]] + 
-          attributes(do_vel_slopes$depth_iqr_scaled)[[2]])))) +
+      paste0(round(exp(x * attributes(do_vel_slopes$depth_iqr_scaled)[[2]] + 
+          attributes(do_vel_slopes$depth_iqr_scaled)[[1]])))) +
     coord_cartesian(ylim = c(-10,5)) +
     gfplot::theme_pbs() + 
     # ylab("Peak Frequency") +
@@ -1668,8 +1680,8 @@ doslopemod %>% summary()
     # scale_shape_manual(values = c(19, 19)) +
     # back transform axis labels on scaled depth iqr
     scale_x_continuous(labels = function(x) 
-      paste0(round(exp(x * attributes(do_vel_slopes$depth_iqr_scaled)[[3]] + 
-          attributes(do_vel_slopes$depth_iqr_scaled)[[2]])))) +
+      paste0(round(exp(x * attributes(do_vel_slopes$depth_iqr_scaled)[[2]] + 
+          attributes(do_vel_slopes$depth_iqr_scaled)[[1]])))) +
     coord_cartesian(ylim = c(-10,5)) +
     gfplot::theme_pbs() + 
     # ylab("Peak Frequency") +
@@ -1740,8 +1752,8 @@ doslopemod %>% summary()
     scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
     # back transform axis labels on scaled depth iqr
     scale_x_continuous(labels = function(x) 
-      paste0(round(exp(x * attributes(do_vel_slopes$depth_iqr_scaled)[[3]] + 
-          attributes(do_vel_slopes$depth_iqr_scaled)[[2]])))) +
+      paste0(round(exp(x * attributes(do_vel_slopes$depth_iqr_scaled)[[2]] + 
+          attributes(do_vel_slopes$depth_iqr_scaled)[[1]])))) +
     coord_cartesian(ylim = c(-10,5)) +
     gfplot::theme_pbs() + 
     # ylab("Peak Frequency") +
@@ -1795,14 +1807,14 @@ ddatdo %>% mutate(pearson = residuals(doslopemod,type="pearson"),
 # 
 
 
-((p_depth_lat + p_depth_troph + p_depth_zone + p_depth_sch +
-    plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Depth range (IQR)",
-      just = 0.3, gp = grid::gpar(fontsize = 11))/
-    (pd_depth_lat + pd_depth_troph + pd_depth_zone + pd_depth_sch +
-          plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Mean depth occupied",
-            just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 4, heights = c(1, 0.02, 1, 0.02))) 
-
-ggsave(here::here("ms", "figs", "ecology-slope-model-trimmed.pdf"), width = 12, height =7)
+# ((p_depth_lat + p_depth_troph + p_depth_zone + p_depth_sch +
+#     plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Depth range (IQR)",
+#       just = 0.3, gp = grid::gpar(fontsize = 11))/
+#     (pd_depth_lat + pd_depth_troph + pd_depth_zone + pd_depth_sch +
+#           plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Mean depth occupied",
+#             just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 4, heights = c(1, 0.02, 1, 0.02))) 
+# 
+# ggsave(here::here("ms", "figs", "ecology-slope-model-trimmed.pdf"), width = 12, height =7)
 
 ((p_depth_lat + p_depth_troph + p_depth_zone + p_depth_sch +
     plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("",
@@ -1811,7 +1823,7 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-trimmed.pdf"), width = 12, 
         plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Depth range occupied (IQR)",
           just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 4, heights = c(1, 0.001, 1, 0.02))) 
 
-ggsave(here::here("ms", "figs", "ecology-slope-model-vel.pdf"), width = 12, height =7)
+ggsave(here::here("ms", "figs", "ecology-slope-model-vel-no-interactions.pdf"), width = 12, height =7)
 
 # ggsave(here::here("ms", "figs", "ecology-slope-models-all2.pdf"), width = 12, height = 7)
 
@@ -1824,7 +1836,7 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel.pdf"), width = 12, heig
   # partial.residuals = T,  # plot.points = TRUE, # point.alpha = 0.2,
   outcome.scale = "response"
 ) + geom_hline(yintercept = 0, colour = "grey") +
-    geom_violin(data = filter(temp_slopes, chopstick == "high"), aes(Latitude, slope, colour = Latitude, fill = Latitude), alpha = 0.2, inherit.aes = F) +
+    geom_violin(data = filter(temp_vel_slopes, chopstick == "high"), aes(Latitude, slope, colour = Latitude, fill = Latitude), alpha = 0.2, inherit.aes = F) +
     
     scale_colour_manual(values = c("royalblue4", "red 4")) +
     scale_fill_manual(values = c("royalblue4", "red 3")) + 
@@ -1853,7 +1865,7 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel.pdf"), width = 12, heig
   # partial.residuals = T,  # plot.points = TRUE, # point.alpha = 0.2,
   outcome.scale = "response"
 ) + geom_hline(yintercept = 0, colour = "grey") +
-    geom_violin(data = filter(temp_slopes, chopstick == "high"), 
+    geom_violin(data = filter(temp_vel_slopes, chopstick == "high"), 
       aes(Zone, slope, colour = Zone, fill = Zone), 
       alpha = 0.2, inherit.aes = F) +
     scale_colour_manual(values = c("royalblue4", "red 4")) +
@@ -1883,7 +1895,7 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel.pdf"), width = 12, heig
   # partial.residuals = T,  # plot.points = TRUE, # point.alpha = 0.2,
   outcome.scale = "response"
 ) + geom_hline(yintercept = 0, colour = "grey") +
-    geom_violin(data = filter(temp_slopes, chopstick == "high"), 
+    geom_violin(data = filter(temp_vel_slopes, chopstick == "high"), 
       aes(Trophic, slope, colour = Trophic, fill = Trophic), 
       alpha = 0.2, inherit.aes = F) +
     scale_colour_manual(values = c("royalblue4", "red 4")) +
@@ -1914,12 +1926,12 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel.pdf"), width = 12, heig
   # partial.residuals = T,  # plot.points = TRUE, # point.alpha = 0.2,
   outcome.scale = "response"
 ) + geom_hline(yintercept = 0, colour = "grey") +
-    geom_violin(data = temp_slopes, 
+    geom_violin(data = temp_vel_slopes, 
       aes(chopstick, slope, colour = chopstick, fill = chopstick), 
       alpha = 0.2, inherit.aes = F) +
     scale_colour_manual(values = c("red 4", "royalblue4")) +
     scale_fill_manual(values = c("red 3", "royalblue4")) +
-    scale_x_discrete(limits = rev(levels(as.factor(temp_slopes$chopstick)))) +
+    scale_x_discrete(limits = rev(levels(as.factor(temp_vel_slopes$chopstick)))) +
     # scale_colour_manual(values = c("darkcyan", "orange")) +
     # scale_fill_manual(values = c("darkcyan", "orange")) + 
     # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
@@ -1948,12 +1960,12 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel.pdf"), width = 12, heig
   # partial.residuals = T,  # plot.points = TRUE, # point.alpha = 0.2,
   outcome.scale = "response"
 ) + geom_hline(yintercept = 0, colour = "grey") +
-    geom_violin(data = temp_slopes, 
+    geom_violin(data = temp_vel_slopes, 
       aes(age, slope, colour = age, fill = age), 
       alpha = 0.2, inherit.aes = F) +
     scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
     scale_fill_manual(values = c("cornflowerblue", "deepskyblue")) +
-    scale_x_discrete(limits = rev(levels(as.factor(temp_slopes$age)))) +
+    scale_x_discrete(limits = rev(levels(as.factor(temp_vel_slopes$age)))) +
     # scale_colour_manual(values = c("darkcyan", "orange")) +
     # scale_fill_manual(values = c("darkcyan", "orange")) + 
     # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
@@ -2004,8 +2016,8 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel.pdf"), width = 12, heig
 #########################################
 ### MIXED MODELS for independent effects ####
 # including age doesn't change anything ####
-# temp_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick * age + (1|species), data = .) %>% summary() # *
-# do_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick * age + (1|species), data = .) %>% summary() # *
+# temp_vel_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick * age + (1|species), data = .) %>% summary() # *
+# do_vel_slopes %>% lmerTest::lmer(slope ~ 1 + chopstick * age + (1|species), data = .) %>% summary() # *
 
 ann_text <- data.frame(slope = c(-11.5,-3.7), 
   chopstick = c("High", "Low"), tag = c("*","*"), slope_type = c("high temp", "low DO"),
@@ -2036,10 +2048,10 @@ ann_text <- data.frame(slope = c(-11.5,-3.7),
 ### MATURITY ####
 
 ### No sig diff between maturity classes although only immature show consitant non-zero effects ####
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + age + (1|species) , data = .) %>% summary() 
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 0 + age + (1|species) , data = .) %>% summary()
-filter(do_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + age + (1|species), data = .) %>% summary()
-filter(do_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 0 + age + (1|species), data = .) %>% summary()
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + age + (1|species) , data = .) %>% summary() 
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 0 + age + (1|species) , data = .) %>% summary()
+filter(do_vel_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + age + (1|species), data = .) %>% summary()
+filter(do_vel_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 0 + age + (1|species), data = .) %>% summary()
 
 ann_text <- data.frame(slope = c(-11.5,-3.7), 
   age = c("Immature", "Immature"), tag = c("-","*"),
@@ -2075,13 +2087,13 @@ plot(Latitude~Rockfish, data = filter(best_slopes, type == "temp"))
 plot(Latitude~Zone, data = filter(best_slopes, type == "temp")) 
 plot(Latitude~Trophic, data = filter(best_slopes, type == "temp")) 
 
-# temp_slopes %>% lmerTest::lmer(slope ~ 0 + Latitude + (1|species) + (1|species_age), data = .) %>% summary() # *
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Latitude + (1|species), data = .) %>% anova() # *
+# temp_vel_slopes %>% lmerTest::lmer(slope ~ 0 + Latitude + (1|species) + (1|species_age), data = .) %>% summary() # *
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Latitude + (1|species), data = .) %>% anova() # *
 
 
-# do_slopes %>% lmerTest::lmer(slope ~ 0 + Latitude + (1|species) + (1|species_age), data = .) %>% summary() 
-# filter(do_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Latitude + (1|species), data = .) %>% anova()
-# filter(do_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Latitude + (1|species), data = .) %>% summary()
+# do_vel_slopes %>% lmerTest::lmer(slope ~ 0 + Latitude + (1|species) + (1|species_age), data = .) %>% summary() 
+# filter(do_vel_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Latitude + (1|species), data = .) %>% anova()
+# filter(do_vel_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Latitude + (1|species), data = .) %>% summary()
 
 ann_text <- data.frame(
   Latitude = c("North"), 
@@ -2116,13 +2128,13 @@ p3 <- ggplot(best_slopes, aes(slope, Latitude, colour = slope_type, fill = slope
 plot(Rockfish~age, data = filter(best_slopes, type == "temp")) 
 
 ### No sig diff between rockfish and other fishes but rockfish do show consitant non-zero effects more than other ####
-# temp_slopes %>% lmerTest::lmer(slope ~ 0 + Rockfish + (1|species) + (1|species_age), data = .) %>% summary()
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Rockfish + (1|species), data = .) %>% anova() 
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 0 + Rockfish + (1|species), data = .) %>% summary() # *
+# temp_vel_slopes %>% lmerTest::lmer(slope ~ 0 + Rockfish + (1|species) + (1|species_age), data = .) %>% summary()
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Rockfish + (1|species), data = .) %>% anova() 
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 0 + Rockfish + (1|species), data = .) %>% summary() # *
 
-# do_slopes %>% lmerTest::lmer(slope ~ 0 + Rockfish + (1|species) + (1|species_age), data = .) %>% summary()
-# filter(do_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Rockfish + (1|species), data = .) %>% summary()
-# filter(do_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 0 + Rockfish + (1|species), data = .) %>% summary()
+# do_vel_slopes %>% lmerTest::lmer(slope ~ 0 + Rockfish + (1|species) + (1|species_age), data = .) %>% summary()
+# filter(do_vel_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Rockfish + (1|species), data = .) %>% summary()
+# filter(do_vel_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 0 + Rockfish + (1|species), data = .) %>% summary()
 
 ann_text <- data.frame(
   Rockfish = c("Rockfish"), 
@@ -2157,12 +2169,12 @@ plot(Schooling~Zone, data = filter(best_slopes, type == "temp"))
 plot(Schooling~Rockfish, data = filter(best_slopes, type == "temp")) 
 
 ### No sig diff between groups but schooling fishes do show consitant non-zero effects more than solitary ####
-# temp_slopes %>% lmerTest::lmer(slope ~ 0 + Schooling + (1|species) + (1|species_age), data = .) %>% summary() # .
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Schooling + (1|species), data = .) %>% anova() 
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 0 + Schooling + (1|species), data = .) %>% summary() # *
+# temp_vel_slopes %>% lmerTest::lmer(slope ~ 0 + Schooling + (1|species) + (1|species_age), data = .) %>% summary() # .
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Schooling + (1|species), data = .) %>% anova() 
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 0 + Schooling + (1|species), data = .) %>% summary() # *
 
-# do_slopes %>% lmerTest::lmer(slope ~ 0 + Schooling + (1|species) + (1|species_age), data = .) %>% summary()
-# filter(do_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 0 + Schooling + age + (1|species), data = .) %>% summary()
+# do_vel_slopes %>% lmerTest::lmer(slope ~ 0 + Schooling + (1|species) + (1|species_age), data = .) %>% summary()
+# filter(do_vel_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 0 + Schooling + age + (1|species), data = .) %>% summary()
 ann_text <- data.frame(
   Schooling = c("Schooling"), 
   slope_type = c("high temp"),
@@ -2194,16 +2206,16 @@ plot(Zone~age, data = filter(best_slopes, type == "temp"))
 plot(Zone~Schooling, data = filter(best_slopes, type == "temp")) 
 plot(Zone~Rockfish, data = filter(best_slopes, type == "temp")) 
 
-temp_slopes %>% lmerTest::lmer(slope ~ 0 + Zone + (1|species) + (1|species_age), data = .) %>% summary() # **
+temp_vel_slopes %>% lmerTest::lmer(slope ~ 0 + Zone + (1|species) + (1|species_age), data = .) %>% summary() # **
 
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Zone + (1|species), data = .) %>% anova() # **
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 0 + Zone + (1|species), data = .) %>% summary() # ***
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Zone + (1|species), data = .) %>% anova() # **
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 0 + Zone + (1|species), data = .) %>% summary() # ***
 
-# do_slopes %>% lmerTest::lmer(slope ~ 0 + Zone + (1|species) + (1|species_age), data = .) %>% summary()
-# filter(do_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Zone + (1|species), data = .) %>% anova()
-# filter(do_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Zone * Schooling + (1|species), data = .) %>% anova()
-# filter(do_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Zone * Rockfish + (1|species), data = .) %>% anova()
-# filter(do_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 0 + Zone + (1|species), data = .) %>% summary()
+# do_vel_slopes %>% lmerTest::lmer(slope ~ 0 + Zone + (1|species) + (1|species_age), data = .) %>% summary()
+# filter(do_vel_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Zone + (1|species), data = .) %>% anova()
+# filter(do_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Zone * Schooling + (1|species), data = .) %>% anova()
+# filter(do_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Zone * Rockfish + (1|species), data = .) %>% anova()
+# filter(do_vel_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 0 + Zone + (1|species), data = .) %>% summary()
 
 ann_text <- data.frame(
   Zone = c("Benthopelagic"), 
@@ -2233,8 +2245,8 @@ p6 <- ggplot(best_slopes, aes(slope,  Zone, colour = slope_type, fill = slope_ty
 
 ### DIET ####
 # not sig on its own, 
-# temp_slopes %>% lmerTest::lmer(slope ~ 1 + Diet + (1|species) + (1|species_age), data = .) %>% anova() # .
-# filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Diet + (1|species), data = .) %>% anova()
+# temp_vel_slopes %>% lmerTest::lmer(slope ~ 1 + Diet + (1|species) + (1|species_age), data = .) %>% anova() # .
+# filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Diet + (1|species), data = .) %>% anova()
 
 ### but not all diets are represented in all zones, in north, or amoungst rockfish
 plot(Diet~age, data = filter(best_slopes, type == "temp"))
@@ -2242,27 +2254,27 @@ plot(Diet~Rockfish, data = filter(best_slopes, type == "temp"))
 plot(Diet~Latitude, data = filter(best_slopes, type == "temp"))
 plot(Diet~Zone, data = filter(best_slopes, type == "temp")) 
 
-# filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Diet * Zone + (1|species), data = .) %>% anova()
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope_trim ~ 1 + Diet * Rockfish + (1|species), data = .) %>% anova() # *
-# filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope_trim ~ 1 + Diet * Latitude + (1|species), data = .) %>% anova()
+# filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + Diet * Zone + (1|species), data = .) %>% anova()
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope_trim ~ 1 + Diet * Rockfish + (1|species), data = .) %>% anova() # *
+# filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope_trim ~ 1 + Diet * Latitude + (1|species), data = .) %>% anova()
 
 # 
 ## split by age shows effects are only in immatures 
-# filter(temp_slopes, age == "Immature") %>% #filter(Zone == "Benthopelagic") %>% 
+# filter(temp_vel_slopes, age == "Immature") %>% #filter(Zone == "Benthopelagic") %>% 
 #   # filter(chopstick == "high") %>%
 #   lm(slope_trim ~ 1 + Diet + Zone, data = .) %>% anova() # ***
-filter(temp_slopes, age == "Immature") %>% #filter(Zone == "Benthopelagic") %>% 
+filter(temp_vel_slopes, age == "Immature") %>% #filter(Zone == "Benthopelagic") %>% 
   # filter(chopstick == "high") %>%
   lm(slope_trim ~ 0 + Diet + Zone, data = .) %>% summary() # ***
 
-filter(temp_slopes, age == "Mature") %>% #filter(Zone == "Benthopelagic") %>%
+filter(temp_vel_slopes, age == "Mature") %>% #filter(Zone == "Benthopelagic") %>%
   #   # filter(chopstick == "high") %>%
   lm(slope ~ 1 + Diet , data = .) %>% anova()
 
 
-# do_slopes %>% lmerTest::lmer(slope ~ 1 + Diet + (1|species) + (1|species_age), data = .) %>% anova()
-# filter(do_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Diet + (1|species), data = .) %>% anova()
-# filter(do_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Diet * Zone * age + (1|species), data = .) %>% anova()
+# do_vel_slopes %>% lmerTest::lmer(slope ~ 1 + Diet + (1|species) + (1|species_age), data = .) %>% anova()
+# filter(do_vel_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Diet + (1|species), data = .) %>% anova()
+# filter(do_vel_slopes, chopstick == "low") %>% lmerTest::lmer(slope ~ 1 + Diet * Zone * age + (1|species), data = .) %>% anova()
 
 ann_text <- data.frame(slope = c(-11.5, -11.5, -3.7),
   Diet = c("Zooplankton", "Fish", "Fish"), 
@@ -2375,7 +2387,7 @@ ggsave(here::here("ms", "figs", "behav-slope-diff-zero2.pdf"), width = 5, height
 
 
 #### explore zone and diet combinations ####
-temp_slopes %>% filter(chopstick == "high") %>% 
+temp_vel_slopes %>% filter(chopstick == "high") %>% 
   # filter(age == "Immature") %>%
   ggboxplot(x = "Diet", y = "slope",  color = "slope_type", id = "species", 
     ylab = "Slope", repel = T, facet.by = c("Zone")) + 
@@ -2389,12 +2401,12 @@ temp_slopes %>% filter(chopstick == "high") %>%
     ref.group = "Zooplankton",
     aes(label = paste0("p = ", ..p.format..)),
     # aes(label = paste0(..p.signif..)), 
-    # label.x = c(0.1,0.25,0.5,0.75,0.9), #sort(unique(temp_slopes$Diet))# method = "t.test",
+    # label.x = c(0.1,0.25,0.5,0.75,0.9), #sort(unique(temp_vel_slopes$Diet))# method = "t.test",
     method = "wilcox.test"
   ) + theme(legend.position = "none")
 
 # Specialists
-temp_slopes %>% filter(chopstick == "high") %>% 
+temp_vel_slopes %>% filter(chopstick == "high") %>% 
   # filter(age == "Immature") %>%
   ggboxplot(x = "Specialist", y = "slope",  color = "slope_type", id = "species", 
     ylab = "Slope", repel = T, facet.by = c("Zone")) + 
@@ -2408,12 +2420,12 @@ temp_slopes %>% filter(chopstick == "high") %>%
     ref.group = "Specialist",
     aes(label = paste0("p = ", ..p.format..)),
     # aes(label = paste0(..p.signif..)), 
-    # label.x = c(0.1,0.25,0.5,0.75,0.9), #sort(unique(temp_slopes$Diet))# method = "t.test",
+    # label.x = c(0.1,0.25,0.5,0.75,0.9), #sort(unique(temp_vel_slopes$Diet))# method = "t.test",
     method = "wilcox.test"
   ) + theme(legend.position = "none")
 
 # trophic level 
-ggboxplot(filter(temp_slopes, chopstick == "high"), x = "Trophic", y = "slope",  color = "slope_type", id = "species", 
+ggboxplot(filter(temp_vel_slopes, chopstick == "high"), x = "Trophic", y = "slope",  color = "slope_type", id = "species", 
   ylab = "Slope", repel = T, facet.by = c("Zone")) + 
   scale_colour_manual(values = c("Red 3", "royalblue4", "goldenrod1", "darkcyan")) + 
   geom_point() +
@@ -2425,18 +2437,18 @@ ggboxplot(filter(temp_slopes, chopstick == "high"), x = "Trophic", y = "slope", 
     ref.group = "Low",
     aes(label = paste0("p = ", ..p.format..)),
     # aes(label = paste0(..p.signif..)), 
-    # label.x = c(0.1,0.25,0.5,0.75,0.9), #sort(unique(temp_slopes$Diet))# method = "t.test",
+    # label.x = c(0.1,0.25,0.5,0.75,0.9), #sort(unique(temp_vel_slopes$Diet))# method = "t.test",
     method = "wilcox.test"
   ) + theme(legend.position = "none")
 
 #### try adding to above 
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + log_age_scaled + Trophic * Zone + Specialist * Zone + Latitude + max_mass_scaled + growth_rate_scaled * age + (1|species), data = .) %>% anova()
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + log_age_scaled + Trophic * Zone + Specialist * Zone + Latitude + max_mass_scaled + growth_rate_scaled * age + (1|species), data = .) %>% anova()
 
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + log_age_scaled + Trophic * Zone + Specialist + Zone + Latitude + max_mass_scaled + growth_rate_scaled * age + (1|species), data = .) %>% anova()
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + log_age_scaled + Trophic * Zone + Specialist + Zone + Latitude + max_mass_scaled + growth_rate_scaled * age + (1|species), data = .) %>% anova()
 
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + log_age_scaled + Trophic + Zone + Latitude + growth_rate_scaled * age + (1|species), data = .) %>% anova()
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + log_age_scaled + Trophic + Zone + Latitude + growth_rate_scaled * age + (1|species), data = .) %>% anova()
 
-filter(temp_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + log_age_scaled + Specialist + Zone + Latitude + growth_rate_scaled * age + (1|species), data = .) %>% anova()
+filter(temp_vel_slopes, chopstick == "high") %>% lmerTest::lmer(slope ~ 1 + log_age_scaled + Specialist + Zone + Latitude + growth_rate_scaled * age + (1|species), data = .) %>% anova()
 
 
 
