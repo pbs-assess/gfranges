@@ -82,6 +82,7 @@ vocc_regression <- function(dat, y_i, X_ij,
   )
 
   genus_index_k_df <- data.frame(species_id = dat$species_id,
+    rockfish = dat$rockfish,
     genus_id = dat$genus_id) %>%
     dplyr::distinct()
 
@@ -103,7 +104,8 @@ vocc_regression <- function(dat, y_i, X_ij,
     student_t = as.integer(student_t),
     binomial = as.integer(binomial),
     offset_i = offset,
-    genus_index_k = genus_index_k_df$genus_id - 1L
+    genus_index_k = genus_index_k_df$genus_id - 1L,
+    rockfish_vec = which(genus_index_k_df$rockfish == "ROCKFISH") - 1L
   )
 
   tmb_param <- list(
