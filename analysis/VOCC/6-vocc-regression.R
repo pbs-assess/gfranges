@@ -23,10 +23,10 @@ age <- "both"
 no_chopsticks <- F
 w_genus <- F
 w_family <- F
-is_null <- T
+is_null <- F
 
-null_number <- "-3" # 2 failed, 3 NA
-setseed <- 42
+null_number <- "-1" # 2 failed, 3 NA
+setseed <- 10
 
 # ## for trends ###
 # knots <- 500
