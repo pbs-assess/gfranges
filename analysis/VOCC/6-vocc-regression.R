@@ -169,6 +169,47 @@ temp_chopstick <- F
 DO_chopstick <- F
 fishing_chopstick <- F
 
+lut <- tribble(
+  ~species_common_name, ~mean_group,
+  "arrowtooth flounder", "flatfish",
+  "big skate", "chondrichthyes",
+  "bocaccio", "shelf rockfish",
+  "canary rockfish", "inshore rockfish",
+  "curlfin sole", "flatfish",
+  "darkblotched rockfish", "slope rockfish",
+  "dover sole", "flatfish",
+  "english sole", "flatfish",
+  "flathead sole","flatfish",
+  "greenstriped rockfish", "shelf rockfish",
+  "lingcod", NA,
+  "longnose skate","chondrichthyes",
+  "north pacific spiny dogfish", "chondrichthyes",
+  "pacific cod", NA,
+  "pacific halibut","flatfish",
+  "pacific ocean perch", "slope rockfish",
+  "petrale sole","flatfish",
+  "quillback rockfish", "inshore rockfish",
+  "redbanded rockfish", "slope rockfish",
+  "redstripe rockfish", "shelf rockfish",
+  "rex sole","flatfish",
+  "rougheye/blackspotted rockfish complex", "slope rockfish",
+  "sablefish", NA,
+  "sharpchin rockfish", "slope rockfish",
+  "shortraker rockfish", "slope rockfish",
+  "shortspine thornyhead", "slope rockfish",
+  "silvergray rockfish", "shelf rockfish",
+  "southern rock sole", "flatfish",
+  "splitnose rockfish", "slope rockfish",
+  "spotted ratfish", "chondrichthyes",
+  "walleye pollock", NA,
+  "widow rockfish", "shelf rockfish",
+  "yelloweye rockfish", "inshore rockfish",
+  "yellowmouth rockfish", "slope rockfish",
+  "yellowtail rockfish", "shelf rockfish"
+  )
+lut <- arrange(lut, mean_group)
+d <- left_join(d, lut)
+
 if (model_type == "-trend") {
   formula <- ~ temp_trend_scaled +
     mean_temp_scaled + temp_trend_scaled:mean_temp_scaled +
@@ -799,7 +840,8 @@ if (temp_chopstick) {
           knots = knots, group_by_genus = FALSE, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
-          split_effect_column = split_effect_column
+          split_effect_column = split_effect_column,
+          par_init = res$opt$par
         )
       }
     }
@@ -1065,3 +1107,44 @@ norm_resids <- norm_resids[is.finite(norm_resids)]
 # # qqline(model$data$residual)
 
 paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, ".rds")
+
+
+############################3
+
+pred_dat <- model$pred_dat
+ids_pred <- distinct(select(pred_dat, species, species_id, type)) %>% arrange(species_id)
+xx <- left_join(ids_pred, m$genus_index_k_df)
+xx <- left_join(xx, distinct(select(d, species_common_name, species, mean_group)))
+yy <- left_join(m$deltas, xx)
+
+# yy %>% filter(rockfish == "ROCKFISH") %>% 
+#   group_by(chopstick) %>% summarise(m = mean(Estimate))
+
+yy %>% group_by(mean_group, chopstick) %>% summarise(m = mean(Estimate)) %>% 
+  arrange(chopstick, m)
+
+# est <- as.list(m$sdr, "Estimate", report = TRUE)
+# se <- as.list(m$sdr, "Std. Error", report = TRUE)
+# 
+# est$rockfish_avg
+# se$rockfish_avg
+
+# cat("Rockfish low temperature, est + CI\n")
+# est$rockfish_avg[1]
+# est$rockfish_avg[1] + c(qnorm(0.025), qnorm(0.975)) * se$rockfish_avg[1]
+# 
+# cat("Rockfish high temperature, est + CI\n")
+# est$rockfish_avg[2]
+# est$rockfish_avg[2] + c(qnorm(0.025), qnorm(0.975)) * se$rockfish_avg[2]
+
+# group_by(yy, chopstick) %>% 
+#   filter(rockfish == "ROCKFISH") %>% 
+#   summarise(m = mean(Estimate))
+
+# e <- filter(yy, chopstick == "high", rockfish == "ROCKFISH") %>% pull(Estimate)
+# es <- filter(yy, chopstick == "high", rockfish == "ROCKFISH") %>% pull(`Std. Error`)
+# weighted.mean(e, w = 1/(es^2))
+# 
+# e <- filter(yy, chopstick == "low") %>% pull(Estimate)
+# es <- filter(yy, chopstick == "low") %>% pull(`Std. Error`)
+# weighted.mean(e, w = 1/(es^2))

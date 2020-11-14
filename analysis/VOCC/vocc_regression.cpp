@@ -52,6 +52,8 @@ Type objective_function<Type>::operator()()
 
   DATA_ARRAY(X_k2);
   DATA_IVECTOR(chop_cols);
+  
+  DATA_IVECTOR(rockfish_vec);
 
   // ------------------ Parameters ---------------------------------------------
 
@@ -190,6 +192,17 @@ Type objective_function<Type>::operator()()
   }
   REPORT(diff_delta_k);
   ADREPORT(diff_delta_k);
+  
+  vector<Type> rockfish_avg(2);
+  rockfish_avg.setZero();
+  for (int r = 0; r < rockfish_vec.size(); r++) {
+    rockfish_avg(0) += delta_k(r, 0);
+    rockfish_avg(1) += delta_k(r, 1);
+  }
+  rockfish_avg(0) = rockfish_avg(0) / rockfish_vec.size();
+  rockfish_avg(1) = rockfish_avg(1) / rockfish_vec.size();
+  REPORT(rockfish_avg);
+  ADREPORT(rockfish_avg);
 
   // ------------------ Reporting ----------------------------------------------
 

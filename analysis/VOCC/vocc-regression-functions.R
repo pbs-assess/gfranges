@@ -25,8 +25,8 @@ vocc_regression <- function(dat, y_i, X_ij,
   interaction_column,
   main_effect_column,
   split_effect_column,
-  nlminb_loops = 3,
-  newton_steps = 2,
+  nlminb_loops = 0,
+  newton_steps = 1,
   setseed = 42,
   par_init = NULL
   ) {
@@ -57,9 +57,10 @@ vocc_regression <- function(dat, y_i, X_ij,
   #   X_ij[,2] <- collapse_outliers(X_ij[,2], outliers = outliers)
   # }
 
+  # spde <- sdmTMB::make_mesh(dat, c("x", "y"), n_knots = knots, seed = setseed)
   spde <- sdmTMB::make_spde(dat$x, dat$y, n_knots = knots, seed = setseed)
-  map <- sdmTMB::plot_spde(spde)
-  map
+  # map <- sdmTMB::plot(spde)
+  # map
   
   n_s <- nrow(spde$mesh$loc)
   n_k <- length(unique(dat$species))
@@ -81,6 +82,7 @@ vocc_regression <- function(dat, y_i, X_ij,
   )
 
   genus_index_k_df <- data.frame(species_id = dat$species_id,
+    rockfish = dat$rockfish,
     genus_id = dat$genus_id) %>%
     dplyr::distinct()
 
@@ -102,7 +104,8 @@ vocc_regression <- function(dat, y_i, X_ij,
     student_t = as.integer(student_t),
     binomial = as.integer(binomial),
     offset_i = offset,
-    genus_index_k = genus_index_k_df$genus_id - 1L
+    genus_index_k = genus_index_k_df$genus_id - 1L,
+    rockfish_vec = which(genus_index_k_df$rockfish == "ROCKFISH") - 1L
   )
 
   tmb_param <- list(
@@ -175,18 +178,12 @@ vocc_regression <- function(dat, y_i, X_ij,
     for (i in seq(2, nlminb_loops, length = max(0, nlminb_loops - 1))) {
       temp <-  opt[c("iterations", "evaluations")]
       opt <- stats::nlminb(
-        start = nlminb_start, objective = obj$fn, gradient = obj$gr,
+        start = opt$par, objective = obj$fn, gradient = obj$gr,
         control = list(eval.max = 1e4, iter.max = 1e4))
        opt[["iterations"]] <-  opt[["iterations"]] + temp[["iterations"]]
        opt[["evaluations"]] <-  opt[["evaluations"]] + temp[["evaluations"]]
     }
-  } else {
-    
-    opt <- nlminb(nlminb_start, obj$fn, obj$gr,
-      control = list(eval.max = 1e4, iter.max = 1e4))
-    
-  }
-
+  } 
   if (newton_steps > 0) {
     for (i in seq_len(newton_steps)) {
       g <- as.numeric(obj$gr( opt$par))
@@ -247,10 +244,11 @@ vocc_regression <- function(dat, y_i, X_ij,
     nu = nu, y_i = y_i, X_ij = X_ij,
     X_pj = X_pj, pred_dat = pred_dat,  
     deltas = deltas,
+    tmb_data = tmb_data,
+    genus_index_k_df = genus_index_k_df,
     b_re_species = b_re_species)
   
 }
-
 
 get_aic <- function(x, k = 2) {
   L <- -x$opt$objective
