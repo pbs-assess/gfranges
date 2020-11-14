@@ -4,7 +4,9 @@ author: "Philina English"
 date: "`r Sys.Date()`"
 output: html_document
 params: 
-    species: "Bocaccio"
+    # species: "Bocaccio"
+    # species: "Redbanded Rockfish"
+    species: "Lingcod"
     # species: "Threadfin Sculpin"
     #species: "Quillback Rockfish"
     #species: "Yelloweye Rockfish"
@@ -83,7 +85,7 @@ if (region == "All synoptic surveys") {
 rm(biomass)
 rm(maturity)
 
-#try(biomass <- readRDS(paste0("data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds")))
+try(biomass <- readRDS(paste0("data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds")))
 
 if (!exists("biomass")) {
   survey_sets <- readRDS(paste0("raw/event-data-", spp, ""))
@@ -170,7 +172,7 @@ if (exists("maturity")) {
 
 #### Save length at maturity plot 
 ```{r}
-  png(
+png(
     file = paste0("figs/_maturity_ogives/maturity-", prop_pos,"-", spp, "-", ssid_string, ".png"), 
     res = 600,
     units = "in",
@@ -187,3 +189,15 @@ if (exists("maturity")) {
 
 try(print(maturity$maturity))
 ```
+
+
+From previously saved model
+```{r}
+savedmodel <- readRDS( file = paste0("data/", spp, 
+    "/maturity-ogive-", spp, "-", ssid_string, ".rds"))
+(gfranges::plot_mat_ogive(savedmodel) +
+        scale_colour_viridis_d(option = "C") +
+        ggplot2::ggtitle(paste("Length at maturity for", species)))
+ggsave(here::here("ms", "figs", paste0("maturity-", spp, ".png")), width = 4, height = 5)
+```
+
