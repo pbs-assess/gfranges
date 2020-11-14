@@ -214,7 +214,7 @@ for (r_h in seq_along(list_regions)) {
           covs = covs
         ),
         output_file = paste0(
-          "html/check-grads",
+          "html/check-grads-oct-2020",
           covs, "-", spp, ".html"
         ),
         envir = env
@@ -252,9 +252,9 @@ for (r_h in seq_along(list_regions)) {
 
 # # double check these
 # list_species <- c(
-# "Shortbelly Rockfish", 
+# "Shortbelly Rockfish", # removed as not converging
 # # "Redstripe Rockfish"
-#   "Bocaccio"
+#   "Bocaccio" # remove immature Bocaccio because recent explosion not modelable
 # )
 
 ### rebuild predictions from better models
@@ -287,11 +287,43 @@ for (r_h in seq_along(list_regions)) {
   }
 }
 
-# list_species <- c(
-#   "Bocaccio"
-# )
+# 
+# ### rebuild imm and total models without AR1
+# list_regions <- c("All synoptic surveys")
+# # dir.create(file.path("html/biomass-by-depth"))
+# for (r_h in seq_along(list_regions)) {
+#   for (spp_i in seq_along(list_species)) {
+#     spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+#     covs <- "-tv-depth-only" # string describing model covariates
+#     # covs <- "-ssid-only
+#     try({
+#       rmarkdown::render("2-biomass-depth-only-model2.Rmd",
+#         params = list(
+#           species = list_species[spp_i],
+#           region = list_regions[r_h],
+#           covariates = "", # additional non-climate variables
+#           covs = covs,
+#           knots = 400,
+#           update_model = TRUE,
+#           update_predictions = TRUE, 
+#           update_model_check = TRUE 
+#         ),
+#         output_file = paste0(
+#           "html/biomass-by-depth/biomass-by",
+#           covs, "-", spp, "-no-AR1-400.html"
+#         ),
+#         envir = env
+#       )
+#     })
+#   }
+# }
+# 
 
-### rebuild imm and total models without AR1
+
+list_species <- c(
+  "Bocaccio"
+)
+
 list_regions <- c("All synoptic surveys")
 # dir.create(file.path("html/biomass-by-depth"))
 for (r_h in seq_along(list_regions)) {
@@ -321,3 +353,71 @@ for (r_h in seq_along(list_regions)) {
   }
 }
 
+
+
+#### check data used in all older models
+
+checkdata <- list()
+for (spp_i in seq_along(list_species)) {
+    rm(m)
+    rm(spp)
+    spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+    covs <- "-tv-depth-only" # string describing model covariates
+    try({
+      m <- readRDS(paste0("data/", spp,
+        "/mod-mat-biomass-", spp, covs, "-1n3n4n16-prior-FALSE.rds"))
+      # adult_biomass <- sdmTMB:::update_model(adult_biomass)
+      checkdata[[spp_i]] <- data.frame(
+        species = spp, 
+        maturity = "mature", 
+        rowcount = nrow(m$data), 
+        start_year = min(unique(m$data$year))) 
+    })
+}
+matdata <- do.call(rbind, checkdata) %>% filter(species != "shortbelly-rockfish")
+
+
+
+checkimmdata <- list()
+for (spp_i in seq_along(list_species)) {
+  rm(m)
+  rm(spp)
+  spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+  covs <- "-tv-depth-only" # string describing model covariates
+  try({
+    m <- readRDS(paste0("data/", spp,
+      "/mod-imm-biomass-", spp, covs, "-1n3n4n16.rds"))
+    # adult_biomass <- sdmTMB:::update_model(adult_biomass)
+    checkimmdata[[spp_i]] <- data.frame(
+      species = spp, 
+      maturity = "immature", 
+      rowcount = nrow(m$data), 
+      start_year = min(unique(m$data$year))) 
+  })
+}
+
+immdata <- do.call(rbind, checkimmdata)
+
+checktdata <- list()
+for (spp_i in seq_along(list_species)) {
+  rm(m)
+  rm(spp)
+  spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+  covs <- "-tv-depth-only" # string describing model covariates
+  try({
+    m <- readRDS(paste0("data/", spp,
+      "/model-total-biomass-", spp, covs, "-1n3n4n16.rds"))
+    # adult_biomass <- sdmTMB:::update_model(adult_biomass)
+    checktdata[[spp_i]] <- data.frame(
+      species = spp, 
+      maturity = "combind", 
+      rowcount = nrow(m$data), 
+      start_year = min(unique(m$data$year))) 
+  })
+}
+
+totdata <- do.call(rbind, checktdata)
+
+
+m1 <- readRDS(paste0("data/canary-rockfish/mod-mat-biomass-canary-rockfish-tv-depth-only-1n3n4n16-prior-FALSE.rds"))
+View(m1$data)
