@@ -10,6 +10,126 @@ library(tidyverse)
 library(sdmTMB)
 # library(future)
 library(dplyr)
+library(gfranges)
+
+plot_map_raster <- function(dat, column = "est") {
+    ggplot(dat, aes_string("X", "Y", fill = column)) +
+    geom_raster() +
+    coord_fixed()+
+gfplot::theme_pbs() + theme(
+  axis.title = element_blank(), 
+  axis.ticks = element_blank(),
+  axis.text = element_blank()
+  )
+}
+```
+
+Model diagnostics function
+```{r}
+get_diag <- function(m, response = "temperature_c", variable = "depth_scaled", colour_var = "depth", start_year = 2007, ssids = c(1,3,4,16)) {
+  predictions <- predict(m)
+  predictions$residuals <- residuals(m)
+  
+  predictions <- predictions %>% filter (year >= start_year)
+  
+  plot_map <- function(dat, column = "est") {
+    ggplot(dat, aes_string("X", "Y", colour = column)) +
+      geom_point() +
+      coord_fixed()+
+      gfplot::theme_pbs() 
+  }
+
+  g <- plot_map(predictions, "est") +
+    scale_colour_viridis_c() +
+    ggtitle("Prediction (fixed effects + all random effects)")
+  print(g)
+
+  g <- plot_map(predictions, "est_non_rf") +
+    ggtitle("Prediction (fixed effects only)") +
+    scale_colour_viridis_c()
+  print(g)
+
+  g <- plot_map(predictions, "est_rf") +
+    ggtitle("All random effects only") +
+    scale_colour_gradient2()
+  print(g)
+
+  g <- plot_map(predictions, "omega_s") +
+    ggtitle("Spatial random effects only") +
+    scale_colour_gradient2()
+  print(g)
+
+  g <- plot_map(predictions, "epsilon_st") +
+    ggtitle("Spatiotemporal random effects only") +
+    facet_wrap(~year) +
+    scale_colour_gradient2()
+  print(g)
+
+  g <- ggplot(predictions, aes_string("est", response)) +
+    geom_point(alpha = 0.2) +
+    facet_wrap(~year) +
+    coord_fixed() +
+    geom_abline()+
+    gfplot::theme_pbs() 
+  print(g)
+
+  g <- ggplot(predictions, aes(est, residuals)) +
+    geom_point(alpha = 0.2) +
+    geom_smooth()+
+    gfplot::theme_pbs() 
+  print(g)
+  
+  g <- ggplot(predictions, aes_string(variable, "residuals", colour = colour_var)) +
+    geom_point(alpha = 0.4, size = 1.2) +
+    geom_smooth(colour="grey", size = 1.2) +
+    scale_colour_viridis_c(option = "B", direction = -1, begin = 0, end = 0.7, 
+      limits= c(min(predictions[colour_var]), max(predictions[colour_var]))) + #, trans= sqrt
+    # facet_wrap(~year, scales = "free_x")+
+    gfplot::theme_pbs() + theme(
+      axis.text.y = element_text(size = 14),
+      axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  print(g)
+  
+  g <- ggplot(predictions, aes_string(variable, "residuals", colour = colour_var)) +
+    geom_point(alpha = 0.4, size = 0.7) +
+    geom_smooth(colour="grey", size = 0.7) +
+    scale_colour_viridis_c(option = "B", direction = -1, begin = 0, end = 0.7, 
+      limits= c(min(predictions[colour_var]), max(predictions[colour_var]))) + #, trans= sqrt
+    facet_wrap(~year, scales = "free_x")+
+    gfplot::theme_pbs() + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  print(g)
+
+    g <- ggplot(filter(predictions, ssid %in% ssids), aes_string(variable, "residuals", colour = colour_var)) +
+    geom_point(alpha = 0.4, size = 1) +
+    geom_smooth(colour="grey", size = 1) +
+    scale_colour_viridis_c(option = "B", direction = -1, begin = 0, end = 0.7, 
+      limits= c(min(predictions[colour_var]), max(predictions[colour_var]))) + #, trans= sqrt
+    facet_wrap(~ssid, scales = "free_x")+
+    gfplot::theme_pbs() 
+  print(g)
+  
+  g <- ggplot(predictions, aes(X, Y, colour = residuals)) +
+    geom_point(alpha = 0.2) +
+    coord_fixed() +
+    scale_color_gradient2() +
+    facet_wrap(~year)+
+    gfplot::theme_pbs() 
+  print(g)
+
+  aic <- function(m) {
+    k <- length(m$model$par)
+    nll <- m$model$objective
+    2 * k - 2 * (-nll)
+  }
+
+  print("R^2:")
+  r2 <- cor(predictions$est, predictions[[response]])^2
+  print(r2)
+
+  print("")
+  print("AIC:")
+  print(aic(m))
+}
 ```
 
 Load data if not using SST
@@ -58,13 +178,30 @@ ggplot(d_trawl, aes(DOY, temperature_c, colour = -depth, alpha=0.5)) + geom_poin
 
 Current temperature model
 ```{r}
-spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 800)
-plot_spde(spde)
+spde <- sdmTMB::make_mesh(d_trawl, c("X", "Y"), n_knots = 800, type = "kmeans")
+plot(spde)
+```
+Original model code
+```{r eval = F}
+# spde <- make_spde(d_trawl$X, d_trawl$Y, n_knots = 800)
+# m_temp_rw <- sdmTMB(
+#   temperature_c ~ 0 + as.factor(year), #+ DOY_scaled + as.factor(ssid)
+#   time_varying = ~ 0 + depth_scaled + depth_scaled2,
+#   data = d_trawl,
+#   ar1_fields = TRUE, # changed AR1 to true
+#   include_spatial = TRUE, 
+#   time = "year", spde = spde, 
+#   family = gaussian(link = "identity"),
+#   nlminb_loops = 2,
+#   newton_steps = 1,
+#   silent = FALSE
+# )
+# saveRDS(m_temp_rw, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn.rds")))
 ```
 
-
+New CV model code
 ```{r eval = F}
-m_temp_rw <- sdmTMB(
+m_temp_cv <- sdmTMB_cv(
   temperature_c ~ 0 + as.factor(year), #+ DOY_scaled + as.factor(ssid)
   time_varying = ~ 0 + depth_scaled + depth_scaled2,
   data = d_trawl,
@@ -72,12 +209,17 @@ m_temp_rw <- sdmTMB(
   include_spatial = TRUE, 
   time = "year", spde = spde, 
   family = gaussian(link = "identity"),
-  nlminb_loops = 2,
-  newton_steps = 1,
+  k_folds = 5,
+  # nlminb_loops = 2,
+  # newton_steps = 1,
   silent = FALSE
 )
+saveRDS(m_temp_cv, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn-cv.rds")))
 
-saveRDS(m_temp_rw, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn.rds")))
+m_temp_cv <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn-cv.rds")))
+m_temp_cv$fold_loglik
+m_temp_cv$sum_loglik
+m_temp_cv$max_gradients
 ```
 
 Check predictions against raw data
@@ -136,88 +278,6 @@ ggplot(p_nd, aes(roms_temp, temp, colour = -depth)) + geom_point(alpha=0.04) +
 
 ```
 
-
-
-Model diagnostics functions
-```{r}
-get_diag <- function(m, response = "log_do", variable = "depth_scaled") {
-  predictions <- predict(m)
-  predictions$residuals <- residuals(m)
-  
-  plot_map <- function(dat, column = "est") {
-    ggplot(dat, aes_string("X", "Y", colour = column)) +
-      geom_point() +
-      coord_fixed()
-  }
-  
-  g <- plot_map(predictions, "est") +
-    scale_colour_viridis_c() +
-    ggtitle("Prediction (fixed effects + all random effects)")
-  print(g)
-  
-  g <- plot_map(predictions, "est_non_rf") +
-    ggtitle("Prediction (fixed effects only)") +
-    scale_colour_viridis_c()
-  print(g)
-  
-  g <- plot_map(predictions, "est_rf") +
-    ggtitle("All random effects only") +
-    scale_colour_gradient2()
-  print(g)
-   
-  g <- plot_map(predictions, "omega_s") +
-    ggtitle("Spatial random effects only") +
-    scale_colour_gradient2()
- print(g)
-   
-   g <- plot_map(predictions, "epsilon_st") +
-    ggtitle("Spatiotemporal random effects only") +
-    facet_wrap(~year) +
-    scale_colour_gradient2()
- print(g)
- 
-  g <- ggplot(predictions, aes_string("est", response)) +
-    geom_point(alpha = 0.2) +
-    facet_wrap(~year) +
-    coord_fixed() +
-    geom_abline()
-  print(g)
-  
-  g <- ggplot(predictions, aes(est, residuals)) +
-    geom_point(alpha = 0.2) +
-    geom_smooth()
-  print(g)
-  
-  g <- ggplot(predictions, aes_string(variable, "residuals")) +
-    geom_point(alpha = 0.2) +
-    geom_smooth() +
-    facet_wrap(~year)
-  print(g)
-  
-  g <- ggplot(predictions, aes(X, Y, colour = residuals)) +
-    geom_point(alpha = 0.2) +
-    coord_fixed() +
-    scale_color_gradient2()+
-    facet_wrap(~year)
-  print(g)
-  
-  aic <- function(m) {
-    k <- length(m$model$par)
-    nll <- m$model$objective
-    2 * k - 2 * (-nll)
-  }
-
-  print("R^2:")
-  r2 <- cor(predictions$est, predictions[[response]])^2
-  print(r2)
-  
-  print("")
-  print("AIC:")
-  print(aic(m))
-}
-```
-
-
 ```{r eval=FALSE}
 m_temp_rw <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-500kn-2.rds")))
 get_diag(m_temp_rw, response = "temperature_c", variable = "depth_scaled")
@@ -227,27 +287,30 @@ WOULD SST HELP?
 
 Load and prep SST data
 ```{r eval=FALSE}
-all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-meanSST-all.rds"))
-# all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-processed.rds")) # no SST
-# glimpse(all_sensor)
+# all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-meanSST-all.rds"))
+# # all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-processed.rds")) # no SST
+# # glimpse(all_sensor)
+# 
+# all_depth <- all_sensor %>%
+#   # filter(depth_max>10) %>% # maybe we should filter incase missing depth values also indicate a sensor fail?
+#   # filter missing location data and trial year
+#   dplyr::filter(!is.na(latitude), !is.na(longitude)) %>%
+# 
+#   # convert lat and lon to UTMs
+#   dplyr::mutate(X = longitude, Y = latitude) %>%
+#   gfplot:::ll2utm(., utm_zone = 9) %>% 
+# 
+#   # interpolate missing depth values
+#   dplyr::rename(depth = depth_m) %>%
+#   gfplot:::interp_survey_bathymetry()
 
-all_depth <- all_sensor %>%
-  # filter(depth_max>10) %>% # maybe we should filter incase missing depth values also indicate a sensor fail?
-  # filter missing location data and trial year
-  dplyr::filter(!is.na(latitude), !is.na(longitude)) %>%
+# d_trawl <- all_depth$data %>% 
+#   # remove obvious sensor fails, d_trawl %>% filter(depth_max<10), fishing event ids = 481861, 2179089
+#   filter(depth_max>10) %>% 
+#   gfplot:::scale_survey_predictors()
 
-  # convert lat and lon to UTMs
-  dplyr::mutate(X = longitude, Y = latitude) %>%
-  gfplot:::ll2utm(., utm_zone = 9) %>% 
-
-  # interpolate missing depth values
-  dplyr::rename(depth = depth_m) %>%
-  gfplot:::interp_survey_bathymetry()
-
-d_trawl <- all_depth$data %>% 
-  # remove obvious sensor fails, d_trawl %>% filter(depth_max<10), fishing event ids = 481861, 2179089
-  filter(depth_max>10) %>% 
-  gfplot:::scale_survey_predictors()
+olddata <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-400kn.rds"))) 
+d_trawl <- olddata$data
 
 d_trawl <- d_trawl[!is.na(d_trawl$depth), ]
 d_trawl <- d_trawl[!is.na(d_trawl$temperature_c), ]
@@ -266,10 +329,8 @@ d_trawl2 <- mutate(d_trawl2,
   deep = ifelse(depth<35,0,1)
 )
 
-d_trawl2[is.na(d_trawl2$shallow), ]
-d_trawl2[is.na(d_trawl2$SST_scaled), ]
-
-# glimpse(d_trawl2)
+# d_trawl2[is.na(d_trawl2$shallow), ]
+# d_trawl2[is.na(d_trawl2$SST_scaled), ]
 ```
 
 Explore SST on survey day
@@ -302,44 +363,275 @@ ggplot(dplyr::filter(d_trawl2, shallow==1), aes(SST_scaled,temperature_c, colour
 
 
 Does a fixed interaction with SST_scaled do any better?
+Rerun main model with SST dataset for comparisons
 ```{r}
-spde2 <- make_spde(d_trawl2$X, d_trawl2$Y, n_knots = 500)
-plot_spde(spde2)
+spde <- make_mesh(d_trawl2, c("X", "Y"), n_knots = 800)
+
+m_temp_new <- sdmTMB(
+  temperature_c ~ 0 + as.factor(year), 
+  time_varying = ~ 0 + depth_scaled + depth_scaled2,
+  data = d_trawl2, spde = spde,
+  ar1_fields = TRUE, 
+  include_spatial = TRUE,
+  time = "year", 
+  family = gaussian(link = "identity"),
+  nlminb_loops = 2,
+  newton_steps = 1,
+  silent = FALSE
+)
+saveRDS(m_temp_new, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn-sstdata.rds")))
+m_temp_new
+AIC(m_temp_new)
 ```
 
-```{r eval=FALSE}
-m_temp2 <- sdmTMB(
-  temperature_c ~ 0 + as.factor(year) + DOY_scaled * shallow + DOY_scaled2 * shallow,
-  data = d_trawl2,
+```{r}
+spde <- make_mesh(d_trawl2, c("X", "Y"), n_knots = 800)
+
+m_temp_sst <- sdmTMB(
+  temperature_c ~ 0 + as.factor(year) + SST_scaled * shallow, 
+  data = d_trawl2, spde = spde,
   time_varying = ~ 0 + depth_scaled + depth_scaled2,
-  ar1_fields = TRUE, include_spatial = TRUE,
-  time = "year", spde = spde2, family = gaussian(link = "identity"),
+  ar1_fields = TRUE, 
+  include_spatial = TRUE,
+  time = "year", 
+  family = gaussian(link = "identity"),
   nlminb_loops = 2,
   newton_steps = 1,
   silent = TRUE
 )
 
-saveRDS(m_temp2, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-DOY.rds")))
-
-m_temp2
+saveRDS(m_temp_sst, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn-SST.rds")))
+m_temp_sst
+AIC(m_temp_sst)
 ```
 
-```{r eval=FALSE}
-m_temp3 <- sdmTMB(
-  temperature_c ~ 0 + as.factor(year) + SST_scaled * shallow + DOY_scaled * shallow + DOY_scaled2 * shallow,
-  data = d_trawl2,
+
+
+
+```{r}
+m_temp_new <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn-sstdata.rds")))
+m_temp_sst <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-800kn-SST.rds")))
+get_diag(m_temp_new, response = "temperature_c")
+get_diag(m_temp_sst, response = "temperature_c")
+```
+
+
+# try with fewer knots
+```{r eval = F}
+spde3 <- sdmTMB::make_mesh(d_trawl2, c("X", "Y"), n_knots = 400, type = "kmeans")
+
+m_temp1aic <- sdmTMB(
+  temperature_c ~ 0 + as.factor(year),
   time_varying = ~ 0 + depth_scaled + depth_scaled2,
-  ar1_fields = TRUE, include_spatial = TRUE,
-  time = "year", spde = spde2, family = gaussian(link = "identity"),
+  data = d_trawl2, spde = spde3,
+  ar1_fields = TRUE, 
+  include_spatial = TRUE,
+  time = "year", 
+  family = gaussian(link = "identity"),
+  nlminb_loops = 2,
+  newton_steps = 1,
+  silent = FALSE
+)
+saveRDS(m_temp1aic, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-400kn-new.rds")))
+
+m_temp1aic <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-400kn-new.rds")))
+# m_temp1aic<- sdmTMB:::update_model(m_temp1aic)
+AIC(m_temp1aic)
+```
+
+Run CV on main model
+```{r}
+# spde2 <- make_spde(d_trawl2$X, d_trawl2$Y, n_knots = 800)
+spde2 <- sdmTMB::make_mesh(d_trawl2, c("X", "Y"), n_knots = 200, type = "kmeans")
+plot(spde2)
+```
+
+```{r}
+m_temp1 <- sdmTMB_cv(
+  temperature_c ~ 0 + as.factor(year), 
+  time_varying = ~ 0 + depth_scaled + depth_scaled2,
+  data = d_trawl2, spde = spde3, 
+  ar1_fields = TRUE, 
+  include_spatial = TRUE, 
+  time = "year", 
+  family = gaussian(link = "identity"),
+  k_folds = 20,
+  # nlminb_loops = 2,
+  # newton_steps = 1,
+  silent = FALSE
+)
+# saveRDS(m_temp1, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-400kn-cv20.rds")))
+saveRDS(m_temp1, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-150kn-cv20.rds")))
+
+# m_temp1 <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-300kn-cv.rds")))
+m_temp1$fold_loglik
+m_temp1$sum_loglik
+m_temp1$max_gradients
+m_temp1$pdHess
+```
+
+
+Check if DOY helps model
+```{r eval=FALSE}
+spde3 <- sdmTMB::make_mesh(d_trawl2, c("X", "Y"), n_knots = 400, type = "kmeans")
+
+m_temp2aic <- sdmTMB(
+  temperature_c ~ 0 + as.factor(year) + DOY_scaled + DOY_scaled2,
+  data = d_trawl2, spde = spde3, 
+  time_varying = ~ 0 + depth_scaled + depth_scaled2,
+  ar1_fields = TRUE, 
+  include_spatial = TRUE,
+  time = "year", 
+  family = gaussian(link = "identity"),
+  nlminb_loops = 2,
+  newton_steps = 1,
+  # k_folds = 20,
+  silent = TRUE
+)
+
+saveRDS(m_temp2aic, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-DOY-400kn.rds")))
+m_temp2aic <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-DOY-400kn.rds")))
+m_temp2aic
+AIC(m_temp2aic)
+
+# m_temp2cv <- sdmTMB_cv(
+#   temperature_c ~ 0 + as.factor(year) + DOY_scaled + DOY_scaled2,
+#   data = d_trawl2, spde = spde2, 
+#   time_varying = ~ 0 + depth_scaled + depth_scaled2,
+#   ar1_fields = TRUE, 
+#   include_spatial = TRUE,
+#   time = "year", 
+#   family = gaussian(link = "identity"),
+#   # nlminb_loops = 2,
+#   # newton_steps = 1,
+#   k_folds = 20,
+#   silent = TRUE
+# )
+# 
+# saveRDS(m_temp2, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-DOY-cv20.rds")))
+# m_temp2cv <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-DOY-cv20.rds")))
+# m_temp2cv
+# m_temp2cv$fold_loglik
+# m_temp2cv$sum_loglik
+# m_temp2cv$max_gradients
+```
+
+Check if SST helps model 
+```{r}
+m_temp3aic <- sdmTMB(
+  temperature_c ~ 0 + as.factor(year) + SST_scaled * shallow, 
+  data = d_trawl2, spde = spde3, 
+  time_varying = ~ 0 + depth_scaled + depth_scaled2,
+  ar1_fields = TRUE, 
+  include_spatial = TRUE,
+  time = "year", 
+  family = gaussian(link = "identity"),
   nlminb_loops = 2,
   newton_steps = 1,
   silent = TRUE
 )
+saveRDS(m_temp3aic, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST-400kn.rds")))
+# m_temp3aic <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST-400kn.rds"))
+m_temp3aic <- readRDS((here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST-400kn.rds")))
+AIC(m_temp1aic, m_temp2aic, m_temp3aic)
 
-saveRDS(m_temp3, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST.rds")))
-
-m_temp3
+m_temp3aic
 ```
+
+
+Check if SST and DOY help model
+```{r eval=FALSE}
+m_temp4aic <- sdmTMB(
+  temperature_c ~ 0 + as.factor(year) + SST_scaled * DOY_scaled * shallow, 
+  data = d_trawl2, spde = spde3, 
+  time_varying = ~ 0 + depth_scaled + depth_scaled2,
+  ar1_fields = TRUE, 
+  include_spatial = TRUE,
+  time = "year", 
+  family = gaussian(link = "identity"),
+  nlminb_loops = 2,
+  newton_steps = 1,
+  silent = TRUE
+)
+saveRDS(m_temp4aic, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST-DOY-400kn.rds")))
+
+m_temp4aic <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST-DOY-400kn.rds"))
+# m_temp4aic
+AIC(m_temp1aic, m_temp2aic,  m_temp3aic, m_temp4aic)
+```
+
+```{r eval=FALSE}
+m_temp3 <- sdmTMB_cv(
+  temperature_c ~ 0 + as.factor(year) + SST_scaled * shallow, 
+  data = d_trawl2, spde = spde2, 
+  time_varying = ~ 0 + depth_scaled + depth_scaled2,
+  ar1_fields = TRUE, 
+  include_spatial = TRUE,
+  time = "year", 
+  family = gaussian(link = "identity"),
+  # nlminb_loops = 2,
+  # newton_steps = 1,
+  k_folds = 20,
+  silent = TRUE
+)
+
+# 500 knot early version
+# saveRDS(m_temp3, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST.rds")))
+
+# new 800 knot version for cross validation
+saveRDS(m_temp3, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST-cv20.rds")))
+
+# m_temp3 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST-cv20.rds"))
+# m_temp3
+m_temp3$fold_loglik
+m_temp3$sum_loglik
+m_temp3$max_gradients
+```
+
+
+Check if SST and DOY help model using cv
+```{r eval=FALSE}
+m_temp4 <- sdmTMB_cv(
+  temperature_c ~ 0 + as.factor(year) + SST_scaled * shallow + SST_scaled * DOY_scaled * shallow, 
+  data = d_trawl2, spde = spde2, 
+  time_varying = ~ 0 + depth_scaled + depth_scaled2,
+  ar1_fields = TRUE, 
+  include_spatial = TRUE,
+  time = "year", 
+  family = gaussian(link = "identity"),
+  # nlminb_loops = 2,
+  # newton_steps = 1,
+  k_folds = 20,
+  silent = TRUE
+)
+
+# 500 knot early version
+# saveRDS(m_temp3, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST.rds")))
+
+# new 800 knot version for cross validation
+saveRDS(m_temp4, file = (here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST-DOY-cv20.rds")))
+
+# m_temp4 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST-DOY-cv20.rds"))
+# m_temp4
+m_temp4$fold_loglik
+m_temp4$sum_loglik
+m_temp4$max_gradients
+m_temp4$pdHess
+```
+
+
+
+
+```{r}
+m_temp_sst <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-temp-all-years-SST.rds"))
+
+m_temp_sst <- sdmTMB:::update_model(m_temp_sst)
+
+
+
+```
+
+
 
 ```{r eval=FALSE}
 predictions3 <- predict(m_temp3)
@@ -349,7 +641,8 @@ cor(predictions3$est, predictions3$temperature_c)^2 #
 
 
 ```{r eval=FALSE}
-get_diag(m_temp3, response = "temperature_c", variable = "depth_scaled")
+get_diag(m_temp_new, response = "temperature_c", variable = "depth_scaled", colour_var = "depth", start_year = 2002)
+get_diag(m_temp_new, response = "temperature_c", variable = "DOY", colour_var = "depth", start_year = 2002, ssids = c(1,3,4, 16))
 ```
 
 ## Plotting predictions from saved temperature model
@@ -362,18 +655,11 @@ unique(nd_all$year)
 glimpse(nd_all)
 p_nd <- predict(m_temp_rw, newdata = nd_all)
 
-saveRDS(p_nd, file = "../VOCC/data/predicted_temp_allyears_800kn.rds")
+# saveRDS(p_nd, file = "../VOCC/data/predicted_temp_allyears_800kn.rds")
 ```
 
 ```{r}
-# p_nd <- readRDS("../VOCC/data/predicted_temp_allyears_800kn.rds")
-
-plot_map_raster <- function(dat, column = "est") {
-    ggplot(dat, aes_string("X", "Y", fill = column)) +
-    geom_raster() +
-    coord_fixed()+
-gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
-}
+p_nd <- readRDS("../VOCC/data/predicted_temp_allyears_800kn.rds")
 
 plot_map_raster(p_nd, "est") +
   scale_fill_viridis_c(trans = sqrt) +
@@ -406,6 +692,63 @@ pred_1 <- plot_map_raster(p_nd1, "est") +
 pred_1
 ```
 
+
+Time-varying depth 
+```{r eval}
+# pd <- expand.grid(
+#   depth_scaled = seq(min(m_temp_rw$data$depth_scaled),
+#     max(m_temp_rw$data$depth_scaled), length.out = 50),
+#   year = unique(m_temp_rw$data$year)
+# )
+# pd$depth_scaled2 <- pd$depth_scaled^2
+# 
+# # p <- predict(m_temp_rw, newdata = pd, se_fit = TRUE, re_form = NA, xy_cols = c("X", "Y"))
+# p <- predict(m_temp_new, newdata = pd, se_fit = TRUE, re_form = NA)
+# 
+# p$Depth <- exp(p$depth_scaled*0.661 + 5.07)
+# p$Temperature <- p$est
+# # 
+# p$lowCI <- (p$est - 1.96 * p$est_se)
+# p$highCI <- (p$est + 1.96 * p$est_se)
+# # 
+# saveRDS(p, here::here("analysis/tmb-sensor-explore/data/depth-tv-m-temp-rw-800-kn.rds"))
+p <- readRDS(here::here("analysis/tmb-sensor-explore/data/depth-tv-m-temp-rw-800-kn.rds"))
+
+ggplot(filter(p, Depth >15 & year >2007), aes(Depth, Temperature,
+  ymin = lowCI, 
+  ymax = highCI, 
+  group = as.factor(year), fill=year, colour = year)) +
+  geom_line(size = 0.5, alpha =0.85) +
+  # geom_smooth(method= "loess", size = 0.4, alpha =0.85, se =F ) +
+  # geom_smooth(span = 0.5, size = 0.4, alpha =0.85, se =F ) +
+  scale_fill_viridis_c(option = "C") +
+  scale_colour_viridis_c(option = "C") +
+  # ylab("DO") +
+  geom_ribbon(alpha = 0.2, colour = NA) +
+  # scale_y_continuous(limits = c(0,4.5)) +
+  scale_x_reverse(limits = c(600,20)) +
+  ylim( 2, 15) +
+  coord_flip() +
+  # scale_x_continuous(limits = c(18,210)) +
+  gfplot::theme_pbs() +
+  theme(legend.position = c(.8,.4))
+ggsave(filename = here::here("analysis/tmb-sensor-explore/figs/depth-tv-m-temp-rw-800-kn.png"), width = 3, height = 2.5)
+
+# ggplot(filter(p, Depth >15 & year == 2018), aes(Depth, Temperature,
+#   ymin = (Temperature - 1.96 * est_se), 
+#   ymax = (Temperature + 1.96 * est_se))) +
+#   geom_line(size = 1.5, alpha =0.85) + 
+#   # scale_color_viridis_c(option = "C") +
+#   geom_ribbon(alpha=0.2) +
+#   scale_x_reverse(limits = c(210,20)) +
+#   ylim(5, 15) +
+#   coord_flip() +
+#   gfplot::theme_pbs() + 
+#   theme(legend.position = c(.8,.4))
+
+```
+
+
 ```{r}
 p_nd4 <- p_nd %>% filter(ssid==4)
 pred_4 <- plot_map_raster(p_nd4, "est") +
@@ -434,14 +777,17 @@ plot_map_raster(p_nd, "est_rf") +
 ```
 
 ```{r}
-omega_s_all <- plot_map_raster(p_nd, "omega_s") +
+(omega_s_all <- plot_map_raster(p_nd, "omega_s") +
   ggtitle("Spatial random effects only") +
     scale_fill_gradient2( low = "Steel Blue 4",
  high = "Red 3", limits = c(-1.5,1.5),
-    na.value = "red") +  labs(fill = "") + 
-gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = c(.82,.75))
+    na.value = "red") +  labs(fill = "") + theme(legend.position = c(0.2, 0.3))
+  )
+
+ggsave(filename = here::here("analysis/tmb-sensor-explore/figs/omegas-temp-rw-800-kn.png"), width = 3, height = 3)
 
 omega_s_all
+
 ```
 
 ```{r}
@@ -453,19 +799,21 @@ omega_s_all
 ```
 
 ```{r}
-p_nd1 <- p_nd %>% filter(ssid!=16) %>% filter(ssid!=4)
+p_nd <- readRDS("../VOCC/data/predicted_temp_allyears_800kn.rds")
+
+p_nd1 <- p_nd %>% filter(ssid!=16) %>% filter(ssid!=4) %>% filter(year>2007)
 
 (st_1n3 <- plot_map_raster(p_nd1, "epsilon_st") +
   ggtitle("Spatiotemporal random effects") +
-  facet_wrap(~year) +
+  facet_grid(~year) +
    scale_fill_gradient2( low = "Steel Blue 4",
  high = "Red 3", limits = c(-1.5,1.5), #trans = sqrt,
     na.value = "red") +
   labs(fill = "epsilon") + 
-  gfplot::theme_pbs() + 
   theme(
-  legend.position = "none", 
-  axis.title.x = element_blank(), axis.title.y = element_blank()))
+  legend.position = "none"))
+
+ggsave(filename = here::here("analysis/tmb-sensor-explore/figs/temp-epsilon-1n3.png"), width =6, height = 2)
 
 # png(
 #   file = "figs/temp-predictions-1n3.png", 
@@ -480,29 +828,36 @@ p_nd1 <- p_nd %>% filter(ssid!=16) %>% filter(ssid!=4)
 ```
 
 ```{r}
-p_nd4 <- p_nd %>% filter(ssid==4) #%>% filter(ssid!=4)
-st_4 <- plot_map_raster(p_nd4, "epsilon_st") +
+p_nd <- readRDS("../VOCC/data/predicted_temp_allyears_800kn.rds")
+
+p_nd4 <- p_nd %>% filter(ssid==4) %>% filter(year>2007)#%>% filter(ssid!=4)
+(st_4 <- plot_map_raster(p_nd4, "epsilon_st") +
   #ggtitle(" ") +
-  facet_wrap(~year) +
+  facet_grid(~year) +
      scale_fill_gradient2( low = "Steel Blue 4",
  high = "Red 3", limits = c(-1.5,1.5), #trans = sqrt,
     na.value = "red") +
-          labs(fill = " ") + 
-gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = c(.85,.15))
+          labs(fill = " ") + theme( legend.position = "none") )
+ggsave(filename = here::here("analysis/tmb-sensor-explore/figs/temp-epsilon-4.png"), width = 6, height = 2)
+
 st_4
 ```
 
 ```{r}
-p_nd16 <- p_nd %>% filter(ssid==16) #%>% filter(ssid!=4)
-st_16 <- plot_map_raster(p_nd16, "epsilon_st") +
+p_nd <- readRDS("../VOCC/data/predicted_temp_allyears_800kn.rds")
+
+p_nd16 <- p_nd %>% filter(ssid==16) %>% filter(year>2007)#%>% filter(ssid!=4)
+(st_16 <- plot_map_raster(p_nd16, "epsilon_st") +
   #ggtitle(" ") +
-  facet_wrap(~year) +
+  facet_grid(~year) +
    scale_fill_gradient2( low = "Steel Blue 4",
  high = "Red 3", limits = c(-1.5,1.5),
     na.value = "red") +
-  xlim(65,345) +
-    ylim(5800,6100) +
-gfplot::theme_pbs() + theme(axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position = "none")
+  xlim(20,360) + ylim(5850,6050)+ 
+  # xlim(65,345) + ylim(5800,6100)+ 
+    theme(panel.border = element_blank(), legend.position = "none") )
+
+ggsave(filename = here::here("analysis/tmb-sensor-explore/figs/temp-epsilon-16.png"), width = 6, height = 1)
 st_16
 ```
 
