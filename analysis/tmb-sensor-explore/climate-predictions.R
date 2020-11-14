@@ -31,8 +31,22 @@ predtemp <- pred_temp %>% mutate(
 predtemp <- predtemp %>% filter(year > 2007) 
 predtemp$DOY_scaled <- 0
 
+### to check the rerun model didn't change predictions
+# model2 <- readRDS(here::here("analysis/tmb-sensor-explore/models/model-do-without-wcvi2016b-800kn-update.rds"))
+# #check DO update against previous pred
+# predtemp <- readRDS("~/github/dfo/gfranges/analysis/VOCC/data/predicted-DO-2020-06-20-more2016-roms.rds")
+# predtemp <- predtemp %>% mutate(
+#   log_do_old = log_do,
+#   omega_old = omega_s,
+#   epsilon_old = epsilon_st) %>% select(-est, -est_non_rf, -est_rf, -omega_s, -zeta_s, -epsilon_st)
+# predtemp$DOY_scaled <- 0
+
 # make DO predictions
 pred_do <- predict(model2, newdata = predtemp)
+
+ggplot(pred_do, aes(exp(log_do_old), exp(est))) + geom_point(alpha=0.2) + theme_pbs()
+plot(pred_do$omega_old, pred_do$omega_s)
+plot(pred_do$epsilon_old, pred_do$epsilon_st)
 
 # rename and back transform climate variables
 pred_do$log_do <- pred_do$est
