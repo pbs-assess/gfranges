@@ -1156,3 +1156,260 @@ ggsave(here::here("ms", "figs", "supp-gradient-cor-family.png"), width = 6, heig
 
 
 #########################
+
+species_map <- function(species, 
+  immature = F,
+  start_year = 2008,
+  ssids = c(1,3),
+  max_raster = max(d$est_exp),
+  # biotic_lim = c(-20, 25), # currently only applied to
+  # biotic_lim = c(-40, 40), # currently only applied to 
+  alpha_range = c(0.9, 0.9)) {
+  # age <- unique(data[data$species == species, ]$age_class)
+  spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+  
+  if (immature) {
+    age <- "immature"
+    d <- readRDS(paste0(
+      "analysis/VOCC/data/", spp,
+      "/predictions-", spp, covs, "-1n3n4n16-imm-biomass.rds" 
+    )) %>% 
+      # to convert from kg/m2 to kg/hectare multiply by 10000
+      mutate(est_exp = exp(est) * 10000) %>%
+      filter(year >= start_year & ssid %in% ssids)
+  } else {
+    age <- "mature"
+    try({
+      total_d <- readRDS(paste0(
+        "analysis/VOCC/data/", spp,
+        "/predictions-", spp, covs, "-1n3n4n16-total-biomass.rds"
+      )) %>% 
+        # to convert from kg/m2 to kg/hectare multiply by 10000
+        mutate(est_exp = exp(est) * 10000) %>%
+        filter(year >= start_year & ssid %in% ssids)
+    })
+    try({
+      d <- readRDS(paste0(
+        "analysis/VOCC/data/", spp,
+        "/predictions-", spp, covs, "-1n3n4n16-mature-biomass.rds"
+      )) %>% 
+        # to convert from kg/m2 to kg/hectare multiply by 10000
+        mutate(est_exp = exp(est) * 10000) %>%
+        filter(year >= start_year & ssid %in% ssids)
+    })
+  }
+ 
+ if (exists("d")) {
+   d$est_exp <- exp(d$est) * 10000
+   # max_bio <- signif(max(d$est_exp), digits = 2)
+   p <- plot_facet_map(d, "est_exp",
+     raster_limits = c(0, max_raster),
+     legend_position = "none",
+     transform_col = fourth_root_power
+   ) +
+     labs(fill = "kg/ha") +
+     ggtitle(paste0("", species, " ", age, " biomass \n(max = ", signif(max_raster, digits = 2), " kg/ha)"))
+   
+ } else {
+   
+   # max_bio <- signif(max(total_d$est_exp), digits = 2)
+   p <- plot_facet_map(total_d, "est_exp",
+     raster_limits = c(0, max(total_d$est_exp)),
+     transform_col = fourth_root_power
+   ) +
+     labs(fill = "kg/ha") +
+     ggtitle(paste0("", species, " total biomass \n(max = ", signif(max(total_d$est_exp), digits = 2), " kg/ha)"))
+ }
+ p <- p + theme(strip.text.x = element_blank())
+ p
+}
+
+species_map("Redbanded Rockfish", start_year = 2008, max_raster = 20)
+ggsave(here::here("ms", "figs", "supp-redbanded-biomass-per-year-1n3.png"), width = 6, height = 5)
+
+species_map("Redbanded Rockfish", start_year = 2008, ssids = c(4))
+ggsave(here::here("ms", "figs", "supp-redbanded-biomass-per-year-4.png"), width = 6, height = 5)
+# species_map("Lingcod")
+# ggsave(here::here("ms", "figs", "supp-lingcod-biomass-per-year-1n3.png"), width = 6, height = 5)
+# 
+species_map("Lingcod", start_year = 2008, ssids = c(4), max_raster = 14)
+# ggsave(here::here("ms", "figs", "supp-lingcod-biomass-per-year-4.png"), width = 6, height = 5)
+
+
+#################################
+##### Time-varying depth for biomass
+#################################
+species_depth_profile <- function(species, immature = F, new_model = T){
+  spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+  covs <- "-tv-depth-only"
+  try({rm(p)})
+  
+  if(new_model){
+    
+  if(immature){
+    m <- readRDS(paste0("analysis/VOCC/data/", spp,
+      "/mod-imm-biomass-", spp, covs, "-1n3n4n16.rds"
+    ))
+    m <- sdmTMB:::update_model(m)
+  } else { 
+  m <- readRDS(paste0("analysis/VOCC/data/", spp,
+    "/mod-mat-biomass-", spp, covs, "-1n3n4n16-new.rds"
+    # "-prior-", priors, ".rds"
+  ))
+  }
+  pd <- expand.grid(
+    depth_scaled = seq(min(m$data$depth_scaled),
+    max(m$data$depth_scaled), length.out = 100),
+    year = unique(m$data$year)
+  )
+  pd$depth_scaled2 <- pd$depth_scaled^2
+  if(immature){
+    try({p <- readRDS(here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-imm.rds"))) })
+  }else{
+    try({p <- readRDS(here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-new.rds"))) })
+  }
+# browser()
+if(!exists("p")){
+  p <- predict(m, newdata = pd, se_fit = TRUE, re_form = NA)
+  saveRDS(p, here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-temp.rds")))
+  p <- p %>% mutate(
+    Depth = exp(depth_scaled * m$data$depth_sd[1] + m$data$depth_mean[1]),
+    Biomass = exp(est)* 10000,
+    lowCI = exp(est - 1.96 * est_se)* 10000,
+    highCI = exp(est + 1.96 * est_se)* 10000)
+  
+  if(immature){
+    saveRDS(p, here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-imm.rds")))
+  }else{
+    saveRDS(p, here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-new.rds")))
+  }
+  }
+
+ggplot(filter(p, Depth >15 & year >2007), 
+  aes(Depth, Biomass,
+  ymin = lowCI, 
+  ymax = highCI, 
+  group = as.factor(year), fill=year, colour = year)) +
+  geom_line(size = 0.5, alpha =0.85) +
+  # geom_smooth(method= "loess", size = 0.4, alpha =0.85, se =F ) +
+  # geom_smooth(span = 0.5, size = 0.4, alpha =0.85, se =F ) +
+  scale_fill_viridis_c(option = "C") +
+  scale_colour_viridis_c(option = "C") +
+  # ylab("DO") +
+  geom_ribbon(alpha = 0.1, colour = NA) +
+  # scale_y_continuous(limits = c(0,4.5)) +
+  # scale_x_reverse(limits = c(500,20)) +
+  # coord_flip(ylim = c(0, max(p$Biomass))) +
+  # scale_x_continuous(limits = c(18,210)) +
+  coord_cartesian(xlim = c(20, 500), ylim=c(0, quantile(p$Biomass, 1))) +
+  gfplot::theme_pbs() 
+
+  } else {
+    m <- readRDS(paste0("analysis/VOCC/data/", spp,
+      "/mod-mat-biomass-", spp, covs, "-1n3n4n16-prior-FALSE.rds"
+    ))
+    
+    m <- sdmTMB:::update_model(m)
+    
+    pd <- expand.grid(
+      depth_scaled = seq(min(m$data$depth_scaled),
+        max(m$data$depth_scaled), length.out = 100),
+      year = unique(m$data$year)
+    )
+    pd$depth_scaled2 <- pd$depth_scaled^2
+    
+    try({p <- readRDS(here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-old.rds"))) })
+    
+    if(!exists("p")){
+      p <- predict(m, newdata = pd, se_fit = TRUE, re_form = NA, xy_cols = c("X", "Y"))
+      saveRDS(p, here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-old.rds")))
+      p <- p %>% mutate(
+        Depth = exp(depth_scaled * m$data$depth_sd[1] + m$data$depth_mean[1]),
+        Biomass = exp(est)* 10000)
+      saveRDS(p, here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-old.rds")))
+    }
+    
+    ggplot(filter(p, Depth >15 & year >2007), 
+      aes(Depth, Biomass,
+        group = as.factor(year), fill=year, colour = year)) +
+      geom_line(size = 0.5, alpha =0.85) +
+      # geom_smooth(method= "loess", size = 0.4, alpha =0.85, se =F ) +
+      # geom_smooth(span = 0.5, size = 0.4, alpha =0.85, se =F ) +
+      scale_fill_viridis_c(option = "C") +
+      scale_colour_viridis_c(option = "C") +
+      coord_cartesian(xlim = c(20, 500), ylim=c(0, quantile(p$Biomass, 1))) +
+      gfplot::theme_pbs() 
+  }
+}
+
+species_depth_profile("Redbanded Rockfish") + theme(legend.position = c(.2,.6))
+ggsave(here::here("ms", "figs", paste0("supp-tv-depth-", "redbanded-rockfish", "-100.png")), width = 4, height = 2.5)
+
+
+(dp <- species_depth_profile("Redbanded Rockfish", immature = T) + theme(legend.position = c(.2,.6)))
+
+(dp <- species_depth_profile("Lingcod", new_model = F) + theme(legend.position = c(.8,.6)))
+
+sdggsave(here::here("ms", "figs", paste0("supp-tv-depth-", "lingcod", "-100.png")), width = 4, height = 2.5)
+
+(dp <- species_depth_profile("Canary Rockfish", new_model = T) + 
+  theme(legend.position = c(.8,.6)))
+ggsave(here::here("ms", "figs", paste0("supp-tv-depth-", "canary-rockfish", "-new.png")), width = 4, height = 2.5)
+
+(dp2 <- species_depth_profile("English Sole", new_model = F) + 
+  theme(legend.position = c(.8,.6)))
+ggsave(here::here("ms", "figs", paste0("supp-tv-depth-", "english-sole", "-old.png")), width = 4, height = 2.5)
+
+(dp3 <- species_depth_profile("English Sole", new_model = T) + 
+    theme(legend.position = c(.8,.6)))
+ggsave(here::here("ms", "figs", paste0("supp-tv-depth-", "english-sole", "-new.png")), width = 4, height = 2.5)
+
+
+#### MEAN AGE AND GROWTH RATE ####
+chopstick_slopes(model,
+  x_variable = "temp_trend_scaled",
+  interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
+) %>% left_join(temp_slopes, stats) %>% filter(age == "Immature") %>%
+  ggplot(aes(age_mean, y=(length_50_mat_f / age_mat + 1))) +
+  geom_smooth(method = "lm", colour = "black", size =0.5) +
+  geom_line(aes(group = species), colour = "grey60") +
+  geom_point(aes(shape = age, colour = age), fill = "white", size = 2) +
+  scale_colour_manual(values = c("deepskyblue3", "royalblue4")) +
+  # scale_fill_manual(values = c("cornflowerblue", "deepskyblue")) +
+  # scale_colour_manual(values = c("royalblue4", "darkorchid4")) +
+  # scale_fill_manual(values = c("royalblue4", "darkorchid4")) +
+  scale_shape_manual(values = c(21, 19)) +
+  ylim(0,20) +
+  scale_x_continuous(position = "top") +
+  # scale_x_log10() +
+  scale_y_log10(position = "right") +
+  # ylab("Depth range (IQR)") +
+  # xlab("Mean depth") +
+  gfplot::theme_pbs() + theme(
+    
+    # legend.position = element_blank(),
+    legend.title = element_blank()
+  )
+
+ggsave(here::here("ms", "figs", "supp-age-growth.pdf"), width = 5, height = 3.5)
+
+alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-untrimmed-dvocc-med.rds"))
+
+(depth <- plot_vocc(alldata, # grey_water = T,
+  vec_aes = NULL, grey_water = F,
+  fill_col = "depth", fill_label = "m",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  axis_lables = F, tag_text = "b.",
+  viridis_begin = 0,
+  viridis_end = .5,
+  viridis_dir = -1,
+  transform_col = fourth_root_power,
+  # raster_limits = c(10, 1300),
+  legend_position = c(0.15, 0.3)
+) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+ggsave(here::here("ms", "figs", "depth-map.pdf"), width = 5, height = 5)
