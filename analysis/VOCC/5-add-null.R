@@ -80,7 +80,9 @@ lower_density_threshold <- s[which(bio_sum >= bio5perc)[1]]
 nrow(.x)
 ggplot(.x, aes(x, y, fill = biotic_trend)) + geom_tile(width = 4, height = 4) +
   scale_fill_gradient2()
-spde <- make_spde(x = .x$x, y = .x$y, n_knots = 200)
+# spde <- make_spde(x = .x$x, y = .x$y, n_knots = 200)
+
+spde <- make_mesh(.x, xy_cols = c("x","y"), n_knots = 200)
 plot_spde(spde)
 # browser()
 m <- sdmTMB(biotic_trend ~ 1, data = .x, spatial_only = TRUE, spde = spde, silent = TRUE)
@@ -117,7 +119,14 @@ set.seed(i + null_number)
 sigma_O <- sd(.x$biotic_trend - mean(.x$biotic_trend))
 kappa <- exp(m$model$par[["ln_kappa"]])
 rf_omega <- RandomFields::RMmatern(nu = 1, var = sigma_O^2, scale = 1 / kappa)
-omega_s <- sdmTMB:::rf_sim(model = rf_omega, .x$x, .x$y)
+rf_sim <- function(model, x, y) {
+  set.seed(sample.int(1e5L, 1L))
+  set.seed(i + null_number)
+  suppressMessages(
+    RandomFields::RFsimulate(model = model, x = x, y = y)$variable1
+  )
+}
+omega_s <- rf_sim(model = rf_omega, .x$x, .x$y)
 omega_s <- omega_s - mean(omega_s)
 # sd(omega_s)
 # sigma_O
@@ -147,7 +156,7 @@ newdata <- do.call(rbind, with_nulls)
 
 # saveRDS(newdata, file = paste0("data/mature-all-temp-with-null-1-untrimmed.rds"))
 # saveRDS(newdata, file = paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed.rds"))
-saveRDS(newdata, file = paste0("data/optimized-biotic-null-", null_number, "-untrimmed.rds"))
+saveRDS(newdata, file = paste0("data/optimized3-biotic-null-", null_number, "-untrimmed.rds"))
 
 
 ##########################################
@@ -157,7 +166,7 @@ saveRDS(newdata, file = paste0("data/optimized-biotic-null-", null_number, "-unt
 # newdata <- readRDS(paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
 newdata <- readRDS(
   # paste0("data/all-biotic-null-", null_number, "-untrimmed.rds")
-  paste0("data/optimized-biotic-null-", null_number, "-untrimmed.rds")
+  paste0("data/optimized3-biotic-null-", null_number, "-untrimmed.rds")
   ) %>% select(
   -fishing_trend,  -mean_effort,  -fishing_vel,  -fishing_grad,
   -DO_vel,  -DO_dvocc,  -DO_trend,  -DO_grad,  -mean_DO,  -dvocc_both,
@@ -202,7 +211,7 @@ data <- data %>%
 # Might need to remove longspine again...
 data <- filter(data, species_age != "mature Longspine Thornyhead")
 
-saveRDS(data, file = paste0("data/all-", trim_percent, "-optimized2-with-null-", null_number, ".rds"))
+saveRDS(data, file = paste0("data/all-", trim_percent, "-optimized3-with-null-", null_number, ".rds"))
 # saveRDS(data, file = paste0("data/all-", trim_percent, "-newclim-more2016-with-null-", null_number, ".rds"))
 # saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-temp-with-null-", null_number, ".rds"))
 # saveRDS(data, file = paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
@@ -250,7 +259,7 @@ plots[[i]] <- cowplot::plot_grid(o, n)
 
 # pdf(paste0(age, "-null-", null_number, "-trends-new.pdf"))
 # pdf(paste0("all-null-", null_number, "-trends-newclim3.pdf"))
-pdf(paste0("all-null-", null_number, "-trends-optimized2.pdf"))
+pdf(paste0("all-null-", null_number, "-trends-optimized3.pdf"))
 plots
 dev.off()
 
@@ -292,7 +301,7 @@ for (i in seq_along(all_species)) {
   plots2[[i]] <- cowplot::plot_grid(o, n, t, d) 
 }
 
-pdf(paste0(age, "-null-", null_number, "-newvel.pdf"))
+pdf(paste0(age, "-null-", null_number, "-newvel-nov2020.pdf"))
   plots2
 dev.off()
 
