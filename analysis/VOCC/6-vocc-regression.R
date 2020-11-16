@@ -72,7 +72,7 @@ if (age == "both") {
   # data_type <- paste0("all-95-newclim2")
   # data_type <- paste0("all-95-newclim-more2016")
   # data_type <- paste0("all-95-all-newclim")
-  data_type <- paste0("all-95-optimized2")
+  data_type <- paste0("all-95-optimized3")
   
 }
 
@@ -87,7 +87,7 @@ if (w_family) {
 
 d <- as_tibble(d) %>%
   # filter(species != "Bocaccio") %>%
-  # filter(species != "Sand Sole") %>%
+  filter(species != "Sand Sole") %>% #TOO FEW, some versions duplicated Curlfin
   filter(species != "Shortbelly Rockfish") %>%
   filter(species_age != "immature Shortraker Rockfish") %>%
   filter(species != "Longspine Thornyhead")
@@ -185,19 +185,24 @@ lut <- tribble(
   "longnose skate","chondrichthyes",
   "north pacific spiny dogfish", "chondrichthyes",
   "pacific cod", NA,
-  "pacific halibut","flatfish",
+  "pacific hake", NA, # previously excluded
+  "pacific halibut", "flatfish",
   "pacific ocean perch", "slope rockfish",
+  "pacific sanddab", "flatfish",# previously excluded
   "petrale sole","flatfish",
   "quillback rockfish", "inshore rockfish",
   "redbanded rockfish", "slope rockfish",
   "redstripe rockfish", "shelf rockfish",
   "rex sole","flatfish",
+  "rosethorn rockfish", "slope rockfish", # previously excluded
   "rougheye/blackspotted rockfish complex", "slope rockfish",
   "sablefish", NA,
+  # "sand sole", "flatfish",# not converged
   "sharpchin rockfish", "slope rockfish",
   "shortraker rockfish", "slope rockfish",
   "shortspine thornyhead", "slope rockfish",
   "silvergray rockfish", "shelf rockfish",
+  "slender sole", "flatfish",# previously excluded
   "southern rock sole", "flatfish",
   "splitnose rockfish", "slope rockfish",
   "spotted ratfish", "chondrichthyes",
@@ -679,6 +684,13 @@ if (DO_chopstick) {
 }
 
 if (fishing_chopstick) {
+  
+  if(DO_chopstick){
+    par_init <- DO_model$opt$par
+  } else{
+    par_init <- NULL
+  }
+  
   split_effect_column <- "log_effort_scaled"
   interaction_column <- "fishing_trend_scaled:log_effort_scaled"
   main_effect_column <- "fishing_trend_scaled"
@@ -708,7 +720,8 @@ if (fishing_chopstick) {
         knots = knots, group_by_genus = T, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
-        split_effect_column = split_effect_column
+        split_effect_column = split_effect_column,
+        par_init = par_init
       )
     } else {
       fishing_model %<-% vocc_regression(d, y,
@@ -716,7 +729,8 @@ if (fishing_chopstick) {
         knots = knots, group_by_genus = FALSE, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
-        split_effect_column = split_effect_column
+        split_effect_column = split_effect_column,
+        par_init = par_init
       )
     }
   } else {
@@ -740,7 +754,8 @@ if (fishing_chopstick) {
           knots = knots, group_by_genus = T, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
-          split_effect_column = split_effect_column
+          split_effect_column = split_effect_column,
+          par_init = par_init
         )
       } else {
         fishing_model %<-% vocc_regression(d, y,
@@ -748,7 +763,8 @@ if (fishing_chopstick) {
           knots = knots, group_by_genus = FALSE, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
-          split_effect_column = split_effect_column
+          split_effect_column = split_effect_column,
+          par_init = par_init
         )
       }
     }
@@ -756,6 +772,13 @@ if (fishing_chopstick) {
 }
 
 if (temp_chopstick) {
+  
+  if(DO_chopstick){
+    par_init <- DO_model$opt$par
+  } else{
+    par_init <- NULL
+  }
+  
   split_effect_column <- "mean_temp_scaled"
 
   if (x_type == "trend") {
@@ -799,7 +822,8 @@ if (temp_chopstick) {
         knots = knots, group_by_genus = T, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
-        split_effect_column = split_effect_column
+        split_effect_column = split_effect_column,
+        par_init = par_init
       )
     } else {
       temp_model <- vocc_regression(d, y,
@@ -807,7 +831,8 @@ if (temp_chopstick) {
         knots = knots, group_by_genus = FALSE, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
-        split_effect_column = split_effect_column
+        split_effect_column = split_effect_column,
+        par_init = par_init
       )
     }
   } else {
@@ -832,7 +857,8 @@ if (temp_chopstick) {
           knots = knots, group_by_genus = T, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
-          split_effect_column = split_effect_column
+          split_effect_column = split_effect_column,
+          par_init = par_init
         )
       } else {
         temp_model <- vocc_regression(d, y,
@@ -841,7 +867,7 @@ if (temp_chopstick) {
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
           split_effect_column = split_effect_column,
-          par_init = res$opt$par
+          par_init = par_init
         )
       }
     }
