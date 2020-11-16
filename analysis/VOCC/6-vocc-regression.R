@@ -544,8 +544,8 @@ if (model_type == "-dist-vel-combined") {
 }
 
 if (no_chopsticks) {
-  temp_chopstick <- T
-  DO_chopstick <- F
+  temp_chopstick <- F
+  DO_chopstick <- T
   fishing_chopstick <- F
   # # would need to add dummy data to eliminate temp?
 }
@@ -607,7 +607,8 @@ if (DO_chopstick) {
     if (w_genus | w_family) {
       DO_model <- vocc_regression(d, y,
         X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
-        knots = knots, 
+        knots = knots, setseed = setseed,
+        nlminb_loops = 2,
         group_by_genus = T, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
@@ -616,7 +617,8 @@ if (DO_chopstick) {
     } else {
       DO_model <- vocc_regression(d, y,
         X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
-        knots = knots, 
+        knots = knots, setseed = setseed,
+        nlminb_loops = 2,
         group_by_genus = FALSE, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
@@ -642,7 +644,8 @@ if (DO_chopstick) {
       if (w_genus | w_family) {
         DO_model <- vocc_regression(d, y,
           X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
-          knots = knots, 
+          knots = knots, setseed = setseed,
+          nlminb_loops = 2,
           group_by_genus = T, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
@@ -652,6 +655,7 @@ if (DO_chopstick) {
         DO_model <- vocc_regression(d, y,
           X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
           knots = knots, setseed = setseed,
+          nlminb_loops = 2,
           group_by_genus = FALSE, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
@@ -717,7 +721,8 @@ if (fishing_chopstick) {
     if (w_genus | w_family) {
       fishing_model %<-% vocc_regression(d, y,
         X_ij = x, X_pj = F_pj, pred_dat = F_dat,
-        knots = knots, group_by_genus = T, student_t = F,
+        knots = knots, setseed = setseed,
+        group_by_genus = T, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
         split_effect_column = split_effect_column,
@@ -726,7 +731,8 @@ if (fishing_chopstick) {
     } else {
       fishing_model %<-% vocc_regression(d, y,
         X_ij = x, X_pj = F_pj, pred_dat = F_dat,
-        knots = knots, group_by_genus = FALSE, student_t = F,
+        knots = knots, setseed = setseed,
+        group_by_genus = FALSE, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
         split_effect_column = split_effect_column,
@@ -751,7 +757,8 @@ if (fishing_chopstick) {
       if (w_genus | w_family) {
         fishing_model %<-% vocc_regression(d, y,
           X_ij = x, X_pj = F_pj, pred_dat = F_dat,
-          knots = knots, group_by_genus = T, student_t = T,
+          knots = knots, setseed = setseed,
+          group_by_genus = T, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
           split_effect_column = split_effect_column,
@@ -760,7 +767,8 @@ if (fishing_chopstick) {
       } else {
         fishing_model %<-% vocc_regression(d, y,
           X_ij = x, X_pj = F_pj, pred_dat = F_dat,
-          knots = knots, group_by_genus = FALSE, student_t = T,
+          knots = knots, setseed = setseed,
+          group_by_genus = FALSE, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
           split_effect_column = split_effect_column,
@@ -819,7 +827,8 @@ if (temp_chopstick) {
     if (w_genus | w_family) {
       temp_model <- vocc_regression(d, y,
         X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-        knots = knots, group_by_genus = T, student_t = F,
+        knots = knots, setseed = setseed,
+        group_by_genus = T, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
         split_effect_column = split_effect_column,
@@ -828,7 +837,8 @@ if (temp_chopstick) {
     } else {
       temp_model <- vocc_regression(d, y,
         X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-        knots = knots, group_by_genus = FALSE, student_t = F,
+        knots = knots, setseed = setseed,
+        group_by_genus = FALSE, student_t = F,
         interaction_column = interaction_column,
         main_effect_column = main_effect_column,
         split_effect_column = split_effect_column,
@@ -854,7 +864,8 @@ if (temp_chopstick) {
       if (w_genus | w_family) {
         temp_model <- vocc_regression(d, y,
           X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-          knots = knots, group_by_genus = T, student_t = T,
+          knots = knots, setseed = setseed,
+          group_by_genus = T, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
           split_effect_column = split_effect_column,
@@ -863,7 +874,8 @@ if (temp_chopstick) {
       } else {
         temp_model <- vocc_regression(d, y,
           X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
-          knots = knots, group_by_genus = FALSE, student_t = T,
+          knots = knots, setseed = setseed,
+          group_by_genus = FALSE, student_t = T,
           interaction_column = interaction_column,
           main_effect_column = main_effect_column,
           split_effect_column = split_effect_column,
