@@ -7,7 +7,7 @@ library("dplyr")
 # mydir = paste0( "_newclim2_mature")
 # 800 kn for both
 # mydir = paste0( "_more2016_mature")
-mydir = paste0( "_optimized_mature")
+mydir = paste0( "_optimized_mature_new")
 myfiles <- list.files(path = mydir, pattern = "*.csv", full.names = TRUE)
 myfiles
 biotic <- do.call(rbind, lapply(myfiles, read.csv)) %>% select(-X, -start_year)

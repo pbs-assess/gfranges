@@ -51,6 +51,59 @@ list_species <- c(
   "Yelloweye Rockfish"
 )
 
+### Nov 2020 run:
+# with new sdmTMB models for mature
+# a few added species
+# full data set for few spp with missing data
+list_species <- c(
+  "Big Skate",
+  "Longnose Skate",
+  "Spotted Ratfish",
+  "North Pacific Spiny Dogfish",
+  # "Pacific Tomcod",
+  "Walleye Pollock",
+  "Pacific Cod",
+  "Sablefish",
+  "Lingcod", # already rerun
+  "Pacific Hake", # previously excluded
+  "Rosethorn Rockfish", # previously excluded
+  "Yellowmouth Rockfish",
+  # "Harlequin Rockfish", # too small sample
+  "Canary Rockfish", # already rerun
+  # "Copper Rockfish", # too small sample
+  "Darkblotched Rockfish",
+  "Greenstriped Rockfish",
+  "Pacific Ocean Perch", # schooling
+  "Redbanded Rockfish", # already rerun
+  "Sharpchin Rockfish",
+  #"Shortbelly Rockfish", # too small sample
+  "Silvergray Rockfish",
+  "Splitnose Rockfish",
+  "Yellowtail Rockfish", # schooling
+  # "Longspine Thornyhead", # too small sample
+  "Shortspine Thornyhead",
+  "Arrowtooth Flounder",
+  "Rex Sole",
+  "Petrale Sole",
+  "English Sole", # already rerun
+  "Dover Sole",
+  "Southern Rock Sole",
+  "Flathead Sole",
+  "Curlfin Sole",
+  # "Sand Sole",# too small sample
+  "Slender Sole",# previously excluded
+  "Pacific Sanddab",# previously excluded
+  "Pacific Halibut",
+  "Redstripe Rockfish",
+  "Rougheye/Blackspotted Rockfish Complex",
+  "Widow Rockfish",
+  "Quillback Rockfish",
+  "Bocaccio", # rerun with fewer knots
+  "Shortraker Rockfish",# small sample so run with fewer knots
+  "Yelloweye Rockfish"
+)
+
+
 ### build biotic gradients
 list_regions <- c(
   "West Coast Haida Gwaii",
@@ -76,7 +129,7 @@ for (r_h in seq_along(list_regions)) {
         ),
         output_file = paste0(
           "html/VOCC-plots/vocc-w-do-", spp,
-          covs, "-", reg, "-more2016.html"
+          covs, "-", reg, "-more2016-new.html"
         ),
         envir = env
       )
@@ -85,19 +138,19 @@ for (r_h in seq_along(list_regions)) {
 }
 }
 
-######
-# TODO: will need to rerun these imm
-######
-list_species <- c(
-  "Rougheye/Blackspotted Rockfish Complex",
-  "Widow Rockfish",
-  "Quillback Rockfish",
-  "Yelloweye Rockfish"
-)
-
-list_species <- c(
-  "Bocaccio"
-)
+# ######
+# # TODO: will need to rerun these imm
+# ######
+# list_species <- c(
+#   "Rougheye/Blackspotted Rockfish Complex",
+#   "Widow Rockfish",
+#   "Quillback Rockfish",
+#   "Yelloweye Rockfish"
+# )
+# 
+# list_species <- c(
+#   "Bocaccio"
+# )
 
 list_regions <- c(
   "West Coast Haida Gwaii",
