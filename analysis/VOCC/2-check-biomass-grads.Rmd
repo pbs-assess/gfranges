@@ -5,8 +5,12 @@ date: "`r Sys.Date()`"
 output: html_document
 params: 
     # species: "Bocaccio"
-    species: "Shortbelly Rockfish"
+    # species: "Flathead Sole"
+    species: "English Sole"
+    # species: "Redstripe Rockfish"
+    # species: "Rougheye/Blackspotted Rockfish Complex"
     # species: "Sablefish"
+    # species: "Shortbelly Rockfish"
     region: "All synoptic surveys"
     covariates: "" 
     covs: "-tv-depth-only"
@@ -75,16 +79,16 @@ if (region == "All synoptic surveys") {
 }
 ```
 
-# Build spatiotemporal density model
-Load and filter data 
-```{r}
+
+Check max depth depth?
+```{r eval=FALSE}
 biomass <- readRDS(paste0(
   "data/", spp, "/data-by-maturity-", spp, "-", ssid_string, ".rds"
 ))
 
 if(nrow(biomass)<4000) {stop("Need to recalculate split by maturity!")}
 
-covars <- readRDS("data/event-covariates.rds")
+covars <- readRDS("data/event-covariates.rds") %>% select(-geometry)
 data <- dplyr::left_join(biomass, covars)
 
 # scale predictors before filtering to ensure mean and SD are global
@@ -96,26 +100,25 @@ data <- data %>%
   mutate(depth = raw_depth) %>%
   filter(ssid %in% model_ssid) %>%
   filter(year < 2019)
+
+# max_depth_found <- max(data[data$present == 1, ]$raw_depth, na.rm = TRUE)
+#max_depth_found <- 800
 ```
 
 
 #### Model without environmental covariates
 ```{r }
-max_depth_found <- max(data[data$present == 1, ]$raw_depth, na.rm = TRUE)
 rm(depth_model_list)
 rm(adult_biomass)
 rm(imm_biomass)
 rm(total_biomass)
-rm(depth_plots)
-#max_depth_found <- 800
 
 try({
   adult_biomass <- readRDS(paste0(
     "data/", spp,
     "/mod-mat-biomass-", spp, covs, "-1n3n4n16-prior-", priors, ".rds"
   ))
-  # adult_biomass <- sdmTMB:::update_model(adult_biomass)
-
+  adult_biomass <- sdmTMB:::update_model(adult_biomass)
 })
 
  
@@ -125,7 +128,7 @@ try({
     "/mod-imm-biomass-", spp, covs, "-1n3n4n16.rds"
   ))
 
-  # imm_biomass <- sdmTMB:::update_model(imm_biomass)
+  imm_biomass <- sdmTMB:::update_model(imm_biomass)
   # depth_model_list <- list(adult = adult_biomass, imm = imm_biomass)
 })
 
@@ -152,16 +155,28 @@ depth_model_list
 ```
 
 ```{r}
+signif(max(depth_model_list$adult$gradients), digits = 8)
+signif(max(depth_model_list$imm$gradients), digits = 8)
+signif(max(depth_model_list$total$gradients), digits = 8)
+```
+
+```{r}
 write_grads <- function(x, macro, ...) {
   paste0("\\newcommand{\\", macro, "}{", x, "}") %>%
     readr::write_lines("model-grads.tex", append = TRUE)
 }
+write_grads(signif(max(depth_model_list$adult$gradients), digits = 8), paste0("oct2020-", spp, "-mat"))
+write_grads(signif(max(depth_model_list$imm$gradients), digits = 8), paste0("oct2020-", spp, "-imm"))
+write_grads(signif(max(depth_model_list$total$gradients), digits = 8), paste0("oct2020-", spp, "-total"))
 ```
 
 ```{r}
-write_grads(signif(max(depth_model_list$adult$gradients), digits = 8), paste0("new-", spp, "-mat"))
-write_grads(signif(max(depth_model_list$imm$gradients), digits = 8), paste0("new-", spp, "-imm"))
-write_grads(signif(max(depth_model_list$total$gradients), digits = 8), paste0("new-", spp, "-total"))
+write_knots <- function(x, macro, ...) {
+  paste0("\\newcommand{\\", macro, "}{", x, "}") %>%
+    readr::write_lines("model-knots.tex", append = TRUE)
+}
+write_knots(nrow(depth_model_list$adult$spde$loc_centers), paste0(spp, "-mat"))
+write_knots(nrow(depth_model_list$imm$spde$loc_centers), paste0(spp, "-imm"))
+write_knots(nrow(depth_model_list$total$spde$loc_centers), paste0(spp, "-total"))
 ```
-
 
