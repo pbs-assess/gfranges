@@ -91,6 +91,8 @@ if (region == "West Coast Haida Gwaii") {
 
 
 ```{r}
+rm(d_all)
+
 if (immature) {
   age <- "immature"
   d_all <- readRDS(paste0(
@@ -108,7 +110,7 @@ if (immature) {
   try({
     d_all <- readRDS(paste0(
       "data/", spp,
-      "/predictions-", spp, covs, "-1n3n4n16-mature-biomass.rds"
+      "/predictions-", spp, covs, "-1n3n4n16-mature-biomass-new.rds"
     )) %>% filter(year >= start_year )
   })
 }
@@ -742,7 +744,7 @@ gradbv <- plot_vocc(gf3t,
 gradbv
 ``` 
 
-```{r eval=F}
+```{r }
 gf3t$squashed_velocity <- collapse_outliers(gf3t$velocity, c(0.005, 0.995))
 
 grad3 <- gfranges::plot_vocc(gf3t,
@@ -799,7 +801,7 @@ grad3 <- gfranges::plot_vocc(gf3t,
 grad3
 ```
 
-```{r eval=F}
+```{r }
 #raster_max <- quantile(gf3$mean_biomass, 0.995, na.rm = T)
 gf3$mean_biomass2 <- collapse_outliers(gf3$mean_biomass, c(0, 0.995))
 grad4 <- gfranges::plot_vocc(gf3,
@@ -827,7 +829,7 @@ grad4 <- gfranges::plot_vocc(gf3,
 grad4
 ```
 
-```{r eval=F}
+```{r }
 grad5 <- gfranges::plot_vocc(gf3t,
   raster_cell_size = 4,
   # theme = "black",
@@ -957,13 +959,13 @@ vocc <- left_join(vocc, temp_values) # add temp
 vocc <- mutate(vocc, species = !!species, method = "both")
 
 write.csv(vocc, file = paste0(
-  "data/_optimized_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
+  "data/_optimized_", age, "_new/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
 ))
 ```
 
 ```{r}
 vocc  <- read.csv(paste0(
-  "data/_optimized_", age, "/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
+  "data/_optimized_", age, "_new/", age, "-w-do-nulls-", spp, "-", ssid_string, covs, "-", min(d$year), "-", max(d$year), ".csv"
 ))
 vocc_t <- filter(vocc, mean_biomass > lower_density_threshold)
 ```
