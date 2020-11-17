@@ -15,17 +15,7 @@ if (trim_threshold == 0.1) { trim_percent <- 90}
 if (trim_threshold == 0.2) { trim_percent <- 80}
 if (trim_threshold == 0.5) { trim_percent <- 50}
 
-# age <- "mature"
-# d1 <- readRDS(paste0("data/", age, "-all-do-dvocc.rds")) %>% mutate(age = "mature")
-# 
-# age <- "immature"
-# d2 <- readRDS(paste0("data/", age, "-all-do-dvocc.rds")) %>% mutate(age = "immature")
 
-# age <- "mature"
-# d1 <- readRDS(paste0("data/", age, "-all-do-newclim3.rds")) %>% mutate(age = "mature")
-# 
-# age <- "immature"
-# d2 <- readRDS(paste0("data/", age, "-all-do-newclim3.rds")) %>% mutate(age = "immature")
 age <- "mature"
 d1 <- readRDS(paste0("data/", age, "-optimized-vocc.rds")) %>% mutate(age = "mature")
 
@@ -37,6 +27,7 @@ d <- rbind(d1, d2)
 
 d <- na.omit(d) %>% as_tibble() %>% mutate(species_age = paste(age, species))
 
+# remove models that did not converge
 d <- filter(d, species_age != "immature Shortraker Rockfish") 
 d <- filter(d, species_age != "immature Curlfin Sole")
 
@@ -154,18 +145,12 @@ with_nulls[[i]] <- .s
 
 newdata <- do.call(rbind, with_nulls)
 
-# saveRDS(newdata, file = paste0("data/mature-all-temp-with-null-1-untrimmed.rds"))
-# saveRDS(newdata, file = paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed.rds"))
 saveRDS(newdata, file = paste0("data/optimized3-biotic-null-", null_number, "-untrimmed.rds"))
 
 
 ##########################################
 ### TRIM EACH SPECIES LAYERS TO INCLUDE PROPORTION OF MEAN TOTAL BIOMASS
-# age <- "mature"
-# age <- "immature"
-# newdata <- readRDS(paste0("data/", age, "-all-do-with-null-", null_number, "-untrimmed-allvars.rds"))
 newdata <- readRDS(
-  # paste0("data/all-biotic-null-", null_number, "-untrimmed.rds")
   paste0("data/optimized3-biotic-null-", null_number, "-untrimmed.rds")
   ) %>% select(
   -fishing_trend,  -mean_effort,  -fishing_vel,  -fishing_grad,
@@ -212,9 +197,6 @@ data <- data %>%
 data <- filter(data, species_age != "mature Longspine Thornyhead")
 
 saveRDS(data, file = paste0("data/all-", trim_percent, "-optimized3-with-null-", null_number, ".rds"))
-# saveRDS(data, file = paste0("data/all-", trim_percent, "-newclim-more2016-with-null-", null_number, ".rds"))
-# saveRDS(data, file = paste0("data/mature-", trim_percent, "-all-temp-with-null-", null_number, ".rds"))
-# saveRDS(data, file = paste0("data/", age, "-", trim_percent, "-all-do-with-null-", null_number, ".rds"))
 
 # ggplot(data = data, aes(mean_DO_scaled, log(mean_biomass+1))) + 
 #   geom_point(alpha= .2) + facet_wrap(~species)
@@ -259,7 +241,7 @@ plots[[i]] <- cowplot::plot_grid(o, n)
 
 # pdf(paste0(age, "-null-", null_number, "-trends-new.pdf"))
 # pdf(paste0("all-null-", null_number, "-trends-newclim3.pdf"))
-pdf(paste0("all-null-", null_number, "-trends-optimized3.pdf"))
+pdf(paste0("all-null-", null_number, "-trends-optimized3b.pdf"))
 plots
 dev.off()
 
