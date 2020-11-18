@@ -3,54 +3,6 @@ getwd()
 setwd(here::here("/analysis/VOCC"))
 env <- new.env() # parent = baseenv()
 
-list_species <- c(
-  "Big Skate",
-  "Longnose Skate",
-  "Spotted Ratfish",
-  "North Pacific Spiny Dogfish",
-  # "Pacific Tomcod",
-  "Walleye Pollock",
-  "Pacific Cod",
-  "Sablefish",
-  "Lingcod",
-  # "Pacific Hake",
-  # "Rosethorn Rockfish",
-  "Yellowmouth Rockfish",
-  # "Harlequin Rockfish",
-  "Canary Rockfish", # schooling, winter-birthing
-  # "Copper Rockfish", # small sample
-  "Darkblotched Rockfish",
-  "Greenstriped Rockfish",
-  "Pacific Ocean Perch", # schooling
-  "Redbanded Rockfish",
-  "Sharpchin Rockfish",
-  "Shortbelly Rockfish", # small sample
-  "Silvergray Rockfish",
-  "Splitnose Rockfish",
-  "Yellowtail Rockfish", # schooling
-  "Longspine Thornyhead",
-  "Shortspine Thornyhead",
-  "Arrowtooth Flounder",
-  "Rex Sole",
-  "Petrale Sole",
-  "English Sole",
-  "Dover Sole",
-  "Southern Rock Sole",
-  "Flathead Sole",
-  "Curlfin Sole",
-  # "Sand Sole",
-  # "Slender Sole",
-  # "Pacific Sanddab",
-  "Pacific Halibut",
-  "Redstripe Rockfish",
-  "Rougheye/Blackspotted Rockfish Complex",
-  "Widow Rockfish",
-  "Quillback Rockfish",
-  "Bocaccio",
-  "Shortraker Rockfish",
-  "Yelloweye Rockfish"
-)
-
 ### Nov 2020 run:
 # with new sdmTMB models for mature
 # a few added species
@@ -103,6 +55,17 @@ list_species <- c(
   "Yelloweye Rockfish"
 )
 
+# 
+# list_species <- c(
+#   # rerun excluding fishing event where depth seems be wrong
+#   "Longnose Skate",
+#   "Redbanded Rockfish", # problem with tv depth estimate due to possible fish left in net
+#   "Dover Sole", # deep fish found shallow...
+#   "Slender Sole", # deep fish found shallow...
+#   # rerun excluding maturity data for fish that don't total to appropriate weight
+#   "Pacific Ocean Perch"
+# )
+
 
 ### build biotic gradients
 list_regions <- c(
@@ -152,12 +115,30 @@ for (r_h in seq_along(list_regions)) {
 #   "Bocaccio"
 # )
 
+# # add new imm but label with Jul ending because not rerunning everything
+# list_species <- c(
+#   "Rosethorn Rockfish", # previously excluded
+#   "Slender Sole",# previously excluded
+#   "Pacific Sanddab"# previously excluded
+# )
+# 
+# list_species <- c(
+#   # rerun excluding fishing event where depth seems be wrong
+#   "Redbanded Rockfish", # problem with tv depth estimate due to possible fish left in net
+#   "Dover Sole", # deep fish found shallow...
+#   "Slender Sole", # deep fish found shallow...
+#   # rerun excluding maturity data for fish that don't total to appropriate weight
+#   "Pacific Ocean Perch"
+# )
+
+
 list_regions <- c(
   "West Coast Haida Gwaii",
   "West Coast Vancouver Island",
   "both odd year surveys"
   #   "All synoptic surveys"
 )
+
 
 age <- "immature"
 if (age == "immature") {
@@ -177,7 +158,7 @@ for (r_h in seq_along(list_regions)) {
         output_file = paste0(
           "html/VOCC-plots/vocc-w-do-", spp,
           "-imm",
-          covs, "-", reg, "-more2016.html"
+          covs, "-", reg, "-more2016-new.html"
         ),
         envir = env
       )

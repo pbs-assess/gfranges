@@ -6,14 +6,14 @@ output: html_document
 params: 
     # species: "Redbanded Rockfish"
     # species: "Widow Rockfish"
-    species: "Sharpchin Rockfish"
+    # species: "Sharpchin Rockfish"
     # species: "English Sole"
     # species: "Dover Sole"
     # species: "Flathead Sole"
     # species: "Sablefish"
-    # species: "Shortbelly Rockfish"
+    species: "Rosethorn Rockfish"
     # species: "Arrowtooth Flounder"
-    immature: F
+    immature: T
     # region: "West Coast Vancouver Island"
     # region: "both odd year surveys"
     region: "West Coast Haida Gwaii"

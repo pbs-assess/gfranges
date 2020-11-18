@@ -20,7 +20,7 @@ saveRDS(biotic, file = paste0(
 
 #### IMMATURE #####
 # mydir = paste0( "_more2016_immature")
-mydir = paste0( "_optimized_immature")
+mydir = paste0( "_optimized_immature_new")
 myfiles <- list.files(path = mydir, pattern = "*.csv", full.names = TRUE)
 myfiles
 biotic <- do.call(rbind, lapply(myfiles, read.csv)) %>% 

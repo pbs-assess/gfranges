@@ -28,6 +28,8 @@ d <- rbind(d1, d2)
 d <- na.omit(d) %>% as_tibble() %>% mutate(species_age = paste(age, species))
 
 # remove models that did not converge
+
+d <- filter(d, species_age != "immature Bocaccio") 
 d <- filter(d, species_age != "immature Shortraker Rockfish") 
 d <- filter(d, species_age != "immature Curlfin Sole")
 

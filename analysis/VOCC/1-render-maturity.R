@@ -41,13 +41,16 @@ list_species <- c(
   "Southern Rock Sole",
   "Flathead Sole",
   "Curlfin Sole",
-  "Sand Sole"
-  # "Slender Sole",
-  # "Pacific Sanddab"
+  # "Sand Sole"
+  "Slender Sole",
+  "Pacific Sanddab"
 )
 
 
 # # SPECIES to try setting maturity threshold to 0.05
+# # Bocaccio reverted to 0.5 in June 2020
+# # Shortraker not split due to tiny # of imm
+# # Others seem to be left at 0.5?
 # list_species <- c(
 #   "Widow Rockfish",
 #   "Quillback Rockfish",
@@ -112,6 +115,11 @@ list_species <- c("Pacific Herring")
 
 ## NEEDS SPECIAL SETTINGS
 list_species <- c("North Pacific Spiny Dogfish","Longspine Thornyhead","Sand Sole")
+
+list_species <- c(
+  "Pacific Ocean Perch"
+)
+
 
 list_regions <- c("All synoptic surveys")
 # list_regions <- c(

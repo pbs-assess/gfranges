@@ -364,9 +364,9 @@ for (spp_i in seq_along(list_species)) {
 
 totdata <- do.call(rbind, checktdata)
 
-
-m1 <- readRDS(paste0("data/canary-rockfish/mod-mat-biomass-canary-rockfish-tv-depth-only-1n3n4n16-prior-FALSE.rds"))
-View(m1$data)
+# 
+# m1 <- readRDS(paste0("data/canary-rockfish/mod-mat-biomass-canary-rockfish-tv-depth-only-1n3n4n16-prior-FALSE.rds"))
+# View(m1$data)
 
 
 
@@ -429,6 +429,20 @@ list_species <- c(
 # "Shortraker Rockfish", # small sample so run with fewer knots
 # "Bocaccio" # rerun with fewer knots
 )
+
+# rerun excluding fishing event where depth seems be wrong
+list_species <- c(
+  # "Redbanded Rockfish", # problem with tv depth estimate due to shallow fish left in net
+  # "Dover Sole", # deep fish found shallow... 
+  # "Slender Sole" # deep fish found shallow... 
+  "Longnose Skate" # deep fish found shallow... 
+)
+
+# rerun excluding maturity data for fish that don't total to appropriate weight
+list_species <- c(
+  "Pacific Ocean Perch"
+)
+
 ### rerun all mat models with new sdmTMB version (Nov 14 2020)
 ### also replaces data missing from 9 of the Dec 28 2019 runs 
 list_regions <- c("All synoptic surveys")
@@ -444,7 +458,7 @@ for (r_h in seq_along(list_regions)) {
           region = list_regions[r_h],
           covariates = "", # additional non-climate variables
           covs = covs,
-          knots = 300,
+          knots = 500,
           update_model = TRUE,
           update_predictions = TRUE, 
           update_model_check = TRUE 
@@ -458,3 +472,53 @@ for (r_h in seq_along(list_regions)) {
     })
   }
 }
+
+
+
+# add new imm but label with Jul ending because not rerunning everything
+list_species <- c(
+  # "Rosethorn Rockfish", # previously excluded
+  "Slender Sole",# previously excluded
+  "Pacific Sanddab"# previously excluded
+)
+
+# rerun excluding fishing event where depth seems be wrong
+list_species <- c(
+  "Redbanded Rockfish", # problem with tv depth estimate due to possible fish left in net
+  "Dover Sole", # deep fish found shallow...
+  "Slender Sole" # deep fish found shallow...
+)
+
+# rerun excluding maturity data for fish that don't total to appropriate weight
+list_species <- c(
+  "Pacific Ocean Perch"
+  )
+
+list_regions <- c("All synoptic surveys")
+# dir.create(file.path("html/biomass-by-depth"))
+for (r_h in seq_along(list_regions)) {
+  for (spp_i in seq_along(list_species)) {
+    spp <- gsub(" ", "-", gsub("\\/", "-", tolower(list_species[spp_i])))
+    covs <- "-tv-depth-only" # string describing model covariates
+    try({
+      rmarkdown::render("2-biomass-depth-only-model2.Rmd",
+        params = list(
+          species = list_species[spp_i],
+          region = list_regions[r_h],
+          covariates = "", # additional non-climate variables
+          covs = covs,
+          knots = 400,
+          update_model = TRUE,
+          update_predictions = TRUE, 
+          update_model_check = TRUE 
+        ),
+        output_file = paste0(
+          "html/biomass-by-depth/biomass-by",
+          covs, "-", spp, "-new-imm.html"
+        ),
+        envir = env
+      )
+    })
+  }
+}
+
