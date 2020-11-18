@@ -15,7 +15,6 @@ source("vocc-regression-functions.R")
 
 ### main modeling choices ###
 
-
 # age <- "mature"
 # age <- "immature"
 age <- "both"
@@ -26,7 +25,7 @@ w_family <- F
 is_null <- F
 
 null_number <- "-1" # 2 failed, 3 NA
-setseed <- 10
+setseed <- 42
 
 # ## for trends ###
 # knots <- 500
@@ -87,6 +86,7 @@ if (w_family) {
 
 d <- as_tibble(d) %>%
   # filter(species != "Bocaccio") %>%
+  filter(species != "Pacific Hake") %>% # maturity data too weird
   filter(species != "Sand Sole") %>% #TOO FEW, some versions duplicated Curlfin
   filter(species != "Shortbelly Rockfish") %>%
   filter(species_age != "immature Shortraker Rockfish") %>%
@@ -1146,20 +1146,27 @@ norm_resids <- norm_resids[is.finite(norm_resids)]
 
 paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, genus_lab, "-", knots, ".rds")
 
+############################
+#### GROUP MEANS
+############################
+m <- new_model
 
-############################3
+# or saved model 
+# m <- readRDS("data/vel-all-95-optimized3-11-18-vel-both-1-400.rds")
 
-pred_dat <- model$pred_dat
+pred_dat <- m$pred_dat
 ids_pred <- distinct(select(pred_dat, species, species_id, type)) %>% arrange(species_id)
-xx <- left_join(ids_pred, m$genus_index_k_df)
-xx <- left_join(xx, distinct(select(d, species_common_name, species, mean_group)))
+xx <- left_join(ids_pred, distinct(select(m$data, species_common_name, species, mean_group)))
 yy <- left_join(m$deltas, xx)
 
 # yy %>% filter(rockfish == "ROCKFISH") %>% 
 #   group_by(chopstick) %>% summarise(m = mean(Estimate))
 
-yy %>% group_by(mean_group, chopstick) %>% summarise(m = mean(Estimate)) %>% 
-  arrange(chopstick, m)
+yy %>%
+  # for comparison with older models, remove newly added species
+  # filter(!(species_common_name %in% c("slender sole", "pacific sanddad", "rosethorn rockfish")))%>% 
+  group_by(chopstick, mean_group, type) %>% summarise(m = mean(Estimate)) %>% 
+  arrange(type, chopstick, m) %>% View()
 
 # est <- as.list(m$sdr, "Estimate", report = TRUE)
 # se <- as.list(m$sdr, "Std. Error", report = TRUE)
