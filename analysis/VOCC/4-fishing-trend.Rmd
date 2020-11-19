@@ -55,9 +55,19 @@ d <- left_join(grid_by_year, fishing, by = c("X", "Y", "year"))
 
 d$log_effort[is.na(d$log_effort)] <- -2.3
 d$effort[is.na(d$effort)] <- 0
+d$effort1[is.na(d$effort1)] <- 0
+d$effort2[is.na(d$effort2)] <- 0
+d$catch[is.na(d$catch)] <- 0
+d$catch <- d$catch/1000
+d$log_catch <- log(d$catch + 1)
 
 ### BOTH ODD YEAR ###
 d1n3 <- d %>% filter(ssid %in% c(1,3))
+
+catch1n3 <- vocc_gradient_calc(d1n3, "log_catch",
+  scale_fac = scale_fac,
+  quantile_cutoff = 0.05
+)
 
 ssid1n3 <- vocc_gradient_calc(d1n3, "log_effort",
   scale_fac = scale_fac,
@@ -70,9 +80,19 @@ depth1n3 <- vocc_gradient_calc(d1n3, "depth",
 )
 ssid1n3$depth <- depth1n3$mean
 
-d4 <- d %>% filter(ssid %in% c(4))
+
+
+# catch1n3$catch <- catch1n3$mean
+
 
 ### WCVI ###
+d4 <- d %>% filter(ssid %in% c(4))
+
+catch4 <- vocc_gradient_calc(d4, "log_catch",
+  scale_fac = scale_fac,
+  quantile_cutoff = 0.05
+)
+
 ssid4 <- vocc_gradient_calc(d4, "log_effort",
   scale_fac = scale_fac,
   quantile_cutoff = 0.05
@@ -83,8 +103,15 @@ depth4 <- vocc_gradient_calc(d4, "depth",
 )
 ssid4$depth <- depth4$mean
 
+
+
 ### WCHG ###
 d16 <- d %>% filter(ssid %in% c(16))
+
+catch16 <- vocc_gradient_calc(d16, "log_catch",
+  scale_fac = scale_fac,
+  quantile_cutoff = 0.05
+)
 
 ssid16 <- vocc_gradient_calc(d16, "log_effort",
   scale_fac = scale_fac,
@@ -96,15 +123,29 @@ depth16 <- vocc_gradient_calc(d16, "depth",
 )
 ssid16$depth <- depth16$mean
 
+##### combine ssids
+# fished <- rbind(ssid1n3, ssid4, ssid16)
+# 
+# fished <- fished %>%
+#   mutate(
+#     fishing_trend = trend,
+#     mean_effort = exp(mean),
+#     fishing_vel = velocity,
+#     fishing_grad = gradient
+#   ) %>%
+#   dplyr::mutate(X = x, Y = y) %>%
+#   gfplot:::utm2ll(., utm_zone = 9)
 
-fished <- rbind(ssid1n3, ssid4, ssid16)
+fished <- readRDS(file = paste0("data/fishing-effort-change-w-depth.rds"))
 
-fished <- fished %>%
+catch <- rbind(catch1n3, catch4, catch16)
+
+catch <- catch %>%
   mutate(
-    fishing_trend = trend,
-    mean_effort = exp(mean),
-    fishing_vel = velocity,
-    fishing_grad = gradient
+    catch_trend = trend,
+    mean_catch = exp(mean)-1,
+    catch_vel = velocity,
+    catch_grad = gradient
   ) %>%
   dplyr::mutate(X = x, Y = y) %>%
   gfplot:::utm2ll(., utm_zone = 9)
@@ -112,9 +153,9 @@ fished <- fished %>%
 # fished$squashed_effort <- collapse_outliers(fished$mean_effort, c(0, 0.99))
 # hist(fished$squashed_effort)
 
-# fished <- left_join(fished, grid)
+fished <- left_join(fished, catch)
 fished <- fished %>%
-  select(X, Y, x, y, fishing_trend, mean_effort, fishing_vel, fishing_grad, depth)
+  select(X, Y, x, y, fishing_trend, mean_effort, fishing_vel, fishing_grad, depth, catch_trend, mean_catch, catch_vel, catch_grad)
 
 saveRDS(fished, file = paste0("data/fishing-effort-change-w-depth.rds"))
 ```

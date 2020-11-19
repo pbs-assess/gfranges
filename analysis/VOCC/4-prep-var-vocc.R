@@ -140,6 +140,26 @@ d$log_effort <- log(d$mean_effort + 1)
 hist(log(d$mean_effort + 1))
 d$log_effort_scaled <- scale(d$log_effort, center = F)
 
+d$squashed_fishing_vel <- collapse_outliers(d$fishing_vel, c(0.025, 0.975)) #95th quantile and then droped to be less than 100km
+hist(d$squashed_fishing_vel, breaks = 30)
+d$fishing_vel_scaled <- scale(d$squashed_fishing_vel, center = FALSE)
+
+### measured in total catch in tonnes
+
+d$sqrt_catch <- sqrt(d$mean_catch)
+d$sqrt_catch_scaled <- scale(sqrt(d$mean_catch), center = F)
+
+d$catch_trend_scaled <- scale(d$catch_trend, center = F)
+hist(d$catch_trend_scaled)
+
+# hist(sqrt(d$mean_catch))
+d$log_catch <- log(d$mean_catch + 1)
+hist(log(d$mean_catch + 1))
+d$log_catch_scaled <- scale(d$log_catch, center = F)
+
+d$squashed_catch_vel <- collapse_outliers(d$catch_vel, c(0.025, 0.975)) #95th quantile and then droped to be less than 100km
+hist(d$squashed_catch_vel, breaks = 30)
+d$catch_vel_scaled <- scale(d$squashed_catch_vel, center = FALSE)
 
 saveRDS(d, file = paste0("data/all-newclim-untrimmed-dvocc-med.rds"))
 

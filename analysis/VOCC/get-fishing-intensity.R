@@ -8,25 +8,41 @@ saveRDS(d, file = "analysis/VOCC/data/_fishing_effort/fishing-effort.rds") # 200
 d <- readRDS("analysis/VOCC/data/_fishing_effort/fishing-effort.rds")
 
 d$year <- lubridate::year(d$best_date)
-d <- dplyr::select(d, year, fishing_event_id, longitude, latitude, fe_end_date, fe_start_date)
+d <- dplyr::select(d, year, fishing_event_id, longitude, latitude, fe_end_date, fe_start_date, catch_kg) 
 d <- d %>%
   filter(!is.na(fe_start_date), !is.na(fe_end_date)) %>%
   filter(fe_start_date < fe_end_date) %>%
   mutate(
     effort =
       as.numeric(difftime(fe_end_date, fe_start_date, units = "hours"))
-  ) %>%
-  filter(effort > 0)
-d <- dplyr::distinct(d)
-d <- dplyr::select(d, -fe_end_date, -fe_start_date)
-#d <- filter(d, effort <= 9) # max 6 hours
+  ) %>% dplyr::select(-fe_end_date, -fe_start_date) 
+  # filter(effort > 0)
+d <- d %>% 
+  group_by(year, fishing_event_id, longitude, latitude) %>% 
+  summarise(effort = mean(effort), 
+    catch = sum(catch_kg)) 
+
+
+
+d2 <- filter(d, effort <= 6 & year >2007) # max 6 hours
+
+ggplot(d2, aes(effort, log(catch))) + 
+  geom_point(alpha=0.2) + facet_wrap(~year)
+
+d <- d %>% mutate(effort2 = if_else(effort > 6, 1, effort),
+  revised = if_else(effort > 6, "revised", "true"))
 d <- filter(d, longitude < -120) 
 d <- filter(d, latitude > 45) 
 d <- filter(d, longitude > -150) 
-# d$X <- d$longitude
-# d$Y <- d$latitude
+
+ggplot(d, aes((effort2), log(catch), colour = revised)) + 
+  geom_point(alpha=0.1) + facet_wrap(~year) + gfplot::theme_pbs()
+
+
 library(sf)
 proj.to <- "+proj=utm +zone=9 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+
+d <- dplyr::distinct(d) %>% ungroup()
 
 dsf <- st_as_sf(d,
   coords = c("longitude", "latitude"),
@@ -77,13 +93,15 @@ d <- st_set_geometry(d, NULL)
 
 
 dat <- inner_join(d, grid) 
-dat <- filter(dat, effort <= 9) # or max 6 hours?
-quantile(dat$effort, .975)
+# dat <- filter(dat, effort <= 9) # or max 6 hours?
+dat <- dat %>% mutate(effort1 = if_else(effort > 9, 0, effort))
 
-hist(dat$effort)
+quantile(dat$effort1, .975)
+
+hist(dat$effort1)
 
 
-data <- dat %>% group_by(X, Y) %>% mutate(effort = sum(effort)) %>% select(-fishing_event_id) %>% distinct() %>% filter(year < 2019) %>% mutate(log_effort = log(effort))
+data <- dat %>% group_by(X, Y) %>% mutate(effort = sum(effort1), effort2 = sum(effort2), catch = sum(catch)) %>% select(-fishing_event_id) %>% distinct() %>% filter(year < 2019) %>% mutate(log_effort = log(effort1))
 
 saveRDS(data, file = "analysis/VOCC/data/_fishing_effort/fishing-effort-grid.rds")
 # saveRDS(data, file = "analysis/VOCC/data/_fishing_effort/fishing-effort-grid-6hr.rds")
