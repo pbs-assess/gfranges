@@ -47,9 +47,10 @@ y_type <- "vel"
 
 # model_type <- "-vel-temp"
 # model_type <- "-vel-do"
-model_type <- "-vel-both"
+# model_type <- "-vel-both"
 # # model_type <- "-vel-w-age"
-# model_type <- "-vel-w-fishing"
+# model_type <- "-vel-w-fishing" # interaction but last run not squashed
+model_type <- "-vel-w-catch" # now w interaction
 
 # model_type <- "-dist-vel-temp"
 # model_type <- "-dist-vel-both"
@@ -57,32 +58,46 @@ model_type <- "-vel-both"
 
 ### LOAD VOCC DATA
 if (age != "both") {
-  # data_type <- paste0(age,"-95-all-temp")
-  # data_type <- paste0(age,"-90-all-temp")
-  # data_type <- paste0(age,"-80-all-temp")
-  # data_type <- paste0(age,"-50-all-temp")
-  # data_type <- paste0(age,"-90-all-do")
-  # data_type <- paste0(age,"-80-all-do")
   # data_type <- paste0(age, "-95-all-do")
 }
 
 if (age == "both") {
-  # data_type <- paste0("all-95-all-do")
-  # data_type <- paste0("all-95-newclim2")
   # data_type <- paste0("all-95-newclim-more2016")
   # data_type <- paste0("all-95-all-newclim")
   data_type <- paste0("all-95-optimized3")
-  
 }
 
 d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
 
 d$family <- gsub("\\(.*", "", d$parent_taxonomic_unit)
-d$true_genus <- d$genus
+d <- d %>% mutate(family = case_when(
+    family == "sebastolobus"~"sebastidae", # sea perches
+    family == "sebastes"~"sebastidae", 
+    family == "citharichthys"~"paralichthyidae",
+    TRUE ~ family
+  ))
 
-if (w_family) {
-  d$genus <- d$family
-}
+d <- d %>% mutate(higher_taxa = case_when(
+  # Cartilaginous fishes (class)
+  parent_taxonomic_unit == "rajidae(skates)"~"Chondrichthyes",
+  parent_taxonomic_unit == "squalidae(dogfish sharks)"~"Chondrichthyes",
+  parent_taxonomic_unit == "chimaeridae(ratfishes)"~"Chondrichthyes",
+  # Flatfish (order)
+  parent_taxonomic_unit == "citharichthys"~"Pleuronectiformes",
+  parent_taxonomic_unit == "pleuronectidae(righteye flounders)"~"Pleuronectiformes",
+  # Cods (order)
+  parent_taxonomic_unit == "gadidae"~"Gadiformes",
+  # Scorpaeniformes (order)
+  parent_taxonomic_unit == "anoplopomatidae(sablefishes)"~"Scorpaeniformes", # sablefish
+  parent_taxonomic_unit == "hexagrammidae(greenlings)"~"Scorpaeniformes", # lingcod
+  parent_taxonomic_unit == "sebastolobus(thornyheads)"~"Scorpaeniformes", # sea perches
+  parent_taxonomic_unit == "sebastes"~"Scorpaeniformes" # sea perches
+  # families within Scorpaeniformes
+  # parent_taxonomic_unit == "anoplopomatidae(sablefishes)"~"Anoplopomatidae", # sablefish
+  # parent_taxonomic_unit == "hexagrammidae(greenlings)"~"Hexagrammidae", # lingcod
+  # parent_taxonomic_unit == "sebastolobus(thornyheads)"~"Sebastidae", # sea perches
+  # parent_taxonomic_unit == "sebastes"~"Sebastidae" # sea perches
+))
 
 d <- as_tibble(d) %>%
   # filter(species != "Bocaccio") %>%
@@ -91,6 +106,63 @@ d <- as_tibble(d) %>%
   filter(species != "Shortbelly Rockfish") %>%
   filter(species_age != "immature Shortraker Rockfish") %>%
   filter(species != "Longspine Thornyhead")
+
+lut <- tribble(
+  ~species_common_name, ~mean_group,
+  "arrowtooth flounder", "flatfish",
+  "big skate", "chondrichthyes",
+  "bocaccio", "shelf rockfish",
+  "canary rockfish", "inshore rockfish",
+  "curlfin sole", "flatfish",
+  "darkblotched rockfish", "slope rockfish",
+  "dover sole", "flatfish",
+  "english sole", "flatfish",
+  "flathead sole","flatfish",
+  "greenstriped rockfish", "shelf rockfish",
+  "lingcod", "other",
+  "longnose skate","chondrichthyes",
+  "north pacific spiny dogfish", "chondrichthyes",
+  "pacific cod", "cods",
+  "pacific hake", "cods", # previously and still excluded
+  "pacific halibut", "flatfish",
+  "pacific ocean perch", "slope rockfish",
+  "pacific sanddab", "flatfish",# previously excluded
+  "petrale sole","flatfish",
+  "quillback rockfish", "inshore rockfish",
+  "redbanded rockfish", "slope rockfish",
+  "redstripe rockfish", "shelf rockfish",
+  "rex sole","flatfish",
+  "rosethorn rockfish", "slope rockfish", # previously excluded
+  "rougheye/blackspotted rockfish complex", "slope rockfish",
+  "sablefish", "other",
+  # "sand sole", "flatfish",# not converged
+  "sharpchin rockfish", "slope rockfish",
+  "shortraker rockfish", "slope rockfish",
+  "shortspine thornyhead", "slope rockfish",
+  "silvergray rockfish", "shelf rockfish",
+  "slender sole", "flatfish",# previously excluded
+  "southern rock sole", "flatfish",
+  "splitnose rockfish", "slope rockfish",
+  "spotted ratfish", "chondrichthyes",
+  "walleye pollock", "cods",
+  "widow rockfish", "shelf rockfish",
+  "yelloweye rockfish", "inshore rockfish",
+  "yellowmouth rockfish", "slope rockfish",
+  "yellowtail rockfish", "shelf rockfish"
+)
+
+lut <- arrange(lut, mean_group)
+d <- left_join(d, lut)
+
+
+d$true_genus <- d$genus
+
+if (w_family) {
+  d$genus <- d$family
+  # d$genus <- d$higher_taxa
+  # d$genus <- d$mean_group
+}
+
 
 # if combining adult and imm in same model
 if (age == "both") d <- mutate(d, species_only = species, species = species_age, age_class = age, age = if_else(age_class == "mature", 0, 1))
@@ -169,51 +241,6 @@ temp_chopstick <- F
 DO_chopstick <- F
 fishing_chopstick <- F
 
-lut <- tribble(
-  ~species_common_name, ~mean_group,
-  "arrowtooth flounder", "flatfish",
-  "big skate", "chondrichthyes",
-  "bocaccio", "shelf rockfish",
-  "canary rockfish", "inshore rockfish",
-  "curlfin sole", "flatfish",
-  "darkblotched rockfish", "slope rockfish",
-  "dover sole", "flatfish",
-  "english sole", "flatfish",
-  "flathead sole","flatfish",
-  "greenstriped rockfish", "shelf rockfish",
-  "lingcod", NA,
-  "longnose skate","chondrichthyes",
-  "north pacific spiny dogfish", "chondrichthyes",
-  "pacific cod", NA,
-  "pacific hake", NA, # previously excluded
-  "pacific halibut", "flatfish",
-  "pacific ocean perch", "slope rockfish",
-  "pacific sanddab", "flatfish",# previously excluded
-  "petrale sole","flatfish",
-  "quillback rockfish", "inshore rockfish",
-  "redbanded rockfish", "slope rockfish",
-  "redstripe rockfish", "shelf rockfish",
-  "rex sole","flatfish",
-  "rosethorn rockfish", "slope rockfish", # previously excluded
-  "rougheye/blackspotted rockfish complex", "slope rockfish",
-  "sablefish", NA,
-  # "sand sole", "flatfish",# not converged
-  "sharpchin rockfish", "slope rockfish",
-  "shortraker rockfish", "slope rockfish",
-  "shortspine thornyhead", "slope rockfish",
-  "silvergray rockfish", "shelf rockfish",
-  "slender sole", "flatfish",# previously excluded
-  "southern rock sole", "flatfish",
-  "splitnose rockfish", "slope rockfish",
-  "spotted ratfish", "chondrichthyes",
-  "walleye pollock", NA,
-  "widow rockfish", "shelf rockfish",
-  "yelloweye rockfish", "inshore rockfish",
-  "yellowmouth rockfish", "slope rockfish",
-  "yellowtail rockfish", "shelf rockfish"
-  )
-lut <- arrange(lut, mean_group)
-d <- left_join(d, lut)
 
 if (model_type == "-trend") {
   formula <- ~ temp_trend_scaled +
@@ -250,7 +277,8 @@ if (model_type == "-trend-grad") {
   x_type <- "trend"
 }
 
-### TREND DO INTERACTIONS
+############################
+### TREND DO INTERACTIONS ####
 
 if (model_type == "-trend-with-do") {
   formula <- ~ temp_trend_scaled +
@@ -340,11 +368,23 @@ if (model_type == "-trend-w-age2") {
 }
 
 if (model_type == "-trend-w-fishing") {
+  # # hours fished
+  # formula <- ~ temp_trend_scaled +
+  #   mean_temp_scaled +
+  #   temp_trend_scaled:mean_temp_scaled +
+  #   log_effort_scaled + fishing_trend_scaled +
+  #   log_effort_scaled:fishing_trend_scaled +
+  #   DO_trend_scaled +
+  #   mean_DO_scaled +
+  #   DO_trend_scaled:mean_DO_scaled +
+  #   log_biomass_scaled
+  
+  # total tonnes caught
   formula <- ~ temp_trend_scaled +
     mean_temp_scaled +
     temp_trend_scaled:mean_temp_scaled +
-    log_effort_scaled + fishing_trend_scaled +
-    log_effort_scaled:fishing_trend_scaled +
+    log_catch_scaled + catch_trend_scaled +
+    log_catch_scaled:catch_trend_scaled +
     DO_trend_scaled +
     mean_DO_scaled +
     DO_trend_scaled:mean_DO_scaled +
@@ -373,7 +413,6 @@ if (model_type == "-vel-temp") {
 }
 
 if (model_type == "-vel-do") {
-  # if (model_type == "-vel-no-fishing") {
   formula <- ~ squashed_DO_vel_scaled +
     mean_DO_scaled +
     squashed_DO_vel_scaled:mean_DO_scaled +
@@ -389,14 +428,14 @@ if (model_type == "-vel-do") {
 }
 
 if (model_type == "-vel-both") {
-  # if (model_type == "-vel-no-fishing") {
   formula <- ~ squashed_temp_vel_scaled +
     squashed_DO_vel_scaled +
     mean_temp_scaled +
     squashed_temp_vel_scaled:mean_temp_scaled +
     mean_DO_scaled +
     squashed_DO_vel_scaled:mean_DO_scaled +
-    # log_effort_scaled + fishing_trend_scaled +
+    # log_effort_scaled +
+    # fishing_trend_scaled +
     # fishing_trend_scaled:log_effort_scaled +
     log_biomass_scaled
 
@@ -407,15 +446,17 @@ if (model_type == "-vel-both") {
   x_type <- "vel"
 }
 
-if (model_type == "-vel-w-fishing") {
+if (model_type == "-vel-w-catch") {
   formula <- ~ squashed_temp_vel_scaled +
     squashed_DO_vel_scaled +
     mean_temp_scaled +
     squashed_temp_vel_scaled:mean_temp_scaled +
     mean_DO_scaled +
     squashed_DO_vel_scaled:mean_DO_scaled +
-    log_effort_scaled + fishing_trend_scaled +
-    log_effort_scaled:fishing_trend_scaled +
+    # catch_trend_scaled +
+    log_catch_scaled +
+    catch_vel_scaled +
+    log_catch_scaled:catch_vel_scaled +
     log_biomass_scaled
   
   x <- model.matrix(formula, data = d)
@@ -425,23 +466,26 @@ if (model_type == "-vel-w-fishing") {
   x_type <- "vel"
 }
 
-# if (model_type == "-vel-w-fishing") {
-#   formula <- ~ squashed_temp_vel_scaled +
-#     mean_temp_scaled +
-#     squashed_temp_vel_scaled:mean_temp_scaled +
-#     log_effort_scaled + squashed_fishing_vel_scaled +
-#     log_effort_scaled:squashed_fishing_vel_scaled +
-#     squashed_DO_vel_scaled +
-#     mean_DO_scaled +
-#     squashed_DO_vel_scaled:mean_DO_scaled +
-#     log_biomass_scaled
-#   
-#   x <- model.matrix(formula, data = d)
-#   
-#   temp_chopstick <- T
-#   DO_chopstick <- T
-#   x_type <- "vel"
-# }
+if (model_type == "-vel-w-fishing") {
+  formula <- ~ squashed_temp_vel_scaled +
+    mean_temp_scaled +
+    squashed_temp_vel_scaled:mean_temp_scaled +
+    # log_effort_scaled +
+    # fishing_trend_scaled +
+    ## log_effort_scaled:fishing_trend_scaled +
+    log_effort_scaled + squashed_fishing_vel_scaled +
+    log_effort_scaled:squashed_fishing_vel_scaled +
+    squashed_DO_vel_scaled +
+    mean_DO_scaled +
+    squashed_DO_vel_scaled:mean_DO_scaled +
+    log_biomass_scaled
+
+  x <- model.matrix(formula, data = d)
+
+  temp_chopstick <- T
+  DO_chopstick <- T
+  x_type <- "vel"
+}
 
 #### VEL with age effects
 if (model_type == "-vel-w-age") {
@@ -493,8 +537,8 @@ if (model_type == "-vel-w-age2") {
 }
 
 
-
-### DVOCC ###
+############################
+### DVOCC ####
 if (model_type == "-dist-vel-temp") {
   formula <- ~ squashed_temp_dvocc_scaled +
     mean_temp_scaled +
@@ -543,6 +587,9 @@ if (model_type == "-dist-vel-combined") {
   x_type <- "dvocc"
 }
 
+############################
+#### 
+############################
 if (no_chopsticks) {
   temp_chopstick <- F
   DO_chopstick <- T
@@ -564,6 +611,7 @@ if (w_genus) {
   model_type <- paste0(model_type, "-genus")
 }
 
+############################
 if (DO_chopstick) {
   split_effect_column <- "mean_DO_scaled"
 
@@ -686,7 +734,7 @@ if (DO_chopstick) {
     model_type, null_lab, null_number, "-", knots, "-DO.rds"
   ))
 }
-
+############################
 if (fishing_chopstick) {
   
   if(DO_chopstick){
@@ -778,7 +826,7 @@ if (fishing_chopstick) {
     }
   }
 }
-
+############################
 if (temp_chopstick) {
   
   if(DO_chopstick){
