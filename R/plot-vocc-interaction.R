@@ -824,6 +824,36 @@ plot_chop_est <- function(model,
     }
     
     if (!is.null(sort_var)) {
+      
+      if(alt_order) {
+        # this orders based on max of x variable
+        order_value <- pred_dat %>%
+          group_by(genus, species, age,  type, chopstick) %>% 
+          rename(x = x_variable) %>%
+          filter(x == max(x)) %>% 
+          summarise(est = est_p, se = se_p) %>%
+          group_by(genus, species) %>%
+          mutate(mean = mean(est), 
+            range = max(est) - min(est), 
+            min = min(est)) %>% 
+          ungroup() %>% select(-est, -se)
+        
+        if (sort_var == "range") {
+          order_value <- order_value %>% rename(sort_var = range) %>% select(species, sort_var)
+          pred_dat2 <- left_join(pred_dat2, order_value) %>%
+            mutate(species = forcats::fct_reorder(species, -sort_var)) 
+        } else {
+          if (sort_var == "min") {
+            order_value <- order_value %>% rename(sort_var = min)%>% select(species, sort_var)
+            pred_dat2 <- left_join(pred_dat2, order_value) %>%
+              mutate(species = forcats::fct_reorder(species, -sort_var)) 
+          } else{
+            order_value <- order_value %>% rename(sort_var = mean)%>% select(species, sort_var)
+            pred_dat2 <- left_join(pred_dat2, order_value) %>%
+              mutate(species = forcats::fct_reorder(species, -sort_var)) 
+          }
+        }
+      } else {
       if (sort_var == "range") {
         pred_dat2 <- pred_dat2 %>% mutate(sort_var = range) %>%
           mutate(species = forcats::fct_reorder(species, -sort_var))
@@ -832,22 +862,6 @@ plot_chop_est <- function(model,
           pred_dat2 <- pred_dat2 %>% mutate(sort_var = min) %>%
             mutate(species = forcats::fct_reorder(species, -sort_var))
           } else{
-            
-            if(alt_order) {
-            order_value <- pred_dat %>%
-              group_by(genus, species, age,  type, chopstick) %>% 
-              rename(x = x_variable) %>%
-              filter(x == max(x)) %>% 
-              summarise(est = est_p, se = se_p) %>%
-              group_by(genus, species) %>%
-              mutate(sort_var = mean(est)) %>% 
-              ungroup() %>% select(-est, -se)
-            # browser()
-            pred_dat2 <- left_join(pred_dat2, order_value) %>%
-              mutate(species = forcats::fct_reorder(species, -sort_var)) 
-            
-            } else {
-              
             pred_dat2 <- pred_dat2 %>% mutate(sort_var = mean) %>%
               mutate(species = forcats::fct_reorder(species, -sort_var))
             }
