@@ -445,6 +445,8 @@ plot_facet_map <- function(df, column = "est",
     ) +
     gfplot::theme_pbs() +
     theme(
+      strip.background = element_blank(),
+      strip.text.x = element_blank(),
       axis.title.x = element_blank(), axis.title.y = element_blank(),
       axis.text.x = element_blank(), axis.text.y = element_blank(),
       axis.ticks = element_blank(),
