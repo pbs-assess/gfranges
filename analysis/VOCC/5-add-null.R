@@ -37,7 +37,7 @@ all_species <- unique(d$species_age)
 
 
 ### ADD SPECIES TRAITS 
-stats <- readRDS(paste0("data/life-history-stats.rds"))
+stats <- readRDS(paste0("data/life-history-stats5.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 
 stats <- stats %>% separate(species_science_name, " ", into = c("genus","specific"))
@@ -49,6 +49,7 @@ stats$group[stats$group == "HAKE"] <- "COD"
 
 # d <- na.omit(d) %>% as_tibble()
 d <- suppressWarnings(left_join(d, stats, by = "species")) 
+
 select(d, genus, species) %>%
   distinct() %>%
   arrange(genus, species) %>%

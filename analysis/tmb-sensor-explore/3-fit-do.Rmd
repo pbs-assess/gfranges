@@ -121,6 +121,17 @@ Load data
 ```{r}
 all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/all-sensor-data-processed.rds"))
 # glimpse(all_sensor)
+# 
+# all_sensor <- all_sensor %>%
+#   mutate(do_mlpl = if_else(year == 2007, NA_real_, do_mlpl),
+#     do_mlpl_max = if_else(year == 2007, NA_real_, do_mlpl_max),
+#     do_mlpl_min = if_else(year == 2007, NA_real_, do_mlpl_min),
+#     do_mlpl_N = if_else(year == 2007, NA_integer_, do_mlpl_N),
+#     do_range = if_else(year == 2007, NA_real_, do_range),
+#     do_change = if_else(year == 2007, NA_real_, do_change)) %>% select(-akima_depth, -exclude)
+# 
+# write_csv(all_sensor, here::here("analysis/tmb-sensor-explore/data/all-sensor-data-processed.csv"))
+
 
 d_trawl <- all_sensor %>%
   # filter missing do data

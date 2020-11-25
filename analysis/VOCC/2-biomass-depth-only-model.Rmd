@@ -280,7 +280,8 @@ if (!exists("nd_all")) {
   nd_all <- rbind(nd_1, nd_3, nd_4, nd_16) %>%
     mutate(year = as.numeric(year))
 
-  newcov <- readRDS("data/new_covariates.rds") %>% dplyr::select(X, Y, trawled, muddy, rocky, mixed, any_rock)
+  newcov <- readRDS("data/new_covariates.rds") %>% 
+    dplyr::select(X, Y, trawled, sandy, muddy, rocky, mixed, any_rock)
   nd_all <- left_join(nd_all, newcov, by = c("X", "Y"))
   nd_all$trawled[is.na(nd_all$trawled)] <- 0 # correct missing values for small area on edge of QCS grid
   # nd <- nd %>% dplyr::mutate(shallow = ifelse(depth > 35, 0, 1))

@@ -19,9 +19,8 @@ for(i in 2003:2018){
 #     crs = 4326 , 
 #     remove = FALSE)
 
-
-events <- m_temp_rw$data %>% mutate(X_old=X*1000, Y_old=Y*1000) %>% select(-X, -Y)
-
+m_temp_rw <- readRDS("~/github/dfo/gfranges/analysis/tmb-sensor-explore/models/model-temp-all-years-800kn-sstdata.rds")
+events <- m_temp_rw$data %>% mutate(X_old=X*1000, Y_old=Y*1000) %>% dplyr::select(-X, -Y)
 
 xx <- events %>%
   sf::st_as_sf(coords = c("longitude", "latitude"),
@@ -140,7 +139,7 @@ d$Y <- 2 * round(d$Y/2)
 data <- d %>% group_by(X, Y) %>% summarise_all(mean) 
 
 
-data <- data %>% select(-x,-y) %>% 
+data <- data %>% dplyr::select(-x,-y) %>% 
   pivot_longer(T2003:T2018, names_to = "year", values_to = "roms_temp") %>% mutate(
   year = as.numeric(gsub("T", "", year)) 
 ) 
@@ -148,9 +147,16 @@ data <- data %>% select(-x,-y) %>%
 
 # d <- st_set_geometry(d, NULL) 
 
-pred <- readRDS((here::here("analysis/VOCC/data/predicted-DO-2020-06-20-more2016.rds")))
+# pred <- readRDS((here::here("analysis/VOCC/data/predicted-DO-2020-06-20-more2016.rds")))
+# both <- left_join(pred, data)
+# glimpse(both)
+# saveRDS(both, file = here::here("analysis/VOCC/data/predicted-DO-2020-06-20-more2016-roms.rds"))
 
-both <- left_join(pred, data)
-glimpse(both)
-
-saveRDS(both, file = here::here("analysis/VOCC/data/predicted-DO-2020-06-20-more2016-roms.rds"))
+# pred <- readRDS((here::here("analysis/VOCC/data/predicted_temp_allyears_800kn.rds")))
+# both <- left_join(pred, data) %>% mutate(
+#   temp = est,
+#   temp_omega = omega_s,
+#   temp_epsilon = epsilon_st
+# ) %>% dplyr::select(-est, -est_non_rf, -est_rf, -omega_s, -zeta_s, -epsilon_st, -temperature_c)
+# glimpse(both)
+# saveRDS(both, file = here::here("analysis/VOCC/data/predicted-all-temp-with-roms.rds"))
