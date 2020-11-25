@@ -43,7 +43,7 @@ make_raster_brick <- function(data,
 #' @param data Original dataframe of spatiotemporal data.
 #' @param ssid Survey series id if using established survey grid.
 #' @param survey_abbrev Survey series abbreviation if using established survey grid.
-#' @param dummy_year Single year on which to base the survey grid.
+#' @param dummy_year Single year (for each area) on which to base the survey grid. 
 #'
 #' @export
 #'
