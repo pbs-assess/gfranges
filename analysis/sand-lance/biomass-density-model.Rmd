@@ -1,0 +1,705 @@
+---
+title: "Spatiotemporal model of `r paste(params$species)` biomass"
+author: "Philina English"
+date: "`r Sys.Date()`"
+output: html_document
+params: 
+    species: "Pacific Sand Lance"
+    region: "Non-HG surveys"
+    knots: 400
+    # covs: "-sand-depth-roms"
+    # covs: "-depth-roms"
+    # covs: "-sand-depth-temp"
+    covs: "-mud-depth-temp"
+    REML: FALSE
+    AR1: TRUE
+    fixed_spatial: TRUE
+    update_model: TRUE
+    # update_model: FALSE
+    update_model_check: TRUE
+    update_predictions: TRUE
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(
+  fig.width = 11, fig.height = 8.5,
+  # fig.path=paste0("figs/", spp, "/"),
+  echo = FALSE, warning = FALSE, message = FALSE
+)
+library(dplyr)
+library(ggplot2)
+library(gfplot)
+library(gfdata)
+library(sdmTMB)
+library(gfranges)
+
+theme_set(
+    gfplot::theme_pbs(base_size = 14) 
+)
+```
+
+```{r formula}
+if(params$covs == "-sand-depth-roms"){
+mod.formula <- as.formula(paste0(
+  "density ~ 0 + as.factor(year_pair) + 
+  s(sandy_scaled, k = 3) + 
+  s(depth_scaled, k = 3) + 
+  s(roms_scaled, k = 3)"
+  ))
+clim_cov <- "roms"
+}
+
+if(params$covs == "-depth-roms"){
+mod.formula <- as.formula(paste0(
+  "density ~ 0 + as.factor(year_pair) + 
+  s(depth_scaled, k = 3) + 
+  s(roms_scaled, k = 3)"
+  ))
+clim_cov <- "roms"
+}
+
+if(params$covs == "-depth-roms"){
+mod.formula <- as.formula(paste0(
+  "density ~ 0 + as.factor(year_pair) + 
+  s(depth_scaled, k = 3) + 
+  s(roms_scaled, k = 3)"
+  ))
+clim_cov <- "roms"
+}
+
+if(params$covs == "-sand-depth-temp"){
+mod.formula <- as.formula(paste0(
+  "density ~ 0 + as.factor(year_pair) + 
+  s(sandy_scaled, k = 3) + 
+  s(depth_scaled, k = 3) + 
+  s(temp_scaled, k = 3)"
+  ))
+clim_cov <- "temp"
+}
+
+if(params$covs == "-mud-depth-temp"){
+mod.formula <- as.formula(paste0(
+  "density ~ 0 + as.factor(year_pair) + 
+  s(muddy_scaled, k = 3) + 
+  s(depth_scaled, k = 3) + 
+  s(temp_scaled, k = 3)"
+  ))
+clim_cov <- "temp"
+}
+
+```
+
+
+```{r params}
+species <- params$species
+region <- params$region
+covs <- params$covs
+knots <- params$knots
+REML <- params$REML
+AR1 <- params$AR1
+
+paste("region =", region)
+paste("climate covariate =", clim_cov)
+paste("model label =", covs)
+paste("knots =", knots)
+paste("REML =", REML)
+paste("AR1 =", AR1)
+```
+
+```{r, message=FALSE, warning=FALSE}
+spp <- gsub(" ", "-", gsub("\\/", "-", tolower(species)))
+
+# folder to hold figs for this species
+dir.create(file.path("figs", spp))
+dir.create(file.path("data", spp))
+
+if (region == "Both odd year surveys") {
+  survey <- c("SYN QCS", "SYN HS")
+  model_ssid <- c(1, 3)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+if (region == "West Coast Vancouver Island") {
+  survey <- c("SYN WCVI")
+  model_ssid <- c(4)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+
+if (region == "Non-HG surveys") {
+  survey <- c("SYN QCS", "SYN HS", "SYN WCVI")
+  model_ssid <- c(1, 3, 4)
+  ssid_string <- paste0(model_ssid, collapse = "n")
+  years <- NULL
+}
+```
+
+# Build spatiotemporal density model
+Load and filter data 
+```{r}
+# # if on dfo network trawl data can be retrieved
+# events <- gfdata::get_survey_sets(species, ssid = c(1, 3, 4, 16))
+# saveRDS(events, file = paste0("data/event-data-", spp, "")) 
+# biomass <- readRDS(paste0("data/event-data-", spp, ""))
+
+# on PE's system
+biomass <- readRDS(paste0("../VOCC/raw/event-data-", spp, ""))
+
+# trace samples aren't always recorded in 'density_kgpm2' variable
+# but are recorded in 'catch_count'
+# likewise larger catches are recorded as 0 in 'catch_count'
+biomass <- biomass %>% mutate(
+  present = if_else(density_kgpm2 > 0, 1, if_else(catch_count > 0, 1, 0)),
+  density = (if_else(density_kgpm2 > 0, density_kgpm2, 
+    # use roughly the min recorded density for these trace samples
+    if_else(catch_count > 0, 1e-07, 0))) * 10000  # convert kgpm2 to kg per ha
+  ) %>% select(fishing_event_id, year, present, density) %>% 
+  # don't currently have covariate layers for 2019
+  filter(year < 2019)
+
+# get substrate data
+covars <- readRDS("data/event-covariates.rds") %>% select(-geometry)
+data <- dplyr::left_join(biomass, covars) 
+
+# get ctd sensor data
+sensor <- readRDS("~/github/dfo/gfranges/analysis/tmb-sensor-explore/data/all-sensor-data-processed.rds") %>% select(-X, -Y, -lat, -lon)
+data <- left_join(data, sensor) %>% 
+  # remove depth data to bring in complete set later
+  select(-exclude, -akima_depth, -depth_edit, -log_depth, -depth_bath)
+
+# get ROMS mean temperature for April through September each year
+roms <- readRDS("~/github/dfo/gfranges/analysis/tmb-sensor-explore/data/roms_temp_by_events2.rds") %>% select(fishing_event_id, roms)
+data <- left_join(data, roms) 
+
+# get interpolated bathymetry data for comparison with sensor recorded depths
+bath <- readRDS("data/bathymetry-data")
+bath <- bath$data %>% select(X,Y, ssid, fishing_event_id, depth_bath = depth)  
+
+d <- left_join(data, bath) %>% mutate(
+  depth_sam = depth,# rename sensor depth
+  depth = coalesce(depth, depth_bath),# use bath depth if sensor depth missing
+  raw_depth = depth, # create 'depth' var that's actually log depth for scaling
+  log_depth = log(depth), depth = log(raw_depth)) %>% 
+  rename(temp = temperature_c, do = do_mlpl)
+
+# scale predictors before filtering to ensure mean and SD are global
+d <- gfranges::scale_predictors(d, 
+  predictors = c(quo(depth), quo(sandy), quo(muddy), quo(temp), quo(do), quo(roms))
+)
+
+# # rename raw_depth for plots 
+# d <- d %>% mutate(depth = raw_depth) %>%
+#   filter(ssid %in% model_ssid) 
+
+### trim for the climate variable of interest
+if (clim_cov %in%  "temp"){ d <- d[!is.na(d$temp), ]}
+if (clim_cov %in% "roms"){ d <- d[!is.na(d$roms), ]}
+if (clim_cov %in% "do"){ d <- d[!is.na(d$do), ]}
+
+data <- d 
+
+# merge survey pairs such that even year surveys are modelled as though they occured in the previous odd year
+data <- data %>% 
+  filter(year > 2003) %>% 
+  # trick to round to odd years
+  # 0.8 is required to avoid 5's always rounding to even in R
+  mutate(year_pair = (2 * round((year+0.8)/2))-1) %>% 
+  filter(year < 2019)
+```
+
+Plots illustrating year pairs and location of samples where species was caught
+```{r}
+ggplot() + geom_point(data = filter(data, present == 0), 
+    aes(X, Y, colour = sandy), # color absent points with proportion sandy
+    shape= 1, alpha=0.5, size=2) +
+  geom_point(data = filter(data, present == 1), aes(X, Y, size = density), 
+    shape = 4) +
+  scale_color_viridis_c(trans=fourth_root_power, option = "A", begin = 0.4) +
+  facet_wrap(~year)
+
+ggplot() + geom_point(data = filter(data, present == 0), 
+    aes(X, Y, colour = sandy), 
+    shape= 1, alpha=0.5, size=2) +
+    geom_point(data = filter(data, present == 1), aes(X, Y, size = density), 
+    shape = 4) +
+  scale_color_viridis_c(trans=fourth_root_power, option = "A", begin = 0.4) +
+  facet_wrap(~year_pair)
+```
+
+All years plotted at once
+```{r}
+ggplot() + geom_point(data = filter(data, present == 0), 
+    aes(X, Y, colour = sandy), 
+    shape= 1, alpha=0.65, size=2) +
+  geom_point(data = filter(data, present == 1), aes(X, Y, size = density), 
+    shape = 4) +
+  scale_color_viridis_c(option = "A", trans=fourth_root_power, begin = 0.4) +
+  geom_abline(intercept = 0, slope = 1)
+```
+
+
+
+```{r eval= FALSE}
+# depth diff = difference between bath and sample depths
+# depth range is difference between start and end sample depths
+ggplot(data, aes(depth_sam, depth_bath, colour = depth_range)) + 
+  geom_point(alpha=0.75) +
+  scale_color_viridis_c(trans=fourth_root_power, direction = -1) +
+  geom_abline(intercept = 0, slope = 1)
+
+# # current data set includes only sampled depths with no bathymetry based depths
+# ggplot(data, aes(raw_depth, depth_bath, colour = depth_range)) + 
+#   geom_point(alpha=0.75) +
+#   scale_color_viridis_c(trans=fourth_root_power, direction = -1) +
+#   geom_abline(intercept = 0, slope = 1)
+
+ggplot(data, aes(depth_sam, depth_range, colour = as.factor(ssid))) + 
+  geom_point(alpha=0.75) +
+  scale_color_viridis_d() 
+```
+
+Check ROMS vs. CTD temperature measurements
+```{r eval= FALSE}
+# differences between bath and sample depths doesn't seem to explain differences between sample values and roms
+# these roms values are an average of April through September vs. single CTD measurements 
+ggplot(data, aes(roms, temp, colour = depth_diff)) + 
+  geom_point(alpha=0.75, size=0.5) +
+  scale_color_viridis_c(trans=fourth_root_power, direction = -1) +
+  geom_abline(intercept = 0, slope = 1) +
+  xlab("ROMS mean (April - September)") +
+  ylab("ctd temperature")
+
+# differences between start and end depths also don't seem to explain differences between sample values and roms
+ggplot(data, aes(roms, temp, colour = depth_range)) + 
+  geom_point(alpha=0.75, size=0.5)  +
+  scale_color_viridis_c(trans=fourth_root_power, direction = -1) +
+  geom_abline(intercept = 0, slope = 1) +
+  xlab("ROMS mean (April - September)") +
+  ylab("ctd temperature")
+```
+
+
+Make mesh
+```{r}
+data <- data %>% filter(ssid %in% model_ssid)
+
+if (region == "Both odd year surveys") {
+  spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 250)
+}
+
+if (region == "West Coast Vancouver Island") {
+  spde <- sdmTMB::make_spde(data$X, data$Y, n_knots = 200)
+}
+
+if (region == "All synoptic surveys") {
+  spde <- sdmTMB::make_mesh(data, c("X", "Y"), n_knots = knots)
+}
+
+if (region == "Non-HG surveys") {
+  spde <- sdmTMB::make_mesh(data, c("X", "Y"), n_knots = knots)
+}
+plot(spde)
+```
+
+
+Run sdmTMB model
+```{r }
+if (params$update_model) {
+  
+    total_biomass <- sdmTMB::sdmTMB(
+      data = data, mod.formula,
+      # time_varying = ~ 0 + depth_scaled + depth_scaled2, 
+      time = "year_pair", spde = spde,
+      family = tweedie(link = "log"),
+      ar1_fields = params$AR1,
+      reml = params$REML,
+      include_spatial = params$fixed_spatial
+    )
+
+    saveRDS(total_biomass, file = paste0(
+      "models/", spp, "/mod-tot-biomass-", spp, 
+      covs, "-", ssid_string, "-ar1-", params$AR1, "-reml-", params$REML, params$knots, ".rds"
+    ))
+}
+```
+
+### Check residuals
+```{r}
+if(params$update_model_check) {
+
+m <- readRDS(paste0(
+  "models/", spp, "/mod-tot-biomass-", spp, 
+  covs, "-", ssid_string, "-ar1-", params$AR1, 
+  "-reml-", params$REML, params$knots, ".rds"
+  ))
+
+point_predictions <- predict(m)
+point_predictions$residuals <- residuals(m)
+
+saveRDS(point_predictions, file = paste0(
+  "data/", spp, "/check-mod-predictions-", spp, 
+  covs, "-", ssid_string, "-ar1-", params$AR1, "-reml-", 
+  params$REML, params$knots, ".rds"
+))
+}
+```
+
+```{r}
+pred <- readRDS(paste0(
+  "data/", spp, "/check-mod-predictions-", spp, 
+  covs, "-", ssid_string, "-ar1-", params$AR1, "-reml-", params$REML, params$knots, ".rds"
+))
+
+qqnorm(pred$residuals);abline(a = 0, b = 1)
+```
+
+```{r}
+g <- ggplot(pred, 
+    aes(density, residuals, colour = as.factor(ssid))) +
+  geom_point() + scale_x_continuous(trans = "log10") +  
+  facet_wrap(~year_pair)
+g
+```
+
+```{r}
+g1 <- ggplot(pred,
+      aes(density, exp(est), colour = as.factor(ssid))) +
+    geom_abline(slope=1, intercept = 0) +
+    scale_x_continuous(trans = 'log10') +
+    scale_y_continuous(trans = 'log10') +
+    geom_point(alpha = 0.2) 
+g1
+```
+
+
+```{r}
+g2 <- ggplot(pred, 
+      aes((est), residuals, colour = density)) +
+    geom_point(alpha = 0.2) + # scale_x_continuous(trans = 'log10') +
+    facet_wrap(~year)
+g2
+```
+
+
+```{r}
+# ggplot(pred, aes(X, Y, colour = (residuals))) +
+#   geom_point() +
+#   scale_colour_gradient2() +
+#   scale_x_continuous(trans = "log10") +
+#   facet_wrap(~year)
+
+ggplot(pred, aes(X, Y, colour = residuals)) +
+  geom_point(size=0.5) +
+  scale_colour_gradient2() +
+  facet_wrap(~year_pair)
+```
+
+
+### Model summary
+```{r }
+if(!exists("m")){
+m <- readRDS(paste0(
+    "models/", spp, "/mod-tot-biomass-", spp, 
+      covs, "-", ssid_string, "-ar1-", params$AR1, "-reml-", params$REML, params$knots, ".rds"
+  ))
+}
+m
+max(m$gradients)
+```
+
+### Effect plots
+```{r}
+if(params$update_model_check){
+  
+nd_depth <- data.frame(
+  depth_scaled = seq(min(data$depth_scaled), 
+    max(data$depth_scaled), length.out = 30), 
+  sandy_scaled = 0,
+  muddy_scaled = 0,
+  temp_scaled = 0,
+  roms_scaled = 0,
+  year_pair = 2011 # a chosen year
+)
+
+p_depth <- predict(m, newdata = nd_depth, se_fit = TRUE, re_form = NA)
+p_depth$depth <- exp((p_depth$depth_scaled*data$depth_sd[1])+ data$depth_mean[1])
+
+(g_depth <- ggplot(p_depth, aes(depth, exp(est), 
+  ymin = exp(est - 1.96 * est_se), 
+  ymax = exp(est + 1.96 * est_se))) +
+  coord_cartesian(ylim = c(0, max(exp(p_depth$est))*20), xlim = c(0, 150)) +
+  geom_line() + geom_ribbon(alpha = 0.4))
+
+ggsave(paste0("figs/depth-", spp, covs, ".png"), width = 5, height = 5)
+}
+try({g_depth})
+```
+
+
+```{r}
+if(clim_cov == "roms"){
+nd_roms <- data.frame(
+  depth_scaled = min(data$depth_scaled)-0.2, 
+  sandy_scaled = 0,
+  muddy_scaled = 0,
+  roms_scaled = seq(min(data$roms_scaled), 
+    max(data$roms_scaled), length.out = 50),
+  year_pair = 2011 # a chosen year
+)
+p_roms <- predict(m, newdata = nd_roms, se_fit = TRUE, re_form = NA)
+p_roms$roms <- (p_roms$roms_scaled*data$roms_sd[1])+ data$roms_mean[1]
+
+(g_roms <- ggplot(p_roms, aes(roms, exp(est), 
+  ymin = exp(est - 1.96 * est_se), 
+  ymax = exp(est + 1.96 * est_se))) +
+  coord_cartesian(ylim = c(0, max(exp(p_roms$est))*20)) +
+  geom_line() + geom_ribbon(alpha = 0.4))
+
+ggsave(paste0("figs/roms-", spp, covs, ".png"), width = 5, height = 5)
+}
+
+try({g_roms})
+```
+
+
+```{r}
+if(clim_cov == "temp"){
+nd_temp <- data.frame(
+  depth_scaled = min(data$depth_scaled)-0.2, 
+  sandy_scaled = 0,
+  muddy_scaled = 0,
+  temp_scaled = seq(min(data$temp_scaled), 
+    max(data$temp_scaled), length.out = 50),
+  year_pair = 2011 # a chosen year
+)
+p_temp <- predict(m, newdata = nd_temp, se_fit = TRUE, re_form = NA)
+p_temp$temp <- (p_temp$temp_scaled*data$temp_sd[1])+ data$temp_mean[1]
+
+(g_temp <- ggplot(p_temp, aes(temp, exp(est), 
+  ymin = exp(est - 1.96 * est_se), 
+  ymax = exp(est + 1.96 * est_se))) +
+  # coord_cartesian(ylim = c(0, max(exp(p_temp$est))*20)) +
+  geom_line() + geom_ribbon(alpha = 0.4))
+
+ggsave(paste0("figs/temp-", spp, covs, ".png"), width = 5, height = 5)
+}
+try({g_temp})
+```
+
+```{r}
+if(covs %in% c("-sand-depth-roms", "-sand-depth-temp")){
+nd_sand <- data.frame(
+  depth_scaled = min(data$depth_scaled)-0.2, 
+  sandy_scaled = seq(min(data$sandy_scaled), 
+    max(data$sandy_scaled), length.out = 50),
+  muddy_scaled = 0,
+  roms_scaled = 0,
+  temp_scaled = 0,
+  year_pair = 2011 # a chosen year
+)
+
+p_sand <- predict(m, newdata = nd_sand, se_fit = TRUE, re_form = NA)
+p_sand$sandy <- (p_sand$sandy_scaled*data$sandy_sd[1])+ data$sandy_mean[1]
+
+(g_sand <- ggplot(p_sand, aes(sandy, exp(est),
+  ymin = exp(est - 1.96 * est_se), 
+  ymax = exp(est + 1.96 * est_se))) +
+  # coord_cartesian(ylim = c(0,max(exp(p_sand$est))*20)) +
+  geom_line() + geom_ribbon(alpha = 0.4))
+
+# ggplot(p_sand, aes(sandy, exp(est),
+#   ymin = exp(est - 1.96 * est_se), 
+#   ymax = exp(est + 1.96 * est_se))) +
+#   coord_cartesian(ylim = c(0, max(exp(p_sand$est))*2), xlim = c(0,1)) +
+#   geom_line() + geom_ribbon(alpha = 0.4)
+
+ggsave(paste0("figs/sand-", spp, covs, ".png"), width = 5, height = 5)
+}
+try({g_sand})
+```
+
+```{r}
+if(covs %in% c("-mud-depth-roms", "-mud-depth-temp")){
+nd_mud <- data.frame(
+  depth_scaled = min(data$depth_scaled)-0.2, 
+  muddy_scaled = seq(min(data$muddy_scaled), 
+    max(data$muddy_scaled), length.out = 50),
+  sandy_scaled = 0,
+  roms_scaled = 0,
+  temp_scaled = 0,
+  year_pair = 2011 # a chosen year
+)
+
+p_mud <- predict(m, newdata = nd_mud, se_fit = TRUE, re_form = NA)
+p_mud$muddy <- (p_mud$muddy_scaled*data$muddy_sd[1])+ data$muddy_mean[1]
+
+(g_mud <- ggplot(p_mud, aes(muddy, exp(est),
+  ymin = exp(est - 1.96 * est_se), 
+  ymax = exp(est + 1.96 * est_se))) +
+  # coord_cartesian(ylim = c(0,max(exp(p_mud$est))*20)) +
+  geom_line() + geom_ribbon(alpha = 0.4))
+
+# ggplot(p_mud, aes(muddy, exp(est),
+#   ymin = exp(est - 1.96 * est_se), 
+#   ymax = exp(est + 1.96 * est_se))) +
+#   coord_cartesian(ylim = c(0, max(exp(p_mud$est))*2), xlim = c(0,1)) +
+#   geom_line() + geom_ribbon(alpha = 0.4)
+
+ggsave(paste0("figs/mud-", spp, covs, ".png"), width = 5, height = 5)
+}
+try({g_mud})
+```
+
+
+### Map biomass predictions 
+
+Save predictions for spatial grid
+```{r}
+rm(ad_predictions)
+rm(im_predictions)
+rm(predicted)
+
+if(params$update_predictions) {
+  newcov <- readRDS("data/new_covariates.rds") %>% 
+    dplyr::select(X, Y, sandy, muddy, rocky, mixed)
+  
+  nd_all <- readRDS(
+    here::here("analysis/VOCC/data/predicted-all-temp-with-roms.rds")
+    # paste0("data/predicted-DO-2020-06-20-more2016-roms.rds")
+    ) %>% dplyr::select(X, Y, year, ssid, depth, roms = roms_temp, temp)
+  
+  scaledata <- data %>% 
+    dplyr::select(depth_mean, depth_sd, 
+      sandy_mean, sandy_sd,  muddy_mean, muddy_sd, 
+      roms_mean, roms_sd, temp_mean, temp_sd)
+  
+  nd_all <- left_join(nd_all, newcov) 
+  
+  nd_all$depth_mean <- scaledata$depth_mean[1]
+  nd_all$depth_sd <- scaledata$depth_sd[1]
+  nd_all$sandy_mean <- scaledata$sandy_mean[1]
+  nd_all$sandy_sd <- scaledata$sandy_sd[1]
+  nd_all$muddy_mean <- scaledata$muddy_mean[1]
+  nd_all$muddy_sd <- scaledata$muddy_sd[1]
+  nd_all$roms_mean <- scaledata$roms_mean[1]
+  nd_all$roms_sd <- scaledata$roms_sd[1]
+  nd_all$temp_mean <- scaledata$temp_mean[1]
+  nd_all$temp_sd <- scaledata$temp_sd[1]
+  
+  nd_all <- nd_all %>% mutate(
+    depth_scaled = (log(depth) - depth_mean)/depth_sd,
+    sandy_scaled = (sandy - sandy_mean)/sandy_sd,
+    muddy_scaled = (muddy - muddy_mean)/muddy_sd,
+    roms_scaled = (roms - roms_mean)/roms_sd,
+    temp_scaled = (temp - temp_mean)/temp_sd
+  ) 
+  nd_all <- nd_all %>% filter(year > 2003) %>% 
+  # merge survey pairs such that even year surveys are pooled w the previous odd year
+    mutate(year_pair = (2 * round((year+0.8)/2))-1) %>% 
+    # 0.8 is required to avoid 5s rounding to even in R
+    filter(year < 2019)
+
+  m <- readRDS(paste0("models/", spp, "/mod-tot-biomass-", spp, 
+    covs, "-", ssid_string, "-ar1-", params$AR1, "-reml-", params$REML, params$knots, ".rds"
+  ))
+
+  nd <- nd_all %>%
+    filter(ssid %in% model_ssid) %>%
+    filter(year %in% unique(m$data$year))
+  nd <- na.omit(nd)
+  # nd$year <- as.integer(nd$year)
+
+  predicted <- predict(m, newdata = nd, se_fit = F, return_tmb_object = T)
+  
+  saveRDS(predicted, file = paste0(
+    "data/", spp, "/predictions-", spp, 
+    covs, "-", ssid_string, "-tot-biomass-ar1-", params$AR1, "-reml-", params$REML, params$knots, ".rds"
+  ))
+}
+```
+
+Transform estimates to biomass density in kg/ha
+```{r}
+rm(predictions)
+rm(predicted)
+
+  try({
+    predicted <- readRDS(paste0("data/", spp, "/predictions-", spp, 
+      covs, "-", ssid_string, "-tot-biomass-ar1-", 
+      params$AR1, "-reml-", params$REML, params$knots, ".rds"
+    ))
+  })
+
+  predictions <- predicted$data
+  predictions$total_bio <- exp(predictions$est) 
+  max_raster <- quantile(predictions$total_bio, 0.999)
+  max_bio <- signif(quantile(predictions$total_bio, 1), digits = 2)
+
+  predictions$prop_max <- predictions$total_bio/max_raster
+  
+  saveRDS(predictions, file = paste0(
+    "data/", spp,
+    "/just-predictions-", spp, covs, "-total-biomass-ar1-", 
+    params$AR1, "-reml-", params$REML, params$knots, ".rds"
+  ))
+```
+
+
+
+
+```{r, error=TRUE}
+legend_coords <- c(0.12, 0.2) #"none"
+
+p_mean <- predictions  %>% group_by(X, Y) %>%
+  mutate(mean_est = mean(exp(est))) %>% 
+  filter(year_pair == 2011) %>% 
+  mutate(year = "all years") %>%
+  plot_facet_map("mean_est",
+    raster_limits = c(0, max_raster),
+    transform_col = fourth_root_power,
+    legend_position = legend_coords
+  ) + labs(fill = "kg/ha") +
+  ggtitle(paste0("Estimated biomass density of ", species, 
+    " \n(max = ", max_bio, " kg/ha)"))
+print(p_mean)
+ggsave(paste0("figs/map-", spp, covs, "-mean-biomass.png"), width = 5, height = 5)
+```
+
+Spatial random field - captures variance not explained by depth and temperature
+```{r, error=TRUE}
+legend_coords <- c(0.12, 0.2) #"none"
+
+p_omega <- predictions  %>% filter(year_pair == 2011) %>%
+  mutate(x = X, y = Y, year = year_pair) %>%
+  filter(year_pair == 2011) %>% 
+  mutate(year = "all years") %>%
+  plot_facet_map("omega_s",
+    # raster_limits = c(0, 1),
+    # transform_col = fourth_root_power,
+    legend_position =  legend_coords
+  ) + ggtitle(paste0("Spatial random field"))
+
+print(p_omega)
+
+ggsave(paste0("figs/map-", spp, covs, "-spatial-rf.png"), 
+  width = 5, height = 5)
+```
+
+Spatiotemporal random fields
+```{r, error=TRUE}
+legend_coords <- c(0.9, 0.12) #"none"
+
+p_st <- predictions  %>% 
+  mutate(x = X, y = Y) %>%
+  plot_facet_map("epsilon_st",
+    legend_position = legend_coords,
+    transform_col = fourth_root_power
+  ) +
+    ggtitle(paste0("Spatiotemporal random fields"))
+
+print(p_st)
+ggsave(paste0("figs/map-", spp, covs, "-spatiotemporal-rf.png"), 
+  width = 5, height = 5)
+```
+
