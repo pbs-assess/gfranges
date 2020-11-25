@@ -14,24 +14,34 @@ plot_coefs <- function(coloured_coefs,
   add_grey_bars = F,
   fixed_scales = TRUE
 ) {
-
   if(is.null(coloured_coefs$age)) {
     coloured_coefs$age <- "both"
     coloured_coefs <- coloured_coefs %>% 
     mutate(coefficient = shortener(coefficient)) %>%
-      mutate(coefficient = factor(coefficient, levels = c("Intercept", "log_biomass",
+    mutate(coefficient = factor(coefficient, levels = c("Intercept", "log_biomass",
         "temp", "temp_trend", "temp_vel",  "temp_trend:temp", "temp_vel:temp",
         "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO",
-        "log_effort", "fishing_trend", "log_effort:fishing_trend")))
-    
+        "log_effort", "fishing_trend", "log_effort:fishing_trend", "fishing_vel", "log_effort:fishing_vel", 
+        "log_catch", "catch_trend", "catch_vel", "log_catch:catch_vel",
+        "age", "age:temp_trend", "age:temp", 
+        "age:DO_trend", "age:DO", 
+        "age:temp_trend:temp", "age:DO_trend:DO", 
+        "age:temp_vel", "age:DO_vel", 
+        "age:temp_vel:temp", "age:DO_vel:DO"
+        )))
   } else {
-  
   coloured_coefs <- coloured_coefs %>% #filter(coefficient != "(Intercept)") %>% 
     mutate(coefficient = shortener(coefficient)) %>%
     mutate(coefficient = factor(coefficient, levels = c("Intercept", "log_biomass", 
       "temp", "temp_trend", "temp_vel",  "temp_trend:temp", "temp_vel:temp", 
       "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO",
-      "log_effort", "fishing_trend", "log_effort:fishing_trend")), 
+      "log_effort", "fishing_trend", "log_effort:fishing_trend", "fishing_vel", "log_effort:fishing_vel", 
+      "log_catch", "catch_trend", "catch_vel", "log_catch:catch_vel",
+      "age", "age:temp_trend", "age:temp", 
+      "age:DO_trend", "age:DO", 
+      "age:temp_trend:temp", "age:DO_trend:DO", 
+      "age:temp_vel", "age:DO_vel", 
+      "age:temp_vel:temp", "age:DO_vel:DO")), 
       age = factor(age, levels = c("mature", "immature"))) 
   }
   
