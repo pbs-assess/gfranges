@@ -28,8 +28,8 @@ null_number <- "-1" # 2 failed, 3 NA
 setseed <- 42
 
 # ## for trends ###
-# knots <- 500
-# y_type <- "trend"
+knots <- 400
+y_type <- "trend"
 # #
 # # # model_type <- "-trend" # just temp
 # # # model_type <- "-trend-do-only" # just DO
@@ -37,20 +37,20 @@ setseed <- 42
 # # model_type <- "-trend-w-age2"
 # # # model_type <- "-trend-grad"
 # # # model_type <- "-trend-w-grad"
-# model_type <- "-trend-with-do"
+model_type <- "-trend-with-do"
 # # model_type <- "-trend-w-fishing"
 
 
 ### for velocities ###
-knots <- 400
-y_type <- "vel"
+# knots <- 400
+# y_type <- "vel"
 
 # model_type <- "-vel-temp"
 # model_type <- "-vel-do"
 # model_type <- "-vel-both"
-# # model_type <- "-vel-w-age"
+# model_type <- "-vel-w-age"
 # model_type <- "-vel-w-fishing" # interaction but last run not squashed
-model_type <- "-vel-w-catch" # now w interaction
+# model_type <- "-vel-w-catch" # now w interaction
 
 # model_type <- "-dist-vel-temp"
 # model_type <- "-dist-vel-both"
@@ -119,7 +119,7 @@ lut <- tribble(
   "english sole", "flatfish",
   "flathead sole","flatfish",
   "greenstriped rockfish", "shelf rockfish",
-  "lingcod", "other",
+  "lingcod", "lingcod",
   "longnose skate","chondrichthyes",
   "north pacific spiny dogfish", "chondrichthyes",
   "pacific cod", "cods",
@@ -134,7 +134,7 @@ lut <- tribble(
   "rex sole","flatfish",
   "rosethorn rockfish", "slope rockfish", # previously excluded
   "rougheye/blackspotted rockfish complex", "slope rockfish",
-  "sablefish", "other",
+  "sablefish", "sablefish",
   # "sand sole", "flatfish",# not converged
   "sharpchin rockfish", "slope rockfish",
   "shortraker rockfish", "slope rockfish",
@@ -158,9 +158,9 @@ d <- left_join(d, lut)
 d$true_genus <- d$genus
 
 if (w_family) {
-  d$genus <- d$family
+  # d$genus <- d$family
   # d$genus <- d$higher_taxa
-  # d$genus <- d$mean_group
+  d$genus <- d$mean_group
 }
 
 
@@ -284,8 +284,6 @@ if (model_type == "-trend-with-do") {
   formula <- ~ temp_trend_scaled +
     mean_temp_scaled +
     temp_trend_scaled:mean_temp_scaled +
-    # log_effort_scaled + fishing_trend_scaled +
-    # temp_grad_scaled +
     DO_trend_scaled +
     mean_DO_scaled +
     DO_trend_scaled:mean_DO_scaled +
@@ -434,9 +432,8 @@ if (model_type == "-vel-both") {
     squashed_temp_vel_scaled:mean_temp_scaled +
     mean_DO_scaled +
     squashed_DO_vel_scaled:mean_DO_scaled +
+    # log_catch_scaled +
     # log_effort_scaled +
-    # fishing_trend_scaled +
-    # fishing_trend_scaled:log_effort_scaled +
     log_biomass_scaled
 
   x <- model.matrix(formula, data = d)

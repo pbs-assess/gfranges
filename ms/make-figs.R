@@ -25,6 +25,8 @@ max(model$sdr$gradient.fixed)
 # model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-family-1-350.rds")
 model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-1-400.rds") # optimized and converges
 
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-1-400.rds")
+
 max(model_vel$sdr$gradient.fixed)
 
 
@@ -1058,7 +1060,6 @@ p_do_worm2 <- plot_chopstick_slopes(do_vel_slopes, type = "DO",
 )) 
 
 ggsave(here::here("ms", "figs", "worm-plot-vel.pdf"), width = 7, height = 7)
-# ggsave(here::here("ms", "figs", "worm-plot-dvocc-med-by-est.pdf"), width = 8, height = 6)
 
 #### IF WE WANT PLOT OF BOTH TREND AND VELOCITY SLOPES TOGETHER ####
 
@@ -1478,17 +1479,18 @@ species_panels <- function(species, model, x_type,
   model, "temp"
 ))
 
-(p2 <- species_panels("mature Sablefish", 
+(p2 <- species_panels("mature Lingcod", 
   trends = F,
   # chop_label = T, 
   # leftmost = T, alpha_range = c(0.1, 0.9),
   model, "temp"
 ))
 
-(p3 <- species_panels("mature Lingcod", 
+(p3 <- species_panels("immature North Pacific Spiny Dogfish", 
   trends = F,
   chop_label = T, #leftmost = T, 
   model, "DO"))
+
 
 (p4 <- species_panels("mature Flathead Sole", 
   trends = F,
@@ -1523,8 +1525,7 @@ ygrob3 <- grid::textGrob(("Mean climate"),
 
 wrap_plots(ygrob1, ygrob2, ygrob3, p1, p2, p3, p4) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1))
 
-# ggsave(here::here("ms", "figs", "species-map-panels-vel.pdf"), width = 11, height = 11)
-ggsave(here::here("ms", "figs", "species-map-panels-vel.png"), width = 11, height = 11)
+ggsave(here::here("ms", "figs", "species-map-panels-vel4.png"), width = 11, height = 11)
 
 
 # two panels only
@@ -1537,25 +1538,10 @@ ggsave(here::here("ms", "figs", "species-map-panels-vel.png"), width = 11, heigh
   model, "temp"
 ))
 
-(p2b <- species_panels("mature Flathead Sole", 
+(p3b <- species_panels("immature North Pacific Spiny Dogfish", 
   trends = F,
   chop_label = T, #leftmost = T, 
-  # biotic_lim = c(-20, 10),
   model, "DO"))
-
-(p1c <- species_panels("mature Lingcod", 
-  trends = F,
-  chop_label = T, leftmost = T, 
-  biotic_lim = c(-20, 10),
-  model, "temp"))
-
-(p2c <- species_panels("mature Lingcod", 
-  trends = F,
-  chop_label = T, #leftmost = T, 
-  biotic_lim = c(-20, 10),
-  model, "DO"))
-
-
 
 layout <- "
       ADE
@@ -1563,66 +1549,9 @@ layout <- "
       BDE
       CDE
       "
-wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p2b) + plot_layout(design = layout, widths = c(0.03, 1, 1))
+wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p3b) + plot_layout(design = layout, widths = c(0.03, 1, 1))
 
-# ggsave(here::here("ms", "figs", "species-map-panels-vel.pdf"), width = 11, height = 11)
 ggsave(here::here("ms", "figs", "species-map-panels-vel2.png"), width = 6, height = 11)
-
-wrap_plots(ygrob1, ygrob2, ygrob3, p1c, p2c) + plot_layout(design = layout, widths = c(0.03, 1, 1))
-
-ggsave(here::here("ms", "figs", "species-map-panels-vel-lingcod.png"), width = 6, height = 11)
-
-### trend-based example chops ####
-# 
-# (p1 <- species_panels("mature Canary Rockfish", model, "temp"))
-# (p2b <- species_panels("immature Shortspine Thornyhead", model, "temp"))
-# (p3 <- species_panels("mature Flathead Sole", model, "temp" #, alpha_range = c(0.1, 0.9)))
-# 
-# ygrob1 <- grid::textGrob(("Biotic trend (Y)"),
-#   gp = grid::gpar(fontsize = 12),
-#   hjust = 0.4, vjust = 0.85,
-#   rot = 90
-# )
-# 
-# wrap_plots(ygrob1, ygrob2, ygrob3, p1, p2b, p3, ...) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1))
-# 
-# ggsave(here::here("ms", "figs", "species-map-panels.pdf"), width = 17, height = 11)
-# 
-# ###
-#### OTHER SPECIES PANEL OPTIONS ####
-# species_panels("mature Arrowtooth Flounder", model, "temp")
-# species_panels("immature Arrowtooth Flounder", model, "temp")
-# species_panels("mature Curlfin Sole", model, "temp")
-# species_panels("mature Flathead Sole", model, "temp")
-# species_panels("immature Flathead Sole", model, "temp")
-# species_panels ("mature Dover Sole", model, "temp")
-# species_panels ("immature Dover Sole", model, "temp")
-# species_panels("mature English Sole", model, "temp")
-# species_panels("mature Pacific Halibut", model, "temp")
-# species_panels("immature English Sole", model, "temp", alpha_range = c(0.25, 0.9))
-# species_panels("mature Pacific Cod", model, "temp")
-# species_panels("mature Walleye Pollock", model, "temp")
-# species_panels("mature Canary Rockfish", model, "temp", alpha_range = c(0.25, 0.9))
-# species_panels("mature Widow Rockfish", model, "temp")
-# species_panels("mature Bocaccio", model, "temp")
-# species_panels("mature Shortspine Thornyhead", model, "temp")
-
-# species_panels("mature Sablefish", model, "DO")
-# species_panels("mature Pacific Cod", model, "DO")
-# species_panels("mature Canary Rockfish", model, "DO")
-# species_panels("mature Yelloweye Rockfish", model, "DO")
-# species_panels("mature Bocaccio", model, "DO")
-# species_panels("mature Pacific Ocean Perch", model, "DO")
-# species_panels("immature Quillback Rockfish", model, "DO")
-# species_panels("mature Dover Sole", model, "DO")
-# species_panels("immature Lingcod", model, "DO")
-# species_panels("mature Redbanded Rockfish", model, "DO")
-# species_panels("mature Widow Rockfish", model, "DO")
-# species_panels("mature Petrale Sole", model, "DO")
-# species_panels("mature Pacific Halibut", model, "DO")
-# species_panels("mature English Sole", model, "DO")
-# species_panels("immature Flathead Sole", model, "DO")
-# species_panels("immature Arrowtooth Flounder", model, "DO")
 
 
 #########################
@@ -2390,7 +2319,7 @@ cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 
   # where_on_x = "middle",
   where_on_x = "min",
   add_grey_bars = T,
-  # sort_var = "min",
+  sort_var = "min",
   alt_order = T, 
   legend_position = "none",
   # legend_position = c(.75, .93),
@@ -2411,7 +2340,7 @@ cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 
 (p_temp_est_mean <- plot_chop_est(model_vel, type = "temp",  x_variable = "squashed_temp_vel_scaled", 
   where_on_x = "middle",
   add_grey_bars = T,
-  # sort_var = "min",
+  sort_var = "min",
   alt_order = T, 
   legend_position = "none",
   alpha_range = c(0.99, 0.99)) +
@@ -2433,7 +2362,7 @@ cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 
   # where_on_x = "middle",
   # where_on_x = "min",
   add_grey_bars = T,
-  # sort_var = "min",
+  sort_var = "min",
   legend_position = "none",
   alpha_range = c(0.99, 0.99)) +
   # alpha_range = c(0.5, 0.99)) +
@@ -2447,8 +2376,8 @@ cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 
   theme(
     # legend.position = "top",
     axis.title = element_blank(),
-    axis.ticks.y = element_blank(),
-    axis.text.y = element_blank())
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank())
 )
 # ggsave(here::here("ms", "figs", "worm-temp-ests-vel-max.pdf"), width = 4.5, height = 6)
   
@@ -2468,8 +2397,8 @@ cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 
 # ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max-faded.pdf"), width = 8, height = 8)
 
 
-p_temp_est_min <- p_temp_est_min + ggtitle("a. Minimum warming experienced")
-p_temp_est_worm <- p_temp_est_worm + ggtitle("b. Maximum warming experienced")
+p_temp_est_min <- p_temp_est_min + ggtitle("a. Minimum warming")
+p_temp_est_worm <- p_temp_est_worm + ggtitle("b. Maximum warming")
 
 # ( # top legend
 #   (p_temp_est_min | p_temp_est_worm ) + plot_layout(guides = 'collect')& theme(
@@ -2496,49 +2425,72 @@ p_temp_est_worm <- p_temp_est_worm + ggtitle("b. Maximum warming experienced")
   legend.spacing.x = unit(.1, "cm")
 ))  
 
-ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-b.pdf"), width = 7, height = 7)
+ggsave(here::here("ms", "figs", "worm-temp-ests-min-max.pdf"), width = 7, height = 7)
 # ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-faded.pdf"), width = 8, height = 8)
 
 
 ### TEMPERATURE vs DO at max level of change ####
-(p_do_est_worm <- plot_chop_est(model_vel, type = "DO",  x_variable = "squashed_DO_vel_scaled", 
+(p_temp_est_worm2 <- plot_chop_est(model_vel, type = "temp",  x_variable = "squashed_temp_vel_scaled", 
   # where_on_x = "middle",
   # where_on_x = "min",
   add_grey_bars = T,
-  # sort_var = "min",
+  sort_var = "min",
+  legend_position = "none",
+  alpha_range = c(0.99, 0.99)) +
+    # alpha_range = c(0.5, 0.99)) +
+    # alpha_range = c(0.2, 0.99)) +
+    coord_cartesian(xlim = c(-30,60)) +
+    scale_y_discrete(expand = expansion(mult = .02)) +
+    # xlab("Biotic velocity at midpoint of temperature velocities experienced")
+    # xlab("Biotic velocity at max velocities")
+    ggtitle("Largest warming velocity") +
+    # coord_flip() +
+    theme(
+      # legend.position = "top",
+      axis.title = element_blank(),
+      # axis.text.y = element_blank(),
+      axis.ticks.y = element_blank())
+)
+
+(p_do_est_worm <- plot_chop_est(model_vel, type = "DO",  x_variable = "squashed_DO_vel_scaled", 
+  # where_on_x = "middle",
+  where_on_x = "min",
+  add_grey_bars = T,
+  sort_var = "min",
   alpha_range = c(0.4, 0.99),
   legend_position = "none") + 
   scale_y_discrete(expand = expansion(mult = .02), position = "right") +
   # xlab("Biotic velocity at middle of DO velocities experienced")
+    ggtitle("Most negative DO velocity") +
   theme(axis.title = element_blank()) 
 )
 
-(p_temp_est_worm | p_do_est_worm ) / grid::textGrob("Biotic velocity at min of climate velocities experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
+(p_temp_est_worm2 | p_do_est_worm ) / grid::textGrob("Biotic velocity at min of climate velocities experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-# ggsave(here::here("ms", "figs", "worm-plot-ests-vel-max.pdf"), width = 9, height = 6)
+ggsave(here::here("ms", "figs", "worm-plot-ests-vel-max-w-do.pdf"), width = 9, height = 6)
 
 
 ### TEMPERATURE vs DO TRENDS at max level of change ####
-p_temp_est_worm <- plot_chop_est(model, type = "temp",  x_variable = "temp_trend_scaled", 
-  # where_on_x = "middle",
-  add_grey_bars = T,
-  sort_var = "min",
-  legend_position = "none") +
-  #xlab("Biotic velocity at midpoint of temperature velocities experienced")
-  theme(axis.title = element_blank()) 
-
-(p_do_est_worm <- plot_chop_est(model, type = "DO",  x_variable = "DO_trend_scaled", 
-  # where_on_x = "middle",
-  add_grey_bars = T,
-  sort_var = "min",
-  legend_position = "none") + 
-    scale_y_discrete(expand = expansion(mult = .02), position = "right") +
-    # xlab("Biotic velocity at middle of DO velocities experienced")
-    theme(axis.title = element_blank()) 
-)
-
-(p_temp_est_worm | p_do_est_worm ) / grid::textGrob("Biomass trend at midpoint of climate trend experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
-
+# p_temp_est_worm <- plot_chop_est(model, type = "temp",  x_variable = "temp_trend_scaled", 
+#   # where_on_x = "middle",
+#   add_grey_bars = T,
+#   sort_var = "min",
+#   legend_position = "none") +
+#   #xlab("Biotic velocity at midpoint of temperature velocities experienced")
+#   theme(axis.title = element_blank()) 
+# 
+# (p_do_est_worm <- plot_chop_est(model, type = "DO",  x_variable = "DO_trend_scaled", 
+#   # where_on_x = "middle",
+#   add_grey_bars = T,
+#   sort_var = "min",
+#   legend_position = "none") + 
+#     scale_y_discrete(expand = expansion(mult = .02), position = "right") +
+#     # xlab("Biotic velocity at middle of DO velocities experienced")
+#     theme(axis.title = element_blank()) 
+# )
+# 
+# (p_temp_est_worm | p_do_est_worm ) / grid::textGrob("Biomass trend at midpoint of climate trend experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
+#
 # ggsave(here::here("ms", "figs", "worm-plot-ests-trend.pdf"), width = 9, height = 6)
 
 
@@ -2583,30 +2535,30 @@ model_vel$pred_dat %>%
   ggplot(aes(chopstick, est, colour = chopstick)) + 
   geom_boxplot()
 
-
-model$pred_dat %>%
-  filter(type == "temp") %>% 
-  group_by(genus, species, chopstick) %>% 
-  filter(temp_trend_scaled == max(temp_trend_scaled)) %>% 
-  summarise(est = est_p, se = se_p) %>% 
-  ggplot(aes(chopstick, est, colour = chopstick)) + 
-  geom_boxplot()
-
-model$pred_dat %>%
-  filter(type == "DO") %>% 
-  group_by(genus, species, chopstick) %>% 
-  filter(DO_trend_scaled == max(DO_trend_scaled)) %>% 
-  summarise(est = est_p, se = se_p) %>% 
-  ggplot(aes(chopstick, est, colour = chopstick)) +
-  geom_violin() + 
-  geom_boxplot() 
-
-model$pred_dat %>%
-  filter(type == "DO") %>% 
-  group_by(genus, species, chopstick) %>% 
-  filter(DO_trend_scaled == min(DO_trend_scaled)) %>% 
-  summarise(est = est_p, se = se_p) %>% 
-  ggplot(aes(chopstick, est, colour = chopstick)) +
-  geom_violin() + 
-  geom_boxplot() 
+# 
+# model$pred_dat %>%
+#   filter(type == "temp") %>% 
+#   group_by(genus, species, chopstick) %>% 
+#   filter(temp_trend_scaled == max(temp_trend_scaled)) %>% 
+#   summarise(est = est_p, se = se_p) %>% 
+#   ggplot(aes(chopstick, est, colour = chopstick)) + 
+#   geom_boxplot()
+# 
+# model$pred_dat %>%
+#   filter(type == "DO") %>% 
+#   group_by(genus, species, chopstick) %>% 
+#   filter(DO_trend_scaled == max(DO_trend_scaled)) %>% 
+#   summarise(est = est_p, se = se_p) %>% 
+#   ggplot(aes(chopstick, est, colour = chopstick)) +
+#   geom_violin() + 
+#   geom_boxplot() 
+# 
+# model$pred_dat %>%
+#   filter(type == "DO") %>% 
+#   group_by(genus, species, chopstick) %>% 
+#   filter(DO_trend_scaled == min(DO_trend_scaled)) %>% 
+#   summarise(est = est_p, se = se_p) %>% 
+#   ggplot(aes(chopstick, est, colour = chopstick)) +
+#   geom_violin() + 
+#   geom_boxplot() 
 

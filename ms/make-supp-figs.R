@@ -13,17 +13,23 @@ library(tidyverse)
 
 #### load appropriate final models and other data
 
-model <- readRDS("analysis/VOCC/data/trend-all-95-optimized2-08-01-trend-with-do-1-500.rds") # optimized
-max(model$sdr$gradient.fixed)
+# model <- readRDS("analysis/VOCC/data/trend-all-95-optimized2-08-01-trend-with-do-1-500.rds") # optimized
+model_trend <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-24-trend-with-do-1-400.rds")
+max(model_trend$sdr$gradient.fixed)
 
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-1-400.rds") # optimized and converges
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-family-order-1-300.rds")
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-20-vel-both-family-1-350.rds")
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-20-vel-both-1-350.rds")
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-21-vel-both-1-400.rds")
+
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-1-400.rds") 
 max(model_vel$sdr$gradient.fixed)
+
+# model <- model_trend
+# model <- model_vel
 
 # model_fish <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-w-fishing-1-500.rds")
 # max(model_fish$sdr$gradient.fixed)
-
-model_age <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-02-vel-w-age-1-400.rds")
-max(model_age$sdr$gradient.fixed)
 
 # stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
 stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds")) %>% mutate(age = if_else(age == "immature", "Immature", "Mature"))
@@ -38,29 +44,27 @@ stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds"))
 # # load a set of models for comparisons ####
 # # currently all built without WCHG using the climate data herein
 # # alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-more2016-with-null-NA-untrimmed-allvars.rds"))
-# model_trend <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds")
-# # max(model_trend$sdr$gradient.fixed)
-# # model_temp <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-1-500.rds")
-model_grad <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-w-grad-1-500.rds")
-# # max(model_grad$sdr$gradient.fixed)
+# model_temp <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-1-500.rds")
 # model_do <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-do-only-1-500-DO.rds")
+# model_grad <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-w-grad-1-500.rds")
 # # max(model_do$sdr$gradient.fixed)
 
-model_trend <- model
-model_temp <- readRDS("data/vel-all-95-optimized2-08-11-vel-temp-1-400.rds")
-# model_grad <- readRDS("analysis/VOCC/data/trend-all-95-TODO-trend-w-grad-1-500.rds")
-# model_do <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-do-only-1-500-DO.rds")
+model_grad <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-24-trend-w-grad-1-400.rds")
+max(model_grad$sdr$gradient.fixed)
 
-# max(model_grad$sdr$gradient.fixed)
-# max(model_do$sdr$gradient.fixed)
-
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-1-400.rds") # optimized and converges
-model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-11-vel-temp-1-400-temp.rds")
+# model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-11-vel-temp-1-400-temp.rds")
+model_vel_t <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-24-vel-temp-1-400-temp.rds")
 max(model_vel_t$sdr$gradient.fixed)
-model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-12-vel-do-1-400-DO.rds")
+
+model_vel_d <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-23-vel-do-1-400-DO.rds")
 max(model_vel_d$sdr$gradient.fixed)
-model_age <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-02-vel-w-age-1-400.rds")
-# model_fish <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-11-vel-w-fishing-1-400-DO.rds")
+
+model_age <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-23-vel-w-age-1-400.rds")
+max(model_age$sdr$gradient.fixed)
+
+model_fish <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-19-vel-w-fishing-1-400.rds")
+max(model_fish$sdr$gradient.fixed)
+
 
 ## trend model ####
 coef_names <- shortener(unique(model_trend$coefs$coefficient))
@@ -77,26 +81,26 @@ overall_betas$model <- "trend"
 
 # overall_betas_std <- overall_betas/ sd(model_trend$y_i)
 
+###### TREND MODELS NOT INCLUDED ####
+# ## trend model with temp only ####
+# coef_names <- shortener(unique(model_temp$coefs$coefficient))
+# coef_names <- c("intercept", "change in T", "mean T", "biomass", "interaction (T)")
+# betas <- signif(as.list(model_temp$sdr, "Estimate")$b_j, digits = 3)/ sd(model_temp$y_i)
+# SE <- signif(as.list(model_temp$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_temp$y_i)
+# lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_temp$y_i)
+# upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_temp$y_i)
+# overall_betas_t <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
+# overall_betas_t$model <- "trend (T only)"
 
-## trend model with temp only ####
-coef_names <- shortener(unique(model_temp$coefs$coefficient))
-coef_names <- c("intercept", "change in T", "mean T", "biomass", "interaction (T)")
-betas <- signif(as.list(model_temp$sdr, "Estimate")$b_j, digits = 3)/ sd(model_temp$y_i)
-SE <- signif(as.list(model_temp$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_temp$y_i)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_temp$y_i)
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_temp$y_i)
-overall_betas_t <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
-overall_betas_t$model <- "trend (T only)"
-
-## trend model with DO only ####
-coef_names <- shortener(unique(model_do$coefs$coefficient))
-coef_names <- c("intercept", "change in DO", "mean DO", "biomass", "interaction (DO)")
-betas <- signif(as.list(model_do$sdr, "Estimate")$b_j, digits = 3)/ sd(model_do$y_i)
-SE <- signif(as.list(model_do$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_do$y_i)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_do$y_i)
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_do$y_i)
-overall_betas_d <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
-overall_betas_d$model <- "trend (DO only)"
+# ## trend model with DO only ####
+# coef_names <- shortener(unique(model_do$coefs$coefficient))
+# coef_names <- c("intercept", "change in DO", "mean DO", "biomass", "interaction (DO)")
+# betas <- signif(as.list(model_do$sdr, "Estimate")$b_j, digits = 3)/ sd(model_do$y_i)
+# SE <- signif(as.list(model_do$sdr, "Std. Error")$b_j, digits = 3)/ sd(model_do$y_i)
+# lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))/ sd(model_do$y_i)
+# upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)/ sd(model_do$y_i)
+# overall_betas_d <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
+# overall_betas_d$model <- "trend (DO only)"
 
 ## trend model with temp and gradient ####
 # # version with 2-way interactions
@@ -108,8 +112,8 @@ overall_betas_d$model <- "trend (DO only)"
 coef_names <- shortener(unique(model_grad$coefs$coefficient))
 coef_names <- c(
   "intercept", "change in T", "mean T",
-  "gradient", "biomass", "interaction (T)",
-  "mean T:Gradient", "change in T:Gradient", "interaction (T):Gradient"
+  "T gradient", "biomass", "interaction (T)",
+  "mean T:gradient", "change in T:gradient", "interaction (T):gradient"
 )
 
 betas <- signif(as.list(model_grad$sdr, "Estimate")$b_j, digits = 3)/ sd(model_grad$y_i)
@@ -176,38 +180,38 @@ overall_betas_age <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_age$model <- "Maturity (3-way)"
 
 # # version with only 2-way interactions
-
-# model_age2 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age2-1-500-DO.rds")
-coef_names <- shortener(unique(model_age2$coefs$coefficient))
-coef_names <- c(
-  "intercept", "immature", "change in T", "mean T", "change in DO", "mean DO",
-  "biomass", "interaction (T)", "interaction (DO)", "change in T:immature", "mean T:immature", "change in DO:immature", "mean DO:immature"
-)
-betas <- signif(as.list(model_age2$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model_age2$sdr, "Std. Error")$b_j, digits = 3)
-lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
-upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
-overall_betas_age2 <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
-overall_betas_age2$model <- "maturity (2-way)"
+# 
+# # model_age2 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age2-1-500-DO.rds")
+# coef_names <- shortener(unique(model_age2$coefs$coefficient))
+# coef_names <- c(
+#   "intercept", "immature", "change in T", "mean T", "change in DO", "mean DO",
+#   "biomass", "interaction (T)", "interaction (DO)", "change in T:immature", "mean T:immature", "change in DO:immature", "mean DO:immature"
+# )
+# betas <- signif(as.list(model_age2$sdr, "Estimate")$b_j, digits = 3)
+# SE <- signif(as.list(model_age2$sdr, "Std. Error")$b_j, digits = 3)
+# lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
+# upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
+# overall_betas_age2 <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
+# overall_betas_age2$model <- "maturity (2-way)"
 
 ### plot global coefs for multiple models ####
 
 overall_betas$model_type <- "trend"
-overall_betas_t$model_type <- "trend"
-overall_betas_d$model_type <- "trend"
+# overall_betas_t$model_type <- "trend"
+# overall_betas_d$model_type <- "trend"
 overall_betas_g$model_type <- "trend"
 overall_betas_vel$model_type <- "velocity"
 overall_betas_vel_t$model_type <- "velocity"
 overall_betas_vel_d$model_type <- "velocity"
 overall_betas_age$model_type <- "velocity"
-overall_betas_age2$model_type <- "trend"
+# overall_betas_age2$model_type <- "trend"
 
 custom_order <- c(
   "intercept", "immature", "biomass",
-  "gradient",
-  "mean T", "mean T:immature", "mean T:Gradient",
-  "change in T", "change in T:immature", "change in T:Gradient",
-  "interaction (T)", "interaction (T):immature", "interaction (T):Gradient",
+  "T gradient",
+  "mean T", "mean T:immature", "mean T:gradient",
+  "change in T", "change in T:immature", "change in T:gradient",
+  "interaction (T)", "interaction (T):immature", "interaction (T):gradient",
   "mean DO", "mean DO:immature",
   "change in DO", "change in DO:immature",
   "interaction (DO)", "interaction (DO):immature"
@@ -219,7 +223,7 @@ custom_order <- c(
 overall <- rbind.data.frame(
   overall_betas_vel, 
   overall_betas_vel_t, overall_betas_vel_d,  
-  # overall_betas_g,
+  overall_betas_g,
   # overall_betas_t, overall_betas_d,
   overall_betas
 )
@@ -245,7 +249,7 @@ global_vel <- dotwhisker::dwplot(overall2) + # xlim(-10,10) +
       "#F46D43",
       "#FDAE61",
       # "#FEE08B",
-      # "#ABDDA4",
+      "#ABDDA4",
       "#3288BD"
       # "#5E4FA2"
     )
@@ -382,7 +386,7 @@ ggsave(here::here("ms", "figs", "supp-global-coefs.pdf"), width = 10, height = 5
 ### ALL TREND CHOPS ####
 # if model controling for fishing effort desired...
 # model <- readRDS("analysis/VOCC/data/trend-all-95-all-do-05-19-trend-w-fishing-1-500.rds")
-
+model <- model_trend
 temp_slopes <- chopstick_slopes(model,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
@@ -427,7 +431,7 @@ do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"]
   legend_position = "none"
   # legend_position = c(.25, .95)
 ) +
-  coord_flip(ylim = c(-5.5, 3)) + 
+  coord_flip(ylim = c(-4.5, 3)) + 
   ylab(" "))
 
 p_do_all_slopes <- plot_chopstick_slopes(do_slopes,
@@ -436,7 +440,7 @@ p_do_all_slopes <- plot_chopstick_slopes(do_slopes,
   legend_position = "none"
   # legend_position = c(.25, .95)
 ) +
-  coord_flip(ylim = c(-3.1, 2)) + # coord_flip(ylim =c(-3,1)) +
+  coord_flip(ylim = c(-2, 3)) + # coord_flip(ylim =c(-3,1)) +
   ylab("slopes")
 
 cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops,
@@ -445,69 +449,54 @@ cowplot::plot_grid(p_temp_all_slopes, p_temp_chops, p_do_all_slopes, p_do_chops,
   ncol = 2, rel_widths = c(1, 2.5)
 )
 
-# layout <- "
-#       ABBBB
-#       CDDDD
-#       "
+# ggsave(here::here("ms", "figs", "supp-trend-chopsticks-ordered.pdf"), width = 14, height = 10)
+## ggsave(here::here("ms", "figs", "supp-trend-chopsticks-fishing.pdf"), width = 14, height = 11)
+
 # 
-# p_temp_all_slopes + p_temp_chops + p_do_all_slopes + p_do_chops + 
-#   plot_layout(design = layout, widths = c(1, 2.5), guides = 'collect')& theme(
-#     legend.text = element_text(size = 9),
-#     legend.position = "bottom",
-#     # legend.justification='left',
-#     legend.direction = "horizontal",
-#     legend.box = "horizontal",
-#     legend.margin=margin(t = 0.1, l= 1, r = 0, unit='cm'),
-#     # legend.margin = unit(1.5, "cm"),
-#     legend.spacing.x = unit(.1, "cm")
-#   )
-
-ggsave(here::here("ms", "figs", "supp-trend-chopsticks-ordered.pdf"), width = 14, height = 10)
-# ggsave(here::here("ms", "figs", "supp-trend-chopsticks-fishing.pdf"), width = 14, height = 11)
-
-
-### if just temp model... no change in chopsticks ####
-temp_slopes <- chopstick_slopes(model_temp,
-  x_variable = "temp_trend_scaled",
-  interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
-)
-temp_slopes <- left_join(temp_slopes, stats)
-p2 <- plot_fuzzy_chopsticks(model_temp,
-  x_variable = "temp_trend_scaled", type = "temp",
-  y_label = "Predicted % change in biomass",
-  # choose_age = "mature",
-  # order_var = "species",
-  slopes = temp_slopes
-) + coord_cartesian(ylim = c(-11, 7)) +
-  xlab("Temperature trend (scaled)") + theme(legend.position = "none")
-
-temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
-p1 <- plot_chopstick_slopes(temp_slopes,
-  type = "temp",
-  legend_position = c(.25, .95)
-) +
-  ylab("Slopes")
-
-cowplot::plot_grid(p1, p2, rel_widths = c(1, 2.5))
-ggsave(here::here("ms", "figs", "supp-trend-chopsticks-temp-only.pdf"), width = 14, height = 5.5)
+# ### if just temp model... no change in chopsticks ####
+# temp_slopes <- chopstick_slopes(model_temp,
+#   x_variable = "temp_trend_scaled",
+#   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
+# )
+# temp_slopes <- left_join(temp_slopes, stats)
+# p2 <- plot_fuzzy_chopsticks(model_temp,
+#   x_variable = "temp_trend_scaled", type = "temp",
+#   y_label = "Predicted % change in biomass",
+#   # choose_age = "mature",
+#   # order_var = "species",
+#   slopes = temp_slopes
+# ) + coord_cartesian(ylim = c(-11, 7)) +
+#   xlab("Temperature trend (scaled)") + theme(legend.position = "none")
+# 
+# temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+# p1 <- plot_chopstick_slopes(temp_slopes,
+#   type = "temp",
+#   legend_position = c(.25, .95)
+# ) +
+#   ylab("Slopes")
+# 
+# cowplot::plot_grid(p1, p2, rel_widths = c(1, 2.5))
+# ggsave(here::here("ms", "figs", "supp-trend-chopsticks-temp-only.pdf"), width = 14, height = 5.5)
 
 ### if just temp with gradient model... no change in chopsticks ####
 temp_slopes <- chopstick_slopes(model_grad,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
-)
+)%>%
+  mutate(sort_var = -(all_global_slope))
+
 temp_slopes <- left_join(temp_slopes, stats)
 p2 <- plot_fuzzy_chopsticks(model_grad,
   x_variable = "temp_trend_scaled", type = "temp",
   y_label = "Predicted % change in biomass",
   slopes = temp_slopes
-) + coord_cartesian(ylim = c(-11, 7)) +
+) + coord_cartesian(ylim = c(-11, 4)) +
   xlab("Temperature trend (scaled)") + theme(legend.position = "none")
 
 temp_slopes$species[temp_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 p1 <- plot_chopstick_slopes(temp_slopes,
   type = "temp",
-  legend_position = c(.25, .95)
+  legend_position = "none" #c(.25, .75)
 ) +
   ylab("Slopes")
 
@@ -520,14 +509,16 @@ temp_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_temp_vel_scaled",
   interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp"
 ) %>%
-  mutate(sort_var = -(diff)) # orders by high - low slopes
+  mutate(sort_var = (diff)) 
+  # mutate(sort_var = -(diff)) # orders by high - low slopes
   # mutate(sort_var = slope_est)
 
 do_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_DO_vel_scaled",
   interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
 ) %>%
-  mutate(sort_var = -(diff))
+  mutate(sort_var = (diff)) 
+  # mutate(sort_var = -(diff))
   # mutate(sort_var = slope_est)
 
 temp_vel_slopes <- left_join(temp_vel_slopes, stats)
@@ -596,8 +587,11 @@ cowplot::plot_grid(p_temp_all_vel_slopes, p_temp_vel_chops, p_do_all_vel_slopes,
 #   )
 
 
-ggsave(here::here("ms", "figs", "supp-vel-chopsticks-ordered.pdf"), width = 14, height = 10)
-# ggsave(here::here("ms", "figs", "supp-dvocc-chopsticks-ordered.pdf"), width = 14, height = 10)
+# ggsave(here::here("ms", "figs", "supp-vel-chopsticks-extraspp.pdf"), width = 14, height = 10)
+## ggsave(here::here("ms", "figs", "supp-vel-chopsticks-catch-family-350.pdf"), width = 14, height = 10)
+## ggsave(here::here("ms", "figs", "supp-vel-chopsticks-catch-400.pdf"), width = 14, height = 10)
+## ggsave(here::here("ms", "figs", "supp-vel-chopsticks-w-order.pdf"), width = 14, height = 10)
+## ggsave(here::here("ms", "figs", "supp-dvocc-chopsticks-ordered.pdf"), width = 14, height = 10)
 
 
 #########################
@@ -910,14 +904,14 @@ biotic_maps + facet_wrap(~species_only, ncol = 9) +
   ) + ggtitle(paste("  Biotic", change_var, "for", maturity, "groundfish species"))
 }
 
-biotic_maps(model_vel)
-ggsave(here::here("ms", "figs", "supp-biotic-maps-mature.png"), width = 15, height = 10)
+biotic_maps(model_vel, legend_position =  c(0.02, 0.88))
+ggsave(here::here("ms", "figs", "supp-biotic-maps-mature.png"), width = 15, height = 12)
 
 biotic_maps(model_vel, maturity = "immature")
 ggsave(here::here("ms", "figs", "supp-biotic-maps-immature.png"), width = 15, height = 10)
 
-biotic_maps(model_vel, trends = F)
-ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-mature.png"), width = 15, height = 10)
+biotic_maps(model_vel, trends = F, legend_position =  c(0.02, 0.88))
+ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-mature.png"), width = 15, height = 12)
 
 biotic_maps(model_vel, trends = F, maturity = "immature")
 ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-immature.png"), width = 15, height = 10)
@@ -925,43 +919,43 @@ ggsave(here::here("ms", "figs", "supp-biotic-vel-maps-immature.png"), width = 15
 #########################
 #### SPATIAL RESIDUALS
 ###
-### for trend model ####
-data <- model$data %>%
-  mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
-  mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
-  mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
-  mutate(residual = if_else(residual < resid_lower, resid_lower, residual))
-
-data$species_only[data$species_only == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"
-
-data %>%
-  filter(age == 0) %>%
-  ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2(
-    # trans = fourth_root_power, #breaks=scales::extended_breaks(n = 9),
-    # mid = "lavenderblush1"
-    mid = "aliceblue") + gfplot::theme_pbs() +
-  theme(
-    legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
-    axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
-  ) +
-  facet_wrap(~species_only, strip.position = "bottom") +
-  ggtitle("Mature fish biomass trend residuals")
-ggsave(here::here("ms", "figs", "supp-mat-residuals.pdf"), width = 7, height = 7)
-
-data %>%
-  filter(age == 1) %>%
-  ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
-  scale_fill_gradient2(# trans = fourth_root_power, #breaks=scales::extended_breaks(n = 9),
-    # mid = "lavenderblush1"
-    mid = "aliceblue") + gfplot::theme_pbs() +
-  theme(
-    legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
-    axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
-  ) +
-  facet_wrap(~species_only, strip.position = "bottom") +
-  ggtitle("Immature fish biomass trend residuals")
-ggsave(here::here("ms", "figs", "supp-imm-residuals.pdf"), width = 7, height = 6)
+# ### for trend model ####
+# data <- model$data %>%
+#   mutate(resid_upper = quantile(model$data$residual, probs = 0.975)) %>% # compress tails
+#   mutate(resid_lower = quantile(model$data$residual, probs = 0.025)) %>% # compress tails
+#   mutate(residual = if_else(residual > resid_upper, resid_upper, residual)) %>%
+#   mutate(residual = if_else(residual < resid_lower, resid_lower, residual))
+# 
+# data$species_only[data$species_only == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted Rockfish"
+# 
+# data %>%
+#   filter(age == 0) %>%
+#   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
+#   scale_fill_gradient2(
+#     # trans = fourth_root_power, #breaks=scales::extended_breaks(n = 9),
+#     # mid = "lavenderblush1"
+#     mid = "aliceblue") + gfplot::theme_pbs() +
+#   theme(
+#     legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
+#     axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
+#   ) +
+#   facet_wrap(~species_only, strip.position = "bottom") +
+#   ggtitle("Mature fish biomass trend residuals")
+# ggsave(here::here("ms", "figs", "supp-mat-residuals.pdf"), width = 7, height = 7)
+# 
+# data %>%
+#   filter(age == 1) %>%
+#   ggplot(aes(x, y, fill = residual)) + geom_tile(width = 4, height = 4) +
+#   scale_fill_gradient2(# trans = fourth_root_power, #breaks=scales::extended_breaks(n = 9),
+#     # mid = "lavenderblush1"
+#     mid = "aliceblue") + gfplot::theme_pbs() +
+#   theme(
+#     legend.position = "bottom", panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
+#     axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
+#   ) +
+#   facet_wrap(~species_only, strip.position = "bottom") +
+#   ggtitle("Immature fish biomass trend residuals")
+# ggsave(here::here("ms", "figs", "supp-imm-residuals.pdf"), width = 7, height = 6)
 
 
 ### for velocity model ####
@@ -989,9 +983,9 @@ data2 %>%
     panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
     axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
   ) +
-  facet_wrap(~species_only, strip.position = "bottom") +
+  facet_wrap(~species_only, nrow = 7, strip.position = "bottom") +
   ggtitle("Mature fish biomass velocity residuals")
-ggsave(here::here("ms", "figs", "supp-mat-vel-residuals.pdf"), width = 7, height = 7)
+ggsave(here::here("ms", "figs", "supp-mat-vel-residuals.pdf"), width = 6, height = 8)
 
 data2 %>%
   filter(age_class == "immature") %>%
@@ -1006,9 +1000,9 @@ data2 %>%
     panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
     axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
   ) +
-  facet_wrap(~species_only, strip.position = "bottom") +
-  ggtitle("Immature fish biomass trend residuals")
-ggsave(here::here("ms", "figs", "supp-imm-vel-residuals.pdf"), width = 7, height = 6)
+  facet_wrap(~species_only, nrow = 6, strip.position = "bottom") +
+  ggtitle("Immature fish biomass velocity residuals")
+ggsave(here::here("ms", "figs", "supp-imm-vel-residuals.pdf"), width = 6, height = 7)
 
 #########################
 #########################
