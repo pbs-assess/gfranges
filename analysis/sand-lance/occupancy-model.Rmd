@@ -10,12 +10,12 @@ params:
     # covs: "-sand-depth-roms"
     # covs: "-depth-roms"
     # covs: "-sand-depth-temp"
-    # covs: "-mud-depth-temp"
+    covs: "-mud-depth-temp"
     # covs: "-sand-mud-depth-temp"
-    covs: "-sand-by-depth-mud-temp"
+    # covs: "-sand-by-depth-mud-temp"
     REML: FALSE
-    AR1: TRUE
-    fixed_spatial: TRUE
+    AR1: FALSE # true doesn't seem to work with occupancy models
+    fixed_spatial: FALSE
     update_model: TRUE
     # update_model: FALSE
     update_model_check: TRUE
@@ -109,7 +109,7 @@ clim_cov <- "temp"
 if(params$covs == "-sand-by-depth-mud-temp"){
 mod.formula <- as.formula(paste0(
   "present ~ 0 + as.factor(year_pair) + 
-  te(sandy_scaled, depth_scaled, k = 5) + 
+  te(sandy_scaled, depth_scaled, k = 3) + 
   s(muddy_scaled, k = 3) + 
   s(temp_scaled, k = 3)"
   ))
@@ -124,16 +124,17 @@ species <- params$species
 region <- params$region
 covs <- params$covs
 knots <- params$knots
-REML <- params$REML
-AR1 <- params$AR1
+# REML <- params$REML
+# AR1 <- params$AR1
 
-paste("region =", region)
+paste("region =", params$region)
 paste("climate covariate =", clim_cov)
-paste("model label =", covs)
-paste("knots =", knots)
-paste("REML =", REML)
-paste("AR1 =", AR1)
-paste("formula =", mod.formula)
+paste("model label =", params$covs)
+paste("knots =", params$knots)
+paste("REML =", params$REML)
+paste("AR1 =", params$AR1)
+paste("fixed spatial =", params$fixed_spatial)
+paste("formula =", mod.formula[3])
 ```
 
 ```{r, message=FALSE, warning=FALSE}
@@ -466,7 +467,7 @@ try({g_depth})
 ```{r}
 if(clim_cov == "roms"){
 nd_roms <- data.frame(
-  depth_scaled = min(data$depth_scaled)-0.2, 
+  depth_scaled = min(data$depth_scaled), # use min depth for estimated prob at most relevant depth
   sandy_scaled = 0,
   muddy_scaled = 0,
   roms_scaled = seq(min(data$roms_scaled), 
@@ -491,7 +492,7 @@ try({g_roms})
 ```{r}
 if(clim_cov == "temp"){
 nd_temp <- data.frame(
-  depth_scaled = min(data$depth_scaled)-0.2, # use min depth for estimated error at relevant depths
+  depth_scaled = min(data$depth_scaled), 
   sandy_scaled = 0,
   muddy_scaled = 0,
   temp_scaled = seq(min(data$temp_scaled), 
@@ -515,7 +516,7 @@ try({g_temp})
 ```{r}
 if(covs %in% c("-sand-depth-roms", "-sand-depth-temp", "-sand-mud-depth-temp", "-sand-by-depth-mud-temp")){
 nd_sand <- data.frame(
-  depth_scaled = min(data$depth_scaled)-0.2, 
+  depth_scaled = min(data$depth_scaled), 
   sandy_scaled = seq(min(data$sandy_scaled), 
     max(data$sandy_scaled), length.out = 50),
   muddy_scaled = 0,
@@ -685,10 +686,10 @@ p_mean <- predictions  %>% group_by(X, Y) %>%
     transform_col = fourth_root_power,
     legend_position = legend_coords
   ) + labs(fill = "prob") +
-  ggtitle(paste0("Estimated biomass density of ", species, 
+  ggtitle(paste0("Estimated occupancy of ", species, 
     " \n(max = ", max_prob, ")"))
 print(p_mean)
-ggsave(paste0("figs/map-", spp, covs, "-mean-distribution.png"), width = 5, height = 5)
+ggsave(paste0("figs/map-", spp, covs, "-mean-occupancy.png"), width = 5, height = 5)
 ```
 
 Spatial random field - captures variance not explained by depth and temperature

@@ -9,8 +9,9 @@ params:
     knots: 400
     # covs: "-sand-depth-roms"
     # covs: "-depth-roms"
-    # covs: "-sand-depth-temp"
-    covs: "-mud-depth-temp"
+    covs: "-sand-depth-temp"
+    # covs: "-mud-depth-temp"
+    # covs: "-mud-sand-depth-temp"
     REML: FALSE
     AR1: TRUE
     fixed_spatial: TRUE
@@ -58,19 +59,19 @@ mod.formula <- as.formula(paste0(
 clim_cov <- "roms"
 }
 
-if(params$covs == "-depth-roms"){
+if(params$covs == "-depth-temp"){
 mod.formula <- as.formula(paste0(
   "density ~ 0 + as.factor(year_pair) + 
   s(depth_scaled, k = 3) + 
-  s(roms_scaled, k = 3)"
+  s(temp_scaled, k = 3)"
   ))
-clim_cov <- "roms"
+clim_cov <- "temp"
 }
 
 if(params$covs == "-sand-depth-temp"){
 mod.formula <- as.formula(paste0(
   "density ~ 0 + as.factor(year_pair) + 
-  s(sandy_scaled, k = 3) + 
+  s(sandy_scaled, by = shallow, k = 3) + 
   s(depth_scaled, k = 3) + 
   s(temp_scaled, k = 3)"
   ))
@@ -86,6 +87,16 @@ mod.formula <- as.formula(paste0(
   ))
 clim_cov <- "temp"
 }
+if(params$covs == "-mud-sand-depth-temp"){
+mod.formula <- as.formula(paste0(
+  "density ~ 0 + as.factor(year_pair) + 
+  s(muddy_scaled, k = 3) + 
+  s(sandy_scaled, k = 3) + 
+  s(depth_scaled, k = 3) + 
+  s(temp_scaled, k = 3)"
+  ))
+clim_cov <- "temp"
+}
 
 ```
 
@@ -95,15 +106,17 @@ species <- params$species
 region <- params$region
 covs <- params$covs
 knots <- params$knots
-REML <- params$REML
-AR1 <- params$AR1
+# REML <- params$REML
+# AR1 <- params$AR1
 
-paste("region =", region)
+paste("region =", params$region)
 paste("climate covariate =", clim_cov)
-paste("model label =", covs)
-paste("knots =", knots)
-paste("REML =", REML)
-paste("AR1 =", AR1)
+paste("model label =", params$covs)
+paste("knots =", params$knots)
+paste("REML =", params$REML)
+paste("AR1 =", params$AR1)
+paste("fixed spatial =", params$fixed_spatial)
+paste("formula =", mod.formula[3])
 ```
 
 ```{r, message=FALSE, warning=FALSE}
@@ -180,7 +193,9 @@ d <- left_join(data, bath) %>% mutate(
   depth_sam = depth,# rename sensor depth
   depth = coalesce(depth, depth_bath),# use bath depth if sensor depth missing
   raw_depth = depth, # create 'depth' var that's actually log depth for scaling
-  log_depth = log(depth), depth = log(raw_depth)) %>% 
+  log_depth = log(depth), depth = log(raw_depth),
+  shallow = if_else(raw_depth < 100, 1, 0)
+  ) %>% 
   rename(temp = temperature_c, do = do_mlpl)
 
 # scale predictors before filtering to ensure mean and SD are global
@@ -240,7 +255,7 @@ ggplot() + geom_point(data = filter(data, present == 0),
 
 
 
-```{r eval= FALSE}
+```{r eval = FALSE}
 # depth diff = difference between bath and sample depths
 # depth range is difference between start and end sample depths
 ggplot(data, aes(depth_sam, depth_bath, colour = depth_range)) + 
@@ -279,6 +294,25 @@ ggplot(data, aes(roms, temp, colour = depth_range)) +
   ylab("ctd temperature")
 ```
 
+Check for substrate correlations -- sandy somewhat correlated with depth
+```{r eval= FALSE}
+ggplot(data, aes(raw_depth, sandy, colour = raw_depth)) + 
+  geom_point(alpha=0.75, size=0.5) +
+  scale_color_viridis_c(trans=fourth_root_power, direction = -1) 
+
+ggplot(data, aes(raw_depth, sandy-muddy, colour = raw_depth)) + 
+  geom_point(alpha=0.75, size=0.5) +
+  scale_color_viridis_c(trans=fourth_root_power, direction = -1) 
+
+ggplot(data, aes(raw_depth, muddy, colour = raw_depth)) + 
+  geom_point(alpha=0.75, size=0.5) +
+  scale_color_viridis_c(trans=fourth_root_power, direction = -1) 
+
+ggplot(filter(data, raw_depth < 100), aes(depth, sandy, colour = depth)) + 
+  geom_point(alpha=0.75, size=0.5) +
+  scale_color_viridis_c(trans=fourth_root_power, direction = -1) 
+```
+
 
 Make mesh
 ```{r}
@@ -309,7 +343,6 @@ if (params$update_model) {
   
     total_biomass <- sdmTMB::sdmTMB(
       data = data, mod.formula,
-      # time_varying = ~ 0 + depth_scaled + depth_scaled2, 
       time = "year_pair", spde = spde,
       family = tweedie(link = "log"),
       ar1_fields = params$AR1,
@@ -375,8 +408,9 @@ g1
 
 ```{r}
 g2 <- ggplot(pred, 
-      aes((est), residuals, colour = density)) +
-    geom_point(alpha = 0.2) + # scale_x_continuous(trans = 'log10') +
+      aes(exp(est), residuals, colour = density)) +
+    geom_point(alpha = 0.2) + 
+    scale_x_continuous(trans = 'log10') +
     facet_wrap(~year)
 g2
 ```
@@ -410,11 +444,13 @@ max(m$gradients)
 
 ### Effect plots
 ```{r}
+threshold <- quantile(data$density, 0.999)
 if(params$update_model_check){
   
 nd_depth <- data.frame(
   depth_scaled = seq(min(data$depth_scaled), 
     max(data$depth_scaled), length.out = 30), 
+  shallow = 1,
   sandy_scaled = 0,
   muddy_scaled = 0,
   temp_scaled = 0,
@@ -425,10 +461,13 @@ nd_depth <- data.frame(
 p_depth <- predict(m, newdata = nd_depth, se_fit = TRUE, re_form = NA)
 p_depth$depth <- exp((p_depth$depth_scaled*data$depth_sd[1])+ data$depth_mean[1])
 
+max_CI <- max(exp(p_depth$est + 1.96 * p_depth$est_se))
+max_Y <- if_else(threshold > max_CI, max_CI, threshold)  
+
 (g_depth <- ggplot(p_depth, aes(depth, exp(est), 
   ymin = exp(est - 1.96 * est_se), 
   ymax = exp(est + 1.96 * est_se))) +
-  coord_cartesian(ylim = c(0, max(exp(p_depth$est))*20), xlim = c(0, 150)) +
+  coord_cartesian(ylim = c(0, max_Y), xlim = c(0, 150)) +
   geom_line() + geom_ribbon(alpha = 0.4))
 
 ggsave(paste0("figs/depth-", spp, covs, ".png"), width = 5, height = 5)
@@ -440,7 +479,8 @@ try({g_depth})
 ```{r}
 if(clim_cov == "roms"){
 nd_roms <- data.frame(
-  depth_scaled = min(data$depth_scaled)-0.2, 
+  depth_scaled = min(data$depth_scaled), # use min depth for estimated prob at most relevant depth
+  shallow = 1,
   sandy_scaled = 0,
   muddy_scaled = 0,
   roms_scaled = seq(min(data$roms_scaled), 
@@ -449,6 +489,9 @@ nd_roms <- data.frame(
 )
 p_roms <- predict(m, newdata = nd_roms, se_fit = TRUE, re_form = NA)
 p_roms$roms <- (p_roms$roms_scaled*data$roms_sd[1])+ data$roms_mean[1]
+
+max_CI <- max(exp(p_roms$est + 1.96 * p_roms$est_se))
+max_Y <- if_else(threshold > max_CI, max_CI, threshold)  
 
 (g_roms <- ggplot(p_roms, aes(roms, exp(est), 
   ymin = exp(est - 1.96 * est_se), 
@@ -466,7 +509,8 @@ try({g_roms})
 ```{r}
 if(clim_cov == "temp"){
 nd_temp <- data.frame(
-  depth_scaled = min(data$depth_scaled)-0.2, 
+  depth_scaled = min(data$depth_scaled), 
+  shallow = 1,
   sandy_scaled = 0,
   muddy_scaled = 0,
   temp_scaled = seq(min(data$temp_scaled), 
@@ -476,10 +520,13 @@ nd_temp <- data.frame(
 p_temp <- predict(m, newdata = nd_temp, se_fit = TRUE, re_form = NA)
 p_temp$temp <- (p_temp$temp_scaled*data$temp_sd[1])+ data$temp_mean[1]
 
+max_CI <- max(exp(p_temp$est + 1.96 * p_temp$est_se))
+max_Y <- if_else(threshold > max_CI, max_CI, threshold)  
+
 (g_temp <- ggplot(p_temp, aes(temp, exp(est), 
   ymin = exp(est - 1.96 * est_se), 
   ymax = exp(est + 1.96 * est_se))) +
-  # coord_cartesian(ylim = c(0, max(exp(p_temp$est))*20)) +
+  coord_cartesian(ylim = c(0, max_Y)) +
   geom_line() + geom_ribbon(alpha = 0.4))
 
 ggsave(paste0("figs/temp-", spp, covs, ".png"), width = 5, height = 5)
@@ -488,12 +535,13 @@ try({g_temp})
 ```
 
 ```{r}
-if(covs %in% c("-sand-depth-roms", "-sand-depth-temp")){
+if(covs %in% c("-sand-depth-roms", "-sand-depth-temp", "-mud-sand-depth-temp")){
 nd_sand <- data.frame(
-  depth_scaled = min(data$depth_scaled)-0.2, 
+  depth_scaled = min(data$depth_scaled), 
+  shallow = 1,
   sandy_scaled = seq(min(data$sandy_scaled), 
     max(data$sandy_scaled), length.out = 50),
-  muddy_scaled = 0,
+  muddy_scaled = min(data$muddy_scaled),
   roms_scaled = 0,
   temp_scaled = 0,
   year_pair = 2011 # a chosen year
@@ -505,27 +553,23 @@ p_sand$sandy <- (p_sand$sandy_scaled*data$sandy_sd[1])+ data$sandy_mean[1]
 (g_sand <- ggplot(p_sand, aes(sandy, exp(est),
   ymin = exp(est - 1.96 * est_se), 
   ymax = exp(est + 1.96 * est_se))) +
-  # coord_cartesian(ylim = c(0,max(exp(p_sand$est))*20)) +
+  coord_cartesian(ylim = c(0, max_Y)) +
   geom_line() + geom_ribbon(alpha = 0.4))
-
-# ggplot(p_sand, aes(sandy, exp(est),
-#   ymin = exp(est - 1.96 * est_se), 
-#   ymax = exp(est + 1.96 * est_se))) +
-#   coord_cartesian(ylim = c(0, max(exp(p_sand$est))*2), xlim = c(0,1)) +
-#   geom_line() + geom_ribbon(alpha = 0.4)
 
 ggsave(paste0("figs/sand-", spp, covs, ".png"), width = 5, height = 5)
 }
 try({g_sand})
 ```
 
+
 ```{r}
-if(covs %in% c("-mud-depth-roms", "-mud-depth-temp")){
+if(covs %in% c("-mud-depth-roms", "-mud-depth-temp","-mud-sand-depth-temp")){
 nd_mud <- data.frame(
-  depth_scaled = min(data$depth_scaled)-0.2, 
+  depth_scaled = min(data$depth_scaled), 
+  shallow = 1,
   muddy_scaled = seq(min(data$muddy_scaled), 
     max(data$muddy_scaled), length.out = 50),
-  sandy_scaled = 0,
+  sandy_scaled = max(data$sandy_scaled),
   roms_scaled = 0,
   temp_scaled = 0,
   year_pair = 2011 # a chosen year
@@ -534,17 +578,14 @@ nd_mud <- data.frame(
 p_mud <- predict(m, newdata = nd_mud, se_fit = TRUE, re_form = NA)
 p_mud$muddy <- (p_mud$muddy_scaled*data$muddy_sd[1])+ data$muddy_mean[1]
 
+max_CI <- max(exp(p_mud$est + 1.96 * p_mud$est_se))
+max_Y <- if_else(threshold > max_CI, max_CI, threshold)
+
 (g_mud <- ggplot(p_mud, aes(muddy, exp(est),
   ymin = exp(est - 1.96 * est_se), 
   ymax = exp(est + 1.96 * est_se))) +
-  # coord_cartesian(ylim = c(0,max(exp(p_mud$est))*20)) +
+  coord_cartesian(ylim = c(0, max_Y)) +
   geom_line() + geom_ribbon(alpha = 0.4))
-
-# ggplot(p_mud, aes(muddy, exp(est),
-#   ymin = exp(est - 1.96 * est_se), 
-#   ymax = exp(est + 1.96 * est_se))) +
-#   coord_cartesian(ylim = c(0, max(exp(p_mud$est))*2), xlim = c(0,1)) +
-#   geom_line() + geom_ribbon(alpha = 0.4)
 
 ggsave(paste0("figs/mud-", spp, covs, ".png"), width = 5, height = 5)
 }
