@@ -9,13 +9,13 @@ params:
     knots: 400
     # covs: "-sand-depth-roms"
     # covs: "-depth-roms"
-    # covs: "-sand-depth-temp"
-    covs: "-mud-depth-temp"
+    covs: "-sand-depth-temp"
+    # covs: "-mud-depth-temp"
     # covs: "-sand-mud-depth-temp"
     # covs: "-sand-by-depth-mud-temp"
     REML: FALSE
     AR1: FALSE # true doesn't seem to work with occupancy models
-    fixed_spatial: FALSE
+    fixed_spatial: TRUE
     update_model: TRUE
     # update_model: FALSE
     update_model_check: TRUE
@@ -50,7 +50,7 @@ theme_set(
 if(params$covs == "-sand-depth-roms"){
 mod.formula <- as.formula(paste0(
   "present ~ 0 + as.factor(year_pair) + 
-  s(sandy_scaled, k = 3) + 
+  sandy_scaled + 
   s(depth_scaled, k = 3) + 
   s(roms_scaled, k = 3)"
   ))
@@ -66,19 +66,19 @@ mod.formula <- as.formula(paste0(
 clim_cov <- "roms"
 }
 
-if(params$covs == "-depth-roms"){
+if(params$covs == "-depth-temp"){
 mod.formula <- as.formula(paste0(
   "present ~ 0 + as.factor(year_pair) + 
   s(depth_scaled, k = 3) + 
-  s(roms_scaled, k = 3)"
+  s(temp_scaled, k = 3)"
   ))
-clim_cov <- "roms"
+clim_cov <- "temp"
 }
 
 if(params$covs == "-sand-depth-temp"){
 mod.formula <- as.formula(paste0(
   "present ~ 0 + as.factor(year_pair) + 
-  s(sandy_scaled, k = 3) + 
+  sandy_scaled + 
   s(depth_scaled, k = 3) + 
   s(temp_scaled, k = 3)"
   ))
@@ -88,7 +88,7 @@ clim_cov <- "temp"
 if(params$covs == "-mud-depth-temp"){
 mod.formula <- as.formula(paste0(
   "present ~ 0 + as.factor(year_pair) + 
-  s(muddy_scaled, k = 3) + 
+  muddy_scaled + 
   s(depth_scaled, k = 3) + 
   s(temp_scaled, k = 3)"
   ))
@@ -98,24 +98,26 @@ clim_cov <- "temp"
 if(params$covs == "-sand-mud-depth-temp"){
 mod.formula <- as.formula(paste0(
   "present ~ 0 + as.factor(year_pair) + 
-  s(sandy_scaled, k = 3) + 
-  s(muddy_scaled, k = 3) + 
+  sandy_scaled +
+  muddy_scaled + 
   s(depth_scaled, k = 3) + 
   s(temp_scaled, k = 3)"
   ))
 clim_cov <- "temp"
 }
 
+# probably too complex to fit
 if(params$covs == "-sand-by-depth-mud-temp"){
 mod.formula <- as.formula(paste0(
   "present ~ 0 + as.factor(year_pair) + 
+  s(sandy_scaled, k = 3) + 
+  s(depth_scaled, k = 3) + 
   te(sandy_scaled, depth_scaled, k = 3) + 
   s(muddy_scaled, k = 3) + 
   s(temp_scaled, k = 3)"
   ))
 clim_cov <- "temp"
 }
-
 ```
 
 
@@ -211,7 +213,8 @@ d <- left_join(data, bath) %>% mutate(
   depth_sam = depth,# rename sensor depth
   depth = coalesce(depth, depth_bath),# use bath depth if sensor depth missing
   raw_depth = depth, # create 'depth' var that's actually log depth for scaling
-  log_depth = log(depth), depth = log(raw_depth)) %>% 
+  log_depth = log(depth), depth = log(raw_depth),
+  shallow = if_else(raw_depth < 100, 1, 0)) %>% 
   rename(temp = temperature_c, do = do_mlpl)
 
 # scale predictors before filtering to ensure mean and SD are global
@@ -394,7 +397,7 @@ g1
 
 ```{r}
 g2 <- ggplot(pred, 
-      aes(est, residuals, colour = as.factor(present))) +
+      aes(logit2prob(est), residuals, colour = as.factor(present))) +
     geom_point(alpha = 0.2) + # scale_x_continuous(trans = 'log10') +
     facet_wrap(~year)
 g2
@@ -442,6 +445,7 @@ if(params$update_model_check){
 nd_depth <- data.frame(
   depth_scaled = seq(min(data$depth_scaled), 
     max(data$depth_scaled), length.out = 30), 
+  shallow = 1, 
   sandy_scaled = 0,
   muddy_scaled = 0,
   temp_scaled = 0,
@@ -460,7 +464,7 @@ p_depth$depth <- exp((p_depth$depth_scaled*data$depth_sd[1])+ data$depth_mean[1]
 
 ggsave(paste0("figs/depth-binomial-", spp, covs, ".png"), width = 5, height = 5)
 }
-try({g_depth})
+try({g_depth}, silent = TRUE)
 ```
 
 
@@ -468,7 +472,8 @@ try({g_depth})
 if(clim_cov == "roms"){
 nd_roms <- data.frame(
   depth_scaled = min(data$depth_scaled), # use min depth for estimated prob at most relevant depth
-  sandy_scaled = 0,
+  shallow = 1,
+  sandy_scaled = 0, 
   muddy_scaled = 0,
   roms_scaled = seq(min(data$roms_scaled), 
     max(data$roms_scaled), length.out = 50),
@@ -485,7 +490,7 @@ p_roms$roms <- (p_roms$roms_scaled*data$roms_sd[1])+ data$roms_mean[1]
 
 ggsave(paste0("figs/roms-binomial-", spp, covs, ".png"), width = 5, height = 5)
 }
-try({g_roms})
+try({g_roms}, silent = TRUE)
 ```
 
 
@@ -493,6 +498,7 @@ try({g_roms})
 if(clim_cov == "temp"){
 nd_temp <- data.frame(
   depth_scaled = min(data$depth_scaled), 
+  shallow = 1, 
   sandy_scaled = 0,
   muddy_scaled = 0,
   temp_scaled = seq(min(data$temp_scaled), 
@@ -510,13 +516,14 @@ p_temp$temp <- (p_temp$temp_scaled*data$temp_sd[1])+ data$temp_mean[1]
 
 ggsave(paste0("figs/temp-binomial-", spp, covs, ".png"), width = 5, height = 5)
 }
-try({g_temp})
+try({g_temp}, silent = TRUE)
 ```
 
 ```{r}
 if(covs %in% c("-sand-depth-roms", "-sand-depth-temp", "-sand-mud-depth-temp", "-sand-by-depth-mud-temp")){
 nd_sand <- data.frame(
   depth_scaled = min(data$depth_scaled), 
+  shallow = 1, 
   sandy_scaled = seq(min(data$sandy_scaled), 
     max(data$sandy_scaled), length.out = 50),
   muddy_scaled = 0,
@@ -542,13 +549,14 @@ p_sand$sandy <- (p_sand$sandy_scaled*data$sandy_sd[1])+ data$sandy_mean[1]
 
 ggsave(paste0("figs/sand-binomial-", spp, covs, ".png"), width = 5, height = 5)
 }
-try({g_sand})
+try({g_sand}, silent = TRUE)
 ```
 
 ```{r}
 if(covs %in% c("-mud-depth-roms", "-mud-depth-temp", "-sand-mud-depth-temp", "-sand-by-depth-mud-temp")){
 nd_mud <- data.frame(
-  depth_scaled = min(data$depth_scaled)-0.2, 
+  depth_scaled = min(data$depth_scaled), 
+  shallow = 1, 
   muddy_scaled = seq(min(data$muddy_scaled), 
     max(data$muddy_scaled), length.out = 50),
   sandy_scaled = 0,
@@ -574,7 +582,7 @@ p_mud$muddy <- (p_mud$muddy_scaled*data$muddy_sd[1])+ data$muddy_mean[1]
 
 ggsave(paste0("figs/mud-binomial-", spp, covs, ".png"), width = 5, height = 5)
 }
-try({g_mud})
+try({g_mud}, silent = TRUE)
 ```
 
 
@@ -622,8 +630,9 @@ if(params$update_predictions) {
   ) 
   nd_all <- nd_all %>% filter(year > 2003) %>% 
   # merge survey pairs such that even year surveys are pooled w the previous odd year
-    mutate(year_pair = (2 * round((year+0.8)/2))-1) %>% 
     # 0.8 is required to avoid 5s rounding to even in R
+    mutate(year_pair = (2 * round((year+0.8)/2))-1,
+      shallow = if_else(depth < 100, 1, 0)) %>% 
     filter(year < 2019)
 
   m <- readRDS(paste0("models/", spp, "/mod-tot-binomial-", spp, 
@@ -650,28 +659,24 @@ Transform estimates to probability of occupancy
 rm(predictions)
 rm(predicted)
 
-  try({
-    predicted <- readRDS(paste0("data/", spp, "/predictions-", spp, 
+predicted <- readRDS(paste0("data/", spp, "/predictions-", spp, 
       covs, "-", ssid_string, "-tot-binomial-ar1-", 
       params$AR1, "-reml-", params$REML, params$knots, ".rds"
     ))
-  })
 
-  predictions <- predicted$data
-  predictions$total_prob <- logit2prob(predictions$est) 
-  max_raster <- quantile(predictions$total_prob, 0.999)
-  max_prob <- signif(quantile(predictions$total_prob, 1), digits = 2)
+predictions <- predicted$data
+predictions$total_prob <- logit2prob(predictions$est) 
+max_raster <- quantile(predictions$total_prob, 0.999)
+max_prob <- signif(quantile(predictions$total_prob, 1), digits = 2)
 
-  predictions$prop_max <- predictions$total_prob/max_raster
+predictions$prop_max <- predictions$total_prob/max_raster
   
-  saveRDS(predictions, file = paste0(
+saveRDS(predictions, file = paste0(
     "data/", spp,
     "/just-predictions-", spp, covs, "-total-binomial-ar1-", 
     params$AR1, "-reml-", params$REML, params$knots, ".rds"
   ))
 ```
-
-
 
 
 ```{r, error=TRUE}
@@ -686,8 +691,7 @@ p_mean <- predictions  %>% group_by(X, Y) %>%
     transform_col = fourth_root_power,
     legend_position = legend_coords
   ) + labs(fill = "prob") +
-  ggtitle(paste0("Estimated occupancy of ", species, 
-    " \n(max = ", max_prob, ")"))
+  ggtitle(paste0("Probability of occupancy by ", species))
 print(p_mean)
 ggsave(paste0("figs/map-", spp, covs, "-mean-occupancy.png"), width = 5, height = 5)
 ```

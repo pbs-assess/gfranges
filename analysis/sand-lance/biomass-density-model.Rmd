@@ -9,9 +9,10 @@ params:
     knots: 400
     # covs: "-sand-depth-roms"
     # covs: "-depth-roms"
-    covs: "-sand-depth-temp"
+    # covs: "-sand-depth-temp"
     # covs: "-mud-depth-temp"
     # covs: "-mud-sand-depth-temp"
+    covs: "-sand-x-depth-temp" # doesn't converge
     REML: FALSE
     AR1: TRUE
     fixed_spatial: TRUE
@@ -71,6 +72,7 @@ clim_cov <- "temp"
 if(params$covs == "-sand-depth-temp"){
 mod.formula <- as.formula(paste0(
   "density ~ 0 + as.factor(year_pair) + 
+  s(sandy_scaled, k = 3) + 
   s(sandy_scaled, by = shallow, k = 3) + 
   s(depth_scaled, k = 3) + 
   s(temp_scaled, k = 3)"
@@ -81,23 +83,34 @@ clim_cov <- "temp"
 if(params$covs == "-mud-depth-temp"){
 mod.formula <- as.formula(paste0(
   "density ~ 0 + as.factor(year_pair) + 
-  s(muddy_scaled, k = 3) + 
-  s(depth_scaled, k = 3) + 
-  s(temp_scaled, k = 3)"
-  ))
-clim_cov <- "temp"
-}
-if(params$covs == "-mud-sand-depth-temp"){
-mod.formula <- as.formula(paste0(
-  "density ~ 0 + as.factor(year_pair) + 
-  s(muddy_scaled, k = 3) + 
-  s(sandy_scaled, k = 3) + 
+  s(muddy_scaled, k = 2) + 
   s(depth_scaled, k = 3) + 
   s(temp_scaled, k = 3)"
   ))
 clim_cov <- "temp"
 }
 
+if(params$covs == "-mud-sand-depth-temp"){
+mod.formula <- as.formula(paste0(
+  "density ~ 0 + as.factor(year_pair) + 
+  muddy_scaled + 
+  sandy_scaled + 
+  s(depth_scaled, k = 3) + 
+  s(temp_scaled, k = 3)"
+  ))
+clim_cov <- "temp"
+}
+
+if(params$covs == "-sand-x-depth-temp"){
+mod.formula <- as.formula(paste0(
+  "density ~ 0 + as.factor(year_pair) + 
+  sandy_scaled + 
+  s(depth_scaled, k = 3) + 
+  te(depth_scaled, sandy_scaled, k = 3, m=1) + 
+  s(temp_scaled, k = 3)"
+  ))
+clim_cov <- "temp"
+}
 ```
 
 
@@ -295,12 +308,12 @@ ggplot(data, aes(roms, temp, colour = depth_range)) +
 ```
 
 Check for substrate correlations -- sandy somewhat correlated with depth
-```{r eval= FALSE}
+```{r}
 ggplot(data, aes(raw_depth, sandy, colour = raw_depth)) + 
   geom_point(alpha=0.75, size=0.5) +
   scale_color_viridis_c(trans=fourth_root_power, direction = -1) 
 
-ggplot(data, aes(raw_depth, sandy-muddy, colour = raw_depth)) + 
+ggplot(filter(data, raw_depth < 100), aes(raw_depth, sandy, colour = raw_depth)) + 
   geom_point(alpha=0.75, size=0.5) +
   scale_color_viridis_c(trans=fourth_root_power, direction = -1) 
 
@@ -308,9 +321,9 @@ ggplot(data, aes(raw_depth, muddy, colour = raw_depth)) +
   geom_point(alpha=0.75, size=0.5) +
   scale_color_viridis_c(trans=fourth_root_power, direction = -1) 
 
-ggplot(filter(data, raw_depth < 100), aes(depth, sandy, colour = depth)) + 
-  geom_point(alpha=0.75, size=0.5) +
-  scale_color_viridis_c(trans=fourth_root_power, direction = -1) 
+# ggplot(data, aes(raw_depth, sandy-muddy, colour = raw_depth)) + 
+#   geom_point(alpha=0.75, size=0.5) +
+#   scale_color_viridis_c(trans=fourth_root_power, direction = -1) 
 ```
 
 
@@ -472,7 +485,7 @@ max_Y <- if_else(threshold > max_CI, max_CI, threshold)
 
 ggsave(paste0("figs/depth-", spp, covs, ".png"), width = 5, height = 5)
 }
-try({g_depth})
+try({g_depth}, silent = TRUE)
 ```
 
 
@@ -502,7 +515,7 @@ max_Y <- if_else(threshold > max_CI, max_CI, threshold)
 ggsave(paste0("figs/roms-", spp, covs, ".png"), width = 5, height = 5)
 }
 
-try({g_roms})
+try({g_roms}, silent = TRUE)
 ```
 
 
@@ -531,7 +544,7 @@ max_Y <- if_else(threshold > max_CI, max_CI, threshold)
 
 ggsave(paste0("figs/temp-", spp, covs, ".png"), width = 5, height = 5)
 }
-try({g_temp})
+try({g_temp}, silent = TRUE)
 ```
 
 ```{r}
@@ -558,7 +571,7 @@ p_sand$sandy <- (p_sand$sandy_scaled*data$sandy_sd[1])+ data$sandy_mean[1]
 
 ggsave(paste0("figs/sand-", spp, covs, ".png"), width = 5, height = 5)
 }
-try({g_sand})
+try({g_sand}, silent = TRUE)
 ```
 
 
@@ -589,7 +602,7 @@ max_Y <- if_else(threshold > max_CI, max_CI, threshold)
 
 ggsave(paste0("figs/mud-", spp, covs, ".png"), width = 5, height = 5)
 }
-try({g_mud})
+try({g_mud}, silent = TRUE)
 ```
 
 
@@ -637,8 +650,9 @@ if(params$update_predictions) {
   ) 
   nd_all <- nd_all %>% filter(year > 2003) %>% 
   # merge survey pairs such that even year surveys are pooled w the previous odd year
-    mutate(year_pair = (2 * round((year+0.8)/2))-1) %>% 
     # 0.8 is required to avoid 5s rounding to even in R
+    mutate(year_pair = (2 * round((year+0.8)/2))-1,
+      shallow = if_else(depth < 100, 1, 0)) %>% 
     filter(year < 2019)
 
   m <- readRDS(paste0("models/", spp, "/mod-tot-biomass-", spp, 
@@ -665,12 +679,12 @@ Transform estimates to biomass density in kg/ha
 rm(predictions)
 rm(predicted)
 
-  try({
-    predicted <- readRDS(paste0("data/", spp, "/predictions-", spp, 
+
+  predicted <- readRDS(paste0("data/", spp, "/predictions-", spp, 
       covs, "-", ssid_string, "-tot-biomass-ar1-", 
       params$AR1, "-reml-", params$REML, params$knots, ".rds"
     ))
-  })
+
 
   predictions <- predicted$data
   predictions$total_bio <- exp(predictions$est) 
