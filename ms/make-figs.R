@@ -13,11 +13,13 @@ write_tex <- function(x, macro, ...) {
 
 # load appropriate final models
 # model <- readRDS("analysis/VOCC/data/trend-all-95-optimized2-08-01-trend-with-do-1-500.rds") # optimized
-model <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-24-trend-with-do-1-400.rds")
+# model <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-24-trend-with-do-1-400.rds")
+model <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-27-trend-with-do-1-500.rds"))
 max(model$sdr$gradient.fixed)
 
 # model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-1-400.rds") # optimized and converges
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-1-400.rds")
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-1-400.rds")
+model_vel <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-27-vel-both-1-400.rds"))
 max(model_vel$sdr$gradient.fixed)
 
 # load supplementary data
@@ -48,85 +50,85 @@ alldata <- alldata %>%
   filter(mean_temp < 11.3) # 0.005 and 0.995
 
 
-#### SAVE TEX VALUES FOR CLIMATE IQRs ####
-
-paste0("% temperature range and change") %>% readr::write_lines("ms/values.tex", append = TRUE)
-write_tex(signif(quantile(alldata$mean_temp, 0.025), digits = 2), "lowTMean")
-write_tex(signif(quantile(alldata$mean_temp, 0.975), digits = 2), "highTMean")
-write_tex(signif(attributes(alldata$mean_temp_scaled)[[2]], digits = 2), "tempMeanSD")
-write_tex(signif(mean(alldata$temp_trend), digits = 2), "meanTTrend")
-write_tex(signif(quantile(alldata$temp_trend, 0.025), digits = 2), "lowTTrend")
-write_tex(signif(quantile(alldata$temp_trend, 0.975), digits = 2), "highTTrend")
-write_tex(signif(attributes(alldata$temp_trend_scaled)[[2]], digits = 2), "temptrendSD")
-
-paste0("% temp change < 100 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-alldata100 <- alldata %>% filter(depth < 100)
-write_tex(signif(mean(alldata100$temp_trend), digits = 2), "meanTTrendONE")
-
-paste0("% DO range and change") %>% readr::write_lines("ms/values.tex", append = TRUE)
-write_tex(signif(quantile(alldata$mean_DO, 0.025), digits = 2), "lowDOMean")
-write_tex(signif(quantile(alldata$mean_DO, 0.975), digits = 2), "highDOMean")
-write_tex(signif(attributes(alldata$mean_DO_scaled)[[2]], digits = 2), "DOmeanSD")
-write_tex(signif(mean(alldata$DO_trend), digits = 2), "meanDOTrend")
-write_tex(signif(quantile(alldata$DO_trend, 0.025), digits = 2), "lowDOTrend")
-write_tex(signif(quantile(alldata$DO_trend, 0.975), digits = 2), "highDOTrend")
-write_tex(signif(attributes(alldata$DO_trend_scaled)[[2]], digits = 2), "DOtrendSD")
-
-alldata50 <- alldata %>% filter(depth <= 50)
-alldataDO <- alldata %>% filter(depth < 200) %>% filter(depth > 50)
-alldata200 <- alldata %>% filter(depth >= 200) 
-
-paste0("% temp change <= 50 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-write_tex(signif(mean(alldata50$temp_trend), digits = 2), "meanTTrendONE")
-write_tex(signif(quantile(alldata50$temp_trend, 0.025), digits = 2), "minTTrendONE")
-write_tex(signif(quantile(alldata50$temp_trend, 0.975), digits = 2), "maxTTrendONE")
-paste0("% temp change between 50 and 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-write_tex(signif(mean(alldataDO$temp_trend), digits = 2), "meanTTrendTWO")
-write_tex(signif(quantile(alldataDO$temp_trend, 0.025), digits = 2), "minTTrendTWO")
-write_tex(signif(quantile(alldataDO$temp_trend, 0.975), digits = 2), "maxTTrendTWO")
-paste0("% temp change >= 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-write_tex(signif(mean(alldata200$temp_trend), digits = 2), "meanTTrendDEEP")
-write_tex(signif(quantile(alldata200$temp_trend, 0.025), digits = 2), "minTTrendDEEP")
-write_tex(signif(quantile(alldata200$temp_trend, 0.975), digits = 2), "maxTTrendDEEP")
-
-paste0("% DO change <= 50 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-write_tex(signif(mean(alldata50$DO_trend), digits = 2), "meanDOTrendONE")
-write_tex(signif(quantile(alldata50$DO_trend, 0.025), digits = 2), "minDOTrendONE")
-write_tex(signif(quantile(alldata50$DO_trend, 0.975), digits = 2), "maxDOTrendONE")
-paste0("% DO change between 50 and 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-write_tex(signif(mean(alldataDO$DO_trend), digits = 2), "meanDOTrendTWO")
-write_tex(signif(quantile(alldataDO$DO_trend, 0.025), digits = 2), "minDOTrendTWO")
-write_tex(signif(quantile(alldataDO$DO_trend, 0.975), digits = 2), "maxDOTrendTWO")
-paste0("% DO change >= 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-write_tex(signif(mean(alldata200$DO_trend), digits = 2), "meanDOTrendDEEP")
-write_tex(signif(quantile(alldata200$DO_trend, 0.025), digits = 2), "minTTrendDEEP")
-write_tex(signif(quantile(alldata200$DO_trend, 0.975), digits = 2), "maxTTrendDEEP")
-
-paste0("% temperature velocities") %>% readr::write_lines("ms/values.tex", append = TRUE)
-write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelSD")
-write_tex(signif(mean(alldata$squashed_temp_vel), digits = 2), "tempvelmean")
-write_tex(signif(range(alldata$squashed_temp_vel)[[1]], digits = 2), "tempvelmin")
-write_tex(signif(range(alldata$squashed_temp_vel)[[2]], digits = 2), "tempvelmax")
-range_temp_vel <- range(alldata$squashed_temp_vel)[[2]]-range(alldata$squashed_temp_vel)[[1]]
-midpoint_temp_vel <- range(alldata$squashed_temp_vel)[[2]]-range_temp_vel/2
-write_tex(signif(midpoint_temp_vel, digits = 2), "tempvelmid")
-
-paste0("% DO velocities") %>% readr::write_lines("ms/values.tex", append = TRUE)
-write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelSD")
-write_tex(signif(
-  mean(alldata$squashed_DO_vel_scaled)*attributes(alldata$squashed_DO_vel_scaled)[[2]],
-  digits = 2), "DOvelmean")
-write_tex(signif(
-  range(alldata$squashed_DO_vel_scaled)[[1]]*attributes(alldata$squashed_DO_vel_scaled)[[2]],
-  digits = 2), "DOvelmin")
-write_tex(signif(
-  range(alldata$squashed_DO_vel_scaled)[[2]]*attributes(alldata$squashed_DO_vel_scaled)[[2]],
-  digits = 2), "DOvelmax")
-range_DO_vel <- range(alldata$squashed_DO_vel_scaled)[[2]]*attributes(alldata$squashed_DO_vel_scaled)[[2]] -
-  range(alldata$squashed_DO_vel_scaled)[[1]]*attributes(alldata$squashed_DO_vel_scaled)[[2]]
-midpoint_DO_vel <- range(alldata$squashed_DO_vel_scaled)[[2]]*attributes(alldata$squashed_DO_vel_scaled)[[2]] -
-  range_DO_vel/2
-write_tex(signif(midpoint_DO_vel, digits = 2), "DOvelmid")
+# #### SAVE TEX VALUES FOR CLIMATE IQRs ####
+# 
+# paste0("% temperature range and change") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(signif(quantile(alldata$mean_temp, 0.025), digits = 2), "lowTMean")
+# write_tex(signif(quantile(alldata$mean_temp, 0.975), digits = 2), "highTMean")
+# write_tex(signif(attributes(alldata$mean_temp_scaled)[[2]], digits = 2), "tempMeanSD")
+# write_tex(signif(mean(alldata$temp_trend), digits = 2), "meanTTrend")
+# write_tex(signif(quantile(alldata$temp_trend, 0.025), digits = 2), "lowTTrend")
+# write_tex(signif(quantile(alldata$temp_trend, 0.975), digits = 2), "highTTrend")
+# write_tex(signif(attributes(alldata$temp_trend_scaled)[[2]], digits = 2), "temptrendSD")
+# 
+# paste0("% temp change < 100 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# alldata100 <- alldata %>% filter(depth < 100)
+# write_tex(signif(mean(alldata100$temp_trend), digits = 2), "meanTTrendONE")
+# 
+# paste0("% DO range and change") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(signif(quantile(alldata$mean_DO, 0.025), digits = 2), "lowDOMean")
+# write_tex(signif(quantile(alldata$mean_DO, 0.975), digits = 2), "highDOMean")
+# write_tex(signif(attributes(alldata$mean_DO_scaled)[[2]], digits = 2), "DOmeanSD")
+# write_tex(signif(mean(alldata$DO_trend), digits = 2), "meanDOTrend")
+# write_tex(signif(quantile(alldata$DO_trend, 0.025), digits = 2), "lowDOTrend")
+# write_tex(signif(quantile(alldata$DO_trend, 0.975), digits = 2), "highDOTrend")
+# write_tex(signif(attributes(alldata$DO_trend_scaled)[[2]], digits = 2), "DOtrendSD")
+# 
+# alldata50 <- alldata %>% filter(depth <= 50)
+# alldataDO <- alldata %>% filter(depth < 200) %>% filter(depth > 50)
+# alldata200 <- alldata %>% filter(depth >= 200) 
+# 
+# paste0("% temp change <= 50 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(signif(mean(alldata50$temp_trend), digits = 2), "meanTTrendONE")
+# write_tex(signif(quantile(alldata50$temp_trend, 0.025), digits = 2), "minTTrendONE")
+# write_tex(signif(quantile(alldata50$temp_trend, 0.975), digits = 2), "maxTTrendONE")
+# paste0("% temp change between 50 and 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(signif(mean(alldataDO$temp_trend), digits = 2), "meanTTrendTWO")
+# write_tex(signif(quantile(alldataDO$temp_trend, 0.025), digits = 2), "minTTrendTWO")
+# write_tex(signif(quantile(alldataDO$temp_trend, 0.975), digits = 2), "maxTTrendTWO")
+# paste0("% temp change >= 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(signif(mean(alldata200$temp_trend), digits = 2), "meanTTrendDEEP")
+# write_tex(signif(quantile(alldata200$temp_trend, 0.025), digits = 2), "minTTrendDEEP")
+# write_tex(signif(quantile(alldata200$temp_trend, 0.975), digits = 2), "maxTTrendDEEP")
+# 
+# paste0("% DO change <= 50 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(signif(mean(alldata50$DO_trend), digits = 2), "meanDOTrendONE")
+# write_tex(signif(quantile(alldata50$DO_trend, 0.025), digits = 2), "minDOTrendONE")
+# write_tex(signif(quantile(alldata50$DO_trend, 0.975), digits = 2), "maxDOTrendONE")
+# paste0("% DO change between 50 and 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(signif(mean(alldataDO$DO_trend), digits = 2), "meanDOTrendTWO")
+# write_tex(signif(quantile(alldataDO$DO_trend, 0.025), digits = 2), "minDOTrendTWO")
+# write_tex(signif(quantile(alldataDO$DO_trend, 0.975), digits = 2), "maxDOTrendTWO")
+# paste0("% DO change >= 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(signif(mean(alldata200$DO_trend), digits = 2), "meanDOTrendDEEP")
+# write_tex(signif(quantile(alldata200$DO_trend, 0.025), digits = 2), "minTTrendDEEP")
+# write_tex(signif(quantile(alldata200$DO_trend, 0.975), digits = 2), "maxTTrendDEEP")
+# 
+# paste0("% temperature velocities") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelSD")
+# write_tex(signif(mean(alldata$squashed_temp_vel), digits = 2), "tempvelmean")
+# write_tex(signif(range(alldata$squashed_temp_vel)[[1]], digits = 2), "tempvelmin")
+# write_tex(signif(range(alldata$squashed_temp_vel)[[2]], digits = 2), "tempvelmax")
+# range_temp_vel <- range(alldata$squashed_temp_vel)[[2]]-range(alldata$squashed_temp_vel)[[1]]
+# midpoint_temp_vel <- range(alldata$squashed_temp_vel)[[2]]-range_temp_vel/2
+# write_tex(signif(midpoint_temp_vel, digits = 2), "tempvelmid")
+# 
+# paste0("% DO velocities") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelSD")
+# write_tex(signif(
+#   mean(alldata$squashed_DO_vel_scaled)*attributes(alldata$squashed_DO_vel_scaled)[[2]],
+#   digits = 2), "DOvelmean")
+# write_tex(signif(
+#   range(alldata$squashed_DO_vel_scaled)[[1]]*attributes(alldata$squashed_DO_vel_scaled)[[2]],
+#   digits = 2), "DOvelmin")
+# write_tex(signif(
+#   range(alldata$squashed_DO_vel_scaled)[[2]]*attributes(alldata$squashed_DO_vel_scaled)[[2]],
+#   digits = 2), "DOvelmax")
+# range_DO_vel <- range(alldata$squashed_DO_vel_scaled)[[2]]*attributes(alldata$squashed_DO_vel_scaled)[[2]] -
+#   range(alldata$squashed_DO_vel_scaled)[[1]]*attributes(alldata$squashed_DO_vel_scaled)[[2]]
+# midpoint_DO_vel <- range(alldata$squashed_DO_vel_scaled)[[2]]*attributes(alldata$squashed_DO_vel_scaled)[[2]] -
+#   range_DO_vel/2
+# write_tex(signif(midpoint_DO_vel, digits = 2), "DOvelmid")
 
 #########################
 #########################
@@ -348,7 +350,7 @@ mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do +
 
 #########################
 #########################
-#### CLIMATE BY DEPTH
+### CLIMATE BY DEPTH ####
 ### TEMP
 
 (p_depth_tf <- ggplot(alldata, aes(depth, mean_temp, colour = mean_temp)) +
@@ -687,10 +689,10 @@ ggsave(here::here("ms", "figs", "maps-fishing-w-vel.png"), width = 6, height = 9
 #### GLOBAL COEFS ####
 #########################
 
-# check change in violins with age effect
-model <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-24-trend-with-do-1-400.rds")
+model <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-27-trend-with-do-1-500.rds"))
 max(model$sdr$gradient.fixed)
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-1-400.rds")
+
+model_vel <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-27-vel-both-1-400.rds"))
 max(model_vel$sdr$gradient.fixed)
 
 
@@ -747,25 +749,25 @@ coef_names <- c(
 overall_betas_vel <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel$model <- "Velocity"
 ###
-# ### SAVE TEX VALUES FOR VELOCITY ESTIMATES ####
-paste0("% velocity model betas") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# TEMPERATURE 
-write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"], 2), "betaTvel")
-write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
-write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTVbeta")
-write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTVbeta")
-
-write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"], 3), "betaTVinteract")
-write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"]), 3), "ABSbetaTVinteract")
-write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "lowerTVinteract")
-write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "upperTVinteract")
-# DO 
-write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in DO"], 2), "betaDOvel")
-write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in DO"], 2), "lowerDVbeta")
-write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in DO"], 2), "upperDVbeta")
-write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (DO)"], 3), "betaDVinteract")
-write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (DO)"], 3), "lowerDVinteract")
-write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (DO)"], 3), "upperDVinteract")
+# # ### SAVE TEX VALUES FOR VELOCITY ESTIMATES ####
+# paste0("% velocity model betas") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# # TEMPERATURE 
+# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"], 2), "betaTvel")
+# write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
+# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTVbeta")
+# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTVbeta")
+# 
+# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"], 3), "betaTVinteract")
+# write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"]), 3), "ABSbetaTVinteract")
+# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "lowerTVinteract")
+# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "upperTVinteract")
+# # DO 
+# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in DO"], 2), "betaDOvel")
+# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in DO"], 2), "lowerDVbeta")
+# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in DO"], 2), "upperDVbeta")
+# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (DO)"], 3), "betaDVinteract")
+# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (DO)"], 3), "lowerDVinteract")
+# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (DO)"], 3), "upperDVinteract")
 
 
 #### ADD NULLS AND MAKE VIOLIN PLOT ####
@@ -892,7 +894,7 @@ nulls <- rbind(model$coefs,
     inherit.aes = F,
     data = overall_t
   ) + 
-  coord_cartesian(xlim = c(-4, 2.7)) +
+  coord_cartesian(xlim = c(-5.5, 2.5)) +
   ggtitle("a. Trend-based models") +
   guides(color = guide_legend(reverse = TRUE)) +
   gfplot::theme_pbs() + theme(
@@ -963,7 +965,7 @@ vnulls <- rbind(
     inherit.aes = F,
     data = overall_v
   ) +
-  coord_cartesian(xlim = c(-8.5, 5.5)) +
+  coord_cartesian(xlim = c(-8.5, 5)) +
   ggtitle("b. Velocity-based models") +
   guides(color = guide_legend(reverse = TRUE)) +
   gfplot::theme_pbs() + theme(
@@ -1024,7 +1026,7 @@ do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"]
   name_chop_type = F,
   add_grey_bars = T
 ) +  coord_flip() + 
-  coord_flip(ylim = c(-10, 3)) +
+  coord_flip(ylim = c(-8.65, 2.5)) +
   # annotate("rect", ymin = lowerT[[1]], ymax = upperT[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
   geom_hline(yintercept = estT[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   theme(
@@ -1039,14 +1041,14 @@ do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"]
   add_grey_bars = T
 ) + 
   coord_flip() +
-  coord_flip(ylim = c(-2, 2.8)) +
+  coord_flip(ylim = c(-2, 3.85)) +
   # annotate("rect", ymin = lowerD[[1]], ymax = upperD[[1]], xmin = -Inf, xmax = Inf, alpha=0.1, fill="black") +
   geom_hline(yintercept = estD[[1]], colour = "black", alpha = 0.5, linetype = "dashed") +
   ggtitle("b. DO") +
   # ylab("slopes")
   scale_x_discrete(position = "top") +
   theme(
-    # legend.position = "none",
+    legend.position = "none",
     axis.title.x = element_blank()))
 
 # colorblindr::cvd_grid(p_temp_worm)
@@ -1056,10 +1058,8 @@ do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"]
 
 ggsave(here::here("ms", "figs", "worm-plot-trend-newclim.pdf"), width = 9, height = 6)
 
-# meta-analytical coefficients? ... all span zero, but could include as appendix?
 
 ### WORM PLOTS OF SLOP ESTIMATES FROM VELOCITY MODELS  ####
-
 lowervT <- overall_betas_vel %>%
   filter(coef_names == "change in T") %>%
   select(lowerCI)
@@ -1093,7 +1093,7 @@ temp_vel_slopes <- chopstick_slopes(model_vel,
 
 temp_vel_slopes <- temp_vel_slopes %>% 
   # mutate(sort_var = slope_est)
-  mutate(sort_var = (diff))
+  mutate(sort_var = max(diff))
   # mutate(sort_var = abs(diff))
 
 temp_vel_slopes$species[temp_vel_slopes$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
@@ -1290,9 +1290,9 @@ species_panels <- function(species, model, x_type,
 
   if (age == "immature") {
     # biotic_map <- biotic_map + ggtitle(paste0(" ", age, "\n", shortener(species)))
-    biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species), " (", age, ")"))
+    biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species), "\n(immature)"))
   } else {
-    biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species)))
+    biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species), "\n(mature)"))
     # biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species)))
   }
 
@@ -2545,6 +2545,7 @@ ggsave(here::here("ms", "figs", "worm-temp-ests-min-max.pdf"), width = 7, height
   where_on_x = "min",
   add_grey_bars = T,
   sort_var = "min",
+  # alt_order = T, 
   alpha_range = c(0.4, 0.99),
   legend_position = "none") + 
   scale_y_discrete(expand = expansion(mult = .02), position = "right") +
@@ -2556,6 +2557,50 @@ ggsave(here::here("ms", "figs", "worm-temp-ests-min-max.pdf"), width = 7, height
 (p_temp_est_worm2 | p_do_est_worm ) / grid::textGrob("Biotic velocity at min of climate velocities experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
 ggsave(here::here("ms", "figs", "worm-plot-ests-vel-max-w-do.pdf"), width = 9, height = 6)
+
+
+
+(p_do_est_worm <- plot_chop_est(model_vel, type = "DO",  x_variable = "squashed_DO_vel_scaled", 
+  where_on_x = "min",
+  add_grey_bars = T,
+  sort_var = "min",
+  alt_order = T, 
+  alpha_range = c(0.99, 0.99),
+  legend_position = "none") + 
+    scale_y_discrete(expand = expansion(mult = .02)) +
+    # xlab("Biotic velocity at middle of DO velocities experienced")
+    ggtitle("a. Declining DO velocity") +
+    theme(
+      axis.title = element_blank(),
+      axis.ticks.y = element_blank()) 
+)
+
+(p_do_est_worm2 <- plot_chop_est(model_vel, type = "DO",  x_variable = "squashed_DO_vel_scaled", 
+  where_on_x = "max",
+  add_grey_bars = T,
+  alt_order = T, 
+  sort_var = "min",
+  alpha_range = c(0.99, 0.99),
+  legend_position = "none") + 
+    scale_y_discrete(expand = expansion(mult = .02), position = "right") +
+    # xlab("Biotic velocity at middle of DO velocities experienced")
+    ggtitle("b. Increasing DO velocity") +
+    theme(axis.title = element_blank()) 
+)
+
+((p_do_est_worm | p_do_est_worm2 ) / grid::textGrob("Estimated biotic velocity (km per decade)", vjust = -1, just = 0.48, gp = grid::gpar(fontsize = 11)) + 
+  plot_layout(height = c(10, 0.02), guides = 'collect')& theme(
+    legend.text = element_text(size = 9),
+    legend.position = "bottom",  
+    legend.justification='left',
+    legend.direction = "horizontal",
+    legend.box = "horizontal",
+    legend.margin=margin(t = 0.5, l= 1, r = 0, unit='cm'),
+    # legend.margin = unit(1.5, "cm"),
+    legend.spacing.x = unit(.1, "cm")
+  ))  
+
+ggsave(here::here("ms", "figs", "worm-plot-ests-vel-do-extremes.pdf"), width = 9, height = 6.5)
 
 
 ### TEMPERATURE vs DO TRENDS at max level of change ####
