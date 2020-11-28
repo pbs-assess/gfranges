@@ -10,14 +10,15 @@ params:
     # covs: "-sand-depth-roms"
     # covs: "-depth-roms"
     # covs: "-sand-depth-temp"
-    # covs: "-mud-depth-temp"
+    covs: "-mud-depth-temp"
     # covs: "-mud-sand-depth-temp"
-    covs: "-sand-x-depth-temp" # doesn't converge
+    # covs: "-sand-shallow-depth-temp"
+    # covs: "-sand-x-depth-temp" # doesn't converge
     REML: FALSE
     AR1: TRUE
     fixed_spatial: TRUE
-    update_model: TRUE
     # update_model: FALSE
+    update_model: TRUE
     update_model_check: TRUE
     update_predictions: TRUE
 ---
@@ -72,18 +73,29 @@ clim_cov <- "temp"
 if(params$covs == "-sand-depth-temp"){
 mod.formula <- as.formula(paste0(
   "density ~ 0 + as.factor(year_pair) + 
-  s(sandy_scaled, k = 3) + 
-  s(sandy_scaled, by = shallow, k = 3) + 
+  sandy_scaled + 
   s(depth_scaled, k = 3) + 
   s(temp_scaled, k = 3)"
   ))
 clim_cov <- "temp"
 }
 
+if(params$covs == "-sand-shallow-depth-temp"){
+mod.formula <- as.formula(paste0(
+  "density ~ 0 + as.factor(year_pair) + 
+  sandy_scaled * shallow + 
+  s(depth_scaled, k = 3) + 
+  s(temp_scaled, k = 3)"
+  ))
+clim_cov <- "temp"
+}
+  # s(sandy_scaled, k = 3) + 
+  # s(sandy_scaled, by = shallow, k = 3) + 
+
 if(params$covs == "-mud-depth-temp"){
 mod.formula <- as.formula(paste0(
   "density ~ 0 + as.factor(year_pair) + 
-  s(muddy_scaled, k = 2) + 
+  muddy_scaled + 
   s(depth_scaled, k = 3) + 
   s(temp_scaled, k = 3)"
   ))
@@ -410,7 +422,7 @@ g
 
 ```{r}
 g1 <- ggplot(pred,
-      aes(density, exp(est), colour = as.factor(ssid))) +
+      aes(density+0.01, exp(est), colour = as.factor(ssid))) +
     geom_abline(slope=1, intercept = 0) +
     scale_x_continuous(trans = 'log10') +
     scale_y_continuous(trans = 'log10') +
@@ -548,7 +560,7 @@ try({g_temp}, silent = TRUE)
 ```
 
 ```{r}
-if(covs %in% c("-sand-depth-roms", "-sand-depth-temp", "-mud-sand-depth-temp")){
+if(covs %in% c("-sand-depth-roms", "-sand-depth-temp", "-mud-sand-depth-temp", "-sand-shallow-depth-temp")){
 nd_sand <- data.frame(
   depth_scaled = min(data$depth_scaled), 
   shallow = 1,
