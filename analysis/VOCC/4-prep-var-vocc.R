@@ -140,7 +140,9 @@ d$log_effort <- log(d$mean_effort + 1)
 hist(log(d$mean_effort + 1))
 d$log_effort_scaled <- scale(d$log_effort, center = F)
 
-d$squashed_fishing_vel <- collapse_outliers(d$fishing_vel, c(0.025, 0.975)) #95th quantile and then droped to be less than 100km
+# d$squashed_fishing_vel <- collapse_outliers(d$fishing_vel, c(0.025, 0.975)) #95th quantile and then dropped to be less than 100km
+d$squashed_fishing_vel <- collapse_outliers(d$fishing_vel, c(0.1, 0.975)) #dropped to be less than 15km (matches fig)
+
 hist(d$squashed_fishing_vel, breaks = 30)
 d$fishing_vel_scaled <- scale(d$squashed_fishing_vel, center = FALSE)
 
@@ -157,7 +159,9 @@ d$log_catch <- log(d$mean_catch + 1)
 hist(log(d$mean_catch + 1))
 d$log_catch_scaled <- scale(d$log_catch, center = F)
 
-d$squashed_catch_vel <- collapse_outliers(d$catch_vel, c(0.025, 0.975)) #95th quantile and then droped to be less than 100km
+# d$squashed_catch_vel <- collapse_outliers(d$catch_vel, c(0.025, 0.975)) #95th quantile and then droped to be less than 100km
+d$squashed_catch_vel <- collapse_outliers(d$catch_vel, c(0.1, 0.975)) #dropped to be less than 15km (matches fig)
+
 hist(d$squashed_catch_vel, breaks = 30)
 d$catch_vel_scaled <- scale(d$squashed_catch_vel, center = FALSE)
 
