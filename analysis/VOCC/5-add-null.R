@@ -40,7 +40,7 @@ d <- filter(d, species_age != "immature Curlfin Sole")
 all_species <- unique(d$species_age)
 
 
-### ADD SPECIES TRAITS 
+### ADD SPECIES TRAITS ####
 stats <- readRDS(paste0("data/life-history-stats5.rds"))
 stats$rockfish <- if_else(stats$group == "ROCKFISH", "ROCKFISH", "OTHER")
 
@@ -62,7 +62,7 @@ select(d, genus, species) %>%
 
 
 #####################################
-### SIMULATE FAKE TREND LAYER FOR EACH SPECIES
+### SIMULATE FAKE TREND LAYER FOR EACH SPECIES ####
 with_nulls <- list()
 for (i in seq_along(all_species)) {
  
@@ -157,7 +157,7 @@ saveRDS(newdata, file = paste0("data/optimized4-biotic-null-", null_number, "-un
 
 
 ##########################################
-### TRIM EACH SPECIES LAYERS TO INCLUDE PROPORTION OF MEAN TOTAL BIOMASS
+### TRIM EACH SPECIES LAYERS TO INCLUDE PROPORTION OF MEAN TOTAL BIOMASS ####
 newdata <- readRDS(
   paste0("data/optimized4-biotic-null-", null_number, "-untrimmed.rds")
   ) 
@@ -177,8 +177,8 @@ data <- do.call(rbind, trimmed.dat)
 #### add in globally scaled and squashed climate data 
 vars <- readRDS(("data/all-newclim-untrimmed-dvocc-med.rds"))  %>% 
   rename(cell_depth = depth) %>% mutate(
-  squashed_fishing_vel = if_else(is.na(squashed_fishing_vel), 0, squashed_fishing_vel),
-  squashed_catch_vel = if_else(is.na(squashed_catch_vel), 0, squashed_catch_vel)
+  fishing_vel_scaled = if_else(is.na(fishing_vel_scaled), 0, fishing_vel_scaled),
+  catch_vel_scaled = if_else(is.na(catch_vel_scaled), 0, catch_vel_scaled)
   )
 
 data <- left_join(data, vars) %>% select(-X.1)

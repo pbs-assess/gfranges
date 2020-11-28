@@ -422,7 +422,7 @@ run_meta_analysis <- function(
       # catch_trend_scaled +
       log_catch_scaled +
       catch_vel_scaled +
-      log_catch_scaled:catch_vel_scaled +
+      # log_catch_scaled:catch_vel_scaled +
       log_biomass_scaled
     
     x <- model.matrix(formula, data = d)
@@ -439,8 +439,8 @@ run_meta_analysis <- function(
       # log_effort_scaled +
       # fishing_trend_scaled +
       ## log_effort_scaled:fishing_trend_scaled +
-      log_effort_scaled + squashed_fishing_vel_scaled +
-      log_effort_scaled:squashed_fishing_vel_scaled +
+      log_effort_scaled + fishing_vel_scaled +
+      # log_effort_scaled:fishing_vel_scaled +
       squashed_DO_vel_scaled +
       mean_DO_scaled +
       squashed_DO_vel_scaled:mean_DO_scaled +
@@ -710,7 +710,9 @@ run_meta_analysis <- function(
   }
   
   if (stop_after_DO){
-    return(paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, "-", knots, "-DO.rds"))
+    return(paste0("data/", y_type, "-", data_type, date, model_type, 
+      null_lab, null_number, "-", knots, "-DO.rds"))
+    # return(DO_model)
   }else{
     ############################
     if (fishing_chopstick) {
@@ -941,17 +943,18 @@ run_meta_analysis <- function(
       new_model$delta_diff <-
         rbind(temp_model$delta_diff, DO_model$delta_diff)
     } else {
-      try({new_model <- DO_model
-      do_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
-      do_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
-      new_model$delta_diff <-
+      if(DO_chopstick){ 
+        new_model <- DO_model
+        do_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
+        do_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
+        new_model$delta_diff <-
         cbind(do_est$diff_delta_k, do_se$diff_delta_k)
-      new_model$delta_diff <- as.data.frame(new_model$delta_diff)
-      new_model$delta_diff$type <- "do"
-      new_model$delta_diff$species <- unique(new_model$deltas$species)
-      names(new_model$delta_diff) <- c("est", "se", "type", "species")
-      })
-      try({
+        new_model$delta_diff <- as.data.frame(new_model$delta_diff)
+        new_model$delta_diff$type <- "do"
+        new_model$delta_diff$species <- unique(new_model$deltas$species)
+        names(new_model$delta_diff) <- c("est", "se", "type", "species")
+      }
+      if(temp_chopstick){
         new_model <- temp_model
         temp_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
         temp_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
@@ -961,21 +964,28 @@ run_meta_analysis <- function(
         new_model$delta_diff$type <- "temp"
         new_model$delta_diff$species <- unique(new_model$deltas$species)
         names(new_model$delta_diff) <- c("est", "se", "type", "species")
-      })
+      }
     }
     
     date <- format(Sys.time(), "-%m-%d")
-    saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, "-", knots, ".rds"))
+    saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, 
+      date, model_type, null_lab, null_number, "-", knots, ".rds"))
     
     new_r <- new_model$obj$report()
     new_model$data$residual <- new_model$y_i - new_r$eta_i
     new_model$data$eta <- new_r$eta_i
     
-    saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, "-", knots, ".rds"))
+    saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, 
+      date, model_type, null_lab, null_number, "-", knots, ".rds"))
     
-    return(paste0("data/", y_type, "-", data_type, date, model_type, null_lab, null_number, "-", knots, ".rds"))
+    return(paste0("data/", y_type, "-", data_type, date, model_type, 
+      null_lab, null_number, "-", knots, ".rds"))
   }
 }
+
+# copy output in here to check model
+model <- readRDS()
+max(model$sdr$gradient.fixed)
 
 # run each version of the following in a fresh R session with the above lines reloaded
 
@@ -983,17 +993,17 @@ run_meta_analysis <- function(
 run_meta_analysis(
   model_type = "-vel-both", 
   y_type = "vel", 
-  knots = 400, 
+  knots = 400, #works, failed to converg with 500, trying 600
   data_type = "all-95-optimized4"
 )
 
-# main trend model 
-run_meta_analysis(
-  model_type = "-trend-with-do", 
-  y_type = "trend", 
-  knots = 500, 
-  data_type = "all-95-optimized4"
-)
+# main trend model complete
+# run_meta_analysis(
+#   model_type = "-trend-with-do", 
+#   y_type = "trend", 
+#   knots = 500, 
+#   data_type = "all-95-optimized4"
+# )
 
 # fishing model
 run_meta_analysis(
@@ -1003,11 +1013,19 @@ run_meta_analysis(
   data_type = "all-95-optimized4"
 )
 
+# fishing model 2
+run_meta_analysis(
+  model_type = "-vel-w-fishing", 
+  y_type = "vel", 
+  knots = 400, 
+  data_type = "all-95-optimized4"
+)
+
 # family model
 run_meta_analysis(
   model_type = "-vel-both", 
   y_type = "vel", 
-  knots = 500, 
+  knots = 400, 
   data_type = "all-95-optimized4",
   w_family = T
 )
@@ -1017,7 +1035,7 @@ run_meta_analysis(
 run_meta_analysis(
   model_type = "-vel-both", 
   y_type = "vel", 
-  knots = 500, 
+  knots = 400, 
   data_type = "all-95-optimized4",
   is_null = T,
   # null_number = "-1", 
@@ -1029,7 +1047,7 @@ run_meta_analysis(
 run_meta_analysis(
   model_type = "-vel-both", 
   y_type = "vel", 
-  knots = 500, 
+  knots = 400, 
   data_type = "all-95-optimized4",
   is_null = T,
   null_number = "-2",
@@ -1038,6 +1056,13 @@ run_meta_analysis(
 )
 
 
+# just DO vel model
+run_meta_analysis(
+  model_type = "-vel-do", 
+  y_type = "vel", 
+  knots = 400, # failed to converg with 500
+  data_type = "all-95-optimized4"
+)
 
 ### model choices ###
 ### for trends ###
