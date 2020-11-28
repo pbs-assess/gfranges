@@ -23,7 +23,11 @@ age <- "immature"
 d2 <- readRDS(paste0("data/", age, "-optimized-vocc.rds")) %>% mutate(age = "immature")
 
 
-d <- rbind(d1, d2) 
+d <- rbind(d1, d2) %>% 
+  select( # remove climate vars that might have NAs--not needed in biotic null simulations
+  -fishing_trend,  -mean_effort,  -fishing_vel,  -fishing_grad,
+  -DO_vel,  -DO_dvocc,  -DO_trend,  -DO_grad,  -mean_DO,  -dvocc_both,
+  -temp_vel,  -temp_dvocc,  -temp_trend,  -temp_grad,  -mean_temp)
 
 d <- na.omit(d) %>% as_tibble() %>% mutate(species_age = paste(age, species))
 
@@ -64,6 +68,7 @@ for (i in seq_along(all_species)) {
  
 .x <- filter(d, species_age == all_species[[i]])
 
+# only simulate for 99% of mean biomass... trim to threshold below that later
 bio5perc <- sum(.x$mean_biomass, na.rm = TRUE) * 0.01
 s <- sort(.x$mean_biomass)
 bio_sum <- cumsum(s)
@@ -148,17 +153,14 @@ with_nulls[[i]] <- .s
 
 newdata <- do.call(rbind, with_nulls)
 
-saveRDS(newdata, file = paste0("data/optimized3-biotic-null-", null_number, "-untrimmed.rds"))
+saveRDS(newdata, file = paste0("data/optimized4-biotic-null-", null_number, "-untrimmed.rds"))
 
 
 ##########################################
 ### TRIM EACH SPECIES LAYERS TO INCLUDE PROPORTION OF MEAN TOTAL BIOMASS
 newdata <- readRDS(
-  paste0("data/optimized3-biotic-null-", null_number, "-untrimmed.rds")
-  ) %>% select(
-  -fishing_trend,  -mean_effort,  -fishing_vel,  -fishing_grad,
-  -DO_vel,  -DO_dvocc,  -DO_trend,  -DO_grad,  -mean_DO,  -dvocc_both,
-  -temp_vel,  -temp_dvocc,  -temp_trend,  -temp_grad,  -mean_temp)
+  paste0("data/optimized4-biotic-null-", null_number, "-untrimmed.rds")
+  ) 
 
 trimmed.dat <- list()
 for (i in seq_along(all_species)) {
@@ -173,7 +175,11 @@ data <- do.call(rbind, trimmed.dat)
 
 
 #### add in globally scaled and squashed climate data 
-vars <- readRDS(("data/all-newclim-untrimmed-dvocc-med.rds"))  %>% rename(cell_depth = depth)
+vars <- readRDS(("data/all-newclim-untrimmed-dvocc-med.rds"))  %>% 
+  rename(cell_depth = depth) %>% mutate(
+  squashed_fishing_vel = if_else(is.na(squashed_fishing_vel), 0, squashed_fishing_vel),
+  squashed_catch_vel = if_else(is.na(squashed_catch_vel), 0, squashed_catch_vel)
+  )
 
 data <- left_join(data, vars) %>% select(-X.1)
 
@@ -199,7 +205,7 @@ data <- data %>%
 # Might need to remove longspine again...
 data <- filter(data, species_age != "mature Longspine Thornyhead")
 
-saveRDS(data, file = paste0("data/all-", trim_percent, "-optimized3-with-null-", null_number, ".rds"))
+saveRDS(data, file = paste0("data/all-", trim_percent, "-optimized4-with-null-", null_number, ".rds"))
 
 # ggplot(data = data, aes(mean_DO_scaled, log(mean_biomass+1))) + 
 #   geom_point(alpha= .2) + facet_wrap(~species)
@@ -207,12 +213,17 @@ saveRDS(data, file = paste0("data/all-", trim_percent, "-optimized3-with-null-",
 #   geom_point(alpha= .2)  + facet_wrap(~species)
 ggplot(data, aes(mean_DO_scaled, DO_trend_scaled)) + geom_point() + geom_smooth(method = "lm") + facet_wrap(~species)
 
+##check how much data was missing due to NAs in fishing_vel
+# check2 <- readRDS(file = paste0("data/all-95-optimized4-with-null-1.rds"))
+# check1 <- readRDS(file = paste0("data/all-95-optimized3-with-null-1.rds"))
+# (nrow(check2)-nrow(check1))/nrow(check2) # 19% in localized clumps where fishing was low and consistent
 
 #####################################
 ### PLOT REAL AND FAKE TREND DATA
 # data <- readRDS(paste0("data/", age, "-", trim_percent, "-all-newclim-with-null-", null_number, ".rds"))
 # data <- readRDS(paste0("data/all-", trim_percent, "-newclim-more2016-with-null-", null_number, ".rds"))
 
+data <- readRDS(file = paste0("data/all-95-optimized4-with-null-1.rds"))
 plots <- list()
 for (i in seq_along(all_species)) {
 
@@ -242,9 +253,8 @@ n <- ggplot(.x, aes(x, y, fill = fake_trend)) + geom_tile(width = 4, height = 4)
 plots[[i]] <- cowplot::plot_grid(o, n) 
 }
 
-# pdf(paste0(age, "-null-", null_number, "-trends-new.pdf"))
 # pdf(paste0("all-null-", null_number, "-trends-newclim3.pdf"))
-pdf(paste0("all-null-", null_number, "-trends-optimized3b.pdf"))
+pdf(paste0("all-null-", null_number, "-trends-optimized4.pdf"))
 plots
 dev.off()
 
@@ -286,7 +296,7 @@ for (i in seq_along(all_species)) {
   plots2[[i]] <- cowplot::plot_grid(o, n, t, d) 
 }
 
-pdf(paste0(age, "-null-", null_number, "-newvel-nov2020.pdf"))
+pdf(paste0(age, "-null-", null_number, "-newvel-nov2020b.pdf"))
   plots2
 dev.off()
 
