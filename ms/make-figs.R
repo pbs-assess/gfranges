@@ -10,26 +10,22 @@ write_tex <- function(x, macro, ...) {
     readr::write_lines("ms/values.tex", append = TRUE)
 }
 
+
+# load appropriate final models
+# model <- readRDS("analysis/VOCC/data/trend-all-95-optimized2-08-01-trend-with-do-1-500.rds") # optimized
+model <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-24-trend-with-do-1-400.rds")
+max(model$sdr$gradient.fixed)
+
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-1-400.rds") # optimized and converges
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-1-400.rds")
+max(model_vel$sdr$gradient.fixed)
+
 # load supplementary data
 # stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
 stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds")) %>% mutate(age = firstup(age))
-alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-untrimmed-dvocc-med.rds"))
-
-# load appropriate final models
-# model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-25-trend-with-do-1-500.rds")
-model <- readRDS("analysis/VOCC/data/trend-all-95-optimized2-08-01-trend-with-do-1-500.rds") # optimized
-max(model$sdr$gradient.fixed)
-
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-25-vel-both-1-350.rds") # un-optimized biomass
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-07-31-vel-both-1-350.rds") # not converged
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-family-1-350.rds")
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-1-400.rds") # optimized and converges
-
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-1-400.rds")
-
-max(model_vel$sdr$gradient.fixed)
-
-
+alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-untrimmed-dvocc-med.rds")) %>% 
+  mutate(squashed_fishing_vel = if_else(is.na(squashed_fishing_vel), 0, squashed_fishing_vel),
+    squashed_catch_vel = if_else(is.na(squashed_catch_vel), 0, squashed_catch_vel))
 ## FILTER TO DEPTHS SAMPLED
 # range(survey_sets$depth_m, na.rm = T) 
 #   18 1308
@@ -39,6 +35,18 @@ max(model_vel$sdr$gradient.fixed)
 # alldata2 <- alldata %>% filter(depth > 18) %>% filter(depth < 1308)
 alldata <- alldata %>% filter(depth > 23) %>% filter(depth < 1112) # 99th
 # alldata2 <- alldata %>% filter(depth > 31) %>% filter(depth < 523.8) # 95th
+
+## FILTER TO DO and TEMPERATURES SAMPLED
+## filter cells by observed DO and temp values 
+# alldata <- alldata %>% filter(mean_DO > 0.23) %>% filter(mean_DO < 7.91) # full range
+alldata <- alldata %>%
+  filter(mean_DO > 0.28) %>%
+  filter(mean_DO < 7.06) # 0.005 and 0.995
+# alldata <- alldata2 %>% filter(mean_temp > 2.61) %>% filter(mean_temp < 14.31) # full range
+alldata <- alldata %>%
+  filter(mean_temp > 3.07) %>%
+  filter(mean_temp < 11.3) # 0.005 and 0.995
+
 
 #### SAVE TEX VALUES FOR CLIMATE IQRs ####
 
@@ -123,17 +131,6 @@ write_tex(signif(midpoint_DO_vel, digits = 2), "DOvelmid")
 #########################
 #########################
 #### CLIMATE MAPS ####
-# 
-# # test filter of cells by observed DO and temp values 
-
-# alldata <- alldata %>% filter(mean_DO > 0.23) %>% filter(mean_DO < 7.91) # full range
-alldata <- alldata %>%
-  filter(mean_DO > 0.28) %>%
-  filter(mean_DO < 7.06) # 0.005 and 0.995
-# alldata <- alldata2 %>% filter(mean_temp > 2.61) %>% filter(mean_temp < 14.31) # full range
-alldata <- alldata %>%
-  filter(mean_temp > 3.07) %>%
-  filter(mean_temp < 11.3) # 0.005 and 0.995
 
 (mean_do <- plot_vocc(alldata, # grey_water = T,
   vec_aes = NULL, grey_water = F,
@@ -335,14 +332,17 @@ alldata <- alldata %>%
 
 mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + 
   plot_layout(ncol = 2)
+
+## check colorblind
 # colorblindr::cvd_grid(trend_do)
+
 # ggsave(here::here("ms", "figs", "climate-maps-newclim.png"), width = 5, height = 7.5)
-ggsave(here::here("ms", "figs", "climate-maps-newclim-trimmed-99.png"), width = 5, height = 7.5)
+# ggsave(here::here("ms", "figs", "climate-maps-newclim-trimmed-99.png"), width = 5, height = 7.5)
 
 mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + 
   dvocc_temp + dvocc_do +
   plot_layout(ncol = 2)
-ggsave(here::here("ms", "figs", "climate-maps-w-dvocc.png"), width = 5, height = 9.5)
+# ggsave(here::here("ms", "figs", "climate-maps-w-dvocc.png"), width = 5, height = 9.5)
 
 
 
@@ -510,7 +510,7 @@ p_iqr +
   p_depth_dof + p_depth_dot + p_depth_dov + 
   plot_layout(design = layout1)
 
-ggsave(here::here("ms", "figs", "climate-depth-plots-stacked.png"), width = 6, height = 8.5)
+# ggsave(here::here("ms", "figs", "climate-depth-plots-stacked.png"), width = 6, height = 8.5)
 
 #######################
 #######################
@@ -524,8 +524,9 @@ ggsave(here::here("ms", "figs", "climate-depth-plots-stacked.png"), width = 6, h
   # viridis_end = 0.7,
   # # viridis_dir = -1,
   na_colour = "yellow",
-  # raster_limits = c(0, 300),
-  transform_col = log10,
+  raster_limits = c(0, 330),
+  transform_col = fourth_root_power,
+  # transform_col = log10,
   axis_lables = T, tag_text = "a.",
   legend_position = c(0.15, 0.3)
 ) + ggtitle("Fishing effort") +
@@ -542,17 +543,36 @@ ggsave(here::here("ms", "figs", "climate-depth-plots-stacked.png"), width = 6, h
     #   limits = c(0, 100)
     # )
   )
+(mean_catch <- plot_vocc(alldata,
+  vec_aes = NULL, grey_water = F,
+  fill_col = "mean_catch", fill_label = "tons/yr",
+  raster_cell_size = 4, white_zero = F,
+  viridis_option = "B",
+  na_colour = "yellow",
+  raster_limits = c(0, 350),
+  transform_col = fourth_root_power,
+  axis_lables = T, tag_text = "b.",
+  legend_position = c(0.15, 0.3)
+) + ggtitle("Total catch") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ) 
+)
 
 (trend_fish <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "fishing_trend", fill_label = "% ",
-  raster_cell_size = 4, na_colour = "midnightblue", white_zero = TRUE,
+  raster_cell_size = 4,  white_zero = TRUE,
   # mid_fill = "ghostwhite", grey_water = F,
   mid_fill = "ghostwhite", grey_water = F,
   low_fill = "midnightblue",#"royalblue4", # low_fill = "#5E4FA2",
   high_fill = "orangered",
-  axis_lables = T, tag_text = "b.",
-  raster_limits = c(-6,6.7),
+  axis_lables = T, tag_text = "c.",
+  na_colour = "black", raster_limits = c(-3, 3.85),
+  # na_colour = "midnightblue", raster_limits = c(-6,6),
   legend_position = c(0.15, 0.3)
 ) +  #ggtitle("Fishing") +
     coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
@@ -562,10 +582,81 @@ ggsave(here::here("ms", "figs", "climate-depth-plots-stacked.png"), width = 6, h
       axis.text = element_blank(), axis.ticks = element_blank(),
       axis.title.x = element_blank(), axis.title.y = element_blank()
     ))
+# we see greater change in effort than catch
+(trend_catch <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "catch_trend", fill_label = "% ",
+  raster_cell_size = 4, white_zero = TRUE,
+  # mid_fill = "ghostwhite", grey_water = F,
+  mid_fill = "ghostwhite", grey_water = F,
+  low_fill = "midnightblue",#"royalblue4", # low_fill = "#5E4FA2",
+  high_fill = "orangered",
+  # na_colour = "orangered", raster_limits = c(-6,3),
+  na_colour = "black", raster_limits = c(-3, 3.85),
+  # na_colour = "midnightblue", raster_limits = c(-6,6),
+  axis_lables = T, tag_text = "d.",
+  legend_position = "none"#c(0.15, 0.3)
+) +  #ggtitle("Fishing") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    ylab("Change per decade") +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
 
-mean_fish + trend_fish + plot_layout(nrow  = 2)
+(vel_effort <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "squashed_fishing_vel", fill_label = "km/decade ",
+  raster_cell_size = 4, white_zero = TRUE,
+  # mid_fill = "ghostwhite", grey_water = F,
+  mid_fill = "ghostwhite", grey_water = F,
+  low_fill = "midnightblue",#"royalblue4", # low_fill = "#5E4FA2",
+  high_fill = "orangered",
+  # na_colour = "black", raster_limits = c(-15, 20),
+  na_colour = "midnightblue", raster_limits = c(-15,15),
+  axis_lables = T, tag_text = "e.",
+  legend_position = c(0.25, 0.3)
+) +  #ggtitle("Fishing") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    ylab("Change per decade") +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+
+(vel_catch <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "squashed_catch_vel", fill_label = "km/decade ",
+  raster_cell_size = 4, white_zero = TRUE,
+  # mid_fill = "ghostwhite", grey_water = F,
+  mid_fill = "ghostwhite", grey_water = F,
+  low_fill = "midnightblue",#"royalblue4", # low_fill = "#5E4FA2",
+  high_fill = "orangered",
+  # na_colour = "black", raster_limits = c(-15, 15),
+  na_colour = "midnightblue", raster_limits = c(-15,15),
+  axis_lables = T, tag_text = "f.",
+  legend_position = "none"#c(0.15, 0.3)
+) +  #ggtitle("Fishing") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    ylab("Change per decade") +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+
+# mean_fish + trend_fish + vel_effort + plot_layout(nrow  = 3)
+# mean_catch + trend_catch + vel_catch + plot_layout(nrow  = 3)
 # ggsave(here::here("ms", "figs", "fishing-maps.png"), width = 3, height = 6)
-ggsave(here::here("ms", "figs", "fishing-maps-trimmed-99.png"), width = 3, height = 6)
+# ggsave(here::here("ms", "figs", "fishing-maps-trimmed-99.png"), width = 3, height = 6)
+# ggsave(here::here("ms", "figs", "maps-fishing-effort-w-vel.png"), width = 3, height = 9)
+# ggsave(here::here("ms", "figs", "maps-fishing-catch-w-vel.png"), width = 3, height = 9)
+
+mean_fish + mean_catch +trend_fish + trend_catch + vel_effort + 
+ vel_catch + plot_layout(nrow  = 3)
+ggsave(here::here("ms", "figs", "maps-fishing-w-vel.png"), width = 6, height = 9)
 
 
 ## attempt at fishing velocity but not very interesting
@@ -597,8 +688,11 @@ ggsave(here::here("ms", "figs", "fishing-maps-trimmed-99.png"), width = 3, heigh
 #########################
 
 # check change in violins with age effect
-# model <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-21-trend-1-500.rds") # without WCHG, no taxonic groups
-# null01 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-22-trend-w-age-1-500-DO.rds")
+model <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-24-trend-with-do-1-400.rds")
+max(model$sdr$gradient.fixed)
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-1-400.rds")
+max(model_vel$sdr$gradient.fixed)
+
 
 #### get trend model betas and save tex ####
 coef_names <- shortener(unique(model$coefs$coefficient))
@@ -617,7 +711,7 @@ coef_names <- c(
 overall_betas <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas$model <- "Trend"
 
-# # ### SAVE TEX VALUES FOR TEMPERATURE TREND ESTIMATES ####
+# # ### SAVE TEX VALUES FOR TREND ESTIMATES ####
 # paste0("% trend model betas") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # write_tex(signif(overall_betas$betas[overall_betas$coef_names == "change in T"], 2), "betaTtrend")
 # write_tex(signif(abs(overall_betas$betas[overall_betas$coef_names == "change in T"]), 2), "ABSbetaTtrend")
@@ -653,18 +747,19 @@ coef_names <- c(
 overall_betas_vel <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel$model <- "Velocity"
 ###
-# # ### SAVE TEX VALUES FOR TEMPERATURE VELOCITY ESTIMATES ####
-# paste0("% velocity model betas") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"], 2), "betaTvel")
-# write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
-# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTVbeta")
-# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTVbeta")
-# 
-# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"], 3), "betaTVinteract")
-# write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"]), 3), "ABSbetaTVinteract")
-# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "lowerTVinteract")
-# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "upperTVinteract")
+# ### SAVE TEX VALUES FOR VELOCITY ESTIMATES ####
+paste0("% velocity model betas") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# TEMPERATURE 
+write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"], 2), "betaTvel")
+write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
+write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTVbeta")
+write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTVbeta")
 
+write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"], 3), "betaTVinteract")
+write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"]), 3), "ABSbetaTVinteract")
+write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "lowerTVinteract")
+write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "upperTVinteract")
+# DO 
 write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in DO"], 2), "betaDOvel")
 write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in DO"], 2), "lowerDVbeta")
 write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in DO"], 2), "upperDVbeta")
@@ -674,27 +769,34 @@ write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "inte
 
 
 #### ADD NULLS AND MAKE VIOLIN PLOT ####
-# 95-all-newclim is full dataset while 95-newclim-more2016 is former with WCHG missing
+# null01 <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-26-trend-with-do-sim-1-400-DO.rds") # vel version failed
+null02 <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-26-trend-with-do-sim-2-400-DO.rds")
+# null03 <- readRDS("analysis/VOCC/data/.rds") 
+null04 <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-26-trend-with-do-sim-4-400-DO.rds") 
+null05 <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-26-trend-with-do-sim-5-400-DO.rds")
 
-# # currently partial dataset nulls are standin
-null01 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-30-trend-with-do-sim-1-500.rds") # not converged 0.004
-null02 <- readRDS("analysis/VOCC/data/trend-all-95-newclim-more2016-06-23-trend-with-do-sim-2-500-DO.rds")
-null03 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-07-01-trend-with-do-sim-3-500-DO.rds") 
-null04 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-30-trend-with-do-sim-4-500-DO.rds") # not converged 0.002
-null05 <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-07-01-trend-with-do-sim-5-500-DO.rds")
+# max(null01$sdr$gradient.fixed)
+max(null02$sdr$gradient.fixed)
+# max(null03$sdr$gradient.fixed)
 max(null04$sdr$gradient.fixed)
+max(null05$sdr$gradient.fixed)
 
-# # max(null01$sdr$gradient.fixed)
-vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-03-vel-both-sim-1-400.rds")
-vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-13-vel-both-sim-6-400-DO.rds")
-vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-13-vel-both-sim-3-400-DO.rds")
-# vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-4-350.rds")
-vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-12-vel-both-sim-5-400-DO.rds")
-# # 
-max(vnull01$sdr$gradient.fixed)
+setwd(here::here())
+
+
+# vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-25-vel-both-sim-1-400-DO.rds")
+# vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-25-vel-both-sim-10-400-DO.rds") #still running
+vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-25-vel-both-sim-2-400-DO.rds")
+# vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-25-vel-both-sim-3-400-DO.rds") # not converged yet... 
+# vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-26-vel-both-sim-8-400-temp.rds") # not converged, grad = 0.008
+vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-25-vel-both-sim-4-400-DO.rds")
+vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-26-vel-both-sim-5-400-DO.rds")
+
+
+# max(vnull01$sdr$gradient.fixed)
 max(vnull02$sdr$gradient.fixed)
-max(vnull03$sdr$gradient.fixed)
-# max(vnull04$sdr$gradient.fixed)
+# max(vnull03$sdr$gradient.fixed)
+max(vnull04$sdr$gradient.fixed)
 max(vnull05$sdr$gradient.fixed)
 # 
 # # coef_names <- shortener(unique(vnull02$coefs$coefficient))
@@ -725,21 +827,18 @@ vnull03$coefs$model <- "vnull03"
 vnull04$coefs$model <- "vnull04"
 vnull05$coefs$model <- "vnull05"
 
-
-# custom_order <- c(
-#   "Intercept", "log_biomass",
-#   "temp", "temp_trend", "temp_vel", "temp_trend:temp", "temp_vel:temp",
-#   "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO"
-# )
 custom_order <- c(
   "Intercept", "log_biomass",
   "temp", "temp_trend", "temp_vel", "temp_dvocc", "temp_trend:temp", "temp_vel:temp", "temp_dvocc:temp",
   "DO", "DO_trend", "DO_vel", "DO_dvocc", "DO_trend:DO", "DO_vel:DO", "DO_dvocc:DO"
 )
 
-nulls <- rbind(model$coefs, 
-  null02$coefs, null03$coefs, null04$coefs, null05$coefs, 
-  null01$coefs) %>%
+nulls <- rbind(model$coefs,
+  # null01$coefs, 
+  null02$coefs, 
+  # null03$coefs, 
+  null04$coefs,
+  null05$coefs) %>%
   mutate(
     term = factor(shortener(coefficient),
       levels = as.character(custom_order)
@@ -753,23 +852,14 @@ nulls <- rbind(model$coefs,
 
 (null_coefs <- ggplot(nulls, aes(estimate, term, colour = type)) +
   xlab("Coefficient estimate with 95% CI") + ylab("") +
-  # geom_violin(scale = "width") +
-  geom_violin( # aes(estimate, term), inherit.aes = F ,
-    scale = "width",
-    alpha = 0.1,  fill= NA, #"#D53E4F",
-    data = filter(nulls, model == "trend")
+  geom_violin(
+    scale = "width", fill= NA,
+    alpha = 0.1, data = filter(nulls, model == "null01")
   ) +
-  # geom_violin(#aes(estimate, term), inherit.aes = F ,
-  #   scale = "width", # scale = "area", # scale = "count",
-  #   data = filter(nulls, model != "trend")) +
-  # geom_violin(
-  #   scale = "width", fill= NA,
-  #   alpha = 0.1, data = filter(nulls, model == "null01")
-  # ) +
   geom_violin(
     scale = "width", fill= NA,
     alpha = 0.1, data = filter(nulls, model == "null02")
-  ) + # this one is strange in it's Mean T coefs...
+  ) + 
   geom_violin(
     scale = "width",fill= NA,
     alpha = 0.1, data = filter(nulls, model == "null03")
@@ -782,6 +872,11 @@ nulls <- rbind(model$coefs,
     scale = "width", fill= NA,
     alpha = 0.1, data = filter(nulls, model == "null05")
   ) +
+  geom_violin( 
+    scale = "width",
+    alpha = 0.1,  fill= NA, #"#D53E4F",
+    data = filter(nulls, model == "trend")
+  ) +
   scale_y_discrete(
     limits = rev(unique(sort(nulls$term))),
     labels = c(
@@ -789,11 +884,7 @@ nulls <- rbind(model$coefs,
       "T interaction", "T trend", "Mean T", "Biomass", "Intercept"
     )
   ) +
-    # scale_fill_manual(name = "Model type", values = c("white", "#D53E4F")) +
-    # guides(fill = F) +
-    scale_colour_manual(name = "Model type", values = c("grey80", "#D53E4F")) +
-  # scale_fill_manual(name = "Model type", values = c("#FDAE61", "#D53E4F")) + # guides(fill = F) +
-  # scale_colour_manual(name = "Model type", values = c("#FDAE61", "#D53E4F")) +
+  scale_colour_manual(name = "Model type", values = c("grey80", "#D53E4F")) +
   geom_vline(xintercept = 0, colour = "grey60") +
   geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI),
     # size = 1.15, shape = "|", fatten = 6,
@@ -813,10 +904,10 @@ nulls <- rbind(model$coefs,
 
 vnulls <- rbind(
   vnull02$coefs,
-  vnull03$coefs,
-  # vnull04$coefs, 
+  # vnull03$coefs,
+  vnull04$coefs,
   vnull05$coefs,
-  vnull01$coefs,
+  # vnull01$coefs,
   model_vel$coefs) %>%
   mutate(
     term = factor(shortener(coefficient),
@@ -831,33 +922,30 @@ vnulls <- rbind(
   colour = type
 )) +
   xlab("Coefficient estimate with 95% CI") + ylab("") +
-  geom_violin( # aes(estimate, term), inherit.aes = F ,
-    scale = "width",
-    alpha = 0.1, fill = NA, #"#5E4FA2",
-    data = filter(vnulls, model == "velocity")
-  ) +
-  # geom_violin(#aes(estimate, term), inherit.aes = F ,
-  #   scale = "width", # scale = "count", # scale = "area",
-  #   alpha = 0.1, data = filter(vnulls, model != "velocity")) +
   geom_violin(
     scale = "width", fill= NA,
     alpha = 0.1, data = filter(vnulls, model == "vnull01")
   ) +
-  # geom_violin(
-  #   scale = "width",
-  #   alpha = 0.1, data = filter(vnulls, model == "vnull02")
-  # ) +
+  geom_violin(
+    scale = "width",
+    alpha = 0.1, data = filter(vnulls, model == "vnull02")
+  ) +
   geom_violin(
     scale = "width", fill= NA,
     alpha = 0.1, data = filter(vnulls, model == "vnull03")
   ) +
-  # geom_violin(
-  #   scale = "width", fill= NA,
-  #   alpha = 0.1, data = filter(vnulls, model == "vnull04")
-  # ) +
+  geom_violin(
+    scale = "width", fill= NA,
+    alpha = 0.1, data = filter(vnulls, model == "vnull04")
+  ) +
   geom_violin(
     scale = "width", fill= NA,
     alpha = 0.1, data = filter(vnulls, model == "vnull05")
+  ) +
+  geom_violin( # aes(estimate, term), inherit.aes = F ,
+    scale = "width",
+    alpha = 0.1, fill = NA, #"#5E4FA2",
+    data = filter(vnulls, model == "velocity")
   ) +
   scale_y_discrete(
     limits = rev(unique(sort(vnulls$term))),
@@ -866,8 +954,8 @@ vnulls <- rbind(
       "T interaction", "T velocity", "Mean T", "Biomass", "Intercept"
     )
   ) +
-  scale_fill_manual(name = "Model type", values = c("gray90", "#5E4FA2"), guide = F) + #"#FDAE61" yellow guides(fill = F) +
-  scale_colour_manual(name = "Model type", values = c("gray80", "#5E4FA2")) + # "#ABDDA4",  green
+  scale_fill_manual(name = "Model type", values = c("gray90", "#5E4FA2"), guide = F) + 
+  scale_colour_manual(name = "Model type", values = c("gray80", "#5E4FA2")) + 
   geom_vline(xintercept = 0, colour = "gray60") +
   geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI),
     size = 0.5, fatten = 1,
@@ -888,7 +976,7 @@ vnulls <- rbind(
 (null_coefs | vnull_coefs) / grid::textGrob("Species-specific coefficient estimates", 
   just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "violin-optimized-w-nulls.pdf"), width = 9, height = 4)
+# ggsave(here::here("ms", "figs", "violin-optimized-w-nulls.pdf"), width = 9, height = 4)
 # ggsave(here::here("ms", "figs", "null-spp-violin-w-dvocc.pdf"), width = 9, height = 4)
 
 #########################
