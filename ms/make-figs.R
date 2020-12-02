@@ -12,14 +12,20 @@ write_tex <- function(x, macro, ...) {
 
 
 # load appropriate final models
-# model <- readRDS("analysis/VOCC/data/trend-all-95-optimized2-08-01-trend-with-do-1-500.rds") # optimized
-# model <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-24-trend-with-do-1-400.rds")
-model <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-27-trend-with-do-1-500.rds"))
-max(model$sdr$gradient.fixed)
+# model_trend <- readRDS("analysis/VOCC/data/trend-all-95-optimized2-08-01-trend-with-do-1-500.rds") # optimized
+# model_trend <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-24-trend-with-do-1-400.rds")
+# model_trend <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-27-trend-with-do-1-500.rds"))
+# model_trend <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-29-trend-with-do-1-700.rds")) # not converged
+model_trend <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-1-600.rds"))
+max(model_trend$sdr$gradient.fixed)
 
 # model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized2-08-01-vel-both-1-400.rds") # optimized and converges
 # model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-1-400.rds")
-model_vel <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-27-vel-both-1-400.rds"))
+# model_vel <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-27-vel-both-1-400.rds"))
+model_vel <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-both-1-600.rds"))
+
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-12-01-vel-both-group-1-600-DO.rds")
+# model_vel <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-29-vel-both-1-700-DO.rds")) # not converged
 max(model_vel$sdr$gradient.fixed)
 
 # load supplementary data
@@ -50,62 +56,63 @@ alldata <- alldata %>%
   filter(mean_temp < 11.3) # 0.005 and 0.995
 
 
-# #### SAVE TEX VALUES FOR CLIMATE IQRs ####
+#### SAVE TEX VALUES FOR CLIMATE IQRs ####
 # 
 # paste0("% temperature range and change") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(quantile(alldata$mean_temp, 0.025), digits = 2), "lowTMean")
-# write_tex(signif(quantile(alldata$mean_temp, 0.975), digits = 2), "highTMean")
-# write_tex(signif(attributes(alldata$mean_temp_scaled)[[2]], digits = 2), "tempMeanSD")
-# write_tex(signif(mean(alldata$temp_trend), digits = 2), "meanTTrend")
-# write_tex(signif(quantile(alldata$temp_trend, 0.025), digits = 2), "lowTTrend")
-# write_tex(signif(quantile(alldata$temp_trend, 0.975), digits = 2), "highTTrend")
-# write_tex(signif(attributes(alldata$temp_trend_scaled)[[2]], digits = 2), "temptrendSD")
+# write_tex(round(quantile(alldata$mean_temp, 0.0249), digits = 1), "lowTMean")
+# write_tex(round(quantile(alldata$mean_temp, 0.975), digits = 1), "highTMean")
+# write_tex(round(attributes(alldata$mean_temp_scaled)[[1]], digits = 1), "tempMean")
+# write_tex(round(attributes(alldata$mean_temp_scaled)[[2]], digits = 1), "tempMeanSD")
+# write_tex(round(mean(alldata$temp_trend), digits = 1), "meanTTrend")
+# write_tex(round(quantile(alldata$temp_trend, 0.025), digits = 1), "lowTTrend")
+# write_tex(round(quantile(alldata$temp_trend, 0.975), digits = 1), "highTTrend")
+# write_tex(round(attributes(alldata$temp_trend_scaled)[[1]], digits = 1), "temptrendSD")
 # 
 # paste0("% temp change < 100 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # alldata100 <- alldata %>% filter(depth < 100)
 # write_tex(signif(mean(alldata100$temp_trend), digits = 2), "meanTTrendONE")
 # 
 # paste0("% DO range and change") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(quantile(alldata$mean_DO, 0.025), digits = 2), "lowDOMean")
-# write_tex(signif(quantile(alldata$mean_DO, 0.975), digits = 2), "highDOMean")
-# write_tex(signif(attributes(alldata$mean_DO_scaled)[[2]], digits = 2), "DOmeanSD")
-# write_tex(signif(mean(alldata$DO_trend), digits = 2), "meanDOTrend")
-# write_tex(signif(quantile(alldata$DO_trend, 0.025), digits = 2), "lowDOTrend")
-# write_tex(signif(quantile(alldata$DO_trend, 0.975), digits = 2), "highDOTrend")
-# write_tex(signif(attributes(alldata$DO_trend_scaled)[[2]], digits = 2), "DOtrendSD")
+# write_tex(round(quantile(alldata$mean_DO, 0.025), digits = 1), "lowDOMean")
+# write_tex(round(quantile(alldata$mean_DO, 0.975), digits = 1), "highDOMean")
+# write_tex(round(attributes(alldata$mean_DO_scaled)[[2]], digits = 1), "DOmeanSD")
+# write_tex(round(mean(alldata$DO_trend), digits = 1), "meanDOTrend")
+# write_tex(round(quantile(alldata$DO_trend, 0.025), digits = 1), "lowDOTrend")
+# write_tex(round(quantile(alldata$DO_trend, 0.975), digits = 1), "highDOTrend")
+# write_tex(round(attributes(alldata$DO_trend_scaled)[[1]], digits = 1), "DOtrendSD")
 # 
 # alldata50 <- alldata %>% filter(depth <= 50)
 # alldataDO <- alldata %>% filter(depth < 200) %>% filter(depth > 50)
-# alldata200 <- alldata %>% filter(depth >= 200) 
+# alldata200 <- alldata %>% filter(depth >= 200)
 # 
 # paste0("% temp change <= 50 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(mean(alldata50$temp_trend), digits = 2), "meanTTrendONE")
-# write_tex(signif(quantile(alldata50$temp_trend, 0.025), digits = 2), "minTTrendONE")
-# write_tex(signif(quantile(alldata50$temp_trend, 0.975), digits = 2), "maxTTrendONE")
+# write_tex(round(mean(alldata50$temp_trend), digits = 1), "meanTTrendONE")
+# write_tex(round(quantile(alldata50$temp_trend, 0.025), digits = 1), "minTTrendONE")
+# write_tex(round(quantile(alldata50$temp_trend, 0.975), digits = 1), "maxTTrendONE")
 # paste0("% temp change between 50 and 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(mean(alldataDO$temp_trend), digits = 2), "meanTTrendTWO")
-# write_tex(signif(quantile(alldataDO$temp_trend, 0.025), digits = 2), "minTTrendTWO")
-# write_tex(signif(quantile(alldataDO$temp_trend, 0.975), digits = 2), "maxTTrendTWO")
+# write_tex(round(mean(alldataDO$temp_trend), digits = 1), "meanTTrendTWO")
+# write_tex(round(quantile(alldataDO$temp_trend, 0.025), digits = 1), "minTTrendTWO")
+# write_tex(round(quantile(alldataDO$temp_trend, 0.975), digits = 1), "maxTTrendTWO")
 # paste0("% temp change >= 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(mean(alldata200$temp_trend), digits = 2), "meanTTrendDEEP")
-# write_tex(signif(quantile(alldata200$temp_trend, 0.025), digits = 2), "minTTrendDEEP")
-# write_tex(signif(quantile(alldata200$temp_trend, 0.975), digits = 2), "maxTTrendDEEP")
+# write_tex(round(mean(alldata200$temp_trend), digits = 1), "meanTTrendDEEP")
+# write_tex(round(quantile(alldata200$temp_trend, 0.025), digits = 1), "minTTrendDEEP")
+# write_tex(round(quantile(alldata200$temp_trend, 0.975), digits = 1), "maxTTrendDEEP")
 # 
 # paste0("% DO change <= 50 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(mean(alldata50$DO_trend), digits = 2), "meanDOTrendONE")
-# write_tex(signif(quantile(alldata50$DO_trend, 0.025), digits = 2), "minDOTrendONE")
-# write_tex(signif(quantile(alldata50$DO_trend, 0.975), digits = 2), "maxDOTrendONE")
+# write_tex(round(mean(alldata50$DO_trend), digits = 1), "meanDOTrendONE")
+# write_tex(round(quantile(alldata50$DO_trend, 0.025), digits = 1), "minDOTrendONE")
+# write_tex(round(quantile(alldata50$DO_trend, 0.975), digits = 1), "maxDOTrendONE")
 # paste0("% DO change between 50 and 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(mean(alldataDO$DO_trend), digits = 2), "meanDOTrendTWO")
-# write_tex(signif(quantile(alldataDO$DO_trend, 0.025), digits = 2), "minDOTrendTWO")
-# write_tex(signif(quantile(alldataDO$DO_trend, 0.975), digits = 2), "maxDOTrendTWO")
+# write_tex(round(mean(alldataDO$DO_trend), digits = 1), "meanDOTrendTWO")
+# write_tex(round(quantile(alldataDO$DO_trend, 0.025), digits = 1), "minDOTrendTWO")
+# write_tex(round(quantile(alldataDO$DO_trend, 0.975), digits = 1), "maxDOTrendTWO")
 # paste0("% DO change >= 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(mean(alldata200$DO_trend), digits = 2), "meanDOTrendDEEP")
-# write_tex(signif(quantile(alldata200$DO_trend, 0.025), digits = 2), "minTTrendDEEP")
-# write_tex(signif(quantile(alldata200$DO_trend, 0.975), digits = 2), "maxTTrendDEEP")
+# write_tex(round(mean(alldata200$DO_trend), digits = 1), "meanDOTrendDEEP")
+# write_tex(round(quantile(alldata200$DO_trend, 0.025), digits = 1), "minTTrendDEEP")
+# write_tex(round(quantile(alldata200$DO_trend, 0.975), digits = 1), "maxTTrendDEEP")
 # 
 # paste0("% temperature velocities") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[2]], digits = 2), "tempvelSD")
+# write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[1]], digits = 2), "tempvelSD")
 # write_tex(signif(mean(alldata$squashed_temp_vel), digits = 2), "tempvelmean")
 # write_tex(signif(range(alldata$squashed_temp_vel)[[1]], digits = 2), "tempvelmin")
 # write_tex(signif(range(alldata$squashed_temp_vel)[[2]], digits = 2), "tempvelmax")
@@ -114,20 +121,12 @@ alldata <- alldata %>%
 # write_tex(signif(midpoint_temp_vel, digits = 2), "tempvelmid")
 # 
 # paste0("% DO velocities") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[2]], digits = 2), "DOvelSD")
-# write_tex(signif(
-#   mean(alldata$squashed_DO_vel_scaled)*attributes(alldata$squashed_DO_vel_scaled)[[2]],
-#   digits = 2), "DOvelmean")
-# write_tex(signif(
-#   range(alldata$squashed_DO_vel_scaled)[[1]]*attributes(alldata$squashed_DO_vel_scaled)[[2]],
-#   digits = 2), "DOvelmin")
-# write_tex(signif(
-#   range(alldata$squashed_DO_vel_scaled)[[2]]*attributes(alldata$squashed_DO_vel_scaled)[[2]],
-#   digits = 2), "DOvelmax")
-# range_DO_vel <- range(alldata$squashed_DO_vel_scaled)[[2]]*attributes(alldata$squashed_DO_vel_scaled)[[2]] -
-#   range(alldata$squashed_DO_vel_scaled)[[1]]*attributes(alldata$squashed_DO_vel_scaled)[[2]]
-# midpoint_DO_vel <- range(alldata$squashed_DO_vel_scaled)[[2]]*attributes(alldata$squashed_DO_vel_scaled)[[2]] -
-#   range_DO_vel/2
+# write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[1]], digits = 2), "DOvelSD")
+# write_tex(round(mean(alldata$squashed_DO_vel)), "DOvelmean")
+# write_tex(signif(range(alldata$squashed_DO_vel)[[1]], digits = 2), "DOvelmin")
+# write_tex(signif(range(alldata$squashed_DO_vel)[[2]], digits = 2), "DOvelmax")
+# range_DO_vel <- range(alldata$squashed_DO_vel)[[2]] - range(alldata$squashed_DO_vel)[[1]]
+# midpoint_DO_vel <- range(alldata$squashed_DO_vel)[[2]] - range_DO_vel/2
 # write_tex(signif(midpoint_DO_vel, digits = 2), "DOvelmid")
 
 #########################
@@ -364,7 +363,7 @@ mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do +
     ylim(4, 11) +
     coord_flip(expand = F) +  
     xlab("Mean cell depth") +
-    ggtitle("Temperature") +
+    # ggtitle("Temperature") +
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0, 0.3, 0.1, 0, "cm"), 
       axis.title.x = element_blank(), 
@@ -400,7 +399,7 @@ mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do +
     ylab("Velocity (km per decade)") +
     xlab("Mean depth") +
     gfplot::theme_pbs() + theme(
-      plot.margin = margin(0, 0.3, 0.1, 0, "cm"), legend.position = "none",
+      plot.margin = margin(0.5, 0.3, 0.1, 0, "cm"), legend.position = "none",
       axis.title.x = element_blank(),
       axis.text.y = element_blank(), axis.title.y = element_blank()
     ))
@@ -421,7 +420,7 @@ mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do +
     geom_hline(yintercept = 1.8, colour = "grey40", linetype = "dashed") + # 30% saturation onset for mild hypoxia
     # geom_hline(yintercept = 0.64, colour = "black", linetype = "dashed") + # 10% saturation onset for severe hypoxia
     xlab("Mean cell depth") +
-    ggtitle("DO") +
+    # ggtitle("DO") +
     gfplot::theme_pbs() + theme(
       # axis.text.y = element_blank(), axis.title.y = element_blank(),
       plot.margin = margin(0, 0.3, 0.1, 0, "cm"), legend.position = "none"
@@ -460,7 +459,7 @@ mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do +
     ))
 
 (p_iqr <- temp_slopes %>% filter(chopstick == "high") %>% 
-    mutate(labs = if_else(age == "Mature" & depth > 300 | depth_iqr < 25 | (age == "Mature" & depth_iqr > 100),  gsub(" Rockfish", "", species), NA_character_)) %>%
+    mutate(labs = if_else(age == "Mature" & depth > 300 | depth_iqr < 20 | (age == "Mature" & depth_iqr > 100),  gsub(" Rockfish", "", species), NA_character_)) %>%
     ggplot(aes(depth, depth_iqr)) + 
     # geom_smooth(method = "lm", colour = "black", size =0.5) +
     geom_line(aes(group = species), colour = "grey60") +
@@ -475,15 +474,16 @@ mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do +
     # scale_x_log10() +
     # scale_y_log10() +
     scale_x_reverse() +
-    coord_flip() +
+    coord_flip() + 
+    # annotate(geom = 'text', label = "a.", x = 440, y = 220, hjust = 2, vjust = 2)+
     ggrepel::geom_text_repel(
       aes(label = labs), colour = "royalblue4",
       point.padding = 0.3, segment.colour = "deepskyblue3", max.iter = 10000,
-      size = 3, force = 20,
+      size = 3, force = 30,
       nudge_y = 2, nudge_x = -2,
       na.rm = T, min.segment.length = 10, seed = 1000
     ) +
-    ggtitle("Groundfish species") +
+    # ggtitle("Groundfish species") +
     ylab("Depth range occupied (IQR)") +
     xlab("Mean depth occupied") +
     gfplot::theme_pbs() + theme(
@@ -510,19 +510,21 @@ layout1 <- "
 p_iqr +
   p_depth_tf + p_depth_tt + p_depth_tv +
   p_depth_dof + p_depth_dot + p_depth_dov + 
-  plot_layout(design = layout1)
+  plot_layout(design = layout1) + plot_annotation(tag_levels = 'a', tag_suffix = ".")& 
+  theme(plot.tag.position = c(.89, .9),
+    plot.tag = element_text(size = 12, hjust = 0, vjust = 0))
 
-# ggsave(here::here("ms", "figs", "climate-depth-plots-stacked.png"), width = 6, height = 8.5)
+ggsave(here::here("ms", "figs", "climate-depth-plots-stacked.png"), width = 6, height = 8.5)
 
 #######################
 #######################
 #### FISHING EFFORT MAPS ####
 (mean_fish <- plot_vocc(alldata,
   vec_aes = NULL, grey_water = F,
-  fill_col = "mean_effort", fill_label = "Hrs/yr",
+  fill_col = "mean_effort", fill_label = "Mean \nhrs/yr",
   raster_cell_size = 4, white_zero = F,
   viridis_option = "B",
-  # viridis_begin = 0.1,
+  viridis_begin = 0.1,
   # viridis_end = 0.7,
   # # viridis_dir = -1,
   na_colour = "yellow",
@@ -547,9 +549,10 @@ p_iqr +
   )
 (mean_catch <- plot_vocc(alldata,
   vec_aes = NULL, grey_water = F,
-  fill_col = "mean_catch", fill_label = "tons/yr",
+  fill_col = "mean_catch", fill_label = "Mean \ntons/yr",
   raster_cell_size = 4, white_zero = F,
   viridis_option = "B",
+  viridis_begin = 0.1,
   na_colour = "yellow",
   raster_limits = c(0, 350),
   transform_col = fourth_root_power,
@@ -609,7 +612,7 @@ p_iqr +
 
 (vel_effort <- plot_vocc(alldata,
   vec_aes = NULL,
-  fill_col = "squashed_fishing_vel", fill_label = "km/decade ",
+  fill_col = "squashed_fishing_vel", fill_label = "km per \ndecade ",
   raster_cell_size = 4, white_zero = TRUE,
   # mid_fill = "ghostwhite", grey_water = F,
   mid_fill = "ghostwhite", grey_water = F,
@@ -618,7 +621,7 @@ p_iqr +
   # na_colour = "black", raster_limits = c(-15, 20),
   na_colour = "midnightblue", raster_limits = c(-15,15),
   axis_lables = T, tag_text = "e.",
-  legend_position = c(0.25, 0.3)
+  legend_position = c(0.18, 0.3)
 ) +  #ggtitle("Fishing") +
     coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
     ylab("Change per decade") +
@@ -689,17 +692,10 @@ ggsave(here::here("ms", "figs", "maps-fishing-w-vel.png"), width = 6, height = 9
 #### GLOBAL COEFS ####
 #########################
 
-model <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-27-trend-with-do-1-500.rds"))
-max(model$sdr$gradient.fixed)
-
-model_vel <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-27-vel-both-1-400.rds"))
-max(model_vel$sdr$gradient.fixed)
-
-
 #### get trend model betas and save tex ####
-coef_names <- shortener(unique(model$coefs$coefficient))
-betas <- signif(as.list(model$sdr, "Estimate")$b_j, digits = 3)
-SE <- signif(as.list(model$sdr, "Std. Error")$b_j, digits = 3)
+coef_names <- shortener(unique(model_trend$coefs$coefficient))
+betas <- signif(as.list(model_trend$sdr, "Estimate")$b_j, digits = 3)
+SE <- signif(as.list(model_trend$sdr, "Std. Error")$b_j, digits = 3)
 lowerCI <- as.double(signif(betas + SE * qnorm(0.025), digits = 3))
 upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
 overall_t <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
@@ -715,21 +711,21 @@ overall_betas$model <- "Trend"
 
 # # ### SAVE TEX VALUES FOR TREND ESTIMATES ####
 # paste0("% trend model betas") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(signif(overall_betas$betas[overall_betas$coef_names == "change in T"], 2), "betaTtrend")
-# write_tex(signif(abs(overall_betas$betas[overall_betas$coef_names == "change in T"]), 2), "ABSbetaTtrend")
-# write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "change in T"], 2), "lowerTTbeta")
-# write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "change in T"], 2), "upperTTbeta")
-# write_tex(signif(overall_betas$betas[overall_betas$coef_names == "interaction (T)"], 2), "betaTTinteract")
-# write_tex(signif(abs(overall_betas$betas[overall_betas$coef_names == "interaction (T)"]), 2), "ABSbetaTTinteract")
-# write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "interaction (T)"], 2), "lowerTTinteract")
-# write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "interaction (T)"], 2), "upperTTinteract")
-
-# write_tex(signif(overall_betas$betas[overall_betas$coef_names == "change in DO"], 2), "betaDOtrend")
-# write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "change in DO"], 2), "lowerDTbeta")
-# write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "change in DO"], 2), "upperDTbeta")
-# write_tex(signif(overall_betas$betas[overall_betas$coef_names == "interaction (DO)"], 2), "betaDTinteract")
-# write_tex(signif(overall_betas$lowerCI[overall_betas$coef_names == "interaction (DO)"], 2), "lowerDTinteract")
-# write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "interaction (DO)"], 2), "upperDTinteract")
+# write_tex(round(overall_betas$betas[overall_betas$coef_names == "change in T"], 2), "betaTtrend")
+# write_tex(round(abs(overall_betas$betas[overall_betas$coef_names == "change in T"]), 2), "ABSbetaTtrend")
+# write_tex(round(overall_betas$lowerCI[overall_betas$coef_names == "change in T"], 2), "lowerTTbeta")
+# write_tex(round(overall_betas$upperCI[overall_betas$coef_names == "change in T"], 2), "upperTTbeta")
+# write_tex(round(overall_betas$betas[overall_betas$coef_names == "interaction (T)"], 2), "betaTTinteract")
+# write_tex(round(abs(overall_betas$betas[overall_betas$coef_names == "interaction (T)"]), 2), "ABSbetaTTinteract")
+# write_tex(round(overall_betas$lowerCI[overall_betas$coef_names == "interaction (T)"], 2), "lowerTTinteract")
+# write_tex(round(overall_betas$upperCI[overall_betas$coef_names == "interaction (T)"], 2), "upperTTinteract")
+# 
+# write_tex(round(overall_betas$betas[overall_betas$coef_names == "change in DO"], 2), "betaDOtrend")
+# write_tex(round(overall_betas$lowerCI[overall_betas$coef_names == "change in DO"], 2), "lowerDTbeta")
+# write_tex(round(overall_betas$upperCI[overall_betas$coef_names == "change in DO"], 2), "upperDTbeta")
+# write_tex(round(overall_betas$betas[overall_betas$coef_names == "interaction (DO)"], 2), "betaDTinteract")
+# write_tex(round(overall_betas$lowerCI[overall_betas$coef_names == "interaction (DO)"], 2), "lowerDTinteract")
+# write_tex(signif(overall_betas$upperCI[overall_betas$coef_names == "interaction (DO)"], 1), "upperDTinteract")
 
 
 #### get velocity model betas and save tex ####
@@ -749,55 +745,51 @@ coef_names <- c(
 overall_betas_vel <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas_vel$model <- "Velocity"
 ###
-# # ### SAVE TEX VALUES FOR VELOCITY ESTIMATES ####
+# ### SAVE TEX VALUES FOR VELOCITY ESTIMATES ####
 # paste0("% velocity model betas") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# # TEMPERATURE 
-# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"], 2), "betaTvel")
-# write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
-# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTVbeta")
-# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTVbeta")
+# # TEMPERATURE
+# write_tex(round(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"], 2), "betaTvel")
+# write_tex(round(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in T"]), 2), "ABSbetaTvel")
+# write_tex(round(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in T"], 2), "lowerTVbeta")
+# write_tex(round(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in T"], 2), "upperTVbeta")
 # 
-# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"], 3), "betaTVinteract")
-# write_tex(signif(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"]), 3), "ABSbetaTVinteract")
-# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "lowerTVinteract")
-# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (T)"], 3), "upperTVinteract")
-# # DO 
-# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in DO"], 2), "betaDOvel")
-# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in DO"], 2), "lowerDVbeta")
-# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in DO"], 2), "upperDVbeta")
-# write_tex(signif(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (DO)"], 3), "betaDVinteract")
-# write_tex(signif(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (DO)"], 3), "lowerDVinteract")
-# write_tex(signif(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (DO)"], 3), "upperDVinteract")
+# write_tex(round(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"], 2), "betaTVinteract")
+# write_tex(round(abs(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (T)"]), 2), "ABSbetaTVinteract")
+# write_tex(round(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (T)"], 2), "lowerTVinteract")
+# write_tex(round(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (T)"], 2), "upperTVinteract")
+# # DO
+# write_tex(round(overall_betas_vel$betas[overall_betas_vel$coef_names == "change in DO"], 2), "betaDOvel")
+# write_tex(round(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "change in DO"], 2), "lowerDVbeta")
+# write_tex(round(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "change in DO"], 2), "upperDVbeta")
+# write_tex(round(overall_betas_vel$betas[overall_betas_vel$coef_names == "interaction (DO)"], 2), "betaDVinteract")
+# write_tex(round(overall_betas_vel$lowerCI[overall_betas_vel$coef_names == "interaction (DO)"], 2), "lowerDVinteract")
+# write_tex(round(overall_betas_vel$upperCI[overall_betas_vel$coef_names == "interaction (DO)"], 2), "upperDVinteract")
 
 
 #### ADD NULLS AND MAKE VIOLIN PLOT ####
-# null01 <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-26-trend-with-do-sim-1-400-DO.rds") # vel version failed
-null02 <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-26-trend-with-do-sim-2-400-DO.rds")
-# null03 <- readRDS("analysis/VOCC/data/.rds") 
-null04 <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-26-trend-with-do-sim-4-400-DO.rds") 
-null05 <- readRDS("analysis/VOCC/data/trend-all-95-optimized3-11-26-trend-with-do-sim-5-400-DO.rds")
+# null01 <- # vel version failed
+null02 <- readRDS("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-sim-2-600.rds")
+# null03 <- readRDS("analysis/VOCC/data/.rds") # vel doesn't converge
+null04 <- readRDS("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-sim-4-600.rds")
+null05 <- readRDS("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-sim-5-600.rds")
+null03 <- readRDS("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-sim-6-600.rds")
 
 # max(null01$sdr$gradient.fixed)
 max(null02$sdr$gradient.fixed)
-# max(null03$sdr$gradient.fixed)
+max(null03$sdr$gradient.fixed)
 max(null04$sdr$gradient.fixed)
 max(null05$sdr$gradient.fixed)
 
-setwd(here::here())
-
-
-# vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-25-vel-both-sim-1-400-DO.rds")
-# vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-25-vel-both-sim-10-400-DO.rds") #still running
-vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-25-vel-both-sim-2-400-DO.rds")
-# vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-25-vel-both-sim-3-400-DO.rds") # not converged yet... 
-# vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-26-vel-both-sim-8-400-temp.rds") # not converged, grad = 0.008
-vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-25-vel-both-sim-4-400-DO.rds")
-vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-26-vel-both-sim-5-400-DO.rds")
-
+# vnull01 <- # not converged  
+vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-both-sim-2-600.rds")
+# vnull03 <- # not converged  
+vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-29-vel-both-sim-4-600.rds")
+vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-29-vel-both-sim-5-600.rds")
+vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-29-vel-both-sim-6-600.rds")
 
 # max(vnull01$sdr$gradient.fixed)
 max(vnull02$sdr$gradient.fixed)
-# max(vnull03$sdr$gradient.fixed)
+max(vnull03$sdr$gradient.fixed)
 max(vnull04$sdr$gradient.fixed)
 max(vnull05$sdr$gradient.fixed)
 # 
@@ -808,19 +800,24 @@ max(vnull05$sdr$gradient.fixed)
 # # upperCI <- signif(betas + SE * qnorm(0.975), digits = 3)
 # # overall_vnull2 <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 
-# # # old nulls with incorrect climate data too
-# # vnull01 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-1-200-DO.rds")
-# vnull02 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-2-200-DO.rds")
-# vnull03 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-3-200-DO.rds")
-# # vnull04 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-29-vel-both-sim-4-200-DO.rds")
-# # vnull05 <- readRDS("analysis/VOCC/data/vel-all-95-all-do-04-30-vel-both-sim-5-200-DO.rds")
+# to compare knots
+knot500 <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-27-trend-with-do-1-500.rds"))
+knot600 <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-1-600.rds"))
+knot700 <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-29-trend-with-do-1-700.rds")) # not converged
+vknot400 <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-27-vel-both-1-400.rds"))
+vknot600 <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-both-1-600.rds"))
+vknot700 <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-30-vel-both-1-700.rds")) # not converged
+max(knot700$sdr$gradient.fixed)
 
-model$coefs$model <- "trend"
+model_trend$coefs$model <- "trend"
 null01$coefs$model <- "null01"
 null02$coefs$model <- "null02"
 null03$coefs$model <- "null03"
 null04$coefs$model <- "null04"
 null05$coefs$model <- "null05"
+knot500$coefs$model <- "knot500"
+knot600$coefs$model <- "knot600*"
+knot700$coefs$model <- "knot700**"
 
 model_vel$coefs$model <- "velocity"
 vnull01$coefs$model <- "vnull01"
@@ -828,6 +825,9 @@ vnull02$coefs$model <- "vnull02"
 vnull03$coefs$model <- "vnull03"
 vnull04$coefs$model <- "vnull04"
 vnull05$coefs$model <- "vnull05"
+vknot400$coefs$model <- "knot400"
+vknot600$coefs$model <- "knot600*"
+vknot700$coefs$model <- "knot700**"
 
 custom_order <- c(
   "Intercept", "log_biomass",
@@ -835,12 +835,16 @@ custom_order <- c(
   "DO", "DO_trend", "DO_vel", "DO_dvocc", "DO_trend:DO", "DO_vel:DO", "DO_dvocc:DO"
 )
 
-nulls <- rbind(model$coefs,
+nulls <- rbind(
   # null01$coefs, 
-  null02$coefs, 
-  # null03$coefs, 
+  null02$coefs,
+  null03$coefs,
   null04$coefs,
-  null05$coefs) %>%
+  null05$coefs,
+  knot500$coefs,
+  knot600$coefs,
+  knot700$coefs,
+  model_trend$coefs) %>%
   mutate(
     term = factor(shortener(coefficient),
       levels = as.character(custom_order)
@@ -905,11 +909,14 @@ nulls <- rbind(model$coefs,
   ))
 
 vnulls <- rbind(
+  # vnull01$coefs,
   vnull02$coefs,
-  # vnull03$coefs,
+  vnull03$coefs,
   vnull04$coefs,
   vnull05$coefs,
-  # vnull01$coefs,
+  vknot400$coefs,
+  vknot600$coefs,
+  vknot700$coefs,
   model_vel$coefs) %>%
   mutate(
     term = factor(shortener(coefficient),
@@ -978,9 +985,69 @@ vnulls <- rbind(
 (null_coefs | vnull_coefs) / grid::textGrob("Species-specific coefficient estimates", 
   just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-# ggsave(here::here("ms", "figs", "violin-optimized-w-nulls.pdf"), width = 9, height = 4)
+ggsave(here::here("ms", "figs", "violin-optimized-w-nulls.pdf"), width = 9, height = 4)
 # ggsave(here::here("ms", "figs", "null-spp-violin-w-dvocc.pdf"), width = 9, height = 4)
+# 
 
+#### CHECK KNOT NUMBER ####
+(null_coefs2 <- ggplot(nulls, aes(estimate, term, colour = model)) +
+    xlab("Coefficient estimate with 95% CI") + ylab("") +
+    geom_violin(scale = "width", fill= NA,
+      alpha = 0.1, data = filter(nulls, model == "knot700**")) + 
+    geom_violin(scale = "width", fill= NA,
+      alpha = 0.1, data = filter(nulls, model == "knot500")) +
+    geom_violin(scale = "width", fill= NA,
+      alpha = 0.1, data = filter(nulls, model == "knot600*")) + 
+    scale_y_discrete(limits = rev(unique(sort(nulls$term))),
+      labels = c("DO interaction", "DO trend", "Mean DO",
+        "T interaction", "T trend", "Mean T", "Biomass", "Intercept")) +
+    scale_colour_manual(name = "Model type", values = c("orange", "red", "darkgrey")) +
+    geom_vline(xintercept = 0, colour = "grey60") +
+    geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI),
+      # size = 1.15, shape = "|", fatten = 6,
+      size = 0.5, fatten = 1,
+      inherit.aes = F,
+      data = overall_t
+    ) + ggtitle("a. Trend-based models \n (*global coefs for 600; **700 doesn't converge)") +
+    coord_cartesian() +
+    guides(color = guide_legend(reverse = TRUE)) +
+    gfplot::theme_pbs() + theme(
+      axis.title = element_blank(), # element_text(size = 10),
+      legend.title = element_blank(),
+      legend.justification = c("left", "bottom"),
+      legend.position = c(0.025, 0.018)
+    ))
+
+(vnull_coefs2 <- ggplot(vnulls, aes(estimate, term, colour = model)) +
+    xlab("Coefficient estimate with 95% CI") + ylab("") +
+    geom_violin(scale = "width", fill= NA,
+      alpha = 0.1, data = filter(vnulls, model == "knot700**")) +
+    geom_violin(scale = "width", fill= NA,
+      alpha = 0.1, data = filter(vnulls, model == "knot400")) +
+    geom_violin(scale = "width", fill= NA,
+      alpha = 0.1, data = filter(vnulls, model == "knot600*")) +
+    scale_y_discrete(limits = rev(unique(sort(vnulls$term))),
+      labels = c("DO interaction", "DO velocity", "Mean DO",
+        "T interaction", "T velocity", "Mean T", "Biomass", "Intercept")) +
+    scale_colour_manual(name = "Model type", values = c("orange", "red", "darkgrey")) +
+    geom_vline(xintercept = 0, colour = "gray60") +
+    geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI),
+      size = 0.5, fatten = 1, inherit.aes = F,
+      data = overall_v
+    ) + ggtitle("b. Velocity-based models \n (*global coefs for 600; **500 & 700 don't converge)") +
+    coord_cartesian() +
+    guides(color = guide_legend(reverse = TRUE)) +
+    gfplot::theme_pbs() + theme(
+      axis.title = element_blank(), # element_text(size = 10),
+      legend.title = element_blank(),
+      legend.justification = c("left", "bottom"),
+      legend.position = c(0.025, 0.018)
+    ))
+
+(null_coefs2 | vnull_coefs2) / grid::textGrob("Species-specific coefficient estimates", 
+  just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
+
+ggsave(here::here("ms", "figs", "violin-for-knots.pdf"), width = 10, height = 4)
 #########################
 #########################
 #### SEPARATE WORM PLOTS
@@ -1005,11 +1072,11 @@ estD <- overall_betas %>%
   filter(coef_names == "change in DO") %>%
   select(betas)
 
-temp_slopes <- chopstick_slopes(model,
+temp_slopes <- chopstick_slopes(model_trend,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
 ) %>%  mutate(sort_var = -(all_global_slope))
-do_slopes <- chopstick_slopes(model,
+do_slopes <- chopstick_slopes(model_trend,
   x_variable = "DO_trend_scaled",
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
 ) %>%  mutate(sort_var = -(all_global_slope))
@@ -1056,7 +1123,7 @@ do_slopes$species[do_slopes$species == "Rougheye/Blackspotted Rockfish Complex"]
 
 (p_temp_worm | p_do_worm) / grid::textGrob("Slope of biomass trend with a SD change in climate", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "worm-plot-trend-newclim.pdf"), width = 9, height = 6)
+# ggsave(here::here("ms", "figs", "worm-plot-trend-500.pdf"), width = 9, height = 6)
 
 
 ### WORM PLOTS OF SLOP ESTIMATES FROM VELOCITY MODELS  ####
@@ -1147,7 +1214,7 @@ p_do_worm2 <- plot_chopstick_slopes(do_vel_slopes, type = "DO",
     legend.box = "horizontal"
 )) 
 
-ggsave(here::here("ms", "figs", "worm-plot-vel.pdf"), width = 7, height = 7)
+ggsave(here::here("ms", "figs", "worm-plot-vel-600.pdf"), width = 7, height = 7)
 
 #### IF WE WANT PLOT OF BOTH TREND AND VELOCITY SLOPES TOGETHER ####
 
@@ -1231,6 +1298,7 @@ species_panels <- function(species, model, x_type,
                            # biotic_lim = c(-40, 40), # currently only applied to 
                            chop_label = F,
                            leftmost = F,
+                           add_global = T,
                            alpha_range = c(0.9, 0.9)) {
   age <- unique(model$data[model$data$species == species, ]$age_class)
 
@@ -1298,12 +1366,16 @@ species_panels <- function(species, model, x_type,
 
   if (x_type == "temp") {
     if(trends){
-    temp_slopes <- chopstick_slopes(model,
+      
+    if(add_global){  
+    temp_slopes <- chopstick_slopes(model_trend,
       x_variable = "temp_trend_scaled",
       interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
     )
-
-    single_chop <- plot_fuzzy_chopsticks(model,
+    } else {
+      temp_slopes <- NULL
+    }
+    single_chop <- plot_fuzzy_chopsticks(model_trend,
       x_variable = "temp_trend_scaled", type = "temp", #y_label = "",
       line_size = 1,
       alpha_range = alpha_range,
@@ -1348,11 +1420,14 @@ species_panels <- function(species, model, x_type,
       ) 
     
     } else { # repeat above for velocities
-      temp_slopes <- chopstick_slopes(model_vel,
+      if(add_global){  
+        temp_slopes <- chopstick_slopes(model_vel,
         x_variable = "squashed_temp_vel_scaled",
         interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled", type = "temp"
       )
-      
+      } else {
+        temp_slopes <- NULL
+      }
       single_chop <- plot_fuzzy_chopsticks(model_vel,
         x_variable = "squashed_temp_vel_scaled",
         type = "temp", #y_label = "",
@@ -1420,12 +1495,15 @@ species_panels <- function(species, model, x_type,
 
   if (x_type == "DO") {
     if(trends){
-    do_slopes <- chopstick_slopes(model,
-      x_variable = "DO_trend_scaled",
-      interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
-    )
-
-    single_chop <- plot_fuzzy_chopsticks(model,
+      if(add_global){ 
+        do_slopes <- chopstick_slopes(model_trend,
+          x_variable = "DO_trend_scaled",
+          interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
+        )
+      } else{
+        do_slopes <- NULL
+      }
+    single_chop <- plot_fuzzy_chopsticks(model_trend,
       x_variable = "DO_trend_scaled", type = "DO", 
       line_size = 1, alpha_range = alpha_range,
       choose_species = stringr::str_replace(species, ".*mature ", ""),
@@ -1469,11 +1547,14 @@ species_panels <- function(species, model, x_type,
         legend_position = c(0.15, 0.3), make_square = F
       ) 
     } else { # for velocities
-      do_slopes <- chopstick_slopes(model_vel,
-        x_variable = "squashed_DO_vel_scaled",
-        interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
-      )
-      
+      if(add_global){ 
+        do_slopes <- chopstick_slopes(model_vel,
+          x_variable = "squashed_DO_vel_scaled",
+          interaction_column = "squashed_DO_vel_scaled:mean_DO_scaled", type = "DO"
+        )
+      } else{
+        do_slopes <- NULL
+      }
       single_chop <- plot_fuzzy_chopsticks(model_vel,
         x_variable = "squashed_DO_vel_scaled", type = "DO", 
         line_size = 1, alpha_range = alpha_range,
@@ -1560,6 +1641,8 @@ species_panels <- function(species, model, x_type,
 }
 
 # velocity-based example chops
+model <- model_vel
+
 (p1 <- species_panels("mature Redbanded Rockfish", 
   trends = F,
   chop_label = T, 
@@ -1613,7 +1696,7 @@ ygrob3 <- grid::textGrob(("Mean climate"),
 
 wrap_plots(ygrob1, ygrob2, ygrob3, p1, p2, p3, p4) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1))
 
-ggsave(here::here("ms", "figs", "species-map-panels-vel4.png"), width = 11, height = 11)
+# ggsave(here::here("ms", "figs", "species-map-panels-vel4.png"), width = 11, height = 11)
 
 
 # two panels only
@@ -1626,10 +1709,38 @@ ggsave(here::here("ms", "figs", "species-map-panels-vel4.png"), width = 11, heig
   model, "temp"
 ))
 
-(p3b <- species_panels("immature North Pacific Spiny Dogfish", 
+(p3b <- species_panels("immature Lingcod",
   trends = F,
-  chop_label = T, #leftmost = T, 
+  chop_label = T, #leftmost = T,
+  # add_global = F,
   model, "DO"))
+
+# (p3b <- species_panels("mature Dover Sole",
+#   trends = F,
+#   chop_label = T, #leftmost = T,
+#   model, "DO"))
+# 
+# (p3b <- species_panels("mature Slender Sole",
+#   trends = F,
+#   chop_label = T, #leftmost = T,
+#   add_global = F,
+#   model, "DO"))
+# 
+# (p3b <- species_panels("mature North Pacific Spiny Dogfish",
+#   trends = F,
+#   chop_label = T, #leftmost = T,
+#   model, "DO"))
+# 
+# (p3b <- species_panels("immature North Pacific Spiny Dogfish",
+#   trends = F,
+#   chop_label = T, #leftmost = T,
+#   model, "DO"))
+# 
+# (p3b <- species_panels("immature Sablefish",
+#   trends = F,
+#   chop_label = T, #leftmost = T,
+#   # add_global = F,
+#   model, "DO"))
 
 layout <- "
       ADE
@@ -1639,7 +1750,7 @@ layout <- "
       "
 wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p3b) + plot_layout(design = layout, widths = c(0.03, 1, 1))
 
-ggsave(here::here("ms", "figs", "species-map-panels-vel2.png"), width = 6, height = 11)
+# ggsave(here::here("ms", "figs", "species-map-panels-vel2.png"), width = 6, height = 11)
 
 
 #########################
@@ -1648,11 +1759,11 @@ ggsave(here::here("ms", "figs", "species-map-panels-vel2.png"), width = 6, heigh
 ### prep data ####
 
 # do_data1 <- readRDS(paste0("analysis/VOCC/data/predicted-DO-june-2020.rds")) %>%
-temp_slopes <- chopstick_slopes(model,
+temp_slopes <- chopstick_slopes(model_trend,
   x_variable = "temp_trend_scaled",
   interaction_column = "temp_trend_scaled:mean_temp_scaled", type = "temp"
 )
-do_slopes <- chopstick_slopes(model,
+do_slopes <- chopstick_slopes(model_trend,
   x_variable = "DO_trend_scaled",
   interaction_column = "DO_trend_scaled:mean_DO_scaled", type = "DO"
 )
@@ -1894,7 +2005,7 @@ do_data <- readRDS(paste0("analysis/VOCC/data/predicted-DO-2020-06-20-more2016.r
   ))
 
 
-d <- temp_slopes %>% filter(chopstick == "high" & type == "Temp" & age == "Immature") 
+d <- temp_slopes %>% filter(chopstick == "high" & type == "temp" & age == "Immature") 
 
 # if adding to tex
 # cor(d$log_age_scaled, d$growth_rate_scaled, use = "pairwise.complete.obs", method = "spearman")
@@ -1903,7 +2014,7 @@ d <- temp_slopes %>% filter(chopstick == "high" & type == "Temp" & age == "Immat
   geom_point(aes(shape = age, colour = age), size = 2) +
   scale_colour_manual(values = c("deepskyblue3")) +
   scale_shape_manual(values = c(21)) +
-  ylim(1,21) +
+  # ylim(1,21) +
   scale_x_log10(
     # position = "top",
     expand= c(0,0.1)
@@ -2017,6 +2128,8 @@ d <- temp_slopes %>% filter(chopstick == "high" & type == "Temp" & age == "Immat
 #   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 # )
 
+# ggsave(here::here("ms", "figs", "supp-depth-iqr.pdf"), width = 5, height = 3.5)
+
 temp_high3 <- temp_high %>% egg::tag_facet(
   tag_pool = c("a"),
   open = "", close = ".", 
@@ -2064,18 +2177,7 @@ depth_do <- p_depth_do %>% egg::tag_facet(
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
-# p_growth <- growth %>% egg::tag_facet(
-#   open = "", close = ".", tag_pool = c("b"),
-#   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
-# )
 
-# ggsave(here::here("ms", "figs", "supp-depth-iqr.pdf"), width = 5, height = 3.5)
-
-layout <- "
-      AB
-      CD
-      EF
-      "
 
 (temp_high3 + do_low3 +  
     temp_high4 + do_low4 +
@@ -2091,31 +2193,26 @@ ggsave(here::here("ms", "figs", "slope-by-depth-w-newclim-vel.png"), width = 9, 
 # REMOVE TREND SLOPES
 #### add facet tags and save ####
 
-p_iqr <- p_iqr %>% egg::tag_facet(
+
+temp_high5 <- temp_high2 %>% egg::tag_facet(
   tag_pool = c("a"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
-temp_high5 <- temp_high2 %>% egg::tag_facet(
+do_low5 <- do_low2 %>% egg::tag_facet( 
   tag_pool = c("b"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
 
-do_low5 <- do_low2 %>% egg::tag_facet( 
+depth_t2 <- p_depth_t %>% egg::tag_facet(
   tag_pool = c("c"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
-
-depth_t2 <- p_depth_t %>% egg::tag_facet(
-  tag_pool = c("d"),
-  open = "", close = ".", 
-  x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
-)
 depth_do2 <- p_depth_do %>% egg::tag_facet(
-  tag_pool = c("e"),
+  tag_pool = c("d"),
   open = "", close = ".", 
   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 )
@@ -2124,26 +2221,18 @@ depth_do2 <- p_depth_do %>% egg::tag_facet(
 #   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 # )
 
-# ggsave(here::here("ms", "figs", "supp-depth-iqr.pdf"), width = 5, height = 3.5)
 
+### remove 3rd row of plots
 layout <- "
       AB
       CD
-      EF
       "
 
-(p_iqr + p_iqr2 + temp_high5 + do_low5 + depth_t2 + depth_do2 + plot_layout(design = layout, heights = c(0.6, 0.7, 0.5))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + 
+(temp_high5 + do_low5 + depth_t2 + depth_do2 + 
+    plot_layout(design = layout, heights = c( 1, 0.5))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + 
   plot_layout(nrow = 2, heights = c(1, 0.02))
 
-# ggsave(here::here("ms", "figs", "slope-by-depth-quad-iqr.png"), width = 8, height = 5)
-ggsave(here::here("ms", "figs", "slope-by-depth-vel-only.png"), width = 9, height = 7)
-
-
-### remove slope plots
-layout <- "
-      AB
-      CD
-      "
+# ggsave(here::here("ms", "figs", "slope-by-depth-vel-only.png"), width = 9, height = 5)
 
 
 depth_t_B <- p_depth_t %>% egg::tag_facet(
@@ -2159,8 +2248,7 @@ depth_do_C <- p_depth_do %>% egg::tag_facet(
 
 (p_iqr + p_iqr2 + depth_t_B + depth_do_C + plot_layout(design = layout, heights = c(0.6, 0.6))) / grid::textGrob("Mean depth", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 2, heights = c(1, 0.02))
 
-# ggsave(here::here("ms", "figs", "slope-by-depth-quad-iqr.png"), width = 8, height = 5)
-ggsave(here::here("ms", "figs", "depth-only.png"), width = 9, height = 5)
+# ggsave(here::here("ms", "figs", "depth-only.png"), width = 9, height = 5)
 
 
 
@@ -2481,7 +2569,7 @@ cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 
   )
   ) / grid::textGrob("Estimated biotic velocity (km per decade)", just = 0.3, gp = grid::gpar(fontsize = 11))  + plot_layout(height = c(10, 0.02))
 
-# ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max.pdf"), width = 8, height = 8)
+ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max-600.pdf"), width = 8, height = 8)
 # ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max-faded.pdf"), width = 8, height = 8)
 
 
@@ -2513,7 +2601,7 @@ p_temp_est_worm <- p_temp_est_worm + ggtitle("b. Maximum warming")
   legend.spacing.x = unit(.1, "cm")
 ))  
 
-ggsave(here::here("ms", "figs", "worm-temp-ests-min-max.pdf"), width = 7, height = 7)
+ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-600.pdf"), width = 7, height = 7)
 # ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-faded.pdf"), width = 8, height = 8)
 
 
@@ -2556,7 +2644,7 @@ ggsave(here::here("ms", "figs", "worm-temp-ests-min-max.pdf"), width = 7, height
 
 (p_temp_est_worm2 | p_do_est_worm ) / grid::textGrob("Biotic velocity at min of climate velocities experienced", just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "worm-plot-ests-vel-max-w-do.pdf"), width = 9, height = 6)
+# ggsave(here::here("ms", "figs", "worm-plot-ests-vel-max-w-do-600.pdf"), width = 9, height = 6)
 
 
 
