@@ -451,5 +451,80 @@ stats <- rbind(mat, imm)
 stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
 
 stats <- left_join(behav, stats)
+# stats$family <- gsub("\\(.*", "", stats$parent_taxonomic_unit)
+stats <- stats %>% mutate(family = case_when(
+  family == "sebastolobus"~"sebastidae", # sea perches
+  family == "sebastes"~"sebastidae",
+  family == "citharichthys"~"paralichthyidae",
+  TRUE ~ family
+))
 
-saveRDS(stats, file = "data/life-history-behav-new-growth.rds")
+stats <- stats %>% mutate(higher_taxa = case_when(
+  # Cartilaginous fishes (class)
+  parent_taxonomic_unit == "rajidae(skates)"~"Chondrichthyes",
+  parent_taxonomic_unit == "squalidae(dogfish sharks)"~"Chondrichthyes",
+  parent_taxonomic_unit == "chimaeridae(ratfishes)"~"Chondrichthyes",
+  # Flatfish (order)
+  parent_taxonomic_unit == "citharichthys"~"Pleuronectiformes",
+  parent_taxonomic_unit == "pleuronectidae(righteye flounders)"~"Pleuronectiformes",
+  # Cods (order)
+  parent_taxonomic_unit == "gadidae"~"Gadiformes",
+  # Scorpaeniformes (order)
+  parent_taxonomic_unit == "anoplopomatidae(sablefishes)"~"Scorpaeniformes", # sablefish
+  parent_taxonomic_unit == "hexagrammidae(greenlings)"~"Scorpaeniformes", # lingcod
+  parent_taxonomic_unit == "sebastolobus(thornyheads)"~"Scorpaeniformes", # sea perches
+  parent_taxonomic_unit == "sebastes"~"Scorpaeniformes" # sea perches
+  # families within Scorpaeniformes
+  # parent_taxonomic_unit == "anoplopomatidae(sablefishes)"~"Anoplopomatidae", # sablefish
+  # parent_taxonomic_unit == "hexagrammidae(greenlings)"~"Hexagrammidae", # lingcod
+  # parent_taxonomic_unit == "sebastolobus(thornyheads)"~"Sebastidae", # sea perches
+  # parent_taxonomic_unit == "sebastes"~"Sebastidae" # sea perches
+))
+lut <- tribble(
+  ~species_common_name, ~mean_group,
+  "arrowtooth flounder", "flatfish",
+  "big skate", "chondrichthyes",
+  "bocaccio", "shelf rockfish",
+  "canary rockfish", "inshore rockfish",
+  "curlfin sole", "flatfish",
+  "darkblotched rockfish", "slope rockfish",
+  "dover sole", "flatfish",
+  "english sole", "flatfish",
+  "flathead sole","flatfish",
+  "greenstriped rockfish", "shelf rockfish",
+  "lingcod", "lingcod",
+  "longnose skate","chondrichthyes",
+  "north pacific spiny dogfish", "chondrichthyes",
+  "pacific cod", "cods",
+  "pacific hake", "cods", # previously and still excluded
+  "pacific halibut", "flatfish",
+  "pacific ocean perch", "slope rockfish",
+  "pacific sanddab", "flatfish",# previously excluded
+  "petrale sole","flatfish",
+  "quillback rockfish", "inshore rockfish",
+  "redbanded rockfish", "slope rockfish",
+  "redstripe rockfish", "shelf rockfish",
+  "rex sole","flatfish",
+  "rosethorn rockfish", "slope rockfish", # previously excluded
+  "rougheye/blackspotted rockfish complex", "slope rockfish",
+  "sablefish", "sablefish",
+  # "sand sole", "flatfish",# not converged
+  "sharpchin rockfish", "slope rockfish",
+  "shortraker rockfish", "slope rockfish",
+  "shortspine thornyhead", "slope rockfish",
+  "silvergray rockfish", "shelf rockfish",
+  "slender sole", "flatfish",# previously excluded
+  "southern rock sole", "flatfish",
+  "splitnose rockfish", "slope rockfish",
+  "spotted ratfish", "chondrichthyes",
+  "walleye pollock", "cods",
+  "widow rockfish", "shelf rockfish",
+  "yelloweye rockfish", "inshore rockfish",
+  "yellowmouth rockfish", "slope rockfish",
+  "yellowtail rockfish", "shelf rockfish"
+)
+
+lut <- arrange(lut, mean_group)
+stats <- left_join(stats, lut)
+
+saveRDS(stats, file = "data/life-history-behav-new-growth2.rds")
