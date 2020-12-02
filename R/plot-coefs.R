@@ -22,7 +22,7 @@ plot_coefs <- function(coloured_coefs,
         "temp", "temp_trend", "temp_vel",  "temp_trend:temp", "temp_vel:temp",
         "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO",
         "log_effort", "fishing_trend", "log_effort:fishing_trend", "fishing_vel", "log_effort:fishing_vel", 
-        "log_catch", "catch_trend", "catch_vel", "log_catch:catch_vel",
+        "log_catch", "catch_trend", "catch_vel", "log_catch:catch_vel", "log_catch:fishing_vel",
         "age", "age:temp_trend", "age:temp", 
         "age:DO_trend", "age:DO", 
         "age:temp_trend:temp", "age:DO_trend:DO", 
@@ -36,7 +36,7 @@ plot_coefs <- function(coloured_coefs,
       "temp", "temp_trend", "temp_vel",  "temp_trend:temp", "temp_vel:temp", 
       "DO", "DO_trend", "DO_vel", "DO_trend:DO", "DO_vel:DO",
       "log_effort", "fishing_trend", "log_effort:fishing_trend", "fishing_vel", "log_effort:fishing_vel", 
-      "log_catch", "catch_trend", "catch_vel", "log_catch:catch_vel",
+      "log_catch", "catch_trend", "catch_vel", "log_catch:catch_vel", "log_catch:fishing_vel",
       "age", "age:temp_trend", "age:temp", 
       "age:DO_trend", "age:DO", 
       "age:temp_trend:temp", "age:DO_trend:DO", 
@@ -57,9 +57,31 @@ plot_coefs <- function(coloured_coefs,
   }
   coloured_coefs <- coloured_coefs %>% arrange(col_var)
   colour_list <- unique(coloured_coefs$colours)
-  coloured_coefs$group <- coloured_coefs[[grouping_taxa]]
+  coloured_coefs$group <- as.factor(coloured_coefs[[grouping_taxa]])
+  
+  if(grouping_taxa == "species_id") {
+    # browser()
+    
+    lab_df <- coloured_coefs %>% select(species, species_id, age) %>% distinct()
+    
+    p <- ggplot(coloured_coefs, aes(
+      forcats::fct_reorder(group, order, .fun = min, .desc = increasing), #-Estimate),
+      #forcats::fct_reorder(species,, -coloured_coefs[coloured_coefs$coefficient == "do_vel", ]$Estimate),
+      Estimate,
+      colour = col_var,
+      shape = age,
+      ymin = Estimate + qnorm(0.025) * `Std. Error`,
+      ymax = Estimate + qnorm(0.975) * `Std. Error`
+    )) + 
+      scale_x_discrete(breaks = lab_df$species_id, labels = lab_df$species) + 
+      scale_colour_manual(values = colour_list, name = "Group") +
+      geom_hline(yintercept = 0, colour = "darkgray") + geom_pointrange() +
+      coord_flip() + xlab("") + 
+      gfplot:::theme_pbs()  
+  } else{
+  
   p <- ggplot(coloured_coefs, aes(
-    forcats::fct_reorder(group, order, .desc = increasing), #-Estimate),
+    forcats::fct_reorder(group, order, .fun = min, .desc = increasing), #-Estimate),
     #forcats::fct_reorder(species,, -coloured_coefs[coloured_coefs$coefficient == "do_vel", ]$Estimate),
     Estimate,
     colour = col_var,
@@ -70,6 +92,7 @@ plot_coefs <- function(coloured_coefs,
     geom_hline(yintercept = 0, colour = "darkgray") + geom_pointrange() +
     coord_flip() + xlab("") + 
     gfplot:::theme_pbs()  
+  }
   
   if(add_grey_bars) {
     .n <- length(unique(coloured_coefs[[grouping_taxa]]))
@@ -79,7 +102,6 @@ plot_coefs <- function(coloured_coefs,
       ymin = -Inf, ymax = Inf, fill = "grey70", alpha = 0.15
     )
   }
-  
   
   if (grid_facets) {
     if(length(unique(coloured_coefs$age))>1){

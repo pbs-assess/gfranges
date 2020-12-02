@@ -8,74 +8,97 @@ dyn.load(dynlib("analysis/VOCC/vocc_regression"))
 source("analysis/VOCC/vocc-regression-functions.R")
 
 # stats <- readRDS(paste0("data/life-history-behav.rds"))
-stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds"))
+stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth2.rds"))
 
 ##############################
 #### ONE JUST BUILT
 model <- new_model
 
 #### LOAD MODELS ####
-model <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-1-400.rds")
-
-## nulls that are currently illustrated
-# model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-07-01-trend-with-do-sim-3-500-DO.rds")
-# model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-06-30-trend-with-do-sim-4-500-DO.rds")
-# model <- readRDS("analysis/VOCC/data/trend-all-95-all-newclim-07-01-trend-with-do-sim-5-500-DO.rds")
-# model <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-3-350-DO.rds")
-# model <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-4-350.rds")
-# model <- readRDS("analysis/VOCC/data/vel-all-95-all-newclim-06-30-vel-both-sim-5-350-DO.rds")
-
-model2 <- add_colours(model$coefs) 
+model <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-1-600.rds"))
+model <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-both-1-600.rds"))
+model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-12-01-vel-both-group-1-600-DO.rds")
+# model2 <- add_colours(model$coefs, col_var = "family") 
+# model2 <- add_colours(model$coefs, col_var = "higher_taxa") 
+model2 <- add_colours(model$coefs, col_var = "mean_group") 
 model2$species[model2$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 manipulate::manipulate({
-  plot_coefs(model2, grid_facets = T, fixed_scales = F, #add_grey_bars = T, 
+  plot_coefs(model2, grid_facets = T, fixed_scales = F, grouping_taxa = "species_id", #add_grey_bars = T,
     order_by = order_by) #+ ylim(-0.05,0.095)
-}, order_by = manipulate::picker( 
+}, order_by = manipulate::picker(
   as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
 )
 
-# ggsave(here::here("ms", "figs", "supp-all-trend-coefs.pdf"), width = 12.5, height = 8.5)
-# ggsave(here::here("ms", "figs", "supp-all-vel-coefs.pdf"), width = 12.5, height = 8.5)
-# # ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null6nb.pdf"), width = 12.5, height = 8.5)
-# ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null5nb.pdf"), width = 12.5, height = 8.5)
+
+model <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-1-600.rds"))
+model <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-both-1-600.rds"))
+
+## nulls that are currently illustrated
+# model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-both-sim-2-600.rds")
+# model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-29-vel-both-sim-4-600.rds")
+# model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-29-vel-both-sim-5-600.rds")
+# model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-29-vel-both-sim-6-600.rds")
+# model2 <- add_colours(model$coefs, col_var = "mean_group") 
+# model2$species[model2$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+# plot_coefs(model2, grouping_taxa = "species_id", order_by = "temp_vel", grid_facets = T, fixed_scales = F)
+# # ggsave(here::here("ms", "figs", "supp-all-vel-coefs.pdf"), width = 12.5, height = 8.5)
 # ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null4nb.pdf"), width = 12.5, height = 8.5)
 # ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null3nb.pdf"), width = 12.5, height = 8.5)
-# # ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
-# # ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
-
+# ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
+# ggsave(here::here("ms", "figs", "supp-all-vel-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
 # 
-# ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null5nb.pdf"), width = 12.5, height = 8.5)
+# model <- readRDS("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-sim-2-600.rds")
+# model <- readRDS("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-sim-4-600.rds")
+# model <- readRDS("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-sim-5-600.rds")
+# model <- readRDS("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-sim-6-600.rds")
+# model2 <- add_colours(model$coefs, col_var = "mean_group") 
+# model2$species[model2$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
+# plot_coefs(model2, grouping_taxa = "species_id", order_by = "temp_trend", grid_facets = T, fixed_scales = F)
+# # ggsave(here::here("ms", "figs", "supp-all-trend-coefs.pdf"), width = 12.5, height = 8.5)
 # ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null4nb.pdf"), width = 12.5, height = 8.5)
 # ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null3nb.pdf"), width = 12.5, height = 8.5)
-# # ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
-# # ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
+# ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null2nb.pdf"), width = 12.5, height = 8.5)
+# ggsave(here::here("ms", "figs", "supp-all-trend-coefs-null1nb.pdf"), width = 12.5, height = 8.5)
 
 #### fishing model ####
 # model <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-19-vel-w-catch-main-only-1-400.rds")
 # model <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-20-vel-both-family-1-350.rds")
 # model <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-20-vel-both-1-350.rds")
 # model <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-21-vel-both-1-400.rds")
-model <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-19-vel-w-fishing-1-400.rds")
-model <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-19-vel-w-catch-1-400.rds")
+# model <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-19-vel-w-fishing-1-400.rds")
+# model <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-19-vel-w-catch-1-400.rds")
+# model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-w-catch-1-400.rds")
+model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-w-fishing-1-600.rds") #best grad so far
+model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-12-01-vel-w-fishing-1-600.rds")
 
-model2 <- add_colours(model$coefs) %>%   
+model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-12-01-vel-w-catch-1-500.rds")
+max(model$sdr$gradient.fixed)
+
+model2 <- add_colours(model$coefs, col_var = "mean_group") %>%   
   # filter(coefficient %in% c("log_biomass_scaled", "log_effort_scaled", "fishing_trend_scaled","log_effort_scaled:fishing_trend_scaled"))
   # filter(coefficient %in% c("log_biomass_scaled", "log_effort_scaled", "fishing_vel_scaled","log_effort_scaled:fishing_vel_scaled"))
-filter(coefficient %in% c("log_biomass_scaled", "log_catch_scaled", "catch_trend_scaled", "catch_vel_scaled", "log_catch_scaled:catch_vel_scaled"))
+filter(coefficient %in% c(
+  # "log_biomass_scaled",
+  "log_catch_scaled", "catch_trend_scaled",
+  "catch_vel_scaled", "fishing_vel_scaled",
+"log_effort_scaled", "fishing_vel_scaled","log_effort_scaled:fishing_vel_scaled",
+  "log_catch_scaled:fishing_vel_scaled",
+  "log_catch_scaled:catch_vel_scaled"))
 
 model2$species[model2$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
 
 manipulate::manipulate({
-  plot_coefs(model2, grid_facets = T, fixed_scales = F, #add_grey_bars = T, 
+  plot_coefs(model2, grid_facets = T, fixed_scales = F, grouping_taxa = "species_id", #add_grey_bars = T, 
     order_by = order_by) #+ ylim(-0.05,0.095)
 }, order_by = manipulate::picker( 
-  as.list(sort(unique(shortener(model2$coefficient))), decreasing=F))
+  as.list(sort(unique(shortener(model2[model2$age=="mature",]$coefficient))), decreasing=F))
 )
 
-# ggsave(here::here("ms", "figs", "supp-fishing-interation-coefs.pdf"), width = 8.5, height = 8.5)
-# ggsave(here::here("ms", "figs", "supp-catch-interaction-coefs.pdf"), width = 8.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-fishing-interation-coefs-600.pdf"), width = 8.5, height = 8.5)
+# ggsave(here::here("ms", "figs", "supp-catch-interaction-coefs-600.pdf"), width = 8.5, height = 9)
 # ggsave(here::here("ms", "figs", "supp-catch-only-coefs-400.pdf"), width = 5.5, height = 8.5)
+ggsave(here::here("ms", "figs", "supp-catch-main-coefs-500.pdf"), width = 8.5, height = 9)
 
 
 #### sort by traits ####
@@ -130,7 +153,7 @@ model$data %>%
 #### WITH AGE EFFECT ####
 # Just mature
 
-model_age <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-23-vel-w-age-1-400.rds")
+# model_age <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-23-vel-w-age-1-400.rds")
 model2 <- add_colours(model_age$coefs) 
 
 model2$species[model2$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
@@ -208,29 +231,32 @@ manipulate::manipulate({
 #### FAMILY COEF PLOTS ####
 
 # classes and orders
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-order-1-300.rds")
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-18-vel-both-order-1-300.rds")
 
 # families 
-# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-19-vel-both-family-true-1-300.rds")
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-20-vel-both-family-1-350.rds")
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-20-vel-both-family-1-350.rds")
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-both-family-1-600.rds") # not quite converged
 
 # ecological/taxanomic groups
 # model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-19-vel-both-group-1-400.rds")
-model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-23-vel-both-group-1-400.rds")
+# model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized3-11-23-vel-both-group-1-400.rds")
+
+model_vel <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-12-01-vel-both-group-1-600.rds")
+
 
 model_vel$coefs_genus$genus <-  stringr::str_to_title(model_vel$coefs_genus$genus)
-model3 <- add_colours(model_vel$coefs_genus, col_var = "genus", add_spp_data = F) 
+model3 <- add_colours(model_vel$coefs_genus, col_var = "genus", add_spp_data = F) %>% filter(coefficient != "log_biomass_scaled") %>% filter(coefficient != "(Intercept)")
 colour_list <- unique(model3$colours)
 manipulate::manipulate({
   plot_coefs(model3, grouping_taxa = "genus", fixed_scales = F, order_by = order_by) 
 }, order_by = manipulate::picker( 
   as.list(sort(unique(shortener(model3$coefficient))), decreasing=F))
 )
-plot_coefs(model3, grouping_taxa = "genus", order_by = "temp_vel", fixed_scales = F)
+plot_coefs(model3, grouping_taxa = "genus", order_by = "temp_vel", fixed_scales = F) + theme(legend.position = "none")
 
 # ggsave(here::here("ms", "figs", "supp-coefs-family-350.pdf"), width = 8, height = 6)
-# # ggsave(here::here("ms", "figs", "supp-coefs-family-300.pdf"), width = 8, height = 6)
-# ggsave(here::here("ms", "figs", "supp-coefs-group-400.pdf"), width = 8, height = 6)
+# ggsave(here::here("ms", "figs", "supp-coefs-family-600.pdf"), width = 7, height = 5)
+ggsave(here::here("ms", "figs", "supp-coefs-group-600.pdf"), width = 8, height = 5)
 
 
 #### CONTRAST COEFFICIENTS WITH LIFE HISTORY ####
