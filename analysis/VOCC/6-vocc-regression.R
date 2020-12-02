@@ -7,10 +7,6 @@ library(gfranges)
 # library(future)
 # plan(multiprocess)
 # plan("multisession")
-setwd(here::here("analysis", "VOCC"))
-compile("vocc_regression.cpp")
-dyn.load(dynlib("vocc_regression"))
-source("vocc-regression-functions.R")
 
 # load meta analysis function
 run_meta_analysis <- function(
@@ -35,10 +31,15 @@ run_meta_analysis <- function(
   setseed = 42 # only changes mesh
 
 ){ # collapse function here to load and run subsequent code  
+  setwd(here::here("analysis", "VOCC"))
+  compile("vocc_regression.cpp")
+  dyn.load(dynlib("vocc_regression"))
+  source("vocc-regression-functions.R")
   
   #### LOAD DATA ####
   d <- readRDS(paste0("data/", data_type, "-with-null", null_number, ".rds"))
   
+  ### the following ~80 lines could be added to at line 45 of 5-add-null stage instead
   d$family <- gsub("\\(.*", "", d$parent_taxonomic_unit)
   d <- d %>% mutate(family = case_when(
     family == "sebastolobus"~"sebastidae", # sea perches
@@ -140,7 +141,7 @@ run_meta_analysis <- function(
   }
   
   d <- mutate(d, species_only = species, species = species_age, age_class = age, age = if_else(age_class == "mature", 0, 1))
-  
+
   #### PREP FISH BIOMASS VARIABLES ####
   # range(d$mean_biomass)
   d$mean_biomass_scaled <- scale((d$mean_biomass))
@@ -201,7 +202,7 @@ run_meta_analysis <- function(
   # hist((d$sd_est))
   # hist(log(d$sd_est))
   # hist(log(d$biotic_CV))
-  
+  # browser()
   ############################
   ############################
   #### TREND-BASED COVARIATES ####
@@ -421,7 +422,8 @@ run_meta_analysis <- function(
       squashed_DO_vel_scaled:mean_DO_scaled +
       # catch_trend_scaled +
       log_catch_scaled +
-      catch_vel_scaled +
+      # catch_vel_scaled +
+      fishing_vel_scaled +
       # log_catch_scaled:catch_vel_scaled +
       log_biomass_scaled
     
@@ -437,10 +439,11 @@ run_meta_analysis <- function(
       mean_temp_scaled +
       squashed_temp_vel_scaled:mean_temp_scaled +
       # log_effort_scaled +
+      log_catch_scaled +
+      fishing_vel_scaled +
       # fishing_trend_scaled +
-      ## log_effort_scaled:fishing_trend_scaled +
-      log_effort_scaled + fishing_vel_scaled +
       # log_effort_scaled:fishing_vel_scaled +
+      log_catch_scaled:fishing_vel_scaled +
       squashed_DO_vel_scaled +
       mean_DO_scaled +
       squashed_DO_vel_scaled:mean_DO_scaled +
@@ -625,8 +628,8 @@ run_meta_analysis <- function(
       }
       
       hist(y)
-      
-      if (w_genus | w_family) {
+
+      if (w_genus | w_family | w_group | w_higher_taxa) {
         DO_model <- vocc_regression(d, y,
           X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
           knots = knots, setseed = setseed,
@@ -656,14 +659,13 @@ run_meta_analysis <- function(
           y <- d$squashed_biotic_vel
           if (model_type == "-dist-vel-temp") {
             y <- d$squashed_biotic_dvocc
-            # y <- d$biotic_trend
           }
         }
         
         hist(y)
-        
-        
-        if (w_genus | w_family) {
+
+        if (w_genus | w_family | w_group | w_higher_taxa) {
+
           DO_model <- vocc_regression(d, y,
             X_ij = x, X_pj = DO_pj, pred_dat = DO_dat,
             knots = knots, setseed = setseed,
@@ -710,7 +712,7 @@ run_meta_analysis <- function(
   }
   
   if (stop_after_DO){
-    return(paste0("data/", y_type, "-", data_type, date, model_type, 
+    (paste0("data/", y_type, "-", data_type, date, model_type, 
       null_lab, null_number, "-", knots, "-DO.rds"))
     # return(DO_model)
   }else{
@@ -746,7 +748,7 @@ run_meta_analysis <- function(
         
         hist(y)
         
-        if (w_genus | w_family) {
+        if (w_genus | w_family | w_group | w_higher_taxa) {
           fishing_model %<-% vocc_regression(d, y,
             X_ij = x, X_pj = F_pj, pred_dat = F_dat,
             knots = knots, setseed = setseed,
@@ -782,7 +784,7 @@ run_meta_analysis <- function(
           
           hist(y)
           
-          if (w_genus | w_family) {
+          if (w_genus | w_family | w_group | w_higher_taxa) {
             fishing_model %<-% vocc_regression(d, y,
               X_ij = x, X_pj = F_pj, pred_dat = F_dat,
               knots = knots, setseed = setseed,
@@ -852,7 +854,7 @@ run_meta_analysis <- function(
           y <- d$biotic_trend
         }
         
-        if (w_genus | w_family) {
+        if (w_genus | w_family | w_group | w_higher_taxa) {
           temp_model <- vocc_regression(d, y,
             X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
             knots = knots, setseed = setseed,
@@ -889,7 +891,7 @@ run_meta_analysis <- function(
           
           hist(y)
           
-          if (w_genus | w_family) {
+          if (w_genus | w_family | w_group | w_higher_taxa) {
             temp_model <- vocc_regression(d, y,
               X_ij = x, X_pj = X_pj, pred_dat = pred_dat,
               knots = knots, setseed = setseed,
@@ -989,13 +991,13 @@ max(model$sdr$gradient.fixed)
 
 # run each version of the following in a fresh R session with the above lines reloaded
 
-# main model
-run_meta_analysis(
-  model_type = "-vel-both", 
-  y_type = "vel", 
-  knots = 400, #works, failed to converg with 500, trying 600
-  data_type = "all-95-optimized4"
-)
+# # main model
+# run_meta_analysis(
+#   model_type = "-vel-both", 
+#   y_type = "vel", 
+#   knots = 700, # 400 & 600 work, failed to converg with 500 & 700
+#   data_type = "all-95-optimized4"
+# )
 
 # main trend model complete
 # run_meta_analysis(
@@ -1005,94 +1007,120 @@ run_meta_analysis(
 #   data_type = "all-95-optimized4"
 # )
 
-# fishing model
+# # fishing model run without interaction
+# run_meta_analysis(
+#   model_type = "-vel-w-catch", 
+#   y_type = "vel", 
+#   knots = 400, 
+#   data_type = "all-95-optimized4"
+# )
+
+# # fishing model 2 w catch*fishing_vel
+# run_meta_analysis(
+#   model_type = "-vel-w-fishing", 
+#   y_type = "vel", 
+#   knots = 400, 
+#   data_type = "all-95-optimized4"
+# )
+# 
+# # family model
+# run_meta_analysis(
+#   model_type = "-vel-both",
+#   y_type = "vel",
+#   knots = 600,
+#   data_type = "all-95-optimized4",
+#   w_family = T
+# )
+
+# # 1 null vel model
+# run_meta_analysis(
+#   model_type = "-vel-both",
+#   y_type = "vel",
+#   knots = 600,
+#   data_type = "all-95-optimized4",
+#   is_null = T,
+#   null_number = "-1", ## 1 failed, 3 ? 
+#   no_chopsticks = T # make these T to speed up running nulls
+# )
+# 
+# # 1 null trend model
+# run_meta_analysis(
+#   model_type = "-trend-with-do",
+#   y_type = "trend",
+#   knots = 600,
+#   data_type = "all-95-optimized4",
+#   is_null = T,
+#   null_number = "-4",
+#   no_chopsticks = T # make these T to speed up running nulls
+# )
+
+# # just temp vel model
+# run_meta_analysis(
+#   model_type = "-vel-temp",
+#   y_type = "vel",
+#   knots = 600,
+#   data_type = "all-95-optimized4"
+# )
+
+# # just DO vel model
+# run_meta_analysis(
+#   model_type = "-vel-do",
+#   y_type = "vel",
+#   knots = 600, # works with 400, failed to converg with 500
+#   data_type = "all-95-optimized4"
+# )
+# # age vel model
 run_meta_analysis(
-  model_type = "-vel-w-catch", 
-  y_type = "vel", 
-  knots = 400, 
+  model_type = "-vel-w-age",
+  y_type = "vel",
+  knots = 500, # 600 didn't converge
   data_type = "all-95-optimized4"
 )
+# # # trend temp only model
+# run_meta_analysis(
+#   model_type = "-trend",
+#   y_type = "trend",
+#   knots = 600, 
+#   data_type = "all-95-optimized4"
+# )
+# # # grad trend model
+# run_meta_analysis(
+#   model_type = "-trend-grad",
+#   y_type = "trend",
+#   knots = 600, 
+#   data_type = "all-95-optimized4"
+# )
 
-# fishing model 2
-run_meta_analysis(
-  model_type = "-vel-w-fishing", 
-  y_type = "vel", 
-  knots = 400, 
-  data_type = "all-95-optimized4"
-)
-
-# family model
-run_meta_analysis(
-  model_type = "-vel-both", 
-  y_type = "vel", 
-  knots = 400, 
-  data_type = "all-95-optimized4",
-  w_family = T
-)
-
-
-# 1 null vel model 
-run_meta_analysis(
-  model_type = "-vel-both", 
-  y_type = "vel", 
-  knots = 400, 
-  data_type = "all-95-optimized4",
-  is_null = T,
-  # null_number = "-1", 
-  no_chopsticks = T # make these T to speed up running nulls
-  # stop_after_DO = T
-)
-
-# 2 null vel model 
-run_meta_analysis(
-  model_type = "-vel-both", 
-  y_type = "vel", 
-  knots = 400, 
-  data_type = "all-95-optimized4",
-  is_null = T,
-  null_number = "-2",
-  # no_chopsticks = T 
-  stop_after_DO = T
-)
-
-
-# just DO vel model
-run_meta_analysis(
-  model_type = "-vel-do", 
-  y_type = "vel", 
-  knots = 400, # failed to converg with 500
-  data_type = "all-95-optimized4"
-)
-
-### model choices ###
-### for trends ###
-# # # model_type <- "-trend" # just temp
-# # # model_type <- "-trend-do-only" # just DO
-# # # model_type <- "-trend-w-age" # an experiment that lacks true chops for imm
-# # model_type <- "-trend-w-age2"
-# # # model_type <- "-trend-grad"
-# # # model_type <- "-trend-w-grad"
-# model_type <- "-trend-with-do"
-# # model_type <- "-trend-w-fishing"
-
-### for velocities ###
-# model_type <- "-vel-temp"
-# model_type <- "-vel-do"
-# model_type <- "-vel-both"
-# model_type <- "-vel-w-age"
-# model_type <- "-vel-w-fishing" # interaction but last run not squashed
-# model_type <- "-vel-w-catch" # now w interaction
-# model_type <- "-dist-vel-temp"
-# model_type <- "-dist-vel-both"
-# model_type <- "-dist-vel-combined" # doesn't converg
-
+# ### model choices ###
+# ### for trends ###
+# # # # model_type <- "-trend" # just temp
+# # # # model_type <- "-trend-do-only" # just DO
+# # # # model_type <- "-trend-w-age" # an experiment that lacks true chops for imm
+# # # model_type <- "-trend-w-age2"
+# # # # model_type <- "-trend-grad"
+# # # # model_type <- "-trend-w-grad"
+# # model_type <- "-trend-with-do"
+# # # model_type <- "-trend-w-fishing"
+# 
+# ### for velocities ###
+# # model_type <- "-vel-temp"
+# # model_type <- "-vel-do"
+# # model_type <- "-vel-both"
+# # model_type <- "-vel-w-age"
+# # model_type <- "-vel-w-fishing" # interaction but last run not squashed
+# # model_type <- "-vel-w-catch" # now w interaction
+# # model_type <- "-dist-vel-temp"
+# # model_type <- "-dist-vel-both"
+# # model_type <- "-dist-vel-combined" # doesn't converg
+# 
 
 
 
 ### NOTES and model explorations
 ##  vel nulls for optim3:
 ## 1 failed, 3 NAs, 6,7,9 failed, 8 = 0.008 gradient after 2 rounds
-
+##  vel nulls for optim4:
+## 1 failed, 3 ? 
 
 ############################
 # Needs to wait until after models finish
