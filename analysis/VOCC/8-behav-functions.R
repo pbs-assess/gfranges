@@ -56,14 +56,14 @@ long_vel_slopes <- long_vel_slopes %>% mutate(
 
 
 # collapse Middle and South together because only 3 "southern" species
-long_vel_slopes$Latitude[long_vel_slopes$Latitude == "Middle"] <- "South"
+# long_vel_slopes$Latitude[long_vel_slopes$Latitude == "Middle"] <- "South"
 
 # collapse Pelagic into Benthopelagic because only 3 "pelagic" species
 long_vel_slopes$Zone[long_vel_slopes$Zone == "Pelagic"] <- "Benthopelagic"
 
 long_vel_slopes <- long_vel_slopes %>% mutate(
-  Zone = factor(Zone, levels = c("Demersal", "Benthopelagic")),
-  Latitude = factor(Latitude, levels = c("North", "South"))
+  # Latitude = factor(Latitude, levels = c("North", "South")),
+  Zone = factor(Zone, levels = c("Demersal", "Benthopelagic"))
 )
 
 long_vel_slopes <- long_vel_slopes %>% group_by(slope_type) %>% mutate(slope_trim = collapse_outliers(slope, c(0.005, 0.995))) %>% ungroup()
@@ -159,71 +159,71 @@ ggpaired(matched_temp_coef, x = "age", y = "Estimate",
 
 
 
-#### paired test of slopes by age
-# no sig differences by age
-
-matched_temp <- long_vel_slopes %>% 
-  filter(species != "Pacific Halibut") %>% filter(species != "Curlfin Sole") %>%
-  filter(species != "Shortbelly Rockfish") %>% filter(species != "Shortraker Rockfish") %>% filter(species != "Spotted Ratfish") %>%
-  filter(parent_taxonomic_unit != "rajidae(skates)") %>%
-  filter(type == "temp")
-
-compare_means(slope~age, matched_temp, method = "wilcox.test", paired = T, id = "species")
-
-matched_do <- long_vel_slopes %>% filter(species != "Pacific Halibut") %>% filter(species != "Curlfin Sole") %>% filter(species != "Shortbelly Rockfish") %>% filter(species != "Shortraker Rockfish") %>% filter(species != "Spotted Ratfish") %>% filter(parent_taxonomic_unit != "rajidae(skates)") %>% filter(type == "DO")
-compare_means(slope~age, matched_do, method = "wilcox.test", paired = T, id = "species")
-
-matched <- rbind(matched_temp, matched_do)
-ggpaired(matched, x = "age", y = "slope",  color = "slope_type", id = "species", ylab = "Slopes from trend-based model", line.color = "gray", line.size = 0.4, facet.by = c("slope_type") ) + 
-  stat_compare_means(
-    aes(label = paste0("p = ", ..p.format..)),
-    # aes(label = paste0(..p.signif..)), 
-    method = "t.test", 
-    paired = TRUE, 
-    ref.group = NULL) + scale_colour_manual(values = c("Red 3", "royalblue4", "goldenrod1", "darkcyan")) + 
-  geom_hline(yintercept = 0, colour = "black", linetype = "dashed") +
-  facet_grid(cols = vars(chopstick), rows = vars(type), scales = "free") +
-  # facet_grid(cols = vars(slope_type), scales = "free") +
-  theme(legend.position = "none")
-
-ggsave(here::here("ms", "figs", "supp-age-effect-by-slope-vel.pdf"), width = 7, height = 4)
+# #### paired test of slopes by age
+# # no sig differences by age
+# 
+# matched_temp <- long_vel_slopes %>% 
+#   filter(species != "Pacific Halibut") %>% filter(species != "Curlfin Sole") %>%
+#   filter(species != "Shortbelly Rockfish") %>% filter(species != "Shortraker Rockfish") %>% filter(species != "Spotted Ratfish") %>%
+#   filter(parent_taxonomic_unit != "rajidae(skates)") %>%
+#   filter(type == "temp")
+# 
+# compare_means(slope~age, matched_temp, method = "wilcox.test", paired = T, id = "species")
+# 
+# matched_do <- long_vel_slopes %>% filter(species != "Pacific Halibut") %>% filter(species != "Curlfin Sole") %>% filter(species != "Shortbelly Rockfish") %>% filter(species != "Shortraker Rockfish") %>% filter(species != "Spotted Ratfish") %>% filter(parent_taxonomic_unit != "rajidae(skates)") %>% filter(type == "DO")
+# compare_means(slope~age, matched_do, method = "wilcox.test", paired = T, id = "species")
+# 
+# matched <- rbind(matched_temp, matched_do)
+# ggpaired(matched, x = "age", y = "slope",  color = "slope_type", id = "species", ylab = "Slopes from trend-based model", line.color = "gray", line.size = 0.4, facet.by = c("slope_type") ) + 
+#   stat_compare_means(
+#     aes(label = paste0("p = ", ..p.format..)),
+#     # aes(label = paste0(..p.signif..)), 
+#     method = "t.test", 
+#     paired = TRUE, 
+#     ref.group = NULL) + scale_colour_manual(values = c("Red 3", "royalblue4", "goldenrod1", "darkcyan")) + 
+#   geom_hline(yintercept = 0, colour = "black", linetype = "dashed") +
+#   facet_grid(cols = vars(chopstick), rows = vars(type), scales = "free") +
+#   # facet_grid(cols = vars(slope_type), scales = "free") +
+#   theme(legend.position = "none")
+# 
+# ggsave(here::here("ms", "figs", "supp-age-effect-by-slope-vel.pdf"), width = 7, height = 4)
 
 #### Is there a difference in strength of effect between high and low slopes? ####
 # paired across species and ages
-compare_means(slope~chopstick, temp_vel_slopes, method = "wilcox.test", paired = T, id= "species_age") # **
-compare_means(slope~chopstick, do_vel_slopes, method = "wilcox.test", paired = T, id= "species_age") # **
-
-
-
-ggplot(temp_vel_slopes, aes(chopstick, slope,  colour = slope_type, fill = slope_type )) + 
-  scale_colour_manual(values = c("Red 3", "royalblue4") ) + scale_fill_manual(values = c("Red 3", "royalblue4")) + 
-  geom_violin(alpha = 0.1) + #scale = "width",
-  geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
-  gfplot:::theme_pbs() + 
-  stat_compare_means(method = "wilcox.test", 
-    paired = TRUE, ref.group = NULL) + 
-  theme(plot.margin = margin(0.1, 0, 0.1, 0.1, "cm"),
-    # legend.position = "none"
-    legend.title = element_blank(),
-    legend.position = c(.1, .25)
-  ) 
-
-
-## split by age classes 
-ggpaired(long_vel_slopes, x = "chopstick", y = "slope",  color = "slope_type", id = "species_age", ylab = "Slope", line.color = "gray", line.size = 0.4, facet.by = 
-    # c("type", "age") ) +
-  c("type") ) + 
-  stat_compare_means(
-    aes(label = paste0("p = ", ..p.format..)),
-    # aes(label = paste0(..p.signif..)), 
-    # method = "t.test",
-    method = "wilcox.test",
-    paired = TRUE, 
-    ref.group = NULL) + scale_colour_manual(values = c("Red 3", "royalblue4", "goldenrod1", "darkcyan")) + 
-  geom_hline(yintercept = 0, colour = "black", linetype = "dashed") +
-  facet_grid(rows = vars(type), #cols = vars(age), 
-    scales = "free") + theme(legend.position = "none")
-
+# compare_means(slope~chopstick, temp_vel_slopes, method = "wilcox.test", paired = T, id= "species_age") # **
+# compare_means(slope~chopstick, do_vel_slopes, method = "wilcox.test", paired = T, id= "species_age") # **
+# 
+# 
+# 
+# ggplot(temp_vel_slopes, aes(chopstick, slope,  colour = slope_type, fill = slope_type )) + 
+#   scale_colour_manual(values = c("Red 3", "royalblue4") ) + scale_fill_manual(values = c("Red 3", "royalblue4")) + 
+#   geom_violin(alpha = 0.1) + #scale = "width",
+#   geom_point(position=position_jitterdodge(dodge.width = 0.9, jitter.width = 0.075), alpha=0.8) +
+#   gfplot:::theme_pbs() + 
+#   stat_compare_means(method = "wilcox.test", 
+#     paired = TRUE, ref.group = NULL) + 
+#   theme(plot.margin = margin(0.1, 0, 0.1, 0.1, "cm"),
+#     # legend.position = "none"
+#     legend.title = element_blank(),
+#     legend.position = c(.1, .25)
+#   ) 
+# 
+# 
+# ## split by age classes 
+# ggpaired(long_vel_slopes, x = "chopstick", y = "slope",  color = "slope_type", id = "species_age", ylab = "Slope", line.color = "gray", line.size = 0.4, facet.by = 
+#     # c("type", "age") ) +
+#   c("type") ) + 
+#   stat_compare_means(
+#     aes(label = paste0("p = ", ..p.format..)),
+#     # aes(label = paste0(..p.signif..)), 
+#     # method = "t.test",
+#     method = "wilcox.test",
+#     paired = TRUE, 
+#     ref.group = NULL) + scale_colour_manual(values = c("Red 3", "royalblue4", "goldenrod1", "darkcyan")) + 
+#   geom_hline(yintercept = 0, colour = "black", linetype = "dashed") +
+#   facet_grid(rows = vars(type), #cols = vars(age), 
+#     scales = "free") + theme(legend.position = "none")
+# 
 
 #### within more extreme slopes test test unpaired effects of ecology ####
 # t test
@@ -933,7 +933,7 @@ p
     pd_growth_rate + plot_layout(ncol = 1))
 
 # ggsave(here::here("ms", "figs", "immature-growth-rate-models-trimmed.pdf"), width = 9, height = 7) # was trimmed model, but raw dat 
-ggsave(here::here("ms", "figs", "immature-growth-rate-vel.pdf"), width = 6, height = 6)
+# ggsave(here::here("ms", "figs", "immature-growth-rate-vel.pdf"), width = 6, height = 6)
 
 
 # (p_depth_iqr + p_growth_rate  + p_log_age + 
@@ -1059,7 +1059,7 @@ ggplot(ddat1) + geom_point(aes(Zone, depth_iqr_scaled))
 
 # set for most extreme slopes
 ddat <- ddat %>% mutate(chopstick = factor(chopstick, levels = c("high", "low")) )
-ddat <- ddat %>% mutate(Latitude = factor(Latitude, levels = c("North", "South")) )
+# ddat <- ddat %>% mutate(Latitude = factor(Latitude, levels = c("North", "South")) )
 ddat <- ddat %>% mutate(Zone = factor(Zone, levels = c("Benthopelagic", "Demersal")) )
 ddat <- ddat %>% mutate(Trophic = factor(Trophic, levels = c("Higher", "Lower")) )
 ddat <- ddat %>% mutate(Schooling = factor(Schooling, levels = c("Schooling", "Solitary")) )
@@ -1093,7 +1093,7 @@ ddatdo <- do_vel_slopes %>%
 
 # set for most extreme slopes
 ddatdo <- ddatdo %>% mutate(chopstick = factor(chopstick, levels = c( "low", "high")) )
-ddatdo <- ddatdo %>% mutate(Latitude = factor(Latitude, levels = c("North", "South")) )
+# ddatdo <- ddatdo %>% mutate(Latitude = factor(Latitude, levels = c("North", "South")) )
 ddatdo <- ddatdo %>% mutate(Zone = factor(Zone, levels = c("Benthopelagic", "Demersal")) )
 ddatdo <- ddatdo %>% mutate(Trophic = factor(Trophic, levels = c("Higher", "Lower")) )
 ddatdo <- ddatdo %>% mutate(Schooling = factor(Schooling, levels = c("Schooling", "Solitary")) )
@@ -1126,9 +1126,11 @@ ddatdo <- ddatdo %>% mutate(slope_est = slope)
 
 #### LATITUDE ####
 #### vel #### 
-ddatL <- ddat %>% mutate(Latitude = if_else(Latitude == "North", "Northern", "Southern"))
+ddatL <- ddat %>% mutate(Latitude = if_else(Latitude == "North", "Northern", 
+  "Southern"))
+  # if_else(Latitude == "Middle", "Middle", "Southern")))
 tempslopemodL <- lmerTest::lmer(slope_est ~ 
-    Latitude +
+    Latitude +# interaction not sig
     depth_mean_scaled +
     # Latitude*depth_mean_scaled +
     chopstick*depth_mean_scaled +
@@ -1136,7 +1138,7 @@ tempslopemodL <- lmerTest::lmer(slope_est ~
     (1|species) + (1|species_age), REML = T, 
   data = ddatL) 
 tempslopemodL %>% summary()
-
+(latmod <- tempslopemodL %>% summary())
 (p_depth_lat <- interactions::interact_plot(tempslopemodL,
   pred = depth_mean_scaled, 
   modx = Latitude,
@@ -1147,33 +1149,58 @@ tempslopemodL %>% summary()
   # point.alpha = 0.2, 
   # point.shape = T,
   # legend.main = "age",
-  modx.values = c("Northern", "Southern"),
+  modx.values = c("Northern", #"Middle", 
+    "Southern"),
   vary.lty =TRUE
 ) + 
-    geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Latitude == "Northern"),
+    geom_point(data = filter(ddatL, chopstick == "high" & age == "Mature" & Latitude == "Northern"),
       aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "royalblue4",
       inherit.aes = F) +
-    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Latitude == "Northern"),
+    geom_point(data = filter(ddatL, chopstick == "high" & age == "Immature" & Latitude == "Northern"),
       aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "royalblue4",
       inherit.aes = F) +
-    geom_linerange(data = filter(ddat, chopstick == "high" & Latitude == "Northern"),
+    geom_linerange(data = filter(ddatL, chopstick == "high" & Latitude == "Northern"),
       aes(x = depth_mean_scaled,
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)),  alpha = 0.5, fatten = 1, colour = "royalblue4",  inherit.aes = F) +
-    geom_point(data = filter(ddat, chopstick == "high" & age == "Mature" & Latitude == "Southern"),
+    
+    geom_point(data = filter(ddatL, chopstick == "high" & age == "Mature" & Latitude == "Southern"),
       aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
       inherit.aes = F) +
-    geom_point(data = filter(ddat, chopstick == "high" & age == "Immature" & Latitude == "Southern"),
+    geom_point(data = filter(ddatL, chopstick == "high" & age == "Immature" & Latitude == "Southern"),
       aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
       inherit.aes = F) +
-    geom_linerange(data = filter(ddat, chopstick == "high" & Latitude == "Southern"), 
+    geom_linerange(data = filter(ddatL, chopstick == "high" & Latitude == "Southern"), 
       aes(x = depth_mean_scaled,
         ymin = (slope_est - slope_se * 1.96),
         ymax = (slope_est + slope_se * 1.96)),  alpha = 0.5, fatten = 1, colour = "deepskyblue3", inherit.aes = F) +
+    # # if middle included 
+    # geom_point(data = filter(ddatL, chopstick == "high" & age == "Mature" & Latitude == "Middle"),
+    #   aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "deepskyblue3",
+    #   inherit.aes = F) +
+    # geom_point(data = filter(ddatL, chopstick == "high" & age == "Immature" & Latitude == "Middle"),
+    #   aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "deepskyblue3",
+    #   inherit.aes = F) +
+    # geom_linerange(data = filter(ddatL, chopstick == "high" & Latitude == "Middle"), 
+    #   aes(x = depth_mean_scaled,
+    #     ymin = (slope_est - slope_se * 1.96),
+    #     ymax = (slope_est + slope_se * 1.96)),  alpha = 0.5, fatten = 1, colour = "deepskyblue3", inherit.aes = F) +
+    # geom_point(data = filter(ddatL, chopstick == "high" & age == "Mature" & Latitude == "Southern"),
+    #   aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 19, colour = "black",
+    #   inherit.aes = F) +
+    # geom_point(data = filter(ddatL, chopstick == "high" & age == "Immature" & Latitude == "Southern"),
+    #   aes(depth_mean_scaled, slope_est), alpha = 1, size = 1.5, shape = 21, colour = "black",
+    #   inherit.aes = F) +
+    # geom_linerange(data = filter(ddatL, chopstick == "high" & Latitude == "Southern"), 
+    #   aes(x = depth_mean_scaled,
+    #     ymin = (slope_est - slope_se * 1.96),
+    #     ymax = (slope_est + slope_se * 1.96)),  alpha = 0.5, fatten = 1, colour = "black", inherit.aes = F) +
+  # scale_colour_manual(values = c("royalblue4", "deepskyblue3", "black")) +
+  #   scale_fill_manual(values = c("royalblue4", "deepskyblue3", "black")) +
   # scale_colour_manual(values = c("white", "white")) +
     scale_colour_manual(values = c("royalblue4", "deepskyblue3")) +
     scale_fill_manual(values = c("royalblue4", "deepskyblue3")) +
-    scale_shape_manual(values = c(19, 19)) +
+    scale_shape_manual(values = c(19, 19, 19)) +
     # back transform axis labels on scaled depth iqr
     scale_x_continuous(labels = function(x)
       paste0(round(exp(x * attributes(temp_vel_slopes$depth_mean_scaled)[[2]] +
@@ -1203,7 +1230,7 @@ tempslopemodL %>% summary()
 
 ## vel ####
 tempslopemod <- lmerTest::lmer(slope ~ 
-    Zone +
+    Zone *
     depth_mean_scaled +
     chopstick +
     depth_mean_scaled * chopstick +
@@ -1212,7 +1239,22 @@ tempslopemod <- lmerTest::lmer(slope ~
     (1|species) + (1|species_age), REML = T, 
   data = ddat) 
 
-tempslopemod %>% summary()
+(zonemod <- tempslopemod %>% summary())
+
+# efsize<-function(rtable,row){
+#   betas<-signif(rtable$coefficients[row,1], 2)
+#   betas<-ifelse(abs(betas)<10,
+#     formatC(signif(betas,2), digits=2, format="fg", flag="#"), 
+#     round(betas))
+#   betas2 <- as.numeric(betas)
+#   decicount <- ifelse(betas2>1 & betas2 <10, 1, decimalplaces(betas2))
+#   se<-rtable$coefficients[row,2]
+#   cil<-rtable$coefficients[row,1]-1.96*se
+#   cil<-format(round(cil, digits=decicount), scientific=F)
+#   cih<-rtable$coefficients[row,1]+1.96*se
+#   cih<-format(round(cih, digits=decicount), scientific=F)
+#   return(paste(betas,",",cil,"to",cih))
+# }
 
 (p_depth_zone <- interactions::interact_plot(tempslopemod,
   pred = depth_mean_scaled, modx = Zone,
@@ -1273,7 +1315,7 @@ tempslopemod %>% summary()
 
 ### vel ####
 tempslopemod <- lmerTest::lmer(slope ~
-    Trophic +
+    Trophic *
     depth_mean_scaled +
     # Trophic * depth_mean_scaled +
     depth_mean_scaled * chopstick +
@@ -1283,6 +1325,8 @@ tempslopemod <- lmerTest::lmer(slope ~
   data = ddat)
 
 tempslopemod %>% summary()
+(trophmod <- tempslopemod %>% summary())
+# saveRDS(tempslopemod, file="ms/temp-by-trophic-model.rds") 
 
 (p_depth_troph <- interactions::interact_plot(tempslopemod, 
   pred = depth_mean_scaled, modx = Trophic, 
@@ -1351,7 +1395,7 @@ tempslopemod %>% summary()
 ### vel ####
 tempslopemod <- lmerTest::lmer(slope ~
     # Latitude +
-    Schooling +
+    Schooling + # interaction not sig
     depth_mean_scaled +
     depth_mean_scaled * chopstick +
     # Schooling * depth_mean_scaled +
@@ -1361,7 +1405,7 @@ tempslopemod <- lmerTest::lmer(slope ~
   data = ddat) 
 
 tempslopemod %>% summary()
-
+(socmod <- tempslopemod %>% summary())
 (p_depth_sch <- interactions::interact_plot(tempslopemod, 
   pred = depth_mean_scaled, modx = Schooling, 
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
@@ -1432,7 +1476,7 @@ tempslopemod %>% summary()
 #### SPECIALIZATION ####
 ### vel ####
 tempslopemod <- lmerTest::lmer(slope ~
-    Specialist +
+    Specialist + # interaction not sig
     depth_mean_scaled +
     Specialist * depth_mean_scaled +
     depth_mean_scaled * chopstick +
@@ -1460,9 +1504,11 @@ ggplot(aes(x ,y=pearson)) +
 ##### DO ################
 #### for low DO slopes #### 
 #### LATITUDE ####
-
+ddatdo <- ddatdo %>% mutate(Latitude = if_else(Latitude == "North", "North", 
+  "South"))
+# if_else(Latitude == "Middle", "Middle", "South")))
 doslopemod1 <- lmerTest::lmer(slope_est ~
-    Latitude +
+    Latitude + # interaction not sig
     depth_mean_scaled +
     # Latitude * depth_mean_scaled  +
     depth_mean_scaled * chopstick +
@@ -1472,7 +1518,8 @@ doslopemod1 <- lmerTest::lmer(slope_est ~
 
 doslopemod1 %>% summary()
 
-
+(dolatmod <- doslopemod1 %>% summary())
+#####
 (pd_depth_lat <- interactions::interact_plot(doslopemod1,
   pred = depth_mean_scaled, modx = Latitude,
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5,
@@ -1542,7 +1589,7 @@ doslopemod1 %>% summary()
 #### TROPHIC LEVEL ####
 
 doslopemod <- lmerTest::lmer(slope_est ~
-    Trophic +
+    Trophic * #sig!
     depth_mean_scaled +
     # Trophic * depth_mean_scaled +
     depth_mean_scaled * chopstick +
@@ -1551,19 +1598,10 @@ doslopemod <- lmerTest::lmer(slope_est ~
     (1|species) + (1|species_age), REML = T,
   data = ddatdo) 
 
-# doslopemod <- lmerTest::lmer(slope ~
-#     Trophic +
-#     depth_mean_scaled +    
-#     # Schooling * depth_mean_scaled +
-#     # Latitude * depth_mean_scaled  +
-#     Trophic * depth_mean_scaled +
-#     # Zone * depth_mean_scaled +
-#     (1|species), REML = T,
-#   data = ddatdo1)
-
 doslopemod %>% summary()
 
-
+(dotrophmod <- doslopemod %>% summary())
+#####
 (pd_depth_troph <- interactions::interact_plot(doslopemod, 
   pred = depth_mean_scaled, modx = Trophic, 
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
@@ -1631,7 +1669,7 @@ doslopemod %>% summary()
 
 #### FORAGING ZONE ####
 doslopemod <- lmerTest::lmer(slope_est ~
-    Zone +
+    Zone + #interaction not sig
     depth_mean_scaled +
     # Zone * depth_mean_scaled +
     depth_mean_scaled * chopstick +
@@ -1648,7 +1686,8 @@ doslopemod <- lmerTest::lmer(slope_est ~
 #   data = ddatdo1)
 # 
 doslopemod %>% summary()
-
+(dozonemod <- doslopemod %>% summary())
+#####
 
 (pd_depth_zone <- interactions::interact_plot(doslopemod,
   pred = depth_mean_scaled, modx = Zone,
@@ -1708,7 +1747,7 @@ doslopemod %>% summary()
 #### SCHOOLING ####
 
 doslopemod <- lmerTest::lmer(slope_est ~
-    Schooling +
+    Schooling + # interaction not sig
     depth_mean_scaled +
     # Schooling * depth_mean_scaled +
     depth_mean_scaled * chopstick +
@@ -1717,15 +1756,9 @@ doslopemod <- lmerTest::lmer(slope_est ~
     (1|species) + (1|species_age), REML = T,
   data = ddatdo) 
 
-# doslopemod <- lmerTest::lmer(slope ~
-#     Schooling +
-#     depth_mean_scaled +
-#     Schooling * depth_mean_scaled +
-#     (1|species), REML = T,
-#   data = ddatdo1)
-
 doslopemod %>% summary()
-
+(dosocmod <- doslopemod %>% summary())
+#####
 
 (pd_depth_sch <- interactions::interact_plot(doslopemod, 
   pred = depth_mean_scaled, modx = Schooling, 
@@ -1830,9 +1863,69 @@ ddatdo %>% mutate(pearson = residuals(doslopemod,type="pearson"),
         plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Mean depth occupied",
           just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 4, heights = c(1, 0.001, 1, 0.02))) 
 
-ggsave(here::here("ms", "figs", "ecology-slope-model-vel-by-mean-depth.pdf"), width = 12, height =7)
+ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf"), width = 12, height =7)
 
 # ggsave(here::here("ms", "figs", "ecology-slope-models-all2.pdf"), width = 12, height = 7)
+
+#### SAVE MODEL ESTIMATES ####
+# write_tex <- function(x, macro, ...) {
+#   paste0("\\newcommand{\\", macro, "}{", x, "}") %>%
+#     readr::write_lines("ms/values.tex", append = TRUE)
+# }
+# decimalplaces <- function(x) {
+#   if ((x - round(x)) != 0) {
+#     strs <- strsplit(as.character(format(x, scientific = F)), "\\.")
+#     n <- nchar(strs[[1]][2])
+#   } else {
+#     n <- 0
+#   }
+#   return(n)
+# }
+# 
+# efsize<-function(rtable,row){
+#   betas<-signif(rtable$coefficients[row,1], 2)
+#   betas<-ifelse(abs(betas)<10,
+#     formatC(signif(betas,2), digits=2, format="fg", flag="#"),
+#     round(betas))
+#   betas2 <- as.numeric(betas)
+#   decicount <- ifelse(betas2>1 & betas2 <10, 1, decimalplaces(betas2))
+#   se<-rtable$coefficients[row,2]
+#   cil<-rtable$coefficients[row,1]-1.96*se
+#   cil<-format(round(cil, digits=decicount), scientific=F)
+#   cih<-rtable$coefficients[row,1]+1.96*se
+#   cih<-format(round(cih, digits=decicount), scientific=F)
+#   return(paste0(betas,", ",cil," to ",cih))
+# }
+# 
+# 
+# paste0("% ecology model effect sizes") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# paste0("% sig main effects and interactions") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# 
+# write_tex(efsize(trophmod, 2), "tempTroph")
+# write_tex(efsize(zonemod, 2), "tempZone")
+# # \newcommand{\tempTroph}{-0.91, -1.4 to -0.43}
+# # \newcommand{\tempZone}{0.75, 0.23 to 1.26}
+# paste0("% interaction shows effect only at deepest depths") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# 
+# write_tex(efsize(dotrophmod, 2), "DOtroph")
+# write_tex(efsize(dotrophmod, 3), "DOmhitroph")
+# write_tex(efsize(dotrophmod, 5), "DOtrophX")
+# # \newcommand{\DOtroph}{0.33, -0.16 to 0.81}
+# # \newcommand{\DOtrophX}{0.65, 0.11 to 1.18}
+# 
+# paste0("% sig main effects only") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(efsize(dozonemod, 2), "DOzone")
+# write_tex(efsize(dosocmod, 2), "DOsociality")
+# # \newcommand{\DOzone}{-0.60, -1.1 to -0.1}
+# # \newcommand{\DOsociality}{-0.66, -1.22 to -0.1}
+# paste0("% none significant") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(efsize(latmod, 2), "tempRange")
+# write_tex(efsize(socmod, 2), "tempSociality")
+# write_tex(efsize(dolatmod, 2), "DOrange")
+# # \newcommand{\tempRange}{0.50, -0.1 to 1.1}
+# # \newcommand{\tempSociality}{0.38, -0.24 to 1}
+# # \newcommand{\DOrange}{-0.48, -1.07 to 0.12}
+# 
 
 
 ##### effect code for factors or without interactions #####
