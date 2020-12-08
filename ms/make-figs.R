@@ -689,6 +689,83 @@ ggsave(here::here("ms", "figs", "maps-fishing-w-vel.png"), width = 6, height = 9
 
 #########################
 #########################
+#### GROUP-LEVEL COEFS ####
+#########################
+# model_vel <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-both-1-600.rds"))
+# model_trend <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-1-600.rds"))
+
+#### TRENDS
+trend_ids <- distinct(select(model_trend$pred_dat, species, species_id, type)) %>% arrange(species_id)
+trend_grps_w_ids <- left_join(trend_ids, distinct(select(model_trend$data, species_common_name, species, mean_group)))
+trend_grp_means <- left_join(model_trend$deltas, trend_grps_w_ids) %>% 
+  group_by(chopstick, mean_group, type) %>% 
+  summarise(mean_slope = mean(Estimate)) %>%
+  arrange(type, chopstick, mean_slope)
+
+
+paste0("% trend group means: temp") %>% readr::write_lines("ms/values.tex", append = TRUE)
+
+trend_high_temp <- filter(trend_grp_means, type=="temp" & chopstick=="high")
+
+write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "shelf rockfish"], 1), "HTtrendShelfRockfish")
+# much less of a pattern for trends
+# write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "chondrichthyes"], 1), "HTtrendSharkSkate") 
+# write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "flatfish"], 1), "HTtrendSlopeFlatfish")
+# write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "slope rockfish"], 1), "HTtrendSlopeRockfish")
+write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "sablefish"], 1), "HTtrendSablefish") # highest for both
+
+
+paste0("% trend group means: DO") %>% readr::write_lines("ms/values.tex", append = TRUE)
+
+trend_low_DO <- filter(trend_grp_means, type=="DO" & chopstick=="low")
+
+# most positive trend
+write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "shelf rockfish"], 1), "LDOtrendShelfRockfish")
+
+# this time there is a flipflop for trend to velocity for low DO... lowest two spp for trend are highest two for vel (sablefish and lingcod)!
+write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "sablefish"], 1), "LDOtrendSablefish")
+write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "lingcod"], 1), "LDOtrendLingcod") 
+
+# much less of a pattern for trends
+# write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "flatfish"], 1), "LDOtrendSlopeFlatfish")
+# write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "slope rockfish"], 1), "LDOtrendSlopeRockfish")
+
+
+#### VELOCITIES
+vel_ids <- distinct(select(model_vel$pred_dat, species, species_id, type)) %>% arrange(species_id)
+vel_grps_w_ids <- left_join(vel_ids, distinct(select(model_vel$data, species_common_name, species, mean_group)))
+vel_grp_means <- left_join(model_vel$deltas, vel_grps_w_ids)%>% 
+  group_by(chopstick, mean_group, type) %>% 
+  summarise(mean_slope = mean(Estimate)) %>%
+  arrange(type, chopstick, mean_slope)
+
+
+paste0("% velocity group means: temp") %>% readr::write_lines("ms/values.tex", append = TRUE)
+
+vel_high_temp <- filter(vel_grp_means, type=="temp" & chopstick=="high")
+
+write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "chondrichthyes"], 1), "HtempSharkSkate")
+write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "shelf rockfish"], 1), "HtempShelfRockfish")
+write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "flatfish"], 1), "HtempSlopeFlatfish")
+write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "slope rockfish"], 1), "HtempSlopeRockfish")
+write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "sablefish"], 1), "HtempSablefish")
+
+
+paste0("% velocity group means: DO") %>% readr::write_lines("ms/values.tex", append = TRUE)
+
+vel_low_DO <- filter(vel_grp_means, type=="DO" & chopstick=="low")
+
+# most positive effect
+# this time there is a flipflop for trend to velocity for low DO... lowest two spp for trend are highest two for vel (sablefish and lingcod)!
+write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "sablefish"], 1), "LDOtrendSablefish")
+write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "lingcod"], 1), "LDOtrendLingcod") 
+# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "shelf rockfish"], 1), "LDOtrendShelfRockfish")
+
+# most negative effect
+write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "flatfish"], 1), "LDOtrendSlopeFlatfish")
+write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "slope rockfish"], 1), "LDOtrendSlopeRockfish")
+
+
 #### GLOBAL COEFS ####
 #########################
 
@@ -709,7 +786,7 @@ coef_names <- c(
 overall_betas <- cbind.data.frame(coef_names, betas, SE, lowerCI, upperCI)
 overall_betas$model <- "Trend"
 
-# # ### SAVE TEX VALUES FOR TREND ESTIMATES ####
+# ### SAVE TEX VALUES FOR TREND ESTIMATES ####
 # paste0("% trend model betas") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # write_tex(round(overall_betas$betas[overall_betas$coef_names == "change in T"], 2), "betaTtrend")
 # write_tex(round(abs(overall_betas$betas[overall_betas$coef_names == "change in T"]), 2), "ABSbetaTtrend")
@@ -1294,7 +1371,7 @@ ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 
 species_panels <- function(species, model, x_type,
                            trends = T,
-                           biotic_lim = c(-20, 25), # currently only applied to
+                           biotic_lim = c(-20, 10), # currently only applied to
                            # biotic_lim = c(-40, 40), # currently only applied to 
                            chop_label = F,
                            leftmost = F,
@@ -1643,11 +1720,18 @@ species_panels <- function(species, model, x_type,
 # velocity-based example chops
 model <- model_vel
 
-(p1 <- species_panels("mature Redbanded Rockfish", 
+(p1b <- species_panels("mature Redbanded Rockfish", 
   trends = F,
   chop_label = T, 
   leftmost = T,
   model, "temp"
+))
+
+(p1 <- species_panels("mature Redbanded Rockfish", 
+  trends = F,
+  chop_label = T, 
+  leftmost = T,
+  model, "DO"
 ))
 
 (p2 <- species_panels("mature Lingcod", 
@@ -1750,8 +1834,10 @@ layout <- "
       "
 wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p3b) + plot_layout(design = layout, widths = c(0.03, 1, 1))
 
-# ggsave(here::here("ms", "figs", "species-map-panels-vel2.png"), width = 6, height = 11)
+ggsave(here::here("ms", "figs", "species-map-panels-vel3.png"), width = 6, height = 11)
 
+wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p1) + plot_layout(design = layout, widths = c(0.03, 1, 1))
+ggsave(here::here("ms", "figs", "redbanded-map-panels.png"), width = 6, height = 11)
 
 #########################
 #########################
