@@ -787,9 +787,10 @@ data2 %>%
     panel.spacing = unit(0, "lines"), strip.text = element_text(size = 5),
     axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank()
   ) +
-  facet_wrap(~species_only, nrow = 7, strip.position = "bottom") +
-  ggtitle("Mature fish biomass velocity residuals")
-ggsave(here::here("ms", "figs", "supp-mat-vel-residuals.pdf"), width = 6, height = 8)
+  facet_wrap(~species_only, nrow = 7, strip.position = "top") 
+# +
+#   ggtitle("Mature fish biomass velocity residuals")
+ggsave(here::here("ms", "figs", "supp-mat-vel-residuals2.pdf"), width = 6, height = 8)
 
 data2 %>%
   filter(age_class == "immature") %>%
