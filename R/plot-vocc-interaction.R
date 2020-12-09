@@ -700,7 +700,8 @@ plot_chopstick_slopes <- function(slopedat,
 #' @param where_on_x Where on the x-axis to select estimate to plot. 
 #'    Options include max, min, mean.
 #' @param sort_var Defaults to "mean", current alternatives are "NULL" or "range". 
-#' @param alt_order Logical, if T plots will be ordered by mean for "where_on_x" = "max". 
+#' @param alt_order Logical, if plots will be ordered by mean for alternate x value. 
+#' @param sort_where_on_x Can either sort by mean estimate for "max" x_variable or "min" x_variable.
 #' @param legend_position Give legend position
 #' @param point_size Change point size
 #' @param alpha_range Choose alpha for non-sig and sig slopes
@@ -716,6 +717,7 @@ plot_chop_est <- function(model,
   where_on_x = "max",
   sort_var = "mean",
   alt_order = F, 
+  sort_where_on_x = "max",
   legend_position = c(.7, .95),
   point_size = 0.75,
   alpha_range = c(0.5, 0.99),
@@ -827,6 +829,7 @@ plot_chop_est <- function(model,
       
       if(alt_order) {
         # this orders based on max of x variable
+        if (sort_where_on_x == "max"){
         order_value <- pred_dat %>%
           group_by(genus, species, age,  type, chopstick) %>% 
           rename(x = x_variable) %>%
@@ -837,7 +840,19 @@ plot_chop_est <- function(model,
             range = max(est) - min(est), 
             min = min(est)) %>% 
           ungroup() %>% select(-est, -se)
-        
+        }
+        if (sort_where_on_x == "min"){
+          order_value <- pred_dat %>%
+            group_by(genus, species, age,  type, chopstick) %>% 
+            rename(x = x_variable) %>%
+            filter(x == min(x)) %>% 
+            summarise(est = est_p, se = se_p) %>%
+            group_by(genus, species) %>%
+            mutate(mean = mean(est), 
+              range = max(est) - min(est), 
+              min = min(est)) %>% 
+            ungroup() %>% select(-est, -se)
+      }
         if (sort_var == "range") {
           order_value <- order_value %>% rename(sort_var = range) %>% select(species, sort_var)
           pred_dat2 <- left_join(pred_dat2, order_value) %>%
