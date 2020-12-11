@@ -1203,23 +1203,3 @@ chopstick_slopes(model,
 
 ggsave(here::here("ms", "figs", "supp-age-growth.pdf"), width = 5, height = 3.5)
 
-alldata <- readRDS(paste0("analysis/VOCC/data/all-newclim-untrimmed-dvocc-med.rds"))
-
-(depth <- plot_vocc(alldata, # grey_water = T,
-  vec_aes = NULL, grey_water = F,
-  fill_col = "depth", fill_label = "m",
-  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
-  axis_lables = F, tag_text = "b.",
-  viridis_begin = 0,
-  viridis_end = .5,
-  viridis_dir = -1,
-  transform_col = fourth_root_power,
-  # raster_limits = c(10, 1300),
-  legend_position = c(0.15, 0.3)
-) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-    theme(
-      plot.margin = margin(0, 0, 0, 0, "cm"),
-      axis.text = element_blank(), axis.ticks = element_blank(),
-      axis.title.x = element_blank(), axis.title.y = element_blank()
-    ))
-ggsave(here::here("ms", "figs", "depth-map.pdf"), width = 5, height = 5)

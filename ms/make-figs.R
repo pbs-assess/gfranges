@@ -133,6 +133,58 @@ alldata <- alldata %>%
 #########################
 #### CLIMATE MAPS ####
 
+
+
+(depth <- plot_vocc(alldata, # grey_water = T,
+  vec_aes = NULL, grey_water = F,
+  fill_col = "depth", fill_label = "Depth (m)",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  axis_lables = F, tag_text = " ",
+  viridis_begin = 0,
+  viridis_end = .6,
+  viridis_dir = -1,
+  viridis_option = "A",
+  transform_col = log10,
+  # transform_col = fourth_root_power,
+  # raster_limits = c(10, 1300),
+  legend_position = c(0.15, 0.2)
+) + guides(fill = guide_colorbar(reverse = TRUE)) +
+    annotate("text", 
+      x = 460, y = 5450, 
+      #x = 400, y = 5600, angle = -46,
+      label = "Pacific Ocean", 
+      size = 3.5,
+      colour = "darkgrey"
+      ) + 
+    guides(fill = guide_colorbar(reverse = TRUE)) +
+    annotate("text", 
+      x = 700, y = 5550, 
+      #x = 400, y = 5600, angle = -46,
+      label = "Vancouver \n Island", 
+      size = 2,
+      colour = "grey50"
+    ) + 
+    annotate("text", 
+      x = 279, y = 5953, 
+      #x = 400, y = 5600, angle = -46,
+      label = "Haida \n \n Gwaii", 
+      size = 2,
+      colour = "grey50"
+    ) + 
+    annotate("text", x = 700, y = 6000, angle = 0,
+      label = "Britsh Columbia, \n Canada", 
+      size = 3.5,
+      colour = "grey50"
+    ) + 
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+ggsave(here::here("ms", "figs", "depth-map.png"), width = 4, height = 4)
+
+
 (mean_do <- plot_vocc(alldata, # grey_water = T,
   vec_aes = NULL, grey_water = F,
   fill_col = "mean_DO", fill_label = "ml/L ",
@@ -2138,7 +2190,7 @@ d <- temp_slopes %>% filter(chopstick == "high" & type == "temp" & age == "Immat
 # ggsave(here::here("ms", "figs", "supp-age-growth.pdf"), width = 4, height = 4)
 
 (p_iqr <- temp_slopes %>% filter(chopstick == "high") %>% 
-    mutate(labs = if_else(age == "Mature" & (depth > 250 | depth_iqr >100),  gsub(" Rockfish", "", species), NA_character_)) %>%
+    mutate(labs = if_else(age == "Mature" & (depth > 280 | depth_iqr >80),  gsub(" Rockfish", "", species), NA_character_)) %>%
     ggplot(aes(depth, depth_iqr)) + 
     # geom_smooth(method = "lm", colour = "black", size =0.5) +
     geom_line(aes(group = species), colour = "grey60") +
@@ -2156,7 +2208,7 @@ d <- temp_slopes %>% filter(chopstick == "high" & type == "temp" & age == "Immat
       aes(label = labs), colour = "royalblue4",
       point.padding = 0.3, segment.colour = "deepskyblue3", max.iter = 10000,
       size = 2, #force = 10,
-      nudge_y = -5, nudge_x = 5,
+      nudge_y = 2, nudge_x = 2,
       na.rm = T, min.segment.length = 10, seed = 1000
     ) +
     ylab("Depth range (IQR)") +
@@ -2164,12 +2216,13 @@ d <- temp_slopes %>% filter(chopstick == "high" & type == "temp" & age == "Immat
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0, 0, 0, 0.3, "cm"),
       legend.position = c(0.2, 0.8),
-      axis.title.x = element_blank(),
-      axis.text.x = element_blank(),
-      axis.ticks.x = element_blank(),
+      # axis.title.x = element_blank(),
+      # axis.text.x = element_blank(),
+      # axis.ticks.x = element_blank(),
       legend.title = element_blank()
     ))  
-# 
+# ggsave(here::here("ms", "figs", "supp-depth-iqr.pdf"), width = 5, height = 3.5)
+
 # (p_iqr2 <- temp_slopes %>% filter(chopstick == "high") %>% 
 #     mutate(labs = if_else(age == "Mature",  gsub(" Rockfish", "", species), NA_character_)) %>%
 #     ggplot(aes(depth, depth_iqr)) + 
@@ -2214,7 +2267,6 @@ d <- temp_slopes %>% filter(chopstick == "high" & type == "temp" & age == "Immat
 #   x = Inf, vjust = 1.7, hjust = 1.7, fontface = 1
 # )
 
-# ggsave(here::here("ms", "figs", "supp-depth-iqr.pdf"), width = 5, height = 3.5)
 
 temp_high3 <- temp_high %>% egg::tag_facet(
   tag_pool = c("a"),
@@ -2739,6 +2791,7 @@ ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-600.pdf"), width = 7, he
   add_grey_bars = T,
   sort_var = "min",
   alt_order = T, 
+  sort_where_on_x = "min",
   alpha_range = c(0.99, 0.99),
   legend_position = "none") + 
     scale_y_discrete(expand = expansion(mult = .02)) +
@@ -2753,6 +2806,7 @@ ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-600.pdf"), width = 7, he
   where_on_x = "max",
   add_grey_bars = T,
   alt_order = T, 
+  sort_where_on_x = "min",
   sort_var = "min",
   alpha_range = c(0.99, 0.99),
   legend_position = "none") + 
@@ -2774,7 +2828,7 @@ ggsave(here::here("ms", "figs", "worm-temp-ests-min-max-600.pdf"), width = 7, he
     legend.spacing.x = unit(.1, "cm")
   ))  
 
-ggsave(here::here("ms", "figs", "worm-plot-ests-vel-do-extremes.pdf"), width = 9, height = 6.5)
+ggsave(here::here("ms", "figs", "worm-plot-ests-vel-do-extremes-min-sort.pdf"), width = 9, height = 6.5)
 
 
 ### TEMPERATURE vs DO TRENDS at max level of change ####
