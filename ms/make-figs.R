@@ -2734,7 +2734,7 @@ cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 
   alpha_range = c(0.99, 0.99)) +
     # alpha_range = c(0.5, 0.99)) +
     # alpha_range = c(0.2, 0.99)) +
-    coord_cartesian(xlim = c(-30,60)) +
+    coord_cartesian(xlim = c(-30,50)) +
     ggtitle("a. Minimum warming") +
   # xlab("Biotic velocity at midpoint of temperature velocities experienced")
   # xlab("Biotic velocity at max velocities")
@@ -2754,7 +2754,7 @@ cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 
   alpha_range = c(0.99, 0.99)) +
   # alpha_range = c(0.5, 0.99)) +
   # alpha_range = c(0.2, 0.99)) +
-    coord_cartesian(xlim = c(-30,60)) +
+    coord_cartesian(xlim = c(-30,50)) +
     ggtitle("b. Midpoint warming") +
     # xlab("Biotic velocity at midpoint of temperature velocities experienced")
     # xlab("Biotic velocity at max velocities")
@@ -2775,7 +2775,7 @@ cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 
   alpha_range = c(0.99, 0.99)) +
   # alpha_range = c(0.5, 0.99)) +
     # alpha_range = c(0.2, 0.99)) +
-    coord_cartesian(xlim = c(-30,60)) +
+    coord_cartesian(xlim = c(-30,50)) +
     scale_y_discrete(expand = expansion(mult = .02), position = "right") +
     # xlab("Biotic velocity at midpoint of temperature velocities experienced")
     # xlab("Biotic velocity at max velocities")
@@ -2801,7 +2801,7 @@ cowplot::plot_grid(p_depth2, p_age2, p_mat2, nrow = 1, rel_widths = c(1.1, 0.9, 
   )
   ) / grid::textGrob("Estimated biotic velocity (km per decade)", just = 0.3, gp = grid::gpar(fontsize = 11))  + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max-600.pdf"), width = 8, height = 8)
+# ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max-600.pdf"), width = 8, height = 8)
 # ggsave(here::here("ms", "figs", "worm-temp-ests-min-mean-max-faded.pdf"), width = 8, height = 8)
 
 
