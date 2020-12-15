@@ -141,23 +141,23 @@ best_slopes <- long_vel_slopes %>% filter( slope_type == "high temp" | slope_typ
 #### Is there an effect of age? ####
 #### paired test of coefficients by age 
 # only effect of mean DO differs with age
-
-matched_temp_coef <- model2 %>% filter(species != "Pacific Halibut") %>% filter(species != "Curlfin Sole") %>% filter(species != "Shortbelly Rockfish") %>% filter(species != "Shortraker Rockfish") %>% filter(species != "Spotted Ratfish") %>% filter(parent_taxonomic_unit != "rajidae(skates)") #%>% filter(coefficient == "temp_trend_scaled")
-
-ggpaired(matched_temp_coef, x = "age", y = "Estimate", 
-  color = "age", id = "species", 
-  ylab = "Estimate", line.color = "gray", line.size = 0.4, facet.by = c("coefficient") ) + 
-  stat_compare_means(
-    aes(label = paste0("p = ", ..p.format..)),
-    # aes(label = paste0(..p.signif..)),
-    method = "t.test", 
-    paired = TRUE, 
-    ref.group = NULL) + scale_colour_manual(values = c( "darkcyan", "royalblue4")) + 
-  geom_hline(yintercept = 0, colour = "black", linetype = "dashed") +
-  facet_wrap(vars(coefficient), scales = "free") + theme(legend.position = "none") +
-  gfplot::theme_pbs() + theme(legend.position = "none") + scale_y_continuous(expand = c(0.1, 0))
-
-
+# 
+# matched_temp_coef <- model2 %>% filter(species != "Pacific Halibut") %>% filter(species != "Curlfin Sole") %>% filter(species != "Shortbelly Rockfish") %>% filter(species != "Shortraker Rockfish") %>% filter(species != "Spotted Ratfish") %>% filter(parent_taxonomic_unit != "rajidae(skates)") #%>% filter(coefficient == "temp_trend_scaled")
+# 
+# ggpaired(matched_temp_coef, x = "age", y = "Estimate", 
+#   color = "age", id = "species", 
+#   ylab = "Estimate", line.color = "gray", line.size = 0.4, facet.by = c("coefficient") ) + 
+#   stat_compare_means(
+#     aes(label = paste0("p = ", ..p.format..)),
+#     # aes(label = paste0(..p.signif..)),
+#     method = "t.test", 
+#     paired = TRUE, 
+#     ref.group = NULL) + scale_colour_manual(values = c( "darkcyan", "royalblue4")) + 
+#   geom_hline(yintercept = 0, colour = "black", linetype = "dashed") +
+#   facet_wrap(vars(coefficient), scales = "free") + theme(legend.position = "none") +
+#   gfplot::theme_pbs() + theme(legend.position = "none") + scale_y_continuous(expand = c(0.1, 0))
+# 
+# 
 
 # #### paired test of slopes by age
 # # no sig differences by age
@@ -1124,7 +1124,7 @@ ddatdo1 <- ddatdo %>% filter(chopstick == "low")
 ddat <- ddat %>% mutate(slope_est = slope)
 ddatdo <- ddatdo %>% mutate(slope_est = slope)
 
-#### LATITUDE ####
+#### LATITUDE #### not sig
 #### vel #### 
 ddatL <- ddat %>% mutate(Latitude = if_else(Latitude == "North", "Northern", 
   "Southern"))
@@ -1139,6 +1139,8 @@ tempslopemodL <- lmerTest::lmer(slope_est ~
   data = ddatL) 
 tempslopemodL %>% summary()
 (latmod <- tempslopemodL %>% summary())
+
+#####
 (p_depth_lat <- interactions::interact_plot(tempslopemodL,
   pred = depth_mean_scaled, 
   modx = Latitude,
@@ -1226,21 +1228,20 @@ tempslopemodL %>% summary()
 ) 
 
 ###
-#### FORAGING ZONE ####
+#### FORAGING ZONE #### interact weakly sig. 
+# main effects still sig without it
 
 ## vel ####
 tempslopemod <- lmerTest::lmer(slope ~ 
-    Zone *
-    depth_mean_scaled +
+    Zone * depth_mean_scaled +
+    depth_mean_scaled + Zone +
     chopstick +
     depth_mean_scaled * chopstick +
-    # depth_mean_scaled * Zone +
-    # age +
     (1|species) + (1|species_age), REML = T, 
   data = ddat) 
 
 (zonemod <- tempslopemod %>% summary())
-
+#####
 # efsize<-function(rtable,row){
 #   betas<-signif(rtable$coefficients[row,1], 2)
 #   betas<-ifelse(abs(betas)<10,
@@ -1315,9 +1316,8 @@ tempslopemod <- lmerTest::lmer(slope ~
 
 ### vel ####
 tempslopemod <- lmerTest::lmer(slope ~
-    Trophic *
-    depth_mean_scaled +
     # Trophic * depth_mean_scaled +
+    Trophic + depth_mean_scaled +
     depth_mean_scaled * chopstick +
     chopstick +
     # age +
@@ -1327,7 +1327,7 @@ tempslopemod <- lmerTest::lmer(slope ~
 tempslopemod %>% summary()
 (trophmod <- tempslopemod %>% summary())
 # saveRDS(tempslopemod, file="ms/temp-by-trophic-model.rds") 
-
+#####
 (p_depth_troph <- interactions::interact_plot(tempslopemod, 
   pred = depth_mean_scaled, modx = Trophic, 
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
@@ -1394,18 +1394,17 @@ tempslopemod %>% summary()
 
 ### vel ####
 tempslopemod <- lmerTest::lmer(slope ~
-    # Latitude +
     Schooling + # interaction not sig
     depth_mean_scaled +
     depth_mean_scaled * chopstick +
     # Schooling * depth_mean_scaled +
-    # chopstick +
-    # age +
     (1|species) + (1|species_age), REML = T,
   data = ddat) 
 
 tempslopemod %>% summary()
 (socmod <- tempslopemod %>% summary())
+
+#####
 (p_depth_sch <- interactions::interact_plot(tempslopemod, 
   pred = depth_mean_scaled, modx = Schooling, 
   interval = TRUE, int.type = c("prediction"), line.thickness = 0.5, 
@@ -1565,7 +1564,7 @@ doslopemod1 %>% summary()
       paste0(round(#exp
         (x * attributes(do_vel_slopes$depth_mean_scaled)[[2]] + 
           attributes(do_vel_slopes$depth_mean_scaled)[[1]])))) +
-    coord_cartesian(ylim = c(-10,5)) +
+    coord_cartesian(ylim = c(-6,2.8)) +
     gfplot::theme_pbs() + 
     ylab(expression(~italic("Y")~"~ DO velocity at low DO")) +
     # ylab(expression(~italic("R")~"~ DO trend at low DO")) + 
@@ -1587,11 +1586,11 @@ doslopemod1 %>% summary()
 ###
 
 #### TROPHIC LEVEL ####
+# not sig without interaction
 
 doslopemod <- lmerTest::lmer(slope_est ~
-    Trophic * #sig!
-    depth_mean_scaled +
-    # Trophic * depth_mean_scaled +
+    Trophic * depth_mean_scaled + #sig!
+    # Trophic + depth_mean_scaled +
     depth_mean_scaled * chopstick +
     chopstick +
     # age +
@@ -1647,7 +1646,7 @@ doslopemod %>% summary()
       paste0(round(#exp
         (x * attributes(do_vel_slopes$depth_mean_scaled)[[2]] + 
           attributes(do_vel_slopes$depth_mean_scaled)[[1]])))) +
-    coord_cartesian(ylim = c(-10,5)) +
+    coord_cartesian(ylim = c(-6,2.8)) +
     gfplot::theme_pbs() + 
     # ylab("Peak Frequency") +
     xlab("Mean depth occupied") +
@@ -1726,7 +1725,7 @@ doslopemod %>% summary()
       paste0(round(#exp
         (x * attributes(do_vel_slopes$depth_mean_scaled)[[2]] + 
           attributes(do_vel_slopes$depth_mean_scaled)[[1]])))) +
-    coord_cartesian(ylim = c(-10,5)) +
+    coord_cartesian(ylim = c(-6,2.8)) +
     gfplot::theme_pbs() + 
     # ylab("Peak Frequency") +
     xlab("Mean depth occupied") +
@@ -1793,7 +1792,7 @@ doslopemod %>% summary()
       paste0(round(#exp
         (x * attributes(do_vel_slopes$depth_mean_scaled)[[2]] + 
           attributes(do_vel_slopes$depth_mean_scaled)[[1]])))) +
-    coord_cartesian(ylim = c(-10,5)) +
+    coord_cartesian(ylim = c(-6,2.8)) +
     gfplot::theme_pbs() + 
     # ylab("Peak Frequency") +
     xlab("Depth range (IQR)") +
@@ -1942,7 +1941,7 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf
     scale_fill_manual(values = c("royalblue4", "red 3")) + 
     # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
     # scale_shape_manual(values = c(21, 19)) +
-    coord_cartesian(ylim = c(-10,5) ) +
+    coord_cartesian(ylim = c(-6,2.8) ) +
     ylab("Biomass change ~ warming rate") +
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0.2, 0, 0.2, 0, "cm"),
@@ -1973,7 +1972,7 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf
     # scale_colour_manual(values = c("darkcyan", "orange")) +
     # scale_fill_manual(values = c("darkcyan", "orange")) + 
     # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
-    coord_cartesian(ylim = c(-10,5) ) +
+    coord_cartesian(ylim = c(-6,2.8) ) +
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0.2, 0, 0.2, 0, "cm"),
       axis.title.y=element_blank(),
@@ -2004,7 +2003,7 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf
     # scale_fill_manual(values = c("darkcyan", "orange")) + 
     # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
     
-    coord_cartesian(ylim = c(-10,5) ) +
+    coord_cartesian(ylim = c(-6,2.8) ) +
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0.2, 0, 0.2, 0, "cm"),
       axis.title.y=element_blank(),
@@ -2036,7 +2035,7 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf
     # scale_fill_manual(values = c("darkcyan", "orange")) + 
     # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
     xlab("Mean temperature") +
-    coord_cartesian(ylim = c(-10,5) ) +
+    coord_cartesian(ylim = c(-6,2.8) ) +
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0.2, 0, 0.2, 0, "cm"),
       axis.title.y=element_blank(),
@@ -2070,7 +2069,7 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf
     # scale_fill_manual(values = c("darkcyan", "orange")) + 
     # scale_colour_manual(values = c("darkorchid4", "royalblue4")) +
     xlab("Mean temperature") +
-    coord_cartesian(ylim = c(-10,5) ) +
+    coord_cartesian(ylim = c(-6,2.8) ) +
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0.2, 0, 0.2, 0, "cm"),
       axis.title.y=element_blank(),
