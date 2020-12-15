@@ -83,7 +83,7 @@ alldata <- alldata %>%
 # 
 # alldata50 <- alldata %>% filter(depth <= 50)
 # alldataDO <- alldata %>% filter(depth < 200) %>% filter(depth > 50)
-# alldata200 <- alldata %>% filter(depth >= 200)
+alldata200 <- alldata %>% filter(depth >= 200)
 # 
 # paste0("% temp change <= 50 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # write_tex(round(mean(alldata50$temp_trend), digits = 1), "meanTTrendONE")
@@ -108,12 +108,12 @@ alldata <- alldata %>%
 # write_tex(round(quantile(alldataDO$DO_trend, 0.975), digits = 1), "maxDOTrendTWO")
 # paste0("% DO change >= 200 m") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # write_tex(round(mean(alldata200$DO_trend), digits = 1), "meanDOTrendDEEP")
-# write_tex(round(quantile(alldata200$DO_trend, 0.025), digits = 1), "minTTrendDEEP")
-# write_tex(round(quantile(alldata200$DO_trend, 0.975), digits = 1), "maxTTrendDEEP")
+# write_tex(round(quantile(alldata200$DO_trend, 0.025), digits = 1), "minDOTrendDEEP")
+# write_tex(round(quantile(alldata200$DO_trend, 0.975), digits = 1), "maxDOTrendDEEP")
 # 
 # paste0("% temperature velocities") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[1]], digits = 2), "tempvelSD")
-# write_tex(signif(mean(alldata$squashed_temp_vel), digits = 2), "tempvelmean")
+# write_tex(signif(mean(abs(alldata$squashed_temp_vel)), digits = 3), "tempvelmean")
 # write_tex(signif(range(alldata$squashed_temp_vel)[[1]], digits = 2), "tempvelmin")
 # write_tex(signif(range(alldata$squashed_temp_vel)[[2]], digits = 2), "tempvelmax")
 # range_temp_vel <- range(alldata$squashed_temp_vel)[[2]]-range(alldata$squashed_temp_vel)[[1]]
@@ -122,7 +122,7 @@ alldata <- alldata %>%
 # 
 # paste0("% DO velocities") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[1]], digits = 2), "DOvelSD")
-# write_tex(round(mean(alldata$squashed_DO_vel)), "DOvelmean")
+# write_tex(signif(mean(abs(alldata$squashed_DO_vel)), digits = 3), "DOvelmean")
 # write_tex(signif(range(alldata$squashed_DO_vel)[[1]], digits = 2), "DOvelmin")
 # write_tex(signif(range(alldata$squashed_DO_vel)[[2]], digits = 2), "DOvelmax")
 # range_DO_vel <- range(alldata$squashed_DO_vel)[[2]] - range(alldata$squashed_DO_vel)[[1]]
@@ -132,74 +132,66 @@ alldata <- alldata %>%
 #########################
 #########################
 #### CLIMATE MAPS ####
+### Just depth by itself ####
+# (depth <- plot_vocc(alldata, # grey_water = T,
+#   vec_aes = NULL, grey_water = F,
+#   fill_col = "depth", fill_label = "Depth (m)",
+#   raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+#   axis_lables = F, tag_text = " ",
+#   viridis_begin = 0,
+#   viridis_end = .6,
+#   viridis_dir = -1,
+#   viridis_option = "A",
+#   transform_col = log10,
+#   # transform_col = fourth_root_power,
+#   # raster_limits = c(10, 1300),
+#   legend_position = c(0.15, 0.2)
+# ) + guides(fill = guide_colorbar(reverse = TRUE)) +
+#     annotate("text", 
+#       x = 460, y = 5450, 
+#       #x = 400, y = 5600, angle = -46,
+#       label = "Pacific Ocean", 
+#       size = 3,
+#       colour = "grey70"
+#       ) + 
+#     annotate("text", 
+#       x = 495, y = 5695, 
+#       label = "Queen \n Charlotte \n Sound", 
+#       size = 2.5, alpha = 0.8,
+#       colour = "grey90"
+#     ) + 
+#     annotate("text", 
+#       x = 393, y = 5850, 
+#       label = "Hecate \n Strait", 
+#       size = 2.5, alpha = 0.8,
+#       colour = "grey90"
+#     ) + 
+#     annotate("text", 
+#       x = 700, y = 5550, 
+#       label = "Vancouver \n Island", 
+#       size = 2,
+#       colour = "grey30"
+#     ) + 
+#     annotate("text", 
+#       x = 279, y = 5953, 
+#       label = "Haida \n \n Gwaii", 
+#       size = 2,
+#       colour = "grey30"
+#     ) + 
+#     annotate("text", x = 700, y = 5950, angle = 0,
+#       label = "Continental \n Canada \n (Province of  \n British Columbia)", 
+#       size = 3,
+#       colour = "grey40"
+#     ) + 
+#     coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+#     theme(
+#       plot.margin = margin(0.5, 0.5, 0, 0, "cm"),
+#       axis.text = element_blank(), axis.ticks = element_blank(),
+#       axis.title.x = element_blank(), axis.title.y = element_blank()
+#     ))
+# ggsave(here::here("ms", "figs", "depth-map.png"), width = 4, height = 4)
 
-
-
-(depth <- plot_vocc(alldata, # grey_water = T,
-  vec_aes = NULL, grey_water = F,
-  fill_col = "depth", fill_label = "Depth (m)",
-  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
-  axis_lables = F, tag_text = " ",
-  viridis_begin = 0,
-  viridis_end = .6,
-  viridis_dir = -1,
-  viridis_option = "A",
-  transform_col = log10,
-  # transform_col = fourth_root_power,
-  # raster_limits = c(10, 1300),
-  legend_position = c(0.15, 0.2)
-) + guides(fill = guide_colorbar(reverse = TRUE)) +
-    annotate("text", 
-      x = 460, y = 5450, 
-      #x = 400, y = 5600, angle = -46,
-      label = "Pacific Ocean", 
-      size = 3.5,
-      colour = "darkgrey"
-      ) + 
-    guides(fill = guide_colorbar(reverse = TRUE)) +
-    annotate("text", 
-      x = 700, y = 5550, 
-      #x = 400, y = 5600, angle = -46,
-      label = "Vancouver \n Island", 
-      size = 2,
-      colour = "grey50"
-    ) + 
-    annotate("text", 
-      x = 279, y = 5953, 
-      #x = 400, y = 5600, angle = -46,
-      label = "Haida \n \n Gwaii", 
-      size = 2,
-      colour = "grey50"
-    ) + 
-    annotate("text", x = 700, y = 6000, angle = 0,
-      label = "Britsh Columbia, \n Canada", 
-      size = 3.5,
-      colour = "grey50"
-    ) + 
-    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-    theme(
-      plot.margin = margin(0, 0, 0, 0, "cm"),
-      axis.text = element_blank(), axis.ticks = element_blank(),
-      axis.title.x = element_blank(), axis.title.y = element_blank()
-    ))
-ggsave(here::here("ms", "figs", "depth-map.png"), width = 4, height = 4)
-
-
-(mean_do <- plot_vocc(alldata, # grey_water = T,
-  vec_aes = NULL, grey_water = F,
-  fill_col = "mean_DO", fill_label = "ml/L ",
-  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
-  axis_lables = F, tag_text = "b.",
-  viridis_begin = 0.2,
-  # raster_limits = c(0.69, 5.24),
-  legend_position = c(0.15, 0.3)
-) + ggtitle("Dissolved oxygen (DO)") +
-  coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-  theme(
-    plot.margin = margin(0, 0, 0, 0, "cm"),
-    axis.text = element_blank(), axis.ticks = element_blank(),
-    axis.title.x = element_blank(), axis.title.y = element_blank()
-  ))
+### Climate and depth #### 
 
 (mean_temp <- plot_vocc(alldata,
   vec_aes = NULL, grey_water = F,
@@ -208,7 +200,7 @@ ggsave(here::here("ms", "figs", "depth-map.png"), width = 4, height = 4)
   viridis_option = "B",
   viridis_begin = 0.15,
   viridis_end = 0.7,
-  axis_lables = T, tag_text = "a.",
+  axis_lables = T, tag_text = "b.",
   legend_position = c(0.15, 0.3)
 ) + ggtitle("Temperature") +
   ylab("Mean conditions") +
@@ -219,6 +211,21 @@ ggsave(here::here("ms", "figs", "depth-map.png"), width = 4, height = 4)
     axis.title.x = element_blank()
   ))
 
+(mean_do <- plot_vocc(alldata, # grey_water = T,
+  vec_aes = NULL, grey_water = F,
+  fill_col = "mean_DO", fill_label = "ml/L ",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  axis_lables = F, tag_text = "c.",
+  viridis_begin = 0.2,
+  # raster_limits = c(0.69, 5.24),
+  legend_position = c(0.15, 0.3)
+) + ggtitle("Dissolved oxygen (DO)") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
 (trend_temp <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "temp_trend", fill_label = "ºC ",
@@ -227,7 +234,7 @@ ggsave(here::here("ms", "figs", "depth-map.png"), width = 4, height = 4)
   mid_fill = "mistyrose1", grey_water = F,
   low_fill = "royalblue4", # low_fill = "#5E4FA2",
   high_fill = "Red 3",
-  axis_lables = T, tag_text = "c.",
+  axis_lables = T, tag_text = "d.",
   legend_position = c(0.15, 0.3)
 ) + # ggtitle("temperature") +
   coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
@@ -237,27 +244,6 @@ ggsave(here::here("ms", "figs", "depth-map.png"), width = 4, height = 4)
     axis.text = element_blank(), axis.ticks = element_blank(),
     axis.title.x = element_blank()
   ))
-
-(vel_temp <- plot_vocc(alldata,
-  vec_aes = NULL,
-  fill_col = "squashed_temp_vel", fill_label = "km",
-  raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
-  # mid_fill = "ghostwhite", grey_water = F,
-  mid_fill = "mistyrose1", grey_water = F,
-  # mid_fill = "lavenderblush1", grey_water = F,
-  low_fill = "royalblue4", # low_fill = "#5E4FA2",
-  high_fill = "Red 3",
-  # transform_col = sqrt,
-  axis_lables = T, tag_text = "e.",
-  legend_position = c(0.15, 0.3)
-) + ylab("Velocities per decade") +
-    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-    theme(
-      plot.margin = margin(0, 0, 0, 0, "cm"),
-      axis.text = element_blank(), axis.ticks = element_blank(),
-      axis.title.x = element_blank()
-    ))
-
 (trend_do <- plot_vocc(alldata,
   vec_aes = NULL,
   fill_col = "DO_trend", fill_label = "ml/L ",
@@ -274,7 +260,7 @@ ggsave(here::here("ms", "figs", "depth-map.png"), width = 4, height = 4)
   # low_fill = "yellowgreen",
   # raster_limits = c(-3.5, 2),
   na_colour = "gold", 
-  axis_lables = F, tag_text = "d.",
+  axis_lables = F, tag_text = "e.",
   legend_position = c(0.15, 0.3)
 ) + # ggtitle("dissolved oxygen") +
     coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
@@ -283,6 +269,28 @@ ggsave(here::here("ms", "figs", "depth-map.png"), width = 4, height = 4)
       axis.text = element_blank(), axis.ticks = element_blank(),
       axis.title.x = element_blank(), axis.title.y = element_blank()
     ))
+
+
+(vel_temp <- plot_vocc(alldata,
+  vec_aes = NULL,
+  fill_col = "squashed_temp_vel", fill_label = "km",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
+  # mid_fill = "ghostwhite", grey_water = F,
+  mid_fill = "mistyrose1", grey_water = F,
+  # mid_fill = "lavenderblush1", grey_water = F,
+  low_fill = "royalblue4", # low_fill = "#5E4FA2",
+  high_fill = "Red 3",
+  # transform_col = sqrt,
+  axis_lables = T, tag_text = "f.",
+  legend_position = c(0.15, 0.3)
+) + ylab("Velocities per decade") +
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank()
+    ))
+
 
 (vel_do <- plot_vocc(alldata,
   vec_aes = NULL,
@@ -296,7 +304,7 @@ ggsave(here::here("ms", "figs", "depth-map.png"), width = 4, height = 4)
   high_fill = "gold",
   low_fill = "darkcyan",
   # transform_col = sqrt,
-  axis_lables = F, tag_text = "f.",
+  axis_lables = F, tag_text = "g.",
   legend_position = c(0.15, 0.3)
 ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
   theme(
@@ -305,83 +313,65 @@ ggsave(here::here("ms", "figs", "depth-map.png"), width = 4, height = 4)
     axis.title.x = element_blank(), axis.title.y = element_blank()
   ))
 
-(depth_map <- plot_vocc(alldata,
-  vec_aes = NULL,
-  fill_col = "depth", fill_label = "m",
-  raster_cell_size = 4, na_colour = "navyblue", #white_zero = TRUE,
-  grey_water = F, 
-  viridis_dir = -1, 
-  raster_limits = c(20,800),
-  transform_col = log10,
-  axis_lables = T, tag_text = "e.",
-  legend_position = c(0.15, 0.3)
-) + ylab("Velocities per decade") +
-    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-    theme(
-      plot.margin = margin(0, 0, 0, 0, "cm"),
-      axis.text = element_blank(), axis.ticks = element_blank(),
-      axis.title.x = element_blank()
-    ))
-
-(dvocc_temp <- plot_vocc(alldata,
-  vec_aes = NULL,
-  fill_col = "squashed_temp_dvocc", fill_label = "km",
-  raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
-  # mid_fill = "ghostwhite", grey_water = F,
-  mid_fill = "mistyrose1", grey_water = F,
-  # mid_fill = "lavenderblush1", grey_water = F,
-  low_fill = "royalblue4", # low_fill = "#5E4FA2",
-  high_fill = "Red 3",
-  axis_lables = T, tag_text = "g.",
-  legend_position = c(0.15, 0.3)
-) + ylab("Analog-distance velocities") +
-    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-    theme(
-      plot.margin = margin(0, 0, 0, 0, "cm"),
-      axis.text = element_blank(), axis.ticks = element_blank(),
-      axis.title.x = element_blank()
-    ))
-
-(dvocc_do <- plot_vocc(alldata,
-  vec_aes = NULL,
-  fill_col = "squashed_DO_dvocc", fill_label = "km",
-  raster_cell_size = 4,
-  na_colour = "lightgrey", white_zero = TRUE,
-  # mid_fill = "lightcyan1", grey_water = F,
-  mid_fill = "honeydew", grey_water = F,
-  # mid_fill = "lightyellow", grey_water = F,
-  # mid_fill = "azure", grey_water = F,
-  high_fill = "gold",
-  low_fill = "darkcyan",
-  axis_lables = F, tag_text = "h.",
-  legend_position = c(0.15, 0.3)
-) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-    theme(
-      plot.margin = margin(0, 0, 0, 0, "cm"),
-      axis.text = element_blank(), axis.ticks = element_blank(),
-      axis.title.x = element_blank(), axis.title.y = element_blank()
-    ))
-
-
-(dvocc_both <- plot_vocc(alldata,
-  vec_aes = NULL,
-  fill_col = "dvocc_both", fill_label = "km",
-  raster_cell_size = 4,
-  na_colour = "lightgrey", white_zero = TRUE,
-  # mid_fill = "lightcyan1", grey_water = F,
-  mid_fill = "honeydew", grey_water = F,
-  # mid_fill = "lightyellow", grey_water = F,
-  # mid_fill = "azure", grey_water = F,
-  high_fill = "gold",
-  low_fill = "darkcyan",
-  axis_lables = F, tag_text = "h.",
-  legend_position = c(0.15, 0.3)
-) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-    theme(
-      plot.margin = margin(0, 0, 0, 0, "cm"),
-      axis.text = element_blank(), axis.ticks = element_blank(),
-      axis.title.x = element_blank(), axis.title.y = element_blank()
-    ))
+# (dvocc_temp <- plot_vocc(alldata,
+#   vec_aes = NULL,
+#   fill_col = "squashed_temp_dvocc", fill_label = "km",
+#   raster_cell_size = 4, na_colour = "lightgrey", white_zero = TRUE,
+#   # mid_fill = "ghostwhite", grey_water = F,
+#   mid_fill = "mistyrose1", grey_water = F,
+#   # mid_fill = "lavenderblush1", grey_water = F,
+#   low_fill = "royalblue4", # low_fill = "#5E4FA2",
+#   high_fill = "Red 3",
+#   axis_lables = T, tag_text = "g.",
+#   legend_position = c(0.15, 0.3)
+# ) + ylab("Analog-distance velocities") +
+#     coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+#     theme(
+#       plot.margin = margin(0, 0, 0, 0, "cm"),
+#       axis.text = element_blank(), axis.ticks = element_blank(),
+#       axis.title.x = element_blank()
+#     ))
+# 
+# (dvocc_do <- plot_vocc(alldata,
+#   vec_aes = NULL,
+#   fill_col = "squashed_DO_dvocc", fill_label = "km",
+#   raster_cell_size = 4,
+#   na_colour = "lightgrey", white_zero = TRUE,
+#   # mid_fill = "lightcyan1", grey_water = F,
+#   mid_fill = "honeydew", grey_water = F,
+#   # mid_fill = "lightyellow", grey_water = F,
+#   # mid_fill = "azure", grey_water = F,
+#   high_fill = "gold",
+#   low_fill = "darkcyan",
+#   axis_lables = F, tag_text = "h.",
+#   legend_position = c(0.15, 0.3)
+# ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+#     theme(
+#       plot.margin = margin(0, 0, 0, 0, "cm"),
+#       axis.text = element_blank(), axis.ticks = element_blank(),
+#       axis.title.x = element_blank(), axis.title.y = element_blank()
+#     ))
+# 
+# 
+# (dvocc_both <- plot_vocc(alldata,
+#   vec_aes = NULL,
+#   fill_col = "dvocc_both", fill_label = "km",
+#   raster_cell_size = 4,
+#   na_colour = "lightgrey", white_zero = TRUE,
+#   # mid_fill = "lightcyan1", grey_water = F,
+#   mid_fill = "honeydew", grey_water = F,
+#   # mid_fill = "lightyellow", grey_water = F,
+#   # mid_fill = "azure", grey_water = F,
+#   high_fill = "gold",
+#   low_fill = "darkcyan",
+#   axis_lables = F, tag_text = "h.",
+#   legend_position = c(0.15, 0.3)
+# ) + coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+#     theme(
+#       plot.margin = margin(0, 0, 0, 0, "cm"),
+#       axis.text = element_blank(), axis.ticks = element_blank(),
+#       axis.title.x = element_blank(), axis.title.y = element_blank()
+#     ))
 
 mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + 
   plot_layout(ncol = 2)
@@ -392,10 +382,99 @@ mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do +
 # ggsave(here::here("ms", "figs", "climate-maps-newclim.png"), width = 5, height = 7.5)
 # ggsave(here::here("ms", "figs", "climate-maps-newclim-trimmed-99.png"), width = 5, height = 7.5)
 
-mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + 
-  dvocc_temp + dvocc_do +
-  plot_layout(ncol = 2)
+# mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + 
+#   dvocc_temp + dvocc_do +
+#   plot_layout(ncol = 2)
 # ggsave(here::here("ms", "figs", "climate-maps-w-dvocc.png"), width = 5, height = 9.5)
+
+
+
+(depth <- plot_vocc(alldata, # grey_water = T,
+  vec_aes = NULL, grey_water = F,
+  fill_col = "depth", fill_label = "Depth (m)",
+  raster_cell_size = 4, na_colour = "lightgrey", white_zero = F,
+  axis_lables = F, tag_text = "a.",
+  viridis_begin = 0,
+  viridis_end = .6,
+  viridis_dir = -1,
+  viridis_option = "A",
+  transform_col = log10,
+  # transform_col = fourth_root_power,
+  # raster_limits = c(10, 1300),
+  legend_position = c(0.15, 0.2)
+) + guides(fill = guide_colorbar(reverse = TRUE)) +
+    ggtitle(" Synoptic trawl survey area") +
+    annotate("text", 
+      x = 460, y = 5450, 
+      #x = 400, y = 5600, angle = -46,
+      label = "Pacific Ocean", 
+      size = 5,
+      colour = "grey70"
+    ) + 
+    annotate("text", 
+      x = 495, y = 5695, 
+      label = "Queen \n Charlotte \n Sound", 
+      size = 4, alpha = 0.8,
+      colour = "grey90"
+    ) + 
+    annotate("text", 
+      x = 393, y = 5850, 
+      label = "Hecate \n Strait", 
+      size = 4, alpha = 0.8,
+      colour = "grey90"
+    ) + 
+    annotate("text", 
+      x = 700, y = 5550, 
+      label = "Vancouver \n Island", 
+      size = 4,
+      colour = "grey30"
+    ) + 
+    annotate("text", 
+      x = 279, y = 5953, 
+      label = "Haida \n \n Gwaii", 
+      size = 4,
+      colour = "grey30"
+    ) + 
+    annotate("text", x = 700, y = 5950, angle = 0,
+      label = "Continental \n Canada \n (Province of  \n British Columbia)", 
+      size = 5,
+      colour = "grey40"
+    ) + 
+    coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
+    theme(
+      plot.margin = margin(0, 0.5, 0, 0, "cm"),
+      axis.text = element_blank(), axis.ticks = element_blank(),
+      axis.title.x = element_blank(), axis.title.y = element_blank()
+    ))
+
+# with legend position tweak
+layoutc <- "
+      AAABB
+      AAABB
+      AAABB
+      "
+
+# without legend position tweak
+# layoutc <- "
+#       AAABC
+#       AAADE
+#       AAAFG
+#       "
+
+# with DVOCC
+# layoutc <- "
+#       AADE
+#       AAFG
+#       BCHI
+#       "
+
+depth + (mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do + plot_layout(ncol = 2)& 
+  theme(legend.position = c(0.17, 0.35))) +
+  # dvocc_temp + dvocc_do +
+  plot_layout(design = layoutc)
+
+
+ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height = 6)
 
 
 
@@ -552,16 +631,23 @@ mean_temp + mean_do + trend_temp + trend_do + vel_temp + vel_do +
 # p_depth_dof + p_depth_dot + p_depth_dov + plot_layout(nrow = 1)
 # 
 # ggsave(here::here("ms", "figs", "climate-depth-plots.png"), width = 11, height = 4)
+# layout1 <- "
+#       AAA
+#       AAA
+#       BCD
+#       EFG
+#       "
+
 layout1 <- "
-      AAA
-      AAA
-      BCD
-      EFG
+      ABC
+      DEF
+      GGG
+      GGG
       "
 
-p_iqr +
   p_depth_tf + p_depth_tt + p_depth_tv +
   p_depth_dof + p_depth_dot + p_depth_dov + 
+  p_iqr +
   plot_layout(design = layout1) + plot_annotation(tag_levels = 'a', tag_suffix = ".")& 
   theme(plot.tag.position = c(.89, .9),
     plot.tag = element_text(size = 12, hjust = 0, vjust = 0))
@@ -747,36 +833,36 @@ ggsave(here::here("ms", "figs", "maps-fishing-w-vel.png"), width = 6, height = 9
 # model_trend <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-1-600.rds"))
 
 #### TRENDS
-trend_ids <- distinct(select(model_trend$pred_dat, species, species_id, type)) %>% arrange(species_id)
-trend_grps_w_ids <- left_join(trend_ids, distinct(select(model_trend$data, species_common_name, species, mean_group)))
-trend_grp_means <- left_join(model_trend$deltas, trend_grps_w_ids) %>% 
-  group_by(chopstick, mean_group, type) %>% 
-  summarise(mean_slope = mean(Estimate)) %>%
-  arrange(type, chopstick, mean_slope)
-
-
-paste0("% trend group means: temp") %>% readr::write_lines("ms/values.tex", append = TRUE)
-
-trend_high_temp <- filter(trend_grp_means, type=="temp" & chopstick=="high")
-
-write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "shelf rockfish"], 1), "HTtrendShelfRockfish")
-# much less of a pattern for trends
-# write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "chondrichthyes"], 1), "HTtrendSharkSkate") 
-# write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "flatfish"], 1), "HTtrendSlopeFlatfish")
-# write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "slope rockfish"], 1), "HTtrendSlopeRockfish")
-write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "sablefish"], 1), "HTtrendSablefish") # highest for both
-
-
-paste0("% trend group means: DO") %>% readr::write_lines("ms/values.tex", append = TRUE)
-
-trend_low_DO <- filter(trend_grp_means, type=="DO" & chopstick=="low")
-
-# most positive trend
-write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "shelf rockfish"], 1), "LDOtrendShelfRockfish")
-
-# this time there is a flipflop for trend to velocity for low DO... lowest two spp for trend are highest two for vel (sablefish and lingcod)!
-write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "sablefish"], 1), "LDOtrendSablefish")
-write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "lingcod"], 1), "LDOtrendLingcod") 
+# trend_ids <- distinct(select(model_trend$pred_dat, species, species_id, type)) %>% arrange(species_id)
+# trend_grps_w_ids <- left_join(trend_ids, distinct(select(model_trend$data, species_common_name, species, mean_group)))
+# trend_grp_means <- left_join(model_trend$deltas, trend_grps_w_ids) %>% 
+#   group_by(chopstick, mean_group, type) %>% 
+#   summarise(mean_slope = mean(Estimate)) %>%
+#   arrange(type, chopstick, mean_slope)
+# 
+# 
+# paste0("% trend group means: temp") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# 
+# trend_high_temp <- filter(trend_grp_means, type=="temp" & chopstick=="high")
+# 
+# write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "shelf rockfish"], 1), "HTtrendShelfRockfish")
+# # much less of a pattern for trends
+# # write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "chondrichthyes"], 1), "HTtrendSharkSkate") 
+# # write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "flatfish"], 1), "HTtrendSlopeFlatfish")
+# # write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "slope rockfish"], 1), "HTtrendSlopeRockfish")
+# write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "sablefish"], 1), "HTtrendSablefish") # highest for both
+# 
+# 
+# paste0("% trend group means: DO") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# 
+# trend_low_DO <- filter(trend_grp_means, type=="DO" & chopstick=="low")
+# 
+# # most positive trend
+# write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "shelf rockfish"], 1), "LDOtrendShelfRockfish")
+# 
+# # this time there is a flipflop for trend to velocity for low DO... lowest two spp for trend are highest two for vel (sablefish and lingcod)!
+# write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "sablefish"], 1), "LDOtrendSablefish")
+# write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "lingcod"], 1), "LDOtrendLingcod") 
 
 # much less of a pattern for trends
 # write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "flatfish"], 1), "LDOtrendSlopeFlatfish")
@@ -784,38 +870,38 @@ write_tex(round(trend_low_DO$mean_slope[trend_low_DO$mean_group == "lingcod"], 1
 
 
 #### VELOCITIES
-vel_ids <- distinct(select(model_vel$pred_dat, species, species_id, type)) %>% arrange(species_id)
-vel_grps_w_ids <- left_join(vel_ids, distinct(select(model_vel$data, species_common_name, species, mean_group)))
-vel_grp_means <- left_join(model_vel$deltas, vel_grps_w_ids)%>% 
-  group_by(chopstick, mean_group, type) %>% 
-  summarise(mean_slope = mean(Estimate)) %>%
-  arrange(type, chopstick, mean_slope)
-
-
-paste0("% velocity group means: temp") %>% readr::write_lines("ms/values.tex", append = TRUE)
-
-vel_high_temp <- filter(vel_grp_means, type=="temp" & chopstick=="high")
-
-write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "chondrichthyes"], 1), "HtempSharkSkate")
-write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "shelf rockfish"], 1), "HtempShelfRockfish")
-write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "flatfish"], 1), "HtempSlopeFlatfish")
-write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "slope rockfish"], 1), "HtempSlopeRockfish")
-write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "sablefish"], 1), "HtempSablefish")
-
-
-paste0("% velocity group means: DO") %>% readr::write_lines("ms/values.tex", append = TRUE)
-
-vel_low_DO <- filter(vel_grp_means, type=="DO" & chopstick=="low")
-
-# most positive effect
-# this time there is a flipflop for trend to velocity for low DO... lowest two spp for trend are highest two for vel (sablefish and lingcod)!
-write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "sablefish"], 1), "LDOtrendSablefish")
-write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "lingcod"], 1), "LDOtrendLingcod") 
-# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "shelf rockfish"], 1), "LDOtrendShelfRockfish")
-
-# most negative effect
-write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "flatfish"], 1), "LDOtrendSlopeFlatfish")
-write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "slope rockfish"], 1), "LDOtrendSlopeRockfish")
+# vel_ids <- distinct(select(model_vel$pred_dat, species, species_id, type)) %>% arrange(species_id)
+# vel_grps_w_ids <- left_join(vel_ids, distinct(select(model_vel$data, species_common_name, species, mean_group)))
+# vel_grp_means <- left_join(model_vel$deltas, vel_grps_w_ids)%>% 
+#   group_by(chopstick, mean_group, type) %>% 
+#   summarise(mean_slope = mean(Estimate)) %>%
+#   arrange(type, chopstick, mean_slope)
+# 
+# 
+# paste0("% velocity group means: temp") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# 
+# vel_high_temp <- filter(vel_grp_means, type=="temp" & chopstick=="high")
+# 
+# write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "chondrichthyes"], 1), "HtempSharkSkate")
+# write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "shelf rockfish"], 1), "HtempShelfRockfish")
+# write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "flatfish"], 1), "HtempSlopeFlatfish")
+# write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "slope rockfish"], 1), "HtempSlopeRockfish")
+# write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "sablefish"], 1), "HtempSablefish")
+# 
+# 
+# paste0("% velocity group means: DO") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# 
+# vel_low_DO <- filter(vel_grp_means, type=="DO" & chopstick=="low")
+# 
+# # most positive effect
+# # this time there is a flipflop for trend to velocity for low DO... lowest two spp for trend are highest two for vel (sablefish and lingcod)!
+# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "sablefish"], 1), "LDOtrendSablefish")
+# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "lingcod"], 1), "LDOtrendLingcod") 
+# # write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "shelf rockfish"], 1), "LDOtrendShelfRockfish")
+# 
+# # most negative effect
+# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "flatfish"], 1), "LDOtrendSlopeFlatfish")
+# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "slope rockfish"], 1), "LDOtrendSlopeRockfish")
 
 
 #### GLOBAL COEFS ####
@@ -1015,11 +1101,20 @@ nulls <- rbind(
   scale_y_discrete(
     limits = rev(unique(sort(nulls$term))),
     labels = c(
-      "DO interaction", "DO trend", "Mean DO",
-      "T interaction", "T trend", "Mean T", "Biomass", "Intercept"
+      "DO interaction", 
+      # "DO trend", 
+      "DO change", 
+      "Mean DO",
+      "T interaction", 
+      # "T trend", 
+      "T change", 
+      "Mean T", "Biomass", "Intercept"
     )
   ) +
-  scale_colour_manual(name = "Model type", values = c("grey80", "#D53E4F")) +
+  scale_colour_manual(name = "Model type", values = c("grey80", 
+    "black"
+    #"#D53E4F"
+    )) +
   geom_vline(xintercept = 0, colour = "grey60") +
   geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI),
     # size = 1.15, shape = "|", fatten = 6,
@@ -1056,7 +1151,6 @@ vnulls <- rbind(
   rename(estimate = Estimate)
 
 (vnull_coefs <- ggplot(vnulls, aes(estimate, term,
-  fill = type,
   colour = type
 )) +
   xlab("Coefficient estimate with 95% CI") + ylab("") +
@@ -1092,8 +1186,10 @@ vnulls <- rbind(
       "T interaction", "T velocity", "Mean T", "Biomass", "Intercept"
     )
   ) +
-  scale_fill_manual(name = "Model type", values = c("gray90", "#5E4FA2"), guide = F) + 
-  scale_colour_manual(name = "Model type", values = c("gray80", "#5E4FA2")) + 
+  scale_colour_manual(name = "Model type", values = c("gray80",     
+    "black"
+    #"#5E4FA2"
+    )) + 
   geom_vline(xintercept = 0, colour = "gray60") +
   geom_pointrange(aes(betas, coef_names, xmin = lowerCI, xmax = upperCI),
     size = 0.5, fatten = 1,
@@ -1105,16 +1201,17 @@ vnulls <- rbind(
   ggtitle("b. Velocity-based models") +
   guides(color = guide_legend(reverse = TRUE)) +
   gfplot::theme_pbs() + theme(
+    axis.text.y = element_blank(), axis.ticks.y = element_blank(),
     axis.title = element_blank(), # element_text(size = 10),
     legend.title = element_blank(),
     legend.justification = c("left", "bottom"),
     legend.position = c(0.025, 0.018)
   ))
 
-(null_coefs | vnull_coefs) / grid::textGrob("Species-specific coefficient estimates", 
-  just = 0.5, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
+(null_coefs | vnull_coefs) / grid::textGrob("Distributions of species-specific coefficient estimates for different models", 
+  just = 0.4, gp = grid::gpar(fontsize = 11)) + plot_layout(height = c(10, 0.02))
 
-ggsave(here::here("ms", "figs", "violin-optimized-w-nulls.pdf"), width = 9, height = 4)
+ggsave(here::here("ms", "figs", "violin-optimized-w-nulls.pdf"), width = 7, height = 4)
 # ggsave(here::here("ms", "figs", "null-spp-violin-w-dvocc.pdf"), width = 9, height = 4)
 # 
 
@@ -1423,8 +1520,9 @@ ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 
 species_panels <- function(species, model, x_type,
                            trends = T,
-                           biotic_lim = c(-20, 10), # currently only applied to
+                           biotic_lim = c(-20, 18), # currently only applied to
                            # biotic_lim = c(-40, 40), # currently only applied to 
+                           # tag_start = "a",
                            chop_label = F,
                            leftmost = F,
                            add_global = T,
@@ -1436,7 +1534,6 @@ species_panels <- function(species, model, x_type,
     fill_col = "biotic_trend", 
     fill_label = "%", 
     raster_limits = c(-6, 6),
-    
     vec_aes = NULL,
     raster_cell_size = 4,
     na_colour = "red 3", white_zero = TRUE,
@@ -1455,7 +1552,6 @@ species_panels <- function(species, model, x_type,
       fill_col = "squashed_biotic_vel", 
       fill_label = "km per \ndecade", 
       # raster_limits = c(-6, 6),
-      
       vec_aes = NULL,
       raster_cell_size = 4,
       na_colour = "red 3", white_zero = TRUE,
@@ -1481,17 +1577,6 @@ species_panels <- function(species, model, x_type,
       axis.title = element_blank()
     )
 
-  if (!leftmost) {
-    biotic_map <- biotic_map + theme(legend.position = "none")
-  }
-
-  if (age == "immature") {
-    # biotic_map <- biotic_map + ggtitle(paste0(" ", age, "\n", shortener(species)))
-    biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species), "\n(immature)"))
-  } else {
-    biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species), "\n(mature)"))
-    # biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species)))
-  }
 
   if (x_type == "temp") {
     if(trends){
@@ -1603,9 +1688,17 @@ species_panels <- function(species, model, x_type,
     }
     
     if (chop_label) {
-      climate_map <- climate_map + ggtitle("Temperature") + 
+      if(trends){
+      climate_map <- climate_map + 
+        ggtitle("Temperature trend (SD)") + 
         theme(plot.margin = margin(0, 0, 0.1, 0, "cm"),
           axis.title.y = element_blank())
+      }else{
+      climate_map <- climate_map + 
+        ggtitle("Temperature velocity (SD)") + 
+        theme(plot.margin = margin(0, 0, 0.1, 0, "cm"),
+          axis.title.y = element_blank())
+      }
       climate_map2 <- climate_map2 + 
         theme(plot.margin = margin(0, 0, 0, 0, "cm"),
           axis.title.y = element_blank())
@@ -1726,9 +1819,17 @@ species_panels <- function(species, model, x_type,
         ) 
     }
     if (chop_label) {
-      climate_map <- climate_map + ggtitle("Dissolved oxygen") + 
+      if (trends) {
+        climate_map <- climate_map + 
+          ggtitle("DO trend (SD)") + 
+          theme(plot.margin = margin(0, 0, 0.1, 0, "cm"),
+            axis.title.y = element_blank())
+      }else{
+      climate_map <- climate_map + 
+        ggtitle("DO velocity (SD)") + 
         theme(plot.margin = margin(0, 0, 0.1, 0, "cm"),
           axis.title.y = element_blank())
+      }
       climate_map2 <- climate_map2 + 
         theme(plot.margin = margin(0, 0, 0, 0, "cm"),
           axis.title.y = element_blank())
@@ -1745,6 +1846,57 @@ species_panels <- function(species, model, x_type,
     }
   }
 
+  
+  if (age == "immature") {
+    # biotic_map <- biotic_map + ggtitle(paste0(" ", age, "\n", shortener(species)))
+    biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species), "\n(immature)"))
+  } else {
+    biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species), "\n(mature)"))
+    # biotic_map <- biotic_map + ggtitle(paste0(" \n", shortener(species)))
+  }
+  
+  if (!leftmost) {
+  biotic_map <- biotic_map + 
+    annotate(geom = 'text', 
+    label = "b.",
+    x = Inf, y = Inf, hjust = 2, vjust = 2)+ 
+    theme(legend.position = "none")
+  
+  single_chop <- single_chop + 
+    annotate(geom = 'text', 
+      label = "d.",
+      x = Inf, y = Inf, hjust = 2, vjust = 1.5) +
+    theme(axis.text.y = element_blank())
+  
+  climate_map <- climate_map + 
+    annotate(geom = 'text', 
+      label = "f.",
+      x = Inf, y = Inf, hjust = 2, vjust = 2) 
+  
+  climate_map2 <- climate_map2 + 
+    annotate(geom = 'text', 
+      label = "h.",
+      x = Inf, y = Inf, hjust = 2, vjust = 2)
+  } else {
+    biotic_map <- biotic_map + annotate(geom = 'text', 
+      label = "a.", 
+      x = Inf, y = Inf, hjust = 2, vjust = 2)
+    
+    single_chop <- single_chop + 
+      annotate(geom = 'text', 
+        label = "c.", 
+        x = Inf, y = Inf, hjust = 2, vjust = 1.5)
+    climate_map <- climate_map + 
+      annotate(geom = 'text', 
+        label = "e.",
+        x = Inf, y = Inf, hjust = 2, vjust = 2) 
+    climate_map2 <- climate_map2 + 
+      annotate(geom = 'text', 
+        label = "g.", 
+        x = Inf, y = Inf, hjust = 2, vjust = 2)
+    
+  }
+  
   climate_map <- climate_map + 
     coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
     theme( 
@@ -1761,78 +1913,18 @@ species_panels <- function(species, model, x_type,
       axis.title.x = element_blank()
     )
   
-  if (!leftmost) {
-    single_chop <- single_chop + theme(axis.text.y = element_blank())
-  }
+
   
-  (biotic_map / single_chop / climate_map/ climate_map2 + plot_layout(heights = c(2, 0.5, 2, 2)))
+  (biotic_map / single_chop / climate_map/ climate_map2 + plot_layout(heights = c(2, 0.5, 2, 2))
+    # + plot_annotation(tag_levels = tag_start, tag_suffix = ".")& 
+    #   theme(plot.tag.position = c(.89, .9),
+    #     plot.tag = element_text(size = 12, hjust = 0, vjust = 0))
+    )
   # ggsave(here::here("ms", "figs", paste0("panels-", x_type, "-", species, ".pdf")), width = 4, height = 10)
 }
 
 # velocity-based example chops
 model <- model_vel
-
-(p1b <- species_panels("mature Redbanded Rockfish", 
-  trends = F,
-  chop_label = T, 
-  leftmost = T,
-  model, "temp"
-))
-
-(p1 <- species_panels("mature Redbanded Rockfish", 
-  trends = F,
-  chop_label = T, 
-  leftmost = T,
-  model, "DO"
-))
-
-(p2 <- species_panels("mature Lingcod", 
-  trends = F,
-  # chop_label = T, 
-  # leftmost = T, alpha_range = c(0.1, 0.9),
-  model, "temp"
-))
-
-(p3 <- species_panels("immature North Pacific Spiny Dogfish", 
-  trends = F,
-  chop_label = T, #leftmost = T, 
-  model, "DO"))
-
-
-(p4 <- species_panels("mature Flathead Sole", 
-  trends = F,
-  # chop_label = T, 
-  model, "DO"))
-
-layout <- "
-      ADEFG
-      BDEFG
-      BDEFG
-      CDEFG
-      "
-
-ygrob1 <- grid::textGrob((expression("Biotic velocity ("~italic("Y")~")")),
-  gp = grid::gpar(fontsize = 12),
-  hjust = 1, 
-  vjust = 0.85,
-  rot = 90
-)
-
-ygrob2 <- grid::textGrob((expression("Climate velocity ("~italic("x")~")")),
-  gp = grid::gpar(fontsize = 12), hjust = 1, 
-  vjust = 0.85, 
-  rot = 90
-)
-
-ygrob3 <- grid::textGrob(("Mean climate"),
-  gp = grid::gpar(fontsize = 12), hjust = 0.25, 
-  vjust = 0.85, 
-  rot = 90
-)
-
-wrap_plots(ygrob1, ygrob2, ygrob3, p1, p2, p3, p4) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1))
-
-# ggsave(here::here("ms", "figs", "species-map-panels-vel4.png"), width = 11, height = 11)
 
 
 # two panels only
@@ -1884,12 +1976,13 @@ layout <- "
       BDE
       CDE
       "
-wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p3b) + plot_layout(design = layout, widths = c(0.03, 1, 1))
+wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p3b
+  ) + plot_layout(design = layout, widths = c(0.03, 1, 1)) 
 
-ggsave(here::here("ms", "figs", "species-map-panels-vel3.png"), width = 6, height = 11)
+ggsave(here::here("ms", "figs", "species-map-panels-vel2.png"), width = 6, height = 11)
 
-wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p1) + plot_layout(design = layout, widths = c(0.03, 1, 1))
-ggsave(here::here("ms", "figs", "redbanded-map-panels.png"), width = 6, height = 11)
+# wrap_plots(ygrob1, ygrob2, ygrob3, p1b, p1) + plot_layout(design = layout, widths = c(0.03, 1, 1))
+# ggsave(here::here("ms", "figs", "redbanded-map-panels.png"), width = 6, height = 11)
 
 #########################
 #########################
