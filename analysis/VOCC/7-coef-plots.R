@@ -71,9 +71,11 @@ model <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-
 # model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-w-catch-1-400.rds")
 model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-w-fishing-1-600.rds") #best grad so far
 model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-12-01-vel-w-fishing-1-600.rds")
-
 model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-12-01-vel-w-catch-1-500.rds")
 max(model$sdr$gradient.fixed)
+
+
+model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-12-11-vel-fishing-only-1-600.rds")
 
 model2 <- add_colours(model$coefs, col_var = "mean_group") %>%   
   # filter(coefficient %in% c("log_biomass_scaled", "log_effort_scaled", "fishing_trend_scaled","log_effort_scaled:fishing_trend_scaled"))

@@ -456,6 +456,29 @@ run_meta_analysis <- function(
     x_type <- "vel"
   }
   
+  if (model_type == "-vel-fishing-only") {
+    formula <- ~ 
+      squashed_temp_vel_scaled +
+      mean_temp_scaled +
+      squashed_temp_vel_scaled:mean_temp_scaled +
+      # # log_effort_scaled +
+      log_catch_scaled +
+      fishing_vel_scaled +
+      # fishing_trend_scaled +
+      # log_effort_scaled:fishing_vel_scaled +
+      log_catch_scaled:fishing_vel_scaled +
+      # squashed_DO_vel_scaled +
+      # mean_DO_scaled +
+      # squashed_DO_vel_scaled:mean_DO_scaled +
+      log_biomass_scaled
+    
+    x <- model.matrix(formula, data = d)
+    
+    temp_chopstick <- T
+    DO_chopstick <- F
+    fishing_chopstick <- F
+    x_type <- "vel"
+  }
   #### VEL with age effects
   if (model_type == "-vel-w-age") {
     formula <- ~ age +
@@ -725,9 +748,12 @@ run_meta_analysis <- function(
         par_init <- NULL
       }
       
-      split_effect_column <- "log_effort_scaled"
-      interaction_column <- "fishing_trend_scaled:log_effort_scaled"
-      main_effect_column <- "fishing_trend_scaled"
+      # split_effect_column <- "log_effort_scaled"
+      split_effect_column <- "log_catch_scaled" 
+      # interaction_column <- "fishing_trend_scaled:log_effort_scaled"
+      interaction_column <- "fishing_vel_scaled:log_catch_scaled" 
+      # main_effect_column <- "fishing_trend_scaled"
+      main_effect_column <- "fishing_vel_scaled" 
       
       F_dat <- interaction_df(d, formula,
         x_variable = main_effect_column,
@@ -967,8 +993,19 @@ run_meta_analysis <- function(
         new_model$delta_diff$species <- unique(new_model$deltas$species)
         names(new_model$delta_diff) <- c("est", "se", "type", "species")
       }
+      if(fishing_chopstick){
+        new_model <- fishing_model
+        temp_est <- as.list(new_model$sdr, "Estimate", report = TRUE)
+        temp_se <- as.list(new_model$sdr, "Std. Error", report = TRUE)
+        new_model$delta_diff <-
+          cbind(temp_est$diff_delta_k, temp_se$diff_delta_k)
+        new_model$delta_diff <- as.data.frame(new_model$delta_diff)
+        new_model$delta_diff$type <- "fishing"
+        new_model$delta_diff$species <- unique(new_model$deltas$species)
+        names(new_model$delta_diff) <- c("est", "se", "type", "species")
+      }
     }
-    
+  }
     date <- format(Sys.time(), "-%m-%d")
     saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, 
       date, model_type, null_lab, null_number, "-", knots, ".rds"))
@@ -982,8 +1019,8 @@ run_meta_analysis <- function(
     
     return(paste0("data/", y_type, "-", data_type, date, model_type, 
       null_lab, null_number, "-", knots, ".rds"))
-  }
 }
+
 
 # copy output in here to check model
 model <- readRDS()
@@ -995,7 +1032,7 @@ max(model$sdr$gradient.fixed)
 # run_meta_analysis(
 #   model_type = "-vel-both", 
 #   y_type = "vel", 
-#   knots = 700, # 400 & 600 work, failed to converg with 500 & 700
+#   knots = 600, # 400 & 600 work, failed to converg with 500 & 700
 #   data_type = "all-95-optimized4"
 # )
 
@@ -1023,6 +1060,15 @@ max(model$sdr$gradient.fixed)
 #   data_type = "all-95-optimized4"
 # )
 # 
+
+# fishing and temp only model: catch*fishing_vel
+run_meta_analysis(
+  model_type = "-vel-fishing-only", 
+    y_type = "vel",
+    knots = 600,
+    data_type = "all-95-optimized4"
+  )
+
 # # family model
 # run_meta_analysis(
 #   model_type = "-vel-both",
@@ -1069,13 +1115,13 @@ max(model$sdr$gradient.fixed)
 #   knots = 600, # works with 400, failed to converg with 500
 #   data_type = "all-95-optimized4"
 # )
-# # age vel model
-run_meta_analysis(
-  model_type = "-vel-w-age",
-  y_type = "vel",
-  knots = 500, # 600 didn't converge
-  data_type = "all-95-optimized4"
-)
+# # # age vel model
+# run_meta_analysis(
+#   model_type = "-vel-w-age",
+#   y_type = "vel",
+#   knots = 500, # 600 didn't converge
+#   data_type = "all-95-optimized4"
+# )
 # # # trend temp only model
 # run_meta_analysis(
 #   model_type = "-trend",
