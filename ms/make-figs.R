@@ -1520,7 +1520,7 @@ ggsave(here::here("ms", "figs", "worm-plot-both.pdf"), width = 8, height = 10)
 
 species_panels <- function(species, model, x_type,
                            trends = T,
-                           biotic_lim = c(-20, 18), # currently only applied to
+                           biotic_lim = c(-20, 20), # currently only applied to
                            # biotic_lim = c(-40, 40), # currently only applied to 
                            # tag_start = "a",
                            chop_label = F,
@@ -1899,7 +1899,8 @@ species_panels <- function(species, model, x_type,
   
   climate_map <- climate_map + 
     coord_fixed(xlim = c(180, 790), ylim = c(5370, 6040)) +
-    theme( 
+    theme(
+      plot.title = element_text(hjust = 0.5),
       axis.text = element_blank(),
       axis.ticks = element_blank(),
       axis.title.x = element_blank()
