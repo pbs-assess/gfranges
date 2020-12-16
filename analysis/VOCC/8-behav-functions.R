@@ -70,7 +70,7 @@ long_vel_slopes <- long_vel_slopes %>% group_by(slope_type) %>% mutate(slope_tri
 # long_vel_slopes <- long_vel_slopes %>% group_by(slope_type) %>% mutate(slope_trim = collapse_outliers(slope, c(0.025, 0.975))) %>% ungroup()
 # long_slopes <- long_slopes %>% rename(slope_raw = slope, slope = slope_trim)
 
-temp_vel_slopes <- long_vel_slopes %>% filter(type == "temp")
+temp_vel_slopes <- long_vel_slopes %>% filter(type == "temp") 
 do_vel_slopes <- long_vel_slopes %>% filter(type == "DO") %>% mutate (chopstick = factor(chopstick, levels = c("low", "high")))
 
 #### Which slopes have non-zero effects? ####
@@ -290,7 +290,7 @@ vddat2do <- vddat1do #%>% filter(age == "Immature") %>% Hmisc::na.delete()
 # vddat2 <- vddat2 %>% mutate(slope_est = slope_trim)
 # vddat2do <- vddat2do %>% mutate(slope_est = slope_trim)
 # # # # if no, run this
-vddat2 <- vddat2 %>% mutate(slope_est = slope)
+vddat2 <- vddat2 %>% mutate(slope_est = slope, chopstick = factor(chopstick, levels = c("low", "high")))
 vddat2do <- vddat2do %>% mutate(slope_est = slope)
 
 
@@ -440,7 +440,8 @@ p
          (1|species_age) + (1|species), REML = T, data = vddat2)
          # (1|species),  REML = T, data = filter(vddat2, age == "Immature"))
      tempslopemodv %>% summary()
-
+     
+     (tdepth <-  tempslopemodv %>% summary())   
 (vp_depth_mean <- temp_interact_plot(
   tempslopemodv,
   data = vddat2,
@@ -451,7 +452,7 @@ p
     # ylab(expression(~italic("Y")~"~ temperature velocity")) +
     ylab(expression(~italic("Y")~"~ warming velocity")) + 
     # labs(tag = "D") + 
-    # scale_colour_manual(values = c("white", "white")) +
+    scale_colour_manual(values = c("white", "white")) +
     theme(  
       plot.margin = margin(0.2, 0.2, 0, 0.3, "cm"),
       axis.title.x=element_blank(),
@@ -472,6 +473,7 @@ p
          # (1|species),  REML = T, data = filter(vddat2, age == "Immature"))
      tempslopemodvr %>% summary()
      
+     (tiqr <-  tempslopemodvr %>% summary())   
 (vp_depth_iqr <- temp_interact_plot(
     tempslopemodvr,
     data = vddat2, 
@@ -499,6 +501,7 @@ p
      (1|species),  REML = T, data = filter(vddat2, age == "Immature"))
      tempslopemodva %>% summary()
      
+     (tage <-  tempslopemodva %>% summary())   
 (vp_log_age <- temp_interact_plot(
   tempslopemodva,
   data = vddat2, 
@@ -690,7 +693,8 @@ p
          (1|species) + (1|species_age), REML = T,  data = vddat2do)
      # (1|species),  REML = T, data = filter(vddat2do, age == "Immature"))
      doslopemodv %>% summary()
-     
+(dodepth <-  doslopemodv %>% summary())   
+
 (vpd_depth_mean <- do_interact_plot(
     doslopemodv,
     data = vddat2do, include_mat = T,
@@ -721,7 +725,8 @@ p
          (1|species) + (1|species_age), REML = T,  data = vddat2do)
          # (1|species),  REML = T, data = filter(vddat2do, age == "Immature"))
      doslopemodvr %>% summary()
-     
+(doiqr <-  doslopemodvr %>% summary())   
+
 (vpd_depth_iqr <- do_interact_plot(
     doslopemodvr,
   data = vddat2do, include_mat = T,
@@ -749,7 +754,7 @@ p
          # (1|species) + (1|species_age), REML = T, data = vddat2do)
          (1|species) , REML = T, data = filter(vddat2do, age == "Immature"))
      doslopemodva %>% summary()
-     
+(doage <-  doslopemodva %>% summary())        
 
 (vpd_log_age <- do_interact_plot(
   doslopemodva,
@@ -810,28 +815,28 @@ p
          # coord_cartesian(ylim = c(-1.5,4)) + # 95 trim
          theme( 
            # plot.margin = margin(0.2, 0, 0.2, 0, "cm"),
-           axis.title.x=element_blank(),
+           axis.title=element_blank(),
            axis.text.x=element_blank(),
            axis.ticks.x=element_blank(),
            plot.tag.position = c(0.92,0.92),
            legend.position = "none"))
      
      ( vp_depth_iqr <-  vp_depth_iqr +
-         labs(tag = "a.")  + 
+         labs(tag = "b.")  + 
          ylab(" ") +
          coord_cartesian(ylim = c(-5.5,9.5)) + # 95 trim
          theme(
            plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
            axis.title.x = element_blank(),
            axis.title.y = element_blank(),
-           axis.text.x=element_blank(),
-           axis.ticks.x=element_blank(),
+           axis.text=element_blank(),
+           axis.ticks=element_blank(),
            plot.tag.position = c(0.92,0.92),
            legend.title.align=0,
            legend.position = "none"))
      (vp_log_age <- vp_log_age + 
          # labs(tag = "f.")  + 
-         labs(tag = "b.")  + #99 trim
+         labs(tag = "c.")  + #99 trim
          coord_cartesian(ylim = c(-5.5,9.5)) + # 95 trim
          scale_y_continuous(position = "right") + ylab("Temperature") +
          theme( 
@@ -854,28 +859,31 @@ p
            legend.position = "none"))
      
      (vpd_depth_mean <- vpd_depth_mean + 
-         labs(tag = "e.")  + #99 trim
-         coord_cartesian(ylim = c(-9.5,5.5)) + # 95 trim
+         labs(tag = "d.")  + #99 trim
+         coord_cartesian(ylim = c(-6,3)) + # 95 trim
          theme( 
+           axis.title.y=element_blank(),
            # plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
            plot.tag.position = c(0.92,0.92),
            legend.position = "none"))
      
      ( vpd_depth_iqr <-  vpd_depth_iqr +
-         labs(tag = "c.")  +
+         labs(tag = "e.")  +
          ylab(" ") +
-         coord_cartesian(ylim = c(-9.5,5.5)) + # 95 trim
+         coord_cartesian(ylim = c(-6,3)) + # 95 trim
          theme(
            plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
            plot.tag.position = c(0.92,0.92),
            axis.title.y =element_blank(),
+           axis.text.y =element_blank(),
+           axis.ticks.y =element_blank(),
            legend.title.align=0,
            legend.position = "none"))
      
      
      (vpd_log_age <- vpd_log_age + 
-         labs(tag = "d.")  + 
-         coord_cartesian(ylim = c(-9.5,5.5)) + # 95 trim
+         labs(tag = "f.")  + 
+         coord_cartesian(ylim = c(-6,3)) + # 95 trim
          scale_y_continuous(position = "right") + ylab("DO") +
          theme( 
            plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
@@ -883,7 +891,7 @@ p
            legend.position = "none"))
      (vpd_growth_rate <- vpd_growth_rate + 
          labs(tag = "f.")  + 
-         coord_cartesian(ylim = c(-9.5,5.5)) + # 95 trim
+         coord_cartesian(ylim = c(-6,3)) + # 95 trim
          theme( 
            plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
            plot.tag.position = c(0.92,0.92),
@@ -897,17 +905,17 @@ p
      )
      
      layout <- "
-      ABC
-      ADE
+      ABCD
+      AEFG
       "
      wrap_plots(ygrob, 
-       # vp_depth_mean , 
+       vp_depth_mean ,
        vp_depth_iqr , vp_log_age , #vp_growth_rate  , 
-       # vpd_depth_mean , 
+       vpd_depth_mean ,
        vpd_depth_iqr , vpd_log_age #, vpd_growth_rate
        ) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1))
      
-     ggsave(here::here("ms", "figs", "depth-age-models-vel-only2.png"), width = 6.5, height = 6) 
+     ggsave(here::here("ms", "figs", "depth-age-models-vel.png"), width = 6.5, height = 6) 
      
      
      
@@ -928,16 +936,19 @@ p
 
 
 #### velocity slopes
-(   p_log_age + 
-    p_growth_rate + pd_log_age + 
-    pd_growth_rate + plot_layout(ncol = 1))
-
-# ggsave(here::here("ms", "figs", "immature-growth-rate-models-trimmed.pdf"), width = 9, height = 7) # was trimmed model, but raw dat 
+     
 # ggsave(here::here("ms", "figs", "immature-growth-rate-vel.pdf"), width = 6, height = 6)
-
-
-# (p_depth_iqr + p_growth_rate  + p_log_age + 
-#     pd_depth_iqr + pd_growth_rate + pd_log_age2 + plot_layout(ncol = 3))
+     vp_depth_iqr + 
+    vp_depth_iqr + 
+       
+       
+(vp_depth_mean + vp_depth_iqr + 
+    # vp_growth_rate  + 
+    vp_log_age +
+    vpd_depth_mean +
+    vp_depth_iqr + 
+    # vpd_growth_rate + 
+    vpd_log_age + plot_layout(ncol = 3))
 # 
 # # ggsave(here::here("ms", "figs", "immature-growth-rate-models-trimmed.pdf"), width = 9, height = 7) # was trimmed model, but raw dat 
 # ggsave(here::here("ms", "figs", "immature-models-w-age.pdf"), width = 9.5, height = 5.5)
@@ -1095,7 +1106,7 @@ ddatdo <- do_vel_slopes %>%
 ddatdo <- ddatdo %>% mutate(chopstick = factor(chopstick, levels = c( "low", "high")) )
 # ddatdo <- ddatdo %>% mutate(Latitude = factor(Latitude, levels = c("North", "South")) )
 ddatdo <- ddatdo %>% mutate(Zone = factor(Zone, levels = c("Benthopelagic", "Demersal")) )
-ddatdo <- ddatdo %>% mutate(Trophic = factor(Trophic, levels = c("Higher", "Lower")) )
+ddatdo <- ddatdo %>% mutate(Trophic = factor(Trophic, levels = c("Lower", "Higher")) )
 ddatdo <- ddatdo %>% mutate(Schooling = factor(Schooling, levels = c("Schooling", "Solitary")) )
 ddatdo <- ddatdo %>% mutate(age = factor(age, levels = c("Mature", "Immature")) ) 
 
@@ -1862,9 +1873,8 @@ ddatdo %>% mutate(pearson = residuals(doslopemod,type="pearson"),
         plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Mean depth occupied",
           just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 4, heights = c(1, 0.001, 1, 0.02))) 
 
-ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf"), width = 12, height =7)
+# ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf"), width = 12, height =7)
 
-# ggsave(here::here("ms", "figs", "ecology-slope-models-all2.pdf"), width = 12, height = 7)
 
 #### SAVE MODEL ESTIMATES ####
 # write_tex <- function(x, macro, ...) {
@@ -1897,22 +1907,37 @@ ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf
 # }
 # 
 # 
+# paste0("% life history model effect sizes") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# 
+# write_tex(efsize(tdepth, 2), "Ltempdepth")
+# write_tex(efsize(tiqr, 2), "Ltempiqr")
+# write_tex(efsize(tage, 2), "Ltempage")
+# write_tex(efsize(dodepth, 2), "Ldodepth")
+# write_tex(efsize(doiqr, 2), "Ldoiqr")
+# write_tex(efsize(doage, 2), "Ldoage")
+
 # paste0("% ecology model effect sizes") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # paste0("% sig main effects and interactions") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # 
-# write_tex(efsize(trophmod, 2), "tempTroph")
+
+# paste0("% interaction shows effect more at deepest depths") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # write_tex(efsize(zonemod, 2), "tempZone")
+# write_tex(efsize(zonemod, 3), "Tmbentho")
+# write_tex(efsize(zonemod, 5), "TZoneX")
 # # \newcommand{\tempTroph}{-0.91, -1.4 to -0.43}
 # # \newcommand{\tempZone}{0.75, 0.23 to 1.26}
 # paste0("% interaction shows effect only at deepest depths") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # 
-# write_tex(efsize(dotrophmod, 2), "DOtroph")
+# 
+# write_tex(efsize(dotrophmod, 1), "DOlotroph")
+# write_tex(efsize(dotrophmod, 2), "DOhitroph")
 # write_tex(efsize(dotrophmod, 3), "DOmhitroph")
 # write_tex(efsize(dotrophmod, 5), "DOtrophX")
 # # \newcommand{\DOtroph}{0.33, -0.16 to 0.81}
 # # \newcommand{\DOtrophX}{0.65, 0.11 to 1.18}
-# 
+
 # paste0("% sig main effects only") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# write_tex(efsize(trophmod, 2), "tempTroph")
 # write_tex(efsize(dozonemod, 2), "DOzone")
 # write_tex(efsize(dosocmod, 2), "DOsociality")
 # # \newcommand{\DOzone}{-0.60, -1.1 to -0.1}
