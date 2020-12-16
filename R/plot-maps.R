@@ -246,7 +246,7 @@ plot_vocc <- function(df,
               x = "X", y = "Y",
               group = "paste(PID, SID)"
             ),
-            inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey85"
+            inherit.aes = FALSE, lwd = 0.2, alpha = 0.7, colour = "grey85"
           ) +
           geom_path(
             data = isobath[isobath$PID == 200, ],
@@ -254,7 +254,7 @@ plot_vocc <- function(df,
               x = "X", y = "Y",
               group = "paste(PID, SID)"
             ),
-            inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey70"
+            inherit.aes = FALSE, lwd = 0.2, alpha = 0.7, colour = "grey70"
           ) +
           geom_path(
             data = isobath[isobath$PID == 300, ],
@@ -262,7 +262,7 @@ plot_vocc <- function(df,
               x = "X", y = "Y",
               group = "paste(PID, SID)"
             ),
-            inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey55"
+            inherit.aes = FALSE, lwd = 0.2, alpha = 0.7, colour = "grey55"
           ) +
           geom_path(
             data = isobath[isobath$PID == 400, ],
@@ -270,7 +270,7 @@ plot_vocc <- function(df,
               x = "X", y = "Y",
               group = "paste(PID, SID)"
             ),
-            inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey40"
+            inherit.aes = FALSE, lwd = 0.2, alpha = 0.7, colour = "grey40"
           ) +
           geom_path(
             data = isobath[isobath$PID == 500, ],
@@ -278,7 +278,7 @@ plot_vocc <- function(df,
               x = "X", y = "Y",
               group = "paste(PID, SID)"
             ),
-            inherit.aes = FALSE, lwd = 0.2, alpha = 0.4, colour = "grey30"
+            inherit.aes = FALSE, lwd = 0.2, alpha = 0.7, colour = "grey30"
           )
         gvocc
       }, silent = TRUE)
