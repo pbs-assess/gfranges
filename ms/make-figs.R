@@ -841,7 +841,7 @@ ggsave(here::here("ms", "figs", "maps-fishing-w-vel.png"), width = 6, height = 9
 #   arrange(type, chopstick, mean_slope)
 # 
 # 
-# paste0("% trend group means: temp") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# paste0("% trend group means: high temp") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # 
 # trend_high_temp <- filter(trend_grp_means, type=="temp" & chopstick=="high")
 # 
@@ -853,7 +853,7 @@ ggsave(here::here("ms", "figs", "maps-fishing-w-vel.png"), width = 6, height = 9
 # write_tex(round(trend_high_temp$mean_slope[trend_high_temp$mean_group == "sablefish"], 1), "HTtrendSablefish") # highest for both
 # 
 # 
-# paste0("% trend group means: DO") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# paste0("% trend group means: low DO") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # 
 # trend_low_DO <- filter(trend_grp_means, type=="DO" & chopstick=="low")
 # 
@@ -878,30 +878,30 @@ ggsave(here::here("ms", "figs", "maps-fishing-w-vel.png"), width = 6, height = 9
 #   arrange(type, chopstick, mean_slope)
 # 
 # 
-# paste0("% velocity group means: temp") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# paste0("% velocity group means: high temp") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # 
 # vel_high_temp <- filter(vel_grp_means, type=="temp" & chopstick=="high")
 # 
 # write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "chondrichthyes"], 1), "HtempSharkSkate")
 # write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "shelf rockfish"], 1), "HtempShelfRockfish")
-# write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "flatfish"], 1), "HtempSlopeFlatfish")
+# write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "flatfish"], 1), "HtempFlatfish")
 # write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "slope rockfish"], 1), "HtempSlopeRockfish")
 # write_tex(round(vel_high_temp$mean_slope[vel_high_temp$mean_group == "sablefish"], 1), "HtempSablefish")
 # 
 # 
-# paste0("% velocity group means: DO") %>% readr::write_lines("ms/values.tex", append = TRUE)
+# paste0("% velocity group means: low DO") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # 
 # vel_low_DO <- filter(vel_grp_means, type=="DO" & chopstick=="low")
 # 
 # # most positive effect
 # # this time there is a flipflop for trend to velocity for low DO... lowest two spp for trend are highest two for vel (sablefish and lingcod)!
-# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "sablefish"], 1), "LDOtrendSablefish")
-# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "lingcod"], 1), "LDOtrendLingcod") 
-# # write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "shelf rockfish"], 1), "LDOtrendShelfRockfish")
+# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "sablefish"], 1), "LDOvelSablefish")
+# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "lingcod"], 1), "LDOvelLingcod") 
+# # write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "shelf rockfish"], 1), "LDOvelShelfRockfish")
 # 
 # # most negative effect
-# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "flatfish"], 1), "LDOtrendSlopeFlatfish")
-# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "slope rockfish"], 1), "LDOtrendSlopeRockfish")
+# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "flatfish"], 1), "LDOvelFlatfish")
+# write_tex(round(vel_low_DO$mean_slope[vel_low_DO$mean_group == "slope rockfish"], 1), "LDOvelSlopeRockfish")
 
 
 #### GLOBAL COEFS ####
