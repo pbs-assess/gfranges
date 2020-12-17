@@ -590,7 +590,12 @@ ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height =
     ))
 
 (p_iqr <- temp_slopes %>% filter(chopstick == "high") %>% 
-    mutate(labs = if_else(age == "Mature" & depth > 300 | depth_iqr < 20 | (age == "Mature" & depth_iqr > 100),  gsub(" Rockfish", "", species), NA_character_)) %>%
+    mutate(labs = if_else(age == "Mature" & depth > 300 | depth_iqr < 20 | 
+        (age == "Mature" & depth_iqr > 100),  
+      gsub(" Rockfish", "", species), NA_character_),
+      labs2 = if_else((age == "Mature" & depth_iqr < 34 & depth <55),  
+        gsub(" Rockfish", "", species), NA_character_)
+      ) %>%
     ggplot(aes(depth, depth_iqr)) + 
     # geom_smooth(method = "lm", colour = "black", size =0.5) +
     geom_line(aes(group = species), colour = "grey60") +
@@ -612,6 +617,13 @@ ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height =
       point.padding = 0.3, segment.colour = "deepskyblue3", max.iter = 10000,
       size = 3, force = 30,
       nudge_y = 2, nudge_x = -2,
+      na.rm = T, min.segment.length = 10, seed = 1000
+    ) +
+    ggrepel::geom_text_repel(
+      aes(label = labs2), colour = "royalblue4",
+      point.padding = 0.3, segment.colour = "deepskyblue3", max.iter = 10000,
+      size = 3, force = 30,
+      nudge_y = 6, nudge_x = 1,
       na.rm = T, min.segment.length = 10, seed = 1000
     ) +
     # ggtitle("Groundfish species") +
@@ -1440,7 +1452,7 @@ p_do_worm2 <- plot_chopstick_slopes(do_vel_slopes, type = "DO",
     legend.box = "horizontal"
 )) 
 
-ggsave(here::here("ms", "figs", "worm-plot-vel-600.pdf"), width = 7, height = 7)
+ggsave(here::here("ms", "figs", "worm-plot-vel-600.png"), width = 7, height = 7)
 
 #### IF WE WANT PLOT OF BOTH TREND AND VELOCITY SLOPES TOGETHER ####
 
@@ -2284,7 +2296,8 @@ d <- temp_slopes %>% filter(chopstick == "high" & type == "temp" & age == "Immat
 # ggsave(here::here("ms", "figs", "supp-age-growth.pdf"), width = 4, height = 4)
 
 (p_iqr <- temp_slopes %>% filter(chopstick == "high") %>% 
-    mutate(labs = if_else(age == "Mature" & (depth > 280 | depth_iqr >80),  gsub(" Rockfish", "", species), NA_character_)) %>%
+    mutate(labs = if_else(age == "Mature" & (depth > 280 | depth_iqr > 80 | 
+        (depth_iqr < 34 & depth < 55)),  gsub(" Rockfish", "", species), NA_character_)) %>%
     ggplot(aes(depth, depth_iqr)) + 
     # geom_smooth(method = "lm", colour = "black", size =0.5) +
     geom_line(aes(group = species), colour = "grey60") +
