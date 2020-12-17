@@ -491,7 +491,7 @@ ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height =
     ylab("Mean (ºC)") +
     scale_x_reverse() +
     xlim(450, 15) +
-    ylim(4, 11) +
+    ylim(4, 11.5) +
     coord_flip(expand = F) +  
     xlab("Mean cell depth") +
     # ggtitle("Temperature") +
@@ -508,7 +508,7 @@ ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height =
     # scale_y_continuous(position = "right") +
     geom_hline(yintercept = 0, colour = "grey60", linetype = "solid") + # 
     scale_x_reverse() +
-    coord_flip(xlim = c(450, 15), expand = F) +
+    coord_flip(xlim = c(450, 15), ylim = c(-0.9, 2.9), expand = F) +
     # coord_cartesian(xlim = c(15, 450), ylim = c(0.2, 7.5), expand = F) + # ylim = c(0, 11.5),
     # ylab("Temperature trend (ºC per decade)") +
     ylab("Trend per decade") +
@@ -525,7 +525,7 @@ ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height =
     geom_point(alpha = 0.5, shape = 20) +
     geom_hline(yintercept = 0, colour = "grey60", linetype = "solid") + # 
     scale_x_reverse() +
-    coord_flip(xlim = c(450, 15), expand = F) +
+    coord_flip(xlim = c(450, 15), ylim = c(-13, 88), expand = F) +
     # ylab("Temperature velocity (km per decade)") +
     ylab("Velocity (km per decade)") +
     xlab("Mean depth") +
@@ -564,7 +564,7 @@ ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height =
     # scale_y_continuous(position = "right") +
     geom_hline(yintercept = 0, colour = "grey60", linetype = "solid") + # 
     scale_x_reverse() +
-    coord_flip(xlim = c(450, 15), expand = F) +
+    coord_flip(xlim = c(450, 15), ylim = c(-3.8, 1.4), expand = F) +
     # coord_cartesian(xlim = c(15, 450), ylim = c(0.2, 7.5), expand = F) + # ylim = c(0, 11.5),
     ylab("Trend per decade") +
     xlab("Mean depth") +
@@ -579,7 +579,7 @@ ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height =
     geom_point(alpha = 0.5, shape = 20) +
     geom_hline(yintercept = 0, colour = "grey60", linetype = "solid") + # 
     scale_x_reverse() +
-    coord_flip(xlim = c(450, 15), expand = F) +
+    coord_flip(xlim = c(450, 15), ylim = c(-92, 25), expand = F) +
     # coord_cartesian(xlim = c(15, 450), ylim = c(0.2, 7.5), expand = F) + # ylim = c(0, 11.5),
     ylab("Velocity (km)") +
     xlab("Mean depth") +
@@ -589,11 +589,20 @@ ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height =
       axis.text.y = element_blank(), axis.title.y = element_blank()
     ))
 
-(p_iqr <- temp_slopes %>% filter(chopstick == "high") %>% 
-    mutate(labs = if_else(age == "Mature" & depth > 300 | depth_iqr < 20 | 
-        (age == "Mature" & depth_iqr > 100),  
+temp_vel_slopes <- chopstick_slopes(model_vel,
+  x_variable = "squashed_temp_vel_scaled",
+  interaction_column = "squashed_temp_vel_scaled:mean_temp_scaled",
+  type = "temp"
+) 
+
+temp_vel_slopes1 <- left_join(temp_vel_slopes, stats)
+
+(p_iqr <- temp_vel_slopes1 %>% filter(chopstick == "high") %>% 
+    mutate(labs = if_else( (age == "Mature" & depth > 290 & depth_iqr < 133) | 
+        (age == "Mature" & depth_iqr > 120 & depth_iqr < 133) ,  
       gsub(" Rockfish", "", species), NA_character_),
-      labs2 = if_else((age == "Mature" & depth_iqr < 34 & depth <55),  
+      labs2 = if_else(
+        (age == "Mature" & depth_iqr < 34 & depth <55)|(age == "Mature" & depth_iqr > 132),  
         gsub(" Rockfish", "", species), NA_character_)
       ) %>%
     ggplot(aes(depth, depth_iqr)) + 
@@ -614,23 +623,26 @@ ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height =
     # annotate(geom = 'text', label = "a.", x = 440, y = 220, hjust = 2, vjust = 2)+
     ggrepel::geom_text_repel(
       aes(label = labs), colour = "royalblue4",
-      point.padding = 0.3, segment.colour = "deepskyblue3", max.iter = 10000,
-      size = 3, force = 30,
-      nudge_y = 2, nudge_x = -2,
+      point.padding = 0.2, segment.colour = "deepskyblue3", max.iter = 10000,
+      size = 3, force = 17,
+      nudge_y = -1,
+      nudge_x = -1,
       na.rm = T, min.segment.length = 10, seed = 1000
     ) +
     ggrepel::geom_text_repel(
       aes(label = labs2), colour = "royalblue4",
       point.padding = 0.3, segment.colour = "deepskyblue3", max.iter = 10000,
       size = 3, force = 30,
-      nudge_y = 6, nudge_x = 1,
+      nudge_y = 6, nudge_x = 3,
       na.rm = T, min.segment.length = 10, seed = 1000
     ) +
-    # ggtitle("Groundfish species") +
+    labs(tag = "g.") +
     ylab("Depth range occupied (IQR)") +
     xlab("Mean depth occupied") +
     gfplot::theme_pbs() + theme(
-      plot.margin = margin(0, 0, 0, 0.3, "cm"),
+      plot.tag.position = c(.96, .92),
+      plot.tag = element_text(size = 12, hjust = 0, vjust = 0),
+      plot.margin = margin(0.05, 0.5, 0.01, 0.3, "cm"),
       legend.position = c(0.8, 0.8),
       # axis.title.x = element_blank(),
       # axis.text.x = element_blank(),
@@ -638,11 +650,10 @@ ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height =
       legend.title = element_blank()
     ))  
 
-
 # p_depth_tf + p_depth_tt + p_depth_tv +
 # p_depth_dof + p_depth_dot + p_depth_dov + plot_layout(nrow = 1)
-# 
 # ggsave(here::here("ms", "figs", "climate-depth-plots.png"), width = 11, height = 4)
+
 # layout1 <- "
 #       AAA
 #       AAA
@@ -653,18 +664,16 @@ ggsave(here::here("ms", "figs", "climate-maps-w-depth.png"), width = 9, height =
 layout1 <- "
       ABC
       DEF
-      GGG
-      GGG
       "
 
-  p_depth_tf + p_depth_tt + p_depth_tv +
+wrap_elements(p_depth_tf + p_depth_tt + p_depth_tv +
   p_depth_dof + p_depth_dot + p_depth_dov + 
-  p_iqr +
   plot_layout(design = layout1) + plot_annotation(tag_levels = 'a', tag_suffix = ".")& 
-  theme(plot.tag.position = c(.89, .9),
+  theme(plot.tag.position = c(.9, .89),
     plot.tag = element_text(size = 12, hjust = 0, vjust = 0))
+     ) / wrap_elements(p_iqr) + plot_layout(nrow = 2, tag = "new", heights = c(1, 0.65))  
 
-ggsave(here::here("ms", "figs", "climate-depth-plots-stacked.png"), width = 6, height = 8.5)
+ggsave(here::here("ms", "figs", "climate-depth-plots-stacked.png"), width = 6.5, height = 8)
 
 #######################
 #######################
