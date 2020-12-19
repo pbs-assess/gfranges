@@ -938,9 +938,6 @@ p
 #### velocity slopes
      
 # ggsave(here::here("ms", "figs", "immature-growth-rate-vel.pdf"), width = 6, height = 6)
-     vp_depth_iqr + 
-    vp_depth_iqr + 
-       
        
 (vp_depth_mean + vp_depth_iqr + 
     # vp_growth_rate  + 
@@ -1662,6 +1659,7 @@ doslopemod %>% summary()
     # ylab("Peak Frequency") +
     xlab("Mean depth occupied") +
     # labs(tag = "D") + 
+    ggtitle(" ") +
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
       axis.title=element_blank(),
@@ -1671,8 +1669,6 @@ doslopemod %>% summary()
       legend.title.align=0,
       # legend.title = element_blank(),
       legend.position = "none")
-  # legend.position = c(0.8,0.15))
-  # legend.position = c(0.2,0.85))
 )
 
 ###
@@ -1741,6 +1737,7 @@ doslopemod %>% summary()
     # ylab("Peak Frequency") +
     xlab("Mean depth occupied") +
     # labs(tag = "D") + 
+    ggtitle(" ") +
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
       axis.title=element_blank(),
@@ -1808,6 +1805,7 @@ doslopemod %>% summary()
     # ylab("Peak Frequency") +
     xlab("Depth range (IQR)") +
     # labs(tag = "D") + 
+    ggtitle(" ") +
     gfplot::theme_pbs() + theme(
       plot.margin = margin(0.2, 0.2, 0.2, 0, "cm"),
       axis.title=element_blank(),
@@ -1865,15 +1863,28 @@ ddatdo %>% mutate(pearson = residuals(doslopemod,type="pearson"),
 # 
 # ggsave(here::here("ms", "figs", "ecology-slope-model-trimmed.pdf"), width = 12, height =7)
 
-((p_depth_lat + p_depth_troph + p_depth_zone + p_depth_sch +
-    plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("",
-      just = 0.3, gp = grid::gpar(fontsize = 1))/
-    (pd_depth_lat + pd_depth_troph + pd_depth_zone + pd_depth_sch +
-        # plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Depth range occupied (IQR)",
-        plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Mean depth occupied",
-          just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 4, heights = c(1, 0.001, 1, 0.02))) 
+# ((p_depth_lat + p_depth_troph + p_depth_zone + p_depth_sch +
+#     plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("",
+#       just = 0.3, gp = grid::gpar(fontsize = 1))/
+#     (pd_depth_lat + pd_depth_troph + pd_depth_zone + pd_depth_sch +
+#         # plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Depth range occupied (IQR)",
+#         plot_layout(ncol = 4, widths = c(1,1,1,1)))/grid::textGrob("Mean depth occupied",
+#           just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 4, heights = c(1, 0.001, 1, 0.02))) 
 
-# ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf"), width = 12, height =7)
+(wrap_elements(p_depth_lat + p_depth_troph + p_depth_zone + p_depth_sch +
+  pd_depth_lat + pd_depth_troph + pd_depth_zone + pd_depth_sch +
+    plot_layout(ncol = 4, widths = c(1,1,1,1))+ plot_annotation(tag_levels = 'a', tag_suffix = ".")& 
+    theme(plot.tag.position = c(.9, .86),
+      plot.tag = element_text(size = 12, hjust = 0, vjust = 0)))
+  /grid::textGrob("Mean depth occupied", just = 0.3, gp = grid::gpar(fontsize = 11)) + plot_layout(nrow = 2, heights = c(1, 0.001))
+  # + plot_annotation(tag_levels = 'a', tag_suffix = ".")& 
+  #   theme(plot.tag.position = c(.9, .87),
+  #     plot.tag = element_text(size = 12, hjust = 0, vjust = 0))
+  ) 
+
+
+
+ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf"), width = 12, height =7)
 
 
 #### SAVE MODEL ESTIMATES ####
