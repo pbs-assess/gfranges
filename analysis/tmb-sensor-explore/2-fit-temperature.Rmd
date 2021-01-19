@@ -287,9 +287,10 @@ WOULD SST HELP?
 
 Load and prep SST data
 ```{r eval=FALSE}
-# all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-meanSST-all.rds"))
-# # all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-processed.rds")) # no SST
-# # glimpse(all_sensor)
+all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-meanSST-all.rds"))
+d_trawl2 <-all_sensor
+# all_sensor <- readRDS(here::here("analysis/tmb-sensor-explore/data/dat-sensor-trawl-processed.rds")) # no SST
+# glimpse(all_sensor)
 # 
 # all_depth <- all_sensor %>%
 #   # filter(depth_max>10) %>% # maybe we should filter incase missing depth values also indicate a sensor fail?
@@ -356,6 +357,15 @@ ggplot(d_trawl2, aes_string("X", "Y", colour = "meanSST")) +
     coord_fixed() +
     scale_color_viridis_c()
 ```
+
+```{r eval=FALSE}
+ggplot(d_trawl2, aes_string("depth_m", "meanSST", colour = "meanSST")) +
+    geom_point() +
+    facet_wrap(~ssid, scales = "free") +
+    # coord_fixed() +
+    scale_color_viridis_c()
+```
+
 
 ```{r eval=FALSE}
 ggplot(dplyr::filter(d_trawl2, shallow==1), aes(SST_scaled,temperature_c, colour = -depth)) + geom_point()
