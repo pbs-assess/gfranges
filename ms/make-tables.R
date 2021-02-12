@@ -2,7 +2,7 @@ library(kableExtra)
 setwd(here::here())
 model_vel <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-both-1-600.rds"))
 keepspp <- unique(model_vel$data$species_only)
-stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth.rds")) %>% mutate(
+stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth3.rds")) %>% mutate(
     age = firstup(age),
     Diet = factor(Diet, levels = c("Zooplankton", "Generalist", "Polychaetes", "Crustaceans", "Fish")),
     `Foraging zone` = factor(BenthoPelagicPelagicDemersal, levels = c("Demersal", "Benthopelagic", "Pelagic")),

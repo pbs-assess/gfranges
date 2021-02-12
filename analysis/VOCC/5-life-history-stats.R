@@ -527,4 +527,5 @@ lut <- tribble(
 lut <- arrange(lut, mean_group)
 stats <- left_join(stats, lut)
 
-saveRDS(stats, file = "data/life-history-behav-new-growth2.rds")
+# saveRDS(stats, file = "data/life-history-behav-new-growth2.rds") # my attempt at adding to CR data
+saveRDS(stats, file = "data/life-history-behav-new-growth3.rds") #update CR classifications

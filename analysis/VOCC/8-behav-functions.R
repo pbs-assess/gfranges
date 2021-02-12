@@ -11,7 +11,7 @@ library(ggpubr)
 
 # model <- readRDS("data/trend-all-95-all-do-04-11-trend-with-do-family-family-1-500.rds")
 # model <- readRDS("data/trend-all-95-newclim-more2016-06-21-trend-with-do-1-500.rds")
-stats <- readRDS(here::here(paste0("analysis/VOCC/data/life-history-behav-new-growth2.rds"))) %>% mutate(age = firstup(age))
+stats <- readRDS(here::here(paste0("analysis/VOCC/data/life-history-behav-new-growth3.rds"))) %>% mutate(age = firstup(age))
 #####
 
 
@@ -1884,7 +1884,7 @@ ddatdo %>% mutate(pearson = residuals(doslopemod,type="pearson"),
 
 
 
-ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth.pdf"), width = 12, height =7)
+ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth2.pdf"), width = 12, height =7)
 
 
 #### SAVE MODEL ESTIMATES ####
