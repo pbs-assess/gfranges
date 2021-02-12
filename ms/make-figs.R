@@ -113,7 +113,8 @@ alldata200 <- alldata %>% filter(depth >= 200)
 # 
 # paste0("% temperature velocities") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # write_tex(signif(attributes(alldata$squashed_temp_vel_scaled)[[1]], digits = 2), "tempvelSD")
-# write_tex(signif(mean(abs(alldata$squashed_temp_vel)), digits = 3), "tempvelmean")
+# write_tex(signif(mean((alldata$squashed_temp_vel)), digits = 3), "tempvelmean")
+# write_tex(signif(mean(abs(alldata$squashed_temp_vel)), digits = 3), "tempvelmeanABS")
 # write_tex(signif(range(alldata$squashed_temp_vel)[[1]], digits = 2), "tempvelmin")
 # write_tex(signif(range(alldata$squashed_temp_vel)[[2]], digits = 2), "tempvelmax")
 # range_temp_vel <- range(alldata$squashed_temp_vel)[[2]]-range(alldata$squashed_temp_vel)[[1]]
@@ -122,7 +123,8 @@ alldata200 <- alldata %>% filter(depth >= 200)
 # 
 # paste0("% DO velocities") %>% readr::write_lines("ms/values.tex", append = TRUE)
 # write_tex(signif(attributes(alldata$squashed_DO_vel_scaled)[[1]], digits = 2), "DOvelSD")
-# write_tex(signif(mean(abs(alldata$squashed_DO_vel)), digits = 3), "DOvelmean")
+# write_tex(signif(mean((alldata$squashed_DO_vel)), digits = 3), "DOvelmean")
+# write_tex(signif(mean(abs(alldata$squashed_DO_vel)), digits = 3), "DOvelmeanABS")
 # write_tex(signif(range(alldata$squashed_DO_vel)[[1]], digits = 2), "DOvelmin")
 # write_tex(signif(range(alldata$squashed_DO_vel)[[2]], digits = 2), "DOvelmax")
 # range_DO_vel <- range(alldata$squashed_DO_vel)[[2]] - range(alldata$squashed_DO_vel)[[1]]
