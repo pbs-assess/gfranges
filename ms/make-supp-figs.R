@@ -1211,3 +1211,11 @@ ggplot(model_vel$data, aes(squashed_temp_vel, squashed_biotic_vel)) +
   geom_point(alpha=.2) + facet_wrap(~species_age)
 
 
+#### FISHING EFFORT ####
+fishing <- readRDS("data/_fishing_effort/fishing-effort-grid.rds")
+
+fishing_yr <- fishing %>% group_by(year) %>% summarise(total_hrs = sum(effort, na.rm = T), total_catch = sum(catch, na.rm = T)) %>% filter(year>2006)
+
+ggplot(data = fishing_yr) + geom_point(aes(year,total_catch)) + ylim(0,max(fishing_yr$total_catch)) + theme_bw()
+ggplot(data = fishing_yr) + geom_point(aes(year,total_hrs)) + ylim(0,max(fishing_yr$total_hrs))+ theme_bw()
+
