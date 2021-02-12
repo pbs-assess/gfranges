@@ -1075,9 +1075,9 @@ species_depth_profile <- function(species, immature = F, new_model = T){
   )
   pd$depth_scaled2 <- pd$depth_scaled^2
   if(immature){
-    try({p <- readRDS(here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-imm.rds"))) })
+   try({p <- readRDS(here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-imm.rds"))) })
   }else{
-    try({p <- readRDS(here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-new.rds"))) })
+   try({p <- readRDS(here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-new.rds"))) })
   }
   
 if(!exists("p")){
@@ -1101,13 +1101,13 @@ ggplot(filter(p, Depth >15 & year >2007),
   ymin = lowCI, 
   ymax = highCI, 
   group = as.factor(year), fill=year, colour = year)) +
+  geom_ribbon(alpha = 0.1, colour = NA) +
   geom_line(size = 0.5, alpha =0.85) +
   # geom_smooth(method= "loess", size = 0.4, alpha =0.85, se =F ) +
   # geom_smooth(span = 0.5, size = 0.4, alpha =0.85, se =F ) +
   scale_fill_viridis_c(option = "C") +
   scale_colour_viridis_c(option = "C") +
   # ylab("DO") +
-  geom_ribbon(alpha = 0.1, colour = NA) +
   # scale_x_reverse(limits = c(500,20)) +
   # coord_flip(ylim = c(0, max(p$Biomass))) +
   # scale_x_continuous(limits = c(18,210)) +
@@ -1128,7 +1128,7 @@ ggplot(filter(p, Depth >15 & year >2007),
     )
     pd$depth_scaled2 <- pd$depth_scaled^2
     
-    try({p <- readRDS(here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-old.rds"))) })
+   try({p <- readRDS(here::here(paste0("analysis/VOCC/data/depth-tv-", spp, "-old.rds"))) })
     
     if(!exists("p")){
       p <- predict(m, newdata = pd, se_fit = TRUE, re_form = NA, xy_cols = c("X", "Y"))
@@ -1142,6 +1142,7 @@ ggplot(filter(p, Depth >15 & year >2007),
     ggplot(filter(p, Depth >15 & year >2007), 
       aes(Depth, Biomass,
         group = as.factor(year), fill=year, colour = year)) +
+      geom_ribbon(alpha = 0.1, colour = NA) +
       geom_line(size = 0.5, alpha =0.85) +
       # geom_smooth(method= "loess", size = 0.4, alpha =0.85, se =F ) +
       # geom_smooth(span = 0.5, size = 0.4, alpha =0.85, se =F ) +
@@ -1158,9 +1159,8 @@ ggsave(here::here("ms", "figs", paste0("supp-tv-depth-", "redbanded-rockfish", "
 
 (dp <- species_depth_profile("Redbanded Rockfish", immature = T) + theme(legend.position = c(.2,.6)))
 
-(dp <- species_depth_profile("Lingcod", new_model = F) + theme(legend.position = c(.8,.6)))
-
-sdggsave(here::here("ms", "figs", paste0("supp-tv-depth-", "lingcod", "-100.png")), width = 4, height = 2.5)
+(dp <- species_depth_profile("Lingcod", new_model = T) + theme(legend.position = c(.8,.6)))
+ggsave(here::here("ms", "figs", paste0("supp-tv-depth-", "lingcod", "-new.png")), width = 4, height = 2.5)
 
 (dp <- species_depth_profile("Canary Rockfish", new_model = T) + 
   theme(legend.position = c(.8,.6)))
@@ -1202,4 +1202,12 @@ chopstick_slopes(model,
   )
 
 ggsave(here::here("ms", "figs", "supp-age-growth.pdf"), width = 5, height = 3.5)
+
+#### CORRELATIONS ####
+ggplot(model_vel$data, aes(temp_trend, biotic_trend)) + 
+  geom_point(alpha=.2) + facet_wrap(~species_age)
+
+ggplot(model_vel$data, aes(squashed_temp_vel, squashed_biotic_vel)) + 
+  geom_point(alpha=.2) + facet_wrap(~species_age)
+
 
