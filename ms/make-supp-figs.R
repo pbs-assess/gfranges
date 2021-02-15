@@ -1212,10 +1212,24 @@ ggplot(model_vel$data, aes(squashed_temp_vel, squashed_biotic_vel)) +
 
 
 #### FISHING EFFORT ####
-fishing <- readRDS("data/_fishing_effort/fishing-effort-grid.rds")
+fishing <- readRDS("data/_fishing_effort/fishing-effort-grid-all.rds")
 
-fishing_yr <- fishing %>% group_by(year) %>% summarise(total_hrs = sum(effort, na.rm = T), total_catch = sum(catch, na.rm = T)) %>% filter(year>2006)
+fishing_yr <- data %>% group_by(year) %>% summarise(
+  tot_trwl_effort = sum(trwl_effort, na.rm = T), tot_trwl_catch = sum(trwl_catch, na.rm = T),
+  tot_ll_effort = sum(ll_effort, na.rm = T), tot_ll_catch = sum(ll_catch, na.rm = T),
+  tot_catch = sum(tot_catch, na.rm = T)
+) %>% filter(year>2006)
 
-ggplot(data = fishing_yr) + geom_point(aes(year,total_catch)) + ylim(0,max(fishing_yr$total_catch)) + theme_bw()
-ggplot(data = fishing_yr) + geom_point(aes(year,total_hrs)) + ylim(0,max(fishing_yr$total_hrs))+ theme_bw()
+
+(max(fishing_yr$tot_trwl_catch)-min(fishing_yr$tot_trwl_catch))/max(fishing_yr$tot_trwl_catch)
+(max(fishing_yr$tot_ll_catch)-min(fishing_yr$tot_ll_catch))/max(fishing_yr$tot_ll_catch)
+
+ggplot(data = fishing_yr) + 
+  geom_point(aes(year,(tot_catch)))+ 
+  ylim(0,max(fishing_yr$tot_catch)) +
+  theme_bw()
+
+
+(max(fishing_yr$tot_catch)-min(fishing_yr$tot_catch))/max(fishing_yr$tot_catch)
+sum(fishing_yr$tot_ll_catch)/sum(fishing_yr$tot_catch)
 
