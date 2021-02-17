@@ -1175,6 +1175,11 @@ ggsave(here::here("ms", "figs", paste0("supp-tv-depth-", "english-sole", "-old.p
 ggsave(here::here("ms", "figs", paste0("supp-tv-depth-", "english-sole", "-new.png")), width = 4, height = 2.5)
 
 
+(dp3 <- species_depth_profile("Greenstriped Rockfish", new_model = F) + 
+    theme(legend.position = c(.8,.6)))
+ggsave(here::here("ms", "figs", paste0("supp-tv-depth-", "greenstriped-rockfish", "-new.png")), width = 4, height = 2.5)
+
+
 #### MEAN AGE AND GROWTH RATE ####
 chopstick_slopes(model,
   x_variable = "temp_trend_scaled",
@@ -1212,24 +1217,59 @@ ggplot(model_vel$data, aes(squashed_temp_vel, squashed_biotic_vel)) +
 
 
 #### FISHING EFFORT ####
-fishing <- readRDS("data/_fishing_effort/fishing-effort-grid-all.rds")
+fishing <- readRDS("analysis/VOCC/data/_fishing_effort/fishing-effort-grid-all.rds")
 
-fishing_yr <- data %>% group_by(year) %>% summarise(
-  tot_trwl_effort = sum(trwl_effort, na.rm = T), tot_trwl_catch = sum(trwl_catch, na.rm = T),
-  tot_ll_effort = sum(ll_effort, na.rm = T), tot_ll_catch = sum(ll_catch, na.rm = T),
-  tot_catch = sum(tot_catch, na.rm = T)
+fishing_yr <- fishing %>% group_by(year) %>% summarise(
+  tot_trwl_effort = sum(trwl_effort, na.rm = T)/1000, 
+  tot_trwl_catch = sum(trwl_catch, na.rm = T)/1000,
+  tot_ll_effort = sum(ll_effort, na.rm = T)/1000, 
+  tot_ll_catch = sum(ll_catch, na.rm = T)/1000,
+  tot_catch = sum(tot_catch, na.rm = T)/1000
 ) %>% filter(year>2006)
 
 
-(max(fishing_yr$tot_trwl_catch)-min(fishing_yr$tot_trwl_catch))/max(fishing_yr$tot_trwl_catch)
-(max(fishing_yr$tot_ll_catch)-min(fishing_yr$tot_ll_catch))/max(fishing_yr$tot_ll_catch)
+first_yrs <- filter(fishing_yr, year <2011) 
+last_yrs <- filter(fishing_yr, year >2016) 
+(mean(last_yrs$tot_trwl_catch)-mean(first_yrs$tot_trwl_catch))/mean(first_yrs$tot_trwl_catch)
+(mean(last_yrs$tot_ll_catch)-mean(first_yrs$tot_ll_catch))/mean(first_yrs$tot_ll_catch)
+(mean(last_yrs$tot_catch)-mean(first_yrs$tot_catch))/mean(first_yrs$tot_catch)
 
+
+# (max(fishing_yr$tot_trwl_catch)-min(fishing_yr$tot_trwl_catch))/max(fishing_yr$tot_trwl_catch)
+# (max(fishing_yr$tot_ll_catch)-min(fishing_yr$tot_ll_catch))/max(fishing_yr$tot_ll_catch)
+ 
 ggplot(data = fishing_yr) + 
   geom_point(aes(year,(tot_catch)))+ 
   ylim(0,max(fishing_yr$tot_catch)) +
   theme_bw()
 
+options(scipen=999)
 
-(max(fishing_yr$tot_catch)-min(fishing_yr$tot_catch))/max(fishing_yr$tot_catch)
-sum(fishing_yr$tot_ll_catch)/sum(fishing_yr$tot_catch)
+ggplot(data = fishing_yr) +
+  geom_line(aes(year,tot_trwl_catch))+
+  geom_line(aes(year,tot_ll_catch), colour="red")+
+  geom_line(data=first_yrs,aes(year,tot_trwl_catch), lwd=2)+
+  geom_line(data=last_yrs,aes(year,tot_trwl_catch), lwd=2)+
+  geom_line(data=first_yrs,aes(year,tot_ll_catch), colour="red", lwd=2)+
+  geom_line(data=last_yrs,aes(year,tot_ll_catch), colour="red", lwd=2)+
+  xlim(2007,2020) +
+  ylab("Total catch/1000") +
+  # ylim(0,(max(fishing_yr$tot_catch))) +
+  scale_y_continuous(
+    limits= c(1, max(fishing_yr$tot_catch)), 
+    breaks = seq(0, max(fishing_yr$tot_catch), by = 50000)
+    ) +
+  xlab("Year")+ 
+  annotate(geom="text", x=2016, y=190000, label="Trawl catch: -6%",
+    color="black")+
+  annotate(geom="text", x=2015.5, y=40000, label="Hook and line catch: -21%",
+    color="red")+
+  theme_bw() + theme(panel.grid.minor = element_line(
+    size = 0.2, linetype = 'solid',
+    colour = "grey"))
 
+ggsave(here::here("ms", "figs","commercial-catch.png"), 
+  width = 4, height = 3)
+
+# (max(fishing_yr$tot_catch)-min(fishing_yr$tot_catch))/max(fishing_yr$tot_catch)
+# sum(fishing_yr$tot_ll_catch)/sum(fishing_yr$tot_catch)

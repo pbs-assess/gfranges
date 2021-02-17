@@ -7,7 +7,7 @@ d <- gfdata::get_cpue_index("bottom trawl", min_cpue_year = 2004)
 saveRDS(d, file = "analysis/VOCC/data/_fishing_effort/fishing-effort.rds") # 2008:2018
 d <- readRDS("analysis/VOCC/data/_fishing_effort/fishing-effort.rds")
 
-d <- readRDS("analysis/VOCC/data/_fishing_effort/HookLine_raw.rds")
+# d <- readRDS("analysis/VOCC/data/_fishing_effort/HookLine_raw.rds")
 ## %>% filter(fishery_sector== "ROCKFISH INSIDE")
 unique(d$fishery_sector)
 
@@ -29,8 +29,8 @@ d <- d %>%
     longitude = mean(longitude, na.rm = T)
     ) 
 
-# d1 <- filter(d, effort <= 8 & year > 2007 & year < 2020) # 2019 effort caps here
-d1 <- filter(d, effort <= 60 & year > 2007 & year < 2020) # max 6 hours
+d1 <- filter(d, effort <= 8 & year > 2007 & year < 2020) # 2019 effort caps here
+# d1 <- filter(d, effort <= 60 & year > 2007 & year < 2020) # ll effort catch relationships fail here
 
 ggplot(d1, aes(effort, log(catch+1))) + 
   geom_point(alpha=0.2) + 
@@ -40,8 +40,8 @@ ggplot(d1, aes(effort, log(catch+1))) +
 median(d1$effort)
 mean(d1$effort)
  
-# d2 <- filter(d, effort > 8 & year > 2007 & year < 2020) # max 6 hours
-d2 <- filter(d, effort > 60 & effort < 200 & year > 2007 & year < 2020) # max 6 hours
+d2 <- filter(d, effort > 8 & year > 2007 & year < 2020) # trwl 
+# d2 <- filter(d, effort > 60 & effort < 200 & year > 2007 & year < 2020) # ll
 
 ggplot(d2, aes(effort, log(catch+1))) + 
   geom_point(alpha=0.2) + 
@@ -57,8 +57,8 @@ ggplot(d2, aes(effort, log(catch+1))) +
   # revised = if_else(effort > 6, "revised", "true"))
 
 # # Feb 2021: use median effort and change cutoff to 8 hrs
-# d <- d %>% mutate(effort8 = ifelse(effort > 8, median(d1$effort), effort))
-d <- d %>% mutate(effort60 = ifelse(effort > 60, median(d1$effort), effort))
+d <- d %>% mutate(effort8 = ifelse(effort > 8, median(d1$effort), effort))
+# d <- d %>% mutate(effort60 = ifelse(effort > 60, median(d1$effort), effort))
 
 d <- filter(d, year >2007 & year <2020) 
 d <- filter(d, latitude < 57) 
@@ -135,16 +135,16 @@ dat <- inner_join(d, grid)
 data <- dat %>% group_by(X, Y) %>% 
   mutate(
     effort = sum(effort), 
-    # effort8 = sum(effort8), # for trwl
-    effort60 = sum(effort60), # for ll
+    effort8 = sum(effort8), # for trwl
+    # effort60 = sum(effort60), # for ll
     # effort = sum(effort1), effort2 = sum(effort2), 
     catch = sum(catch)) %>% 
   select(-fishing_event_id) %>% 
   distinct() %>% 
-  filter(year < 2019) %>% 
+  # filter(year <= 2019) %>% 
   mutate(
-    # log_effort = log(effort8) # for trwl
-    log_effort = log(effort60) # for ll
+    log_effort = log(effort8) # for trwl
+    # log_effort = log(effort60) # for ll
     )
 
 # saveRDS(data, file = "analysis/VOCC/data/_fishing_effort/ll-fishing-effort-grid.rds")
