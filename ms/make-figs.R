@@ -1994,6 +1994,25 @@ model <- model_vel
 #   # add_global = F,
 #   model, "DO"))
 
+ygrob1 <- grid::textGrob((expression("Biotic velocity ("~italic("Y")~")")),
+  gp = grid::gpar(fontsize = 12),
+  hjust = 1, 
+  vjust = 0.85,
+  rot = 90
+)
+
+ygrob2 <- grid::textGrob((expression("Climate velocity ("~italic("x")~")")),
+  gp = grid::gpar(fontsize = 12), hjust = 1, 
+  vjust = 0.85, 
+  rot = 90
+)
+
+ygrob3 <- grid::textGrob(("Mean climate"),
+  gp = grid::gpar(fontsize = 12), hjust = 0.25, 
+  vjust = 0.85, 
+  rot = 90
+)
+
 layout <- "
       ADE
       BDE
