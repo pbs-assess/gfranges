@@ -55,9 +55,10 @@ plot_coefs <- function(coloured_coefs,
       select(!!grouping_taxa, Estimate) %>% rename(order = Estimate) 
     coloured_coefs <- left_join(coloured_coefs, order_values)
   }
+  # browser()
   coloured_coefs <- coloured_coefs %>% arrange(col_var)
   colour_list <- unique(coloured_coefs$colours)
-  coloured_coefs$group <- as.factor(coloured_coefs[[grouping_taxa]])
+  coloured_coefs$group <- as.factor(as.character(coloured_coefs[[grouping_taxa]]))
   
   if(grouping_taxa == "species_id") {
     # browser()
