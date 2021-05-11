@@ -18,6 +18,9 @@ library(scales) # Helps make polygons partly transparent using the alpha argumen
 library(tidyverse)
 library(gfplot)
 
+# need ggforce installed but not loaded to plot rounded corners on MCP
+# devtools::install_github("thomasp85/ggforce")
+
 # find major region boundaries ####
 # TODO: activate cropping within retrieval function
 load_boundaries <- function(#xlim_ll, ylim_ll, 
@@ -46,6 +49,12 @@ bound5ABnorth <- fortify(majorbound) %>%
 bound3CDnorth <- fortify(majorbound) %>% 
   filter(PID %in% c(3,4)) %>%  filter(X > 200 & X < 600 & Y > 5550)
 
+# 5CD = 7, 8
+bound5CD <- fortify(majorbound) %>% 
+  filter(PID %in% c(7,8)) 
+
+bound5CDwest <- fortify(majorbound) %>% 
+  filter(PID %in% c(8)) %>% filter(POS == 15 | POS == 14)
 
 # result of gfdata::get_cpue_spatial
 d_cpue <- readRDS("analysis/misc/data/longspine-thornyhead-cpue.rds")
@@ -154,7 +163,7 @@ ggsave("analysis/misc/mcp_CPUE_1996to2020.png", width = 7, height = 7)
 
 # Does survey data capture some areas not in the commercial data? ####
 # add in survey data by calculating an equivalent CPUE from catch_weight and duration_min cols
-d_surv <- readRDS("analysis/misc/data/event-data-longspine-thornyhead.rds") %>% mutate(
+d_surv <- readRDS("analysis/misc/data/longspine-thornyhead-survey-sets.rds") %>% mutate(
   cpue = catch_weight / (duration_min / 60)
 )
 
@@ -162,7 +171,9 @@ d_surv <- readRDS("analysis/misc/data/event-data-longspine-thornyhead.rds") %>% 
 # use fishing_event_id as dummy vessel_registration and duplicate dataframe to prevent survey data from being excluded by privacy filter
 
 d_surv1 <- tidy_survey_sets(d_surv, c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"),
-  c(2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019), # no data for 2020 yet
+  c(2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 
+    2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 
+    2019, 2020),
   utm_zone = 9,
   density_column = "cpue"
 ) %>%
@@ -233,13 +244,56 @@ plot_cpue_spatial(d_both,
     aes(X, Y), colour = "black", lty = 2, 
     inherit.aes = F
   ) +
-  annotate("text", x = 230, y = 5800, label = "5E") +
-  annotate("text", x = 230, y = 5650, label = "5AB") +
-  annotate("text", x = 230, y = 5550, label = "3CD") +
-  geom_polygon(
-    data = mcp2geo,
-    aes(X, Y), colour = "red", alpha = 0.01, inherit.aes = F
+  geom_line(
+    data = bound5CDwest,
+    aes(X, Y), colour = "black", lty = 2, 
+    inherit.aes = F
   ) +
+  annotate("text", x = 290, y = 5800, label = "5E") + # x = 230, y = 5800, 
+  annotate("text", x = 380, y = 5690, label = "5AB") + #x = 230, y = 5650,
+  annotate("text", x = 500, y = 5550, label = "3CD") + #x = 230, y = 5550,
+  annotate("text", x = 400, y = 5900, label = "5CD") + #x = 300, y = 6040
+  ggforce::geom_shape(
+    data = mcp2geo,
+    expand = unit(0.15, 'cm'),
+    radius = unit(1, 'cm'),
+    aes(X, Y), fill = NA, colour = "red", #size = 0.1,
+    inherit.aes = F
+    ) +
+  # and experiment with echoing a polygon to hide precise vertices
+  # remotes::install_github("coolbutuseless/ggecho")
+  # library(ggecho)
+  # # jittering polygons by both similar and different amounts should make it impossible to identify the true one
+  # geom_polygon(
+  #   data = mcp2geo,
+  #   stat = "echo", y_offset = 0, x_offset = 0, n = 1, size_increment = 0.1,
+  #   aes(X, Y), fill = NA, colour = "red", size = 0.01,
+  #   inherit.aes = F
+  # ) +
+  # geom_polygon(
+  #   data = mcp2geo, 
+  #   stat = "echo", y_offset = 1, x_offset = 1, n = 1, size_increment = 0.1, 
+  #   aes(X, Y), fill = NA, colour = "red", size = 0.01,
+  #   inherit.aes = F
+  # ) +
+  # geom_polygon(
+  #   data = mcp2geo,
+  #   stat = "echo", y_offset = 1, x_offset = -6, n = 1, size_increment = 0.1,
+  #   aes(X, Y), fill = NA, colour = "red", size = 0.01,
+  #   inherit.aes = F
+  # ) +
+  # geom_polygon(
+  #   data = mcp2geo,
+  #   stat = "echo", y_offset = -2, x_offset = -3, n = 1, size_increment = 0.1,
+  #   aes(X, Y), fill = NA, colour = "red", size = 0.01,
+  #   inherit.aes = F
+  # ) +
+  # geom_polygon(
+  #   data = mcp2geo,
+  #   stat = "echo", y_offset = 1, x_offset = -4, n = 1, size_increment = 0.1,
+  #   aes(X, Y), fill = NA, colour = "red", size = 0.01,
+  #   inherit.aes = F
+  # ) +
   theme(text = element_text(size = 14)) +
   ggtitle(paste(
     "MCP for 1996 through 2020 CPUE + surveys =",
@@ -247,7 +301,7 @@ plot_cpue_spatial(d_both,
   ), 
     subtitle = paste("Estimated area of occupancy", round(nrow(d_hex_b) * A), "km2"))
 
-ggsave("analysis/misc/mcp_CPUE_1996to2020_wSurvey.png", width = 7, height = 7)
-
+ggsave("analysis/misc/mcp_CPUE_1996to2020_wSurvey_rounded.png", width = 7, height = 7)
+# ggsave("analysis/misc/mcp_CPUE_1996to2020_wSurvey_private.png", width = 7, height = 7)
 
 
