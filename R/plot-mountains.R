@@ -15,6 +15,7 @@ plot_mountains <- function(dat,
   variable_label = "Depth", 
   xlimits = c(0, max(dat$x)), 
   x_breaks = waiver(),
+  peaklines = T,
   mountains_only = F
   ) {
 
@@ -41,7 +42,7 @@ plot_mountains <- function(dat,
     #edge_buffer <- rangex*ymax_trim_fact # @param ymax_trim_fact Proportion of extreme x values to exclude before setting ymax.
     #ymaximum <- max(dat$y_hat[dat$x > (min(dat$x)+edge_buffer) & dat$x < (max(dat$x)-edge_buffer )])
     
-    ggplot(dat, aes_string(x = "x", 
+  p <- ggplot(dat, aes_string(x = "x", 
       y="y_hat*10000",
       # ymax = "10*y_hat + year*mountain_scaler", ymin = "0 + year*mountain_scaler",
       # # ymax = "y_hat*mountain_scaler", ymin = "0",
@@ -49,16 +50,20 @@ plot_mountains <- function(dat,
     )) +
       # # geom_ribbon(lwd = 0.75, alpha = 0.01) +
       geom_line(lwd = 0.75, alpha = 0.8) +
-      geom_vline(aes_string(xintercept = "xintercept", group = "year", colour = "year"), linetype =2) +
       scale_y_continuous(limits = c(0, ymaximum*10000 )) +
       #scale_y_continuous(limits = c(0, median(dat$y_hat*100)*20)) +
       scale_x_continuous(expand = c(0,0), limits = xlimits, breaks = x_breaks) +
       xlab(variable_label) +
       scale_color_viridis_d(option = "C") +
       scale_fill_viridis_d(option = "C") +
-      ylab("Predicted density kg/ha ")+
+      ylab("Predicted density (kg/ha) ")+
       gfplot::theme_pbs() 
     
+    if(peaklines) {
+    p + geom_vline(aes_string(xintercept = "xintercept", 
+      group = "year", colour = "year"), linetype =2) 
+    }
+    p  
   } else {
     #browser()
     dat$year <- as.factor(dat$year)
@@ -73,7 +78,7 @@ plot_mountains <- function(dat,
       xlab(variable_label) +
       scale_color_viridis_d(option = "C") +
       scale_fill_viridis_d(option = "C") +
-      ylab("Predicted density kg/ha") +
+      ylab("Predicted density (kg/ha)") +
       gfplot::theme_pbs()
   }
 }
