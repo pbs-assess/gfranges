@@ -51,26 +51,26 @@ vocc_regression <- function(dat, y_i, X_ij,
   chop_cols <- c(
     which(interaction_column == colnames(X_pj)),
     which(main_effect_column == colnames(X_pj)))
-# browser()
+
   # if (outliers[1] > 0 || outliers[2] < 1) {
   #   y_i <- collapse_outliers(y_i, outliers = outliers)
   #   X_ij[,2] <- collapse_outliers(X_ij[,2], outliers = outliers)
   # }
 
-  # spde <- sdmTMB::make_mesh(dat, c("x", "y"), n_knots = knots, seed = setseed)
-  spde <- sdmTMB::make_spde(dat$x, dat$y, n_knots = knots, seed = setseed)
+  spde <- sdmTMB::make_mesh(dat, c("x", "y"), n_knots = knots, seed = setseed)
+  # spde <- sdmTMB::make_spde(dat$x, dat$y, n_knots = knots, seed = setseed)
   # map <- sdmTMB::plot(spde)
   # map
   
   n_s <- nrow(spde$mesh$loc)
   n_k <- length(unique(dat$species))
   n_m <- length(unique(dat$genus))
-
+# browser()
   data <- dat
   data$sdm_orig_id <- seq(1, nrow(data))
-  data$sdm_x <- spde$x
-  data$sdm_y <- spde$y
-  fake_data <- unique(data.frame(sdm_x = spde$x, sdm_y = spde$y))
+  data$sdm_x <- spde$loc_xy[,1]
+  data$sdm_y <- spde$loc_xy[,2]
+  fake_data <- unique(data.frame(sdm_x = spde$loc_xy[,1], sdm_y = spde$loc_xy[,2]))
   fake_data[["sdm_spatial_id"]] <- seq(1, nrow(fake_data))
   data <- base::merge(data, fake_data,
     by = c("sdm_x", "sdm_y"),

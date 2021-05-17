@@ -10,27 +10,24 @@ library(gfranges)
 
 # load meta analysis function
 run_meta_analysis <- function(
-  
   # required choices
   model_type, # primary model = "-vel-both"
   y_type, # = "vel"or "trend"
   knots, # trying 500 because increased sample size by 20%
   data_type, # current dataset in use = "all-95-optimized4"
-  
   # if null, make T and choose iteration
   is_null = FALSE,
   null_number = "-1", 
   no_chopsticks = FALSE, # make these T to speed up running nulls
   stop_after_DO = FALSE, # T is probably redundant if no_chopsticks T
-  
   # optional groupings of taxa--only one can be T at a time
   w_genus = FALSE,
   w_family = FALSE,
   w_higher_taxa = FALSE,
   w_group= FALSE,
   setseed = 42 # only changes mesh
-
-){ # collapse function here to load and run subsequent code  
+  ){ 
+  # collapse function here to load and run subsequent code  
   setwd(here::here("analysis", "VOCC"))
   compile("vocc_regression.cpp")
   dyn.load(dynlib("vocc_regression"))
@@ -140,7 +137,12 @@ run_meta_analysis <- function(
     d$genus <- d$mean_group
   }
   
-  d <- mutate(d, species_only = species, species = species_age, age_class = age, age = if_else(age_class == "mature", 0, 1))
+  d <- mutate(d, 
+    species_only = species, 
+    species = species_age, 
+    age_class = age, 
+    age = if_else(age_class == "mature", 0, 1)
+    )
 
   #### PREP FISH BIOMASS VARIABLES ####
   # range(d$mean_biomass)
@@ -193,7 +195,6 @@ run_meta_analysis <- function(
   d$squashed_fake_vel <- collapse_outliers(d$fake_vel, c(0.005, 0.98))
   hist(d$squashed_fake_vel)
   
-  
   hist(abs(d$dvocc_both), breaks = 100)
   d$dvocc_both_scaled <- scale(d$dvocc_both, center = FALSE)
   hist(abs(d$dvocc_both_scaled), breaks = 100)
@@ -210,7 +211,6 @@ run_meta_analysis <- function(
   temp_chopstick <- F
   DO_chopstick <- F
   fishing_chopstick <- F
-  
   
   if (model_type == "-trend") {
     formula <- ~ temp_trend_scaled +
@@ -248,7 +248,7 @@ run_meta_analysis <- function(
   }
   
   ############################
-  ### TREND DO INTERACTIONS ####
+  #### TREND DO INTERACTIONS ####
   
   if (model_type == "-trend-with-do") {
     formula <- ~ temp_trend_scaled +
@@ -479,6 +479,7 @@ run_meta_analysis <- function(
     fishing_chopstick <- F
     x_type <- "vel"
   }
+  
   #### VEL with age effects
   if (model_type == "-vel-w-age") {
     formula <- ~ age +
@@ -530,7 +531,7 @@ run_meta_analysis <- function(
   
   
   ############################
-  ### DVOCC ####
+  #### DVOCC ####
   if (model_type == "-dist-vel-temp") {
     formula <- ~ squashed_temp_dvocc_scaled +
       mean_temp_scaled +
@@ -579,9 +580,26 @@ run_meta_analysis <- function(
     x_type <- "dvocc"
   }
   
-  ############################
-  #### 
-  ############################
+  ################################
+  ####  TREND from VELOCITIEs ####
+  if (model_type == "-trend-by-vel") {
+    formula <- ~ squashed_temp_vel_scaled +
+      squashed_DO_vel_scaled +
+      mean_temp_scaled +
+      squashed_temp_vel_scaled:mean_temp_scaled +
+      mean_DO_scaled +
+      squashed_DO_vel_scaled:mean_DO_scaled +
+      # log_catch_scaled +
+      # log_effort_scaled +
+      log_biomass_scaled
+    
+    x <- model.matrix(formula, data = d)
+    
+    temp_chopstick <- T
+    DO_chopstick <- T
+    x_type <- "vel"
+  }
+  
   if (no_chopsticks) {
     temp_chopstick <- F
     DO_chopstick <- T
@@ -796,7 +814,7 @@ run_meta_analysis <- function(
           )
         }
       } else {
-        if (y_type == "trend") {
+        if (y_type == "vel") {
           #### biotic velocity (uses student_t)
           if (is_null) {
             y <- d$squashed_fake_vel
@@ -1006,6 +1024,7 @@ run_meta_analysis <- function(
       }
     }
   }
+  
     date <- format(Sys.time(), "-%m-%d")
     saveRDS(new_model, file = paste0("data/", y_type, "-", data_type, 
       date, model_type, null_lab, null_number, "-", knots, ".rds"))
@@ -1028,6 +1047,17 @@ max(model$sdr$gradient.fixed)
 
 # run each version of the following in a fresh R session with the above lines reloaded
 
+
+
+### trend by vel
+run_meta_analysis(
+    model_type = "-trend-by-vel", 
+    y_type = "trend",
+    knots = 600, # 400 & 600 work, failed to converg with 500 & 700
+    data_type = "all-95-optimized4"
+  )
+  
+  
 # # main model
 # run_meta_analysis(
 #   model_type = "-vel-both", 
