@@ -29,6 +29,7 @@ model_vel <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-28-
 # model_vel <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-29-vel-both-1-700-DO.rds")) # not converged
 max(model_vel$sdr$gradient.fixed)
 
+
 # model <- model_trend
 # model <- model_vel
 
@@ -36,15 +37,17 @@ max(model_vel$sdr$gradient.fixed)
 # max(model_fish$sdr$gradient.fixed)
 
 # stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav.rds"))
-stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth2.rds")) %>% mutate(age = firstup(age))
+stats <- readRDS(here::here("analysis/VOCC/data/life-history-behav-new-growth3.rds")) %>% mutate(age = firstup(age))
 #########################
 #########################
 ### COEF PLOTS OF MAIN AND NULL MODELS ####
 # need stats with lowercase age for now
-stats <- readRDS(paste0("analysis/VOCC/data/life-history-behav-new-growth2.rds"))
+stats <- readRDS(here::here("analysis/VOCC/data/life-history-behav-new-growth3.rds"))
 model <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-11-30-trend-with-do-1-600.rds"))
 model <- readRDS(here::here("analysis/VOCC/data/vel-all-95-optimized4-11-28-vel-both-1-600.rds"))
 model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-12-01-vel-both-group-1-600-DO.rds") # with groups
+
+model <- readRDS(here::here("analysis/VOCC/data/trend-all-95-optimized4-03-01-trend-by-vel-1-600.rds"))
 
 # 
 ## nulls that are currently illustrated
@@ -54,9 +57,10 @@ model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-12-01-vel-both-group-
 # model <- readRDS("analysis/VOCC/data/vel-all-95-optimized4-11-29-vel-both-sim-6-600.rds")
 model2 <- add_colours(model$coefs, col_var = "mean_group")
 model2$species[model2$species == "Rougheye/Blackspotted Rockfish Complex"] <- "Rougheye/Blackspotted"
-(p <- plot_coefs(model2, grouping_taxa = "species_id", grid_facets = T, fixed_scales = F, 
+(p <- plot_coefs(model2, grouping_taxa = "species_id", 
+  grid_facets = T, fixed_scales = F, 
   # order_by = "Intercept"
-  order_by = "temp_vel"
+  order_by = "temp_vel:temp"
 ))
 # colorblindr::cvd_grid(p)
 # ggsave(here::here("ms", "figs", "supp-all-vel-coefs.pdf"), width = 12.5, height = 8.5)
@@ -547,7 +551,8 @@ cowplot::plot_grid(p1, p2, rel_widths = c(1, 2.5))
 ggsave(here::here("ms", "figs", "supp-trend-chopsticks-temp-grad.pdf"), width = 14, height = 5.5)
 
 ### ALL VELOCITY CHOPS ####
-
+# # if using vel to predict trends
+# model_vel <- model_trend
 
 temp_vel_slopes <- chopstick_slopes(model_vel,
   x_variable = "squashed_temp_vel_scaled",
@@ -575,9 +580,21 @@ do_vel_slopes <- left_join(do_vel_slopes, stats)
   y_label = "Predicted mature biomass vel",
   # order_by_chops = NULL,
   slopes = temp_vel_slopes # if add, the global slope can be included for insig
-) + coord_cartesian(xlim = c(-0.25, 4), ylim = c(-30, 37)) +
+) + coord_cartesian(xlim = c(-0.25, 4), ylim = c(-30, 37)
+  ) +
   xlab("Temperature velocity (scaled)") + theme(legend.position = "none")
 )
+
+# # if using vel to predict trends
+# (p_temp_vel_chops <- plot_fuzzy_chopsticks(model_vel,
+#   x_variable = "squashed_temp_vel_scaled", type = "temp",
+#   # x_variable = "squashed_temp_dvocc_scaled", type = "temp",
+#   y_label = "Predicted % change in mature biomass",
+#   # order_by_chops = NULL,
+#   slopes = temp_vel_slopes # if add, the global slope can be included for insig
+# ) + coord_cartesian(xlim = c(-0.25, 4), ylim = c(-5, 5)) +
+#     xlab("Temperature velocity (scaled)") + theme(legend.position = "none")
+# )
 
 p_do_vel_chops <- plot_fuzzy_chopsticks(model_vel,
   x_variable = "squashed_DO_vel_scaled", type = "DO",
@@ -1219,11 +1236,25 @@ ggplot(model_vel$data, aes(squashed_temp_vel, squashed_biotic_vel)) +
 #### FISHING EFFORT ####
 fishing <- readRDS("analysis/VOCC/data/_fishing_effort/fishing-effort-grid-all.rds")
 
+# grid <- readRDS("prediction-grids/overall-grid.rds")
+# original_time <- sort(unique(fishing$year))
+# nd <- do.call(
+#   "rbind",
+#   replicate(length(original_time), grid, simplify = FALSE)
+# )
+# nd[["year"]] <- rep(original_time, each = nrow(grid))
+# fishing <- left_join(nd, fishing) 
+# fishing[is.na(fishing)] <- 0
+
 fishing_yr <- fishing %>% group_by(year) %>% summarise(
+  fished_cells = n(),
   tot_trwl_effort = sum(trwl_effort, na.rm = T)/1000, 
   tot_trwl_catch = sum(trwl_catch, na.rm = T)/1000,
   tot_ll_effort = sum(ll_effort, na.rm = T)/1000, 
   tot_ll_catch = sum(ll_catch, na.rm = T)/1000,
+  med_trwl_catch = median(trwl_catch, na.rm = T),
+  mean_trwl_catch = mean(trwl_catch, na.rm = T),
+  mean_ll_catch = mean(ll_catch, na.rm = T),
   tot_catch = sum(tot_catch, na.rm = T)/1000
 ) %>% filter(year>2006)
 
@@ -1268,8 +1299,40 @@ ggplot(data = fishing_yr) +
     size = 0.2, linetype = 'solid',
     colour = "grey"))
 
-ggsave(here::here("ms", "figs","commercial-catch.png"), 
-  width = 4, height = 3)
+# ggsave(here::here("ms", "figs","commercial-catch.png"), 
+  # width = 4, height = 3)
+
+
+ggplot(data = fishing_yr) +
+  geom_line(aes(year,mean_trwl_catch))+
+  geom_line(aes(year,med_trwl_catch))+
+  geom_line(aes(year,mean_ll_catch), colour="red")+
+  geom_line(data=first_yrs,aes(year,med_trwl_catch), lwd=2)+
+  geom_line(data=last_yrs,aes(year,med_trwl_catch), lwd=2)+
+  geom_line(data=first_yrs,aes(year,mean_trwl_catch), lwd=2)+
+  geom_line(data=last_yrs,aes(year,mean_trwl_catch), lwd=2)+
+  geom_line(data=first_yrs,aes(year,mean_ll_catch), colour="red", lwd=2)+
+  geom_line(data=last_yrs,aes(year,mean_ll_catch), colour="red", lwd=2)+
+  xlim(2007,2020) +
+  ylab("Annual catch per grid cell") +
+  # ylim(0,(max(fishing_yr$med_catch))) +
+  scale_y_continuous(
+    # breaks = seq(0, max(fishing_yr$med_trwl_catch), by = 50000),
+    limits= c(1, max(fishing_yr$mean_trwl_catch))
+  ) +
+  xlab("Year")+ 
+  annotate(geom="text", x=2010, y=140000, label="Mean trawl catch",
+    color="black")+
+  annotate(geom="text", x=2010, y=70000, label="Median trawl catch",
+    color="black")+
+  annotate(geom="text", x=2015.5, y=30000, label="Mean hook and line catch",
+    color="red")+
+  theme_bw() + theme(panel.grid.minor = element_line(
+    size = 0.01, linetype = 'solid',
+    colour = "lightgrey"))
+
+ggsave(here::here("ms", "figs","commercial-catch-per-cell.png"),
+width = 4, height = 3)
 
 # (max(fishing_yr$tot_catch)-min(fishing_yr$tot_catch))/max(fishing_yr$tot_catch)
 # sum(fishing_yr$tot_ll_catch)/sum(fishing_yr$tot_catch)

@@ -166,15 +166,15 @@ data <- left_join(trwl, ll) %>% mutate(
   tot_catch = trwl_catch + ll_catch
   )
 
-saveRDS(data, file = "analysis/VOCC/data/_fishing_effort/fishing-effort-grid-all.rds")
+# saveRDS(data, file = "analysis/VOCC/data/_fishing_effort/fishing-effort-grid-all.rds")
 
-ggplot(data, aes(X,Y, colour=log(trwl_catch+1))) +
-  geom_point(shape=20, alpha=0.2) +
-  scale_colour_viridis_c() +
+ggplot(data, aes(X,Y, colour=(trwl_catch))) +
+  geom_tile() +
+  scale_colour_viridis_c(trans=fourth_root_power) +
   facet_wrap(~year)
 
 ggplot(data, aes(X,Y, colour=log(ll_catch+1))) +
-  geom_point(shape=20, alpha=0.2) +
+  geom_tile() +
   scale_colour_viridis_c() +
   facet_wrap(~year)
 
