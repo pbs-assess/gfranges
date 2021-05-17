@@ -50,12 +50,12 @@ plot_mountains <- function(dat,
     )) +
       # # geom_ribbon(lwd = 0.75, alpha = 0.01) +
       geom_line(lwd = 0.75, alpha = 0.8) +
-      scale_y_continuous(limits = c(0, ymaximum*10000 )) +
+      scale_y_continuous(expand = c(0,0), limits = c(0, ymaximum*10000 + ymaximum*500 )) +
       #scale_y_continuous(limits = c(0, median(dat$y_hat*100)*20)) +
       scale_x_continuous(expand = c(0,0), limits = xlimits, breaks = x_breaks) +
       xlab(variable_label) +
-      scale_color_viridis_d(option = "C") +
-      scale_fill_viridis_d(option = "C") +
+      scale_color_viridis_d(name= "Year", option = "C") +
+      scale_fill_viridis_d(name= "Year", option = "C") +
       ylab("Predicted density (kg/ha) ")+
       gfplot::theme_pbs() 
     
@@ -76,8 +76,8 @@ plot_mountains <- function(dat,
       #scale_y_continuous(expand = c(0,0), limits = c(0, max(dat$y_hat)*110)) +
       #scale_x_continuous(expand = c(0,0)) +
       xlab(variable_label) +
-      scale_color_viridis_d(option = "C") +
-      scale_fill_viridis_d(option = "C") +
+      scale_color_viridis_d(name= "Year", option = "C") +
+      scale_fill_viridis_d(name= "Year", option = "C") +
       ylab("Predicted density (kg/ha)") +
       gfplot::theme_pbs()
   }
