@@ -52,6 +52,7 @@ list_species <- c(
   "Pacific Halibut"
 )
 
+
 # updated
 list_species <- c(
   # "Longnose Skate",
@@ -64,8 +65,7 @@ list_species <- c(
 )
 
 
-  
-setwd(here::here("/analysis/VOCC"))
+setwd(here::here("analysis/VOCC/"))
 library("gfranges")
 library(tidyverse)
 
@@ -120,6 +120,7 @@ for (i in seq_len(length(depth_model_list))) {
 }
 }
 
-pdf(paste0("all-depth-plots.pdf"))
+# pdf(paste0("all-depth-plots.pdf"))
 depth_plots
-dev.off()
+# dev.off()
+
