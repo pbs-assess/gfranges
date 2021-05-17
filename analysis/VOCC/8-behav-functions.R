@@ -915,7 +915,7 @@ p
        vpd_depth_iqr , vpd_log_age #, vpd_growth_rate
        ) + plot_layout(design = layout, widths = c(0.05, 1, 1, 1, 1))
      
-     ggsave(here::here("ms", "figs", "depth-age-models-vel.png"), width = 6.5, height = 6) 
+     # ggsave(here::here("ms", "figs", "depth-age-models-vel.png"), width = 6.5, height = 6) 
      
      
      
@@ -1884,83 +1884,83 @@ ddatdo %>% mutate(pearson = residuals(doslopemod,type="pearson"),
 
 
 
-ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth2.pdf"), width = 12, height =7)
+ggsave(here::here("ms", "figs", "ecology-slope-model-vel-interact-mean-depth3.pdf"), width = 12, height =7)
 
 
 #### SAVE MODEL ESTIMATES ####
-# write_tex <- function(x, macro, ...) {
-#   paste0("\\newcommand{\\", macro, "}{", x, "}") %>%
-#     readr::write_lines("ms/values.tex", append = TRUE)
-# }
-# decimalplaces <- function(x) {
-#   if ((x - round(x)) != 0) {
-#     strs <- strsplit(as.character(format(x, scientific = F)), "\\.")
-#     n <- nchar(strs[[1]][2])
-#   } else {
-#     n <- 0
-#   }
-#   return(n)
-# }
-# 
-# efsize<-function(rtable,row){
-#   betas<-signif(rtable$coefficients[row,1], 2)
-#   betas<-ifelse(abs(betas)<10,
-#     formatC(signif(betas,2), digits=2, format="fg", flag="#"),
-#     round(betas))
-#   betas2 <- as.numeric(betas)
-#   decicount <- ifelse(betas2>1 & betas2 <10, 1, decimalplaces(betas2))
-#   se<-rtable$coefficients[row,2]
-#   cil<-rtable$coefficients[row,1]-1.96*se
-#   cil<-format(round(cil, digits=decicount), scientific=F)
-#   cih<-rtable$coefficients[row,1]+1.96*se
-#   cih<-format(round(cih, digits=decicount), scientific=F)
-#   return(paste0(betas,", ",cil," to ",cih))
-# }
-# 
-# 
-# paste0("% life history model effect sizes") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# 
-# write_tex(efsize(tdepth, 2), "Ltempdepth")
-# write_tex(efsize(tiqr, 2), "Ltempiqr")
-# write_tex(efsize(tage, 2), "Ltempage")
-# write_tex(efsize(dodepth, 2), "Ldodepth")
-# write_tex(efsize(doiqr, 2), "Ldoiqr")
-# write_tex(efsize(doage, 2), "Ldoage")
+write_tex <- function(x, macro, ...) {
+  paste0("\\newcommand{\\", macro, "}{", x, "}") %>%
+    readr::write_lines("ms/values.tex", append = TRUE)
+}
+decimalplaces <- function(x) {
+  if ((x - round(x)) != 0) {
+    strs <- strsplit(as.character(format(x, scientific = F)), "\\.")
+    n <- nchar(strs[[1]][2])
+  } else {
+    n <- 0
+  }
+  return(n)
+}
 
-# paste0("% ecology model effect sizes") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# paste0("% sig main effects and interactions") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# 
+efsize<-function(rtable,row){
+  betas<-signif(rtable$coefficients[row,1], 2)
+  betas<-ifelse(abs(betas)<10,
+    formatC(signif(betas,2), digits=2, format="fg", flag="#"),
+    round(betas))
+  betas2 <- as.numeric(betas)
+  decicount <- ifelse(betas2>1 & betas2 <10, 1, decimalplaces(betas2))
+  se<-rtable$coefficients[row,2]
+  cil<-rtable$coefficients[row,1]-1.96*se
+  cil<-format(round(cil, digits=decicount), scientific=F)
+  cih<-rtable$coefficients[row,1]+1.96*se
+  cih<-format(round(cih, digits=decicount), scientific=F)
+  return(paste0(betas,", ",cil," to ",cih))
+}
 
-# paste0("% interaction shows effect more at deepest depths") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(efsize(zonemod, 2), "tempZone")
-# write_tex(efsize(zonemod, 3), "Tmbentho")
-# write_tex(efsize(zonemod, 5), "TZoneX")
-# # \newcommand{\tempTroph}{-0.91, -1.4 to -0.43}
-# # \newcommand{\tempZone}{0.75, 0.23 to 1.26}
-# paste0("% interaction shows effect only at deepest depths") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# 
-# 
-# write_tex(efsize(dotrophmod, 1), "DOlotroph")
-# write_tex(efsize(dotrophmod, 2), "DOhitroph")
-# write_tex(efsize(dotrophmod, 3), "DOmhitroph")
-# write_tex(efsize(dotrophmod, 5), "DOtrophX")
-# # \newcommand{\DOtroph}{0.33, -0.16 to 0.81}
-# # \newcommand{\DOtrophX}{0.65, 0.11 to 1.18}
 
-# paste0("% sig main effects only") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(efsize(trophmod, 2), "tempTroph")
-# write_tex(efsize(dozonemod, 2), "DOzone")
-# write_tex(efsize(dosocmod, 2), "DOsociality")
-# # \newcommand{\DOzone}{-0.60, -1.1 to -0.1}
-# # \newcommand{\DOsociality}{-0.66, -1.22 to -0.1}
-# paste0("% none significant") %>% readr::write_lines("ms/values.tex", append = TRUE)
-# write_tex(efsize(latmod, 2), "tempRange")
-# write_tex(efsize(socmod, 2), "tempSociality")
-# write_tex(efsize(dolatmod, 2), "DOrange")
-# # \newcommand{\tempRange}{0.50, -0.1 to 1.1}
-# # \newcommand{\tempSociality}{0.38, -0.24 to 1}
-# # \newcommand{\DOrange}{-0.48, -1.07 to 0.12}
-# 
+paste0("% life history model effect sizes") %>% readr::write_lines("ms/values.tex", append = TRUE)
+
+write_tex(efsize(tdepth, 2), "Ltempdepth")
+write_tex(efsize(tiqr, 2), "Ltempiqr")
+write_tex(efsize(tage, 2), "Ltempage")
+write_tex(efsize(dodepth, 2), "Ldodepth")
+write_tex(efsize(doiqr, 2), "Ldoiqr")
+write_tex(efsize(doage, 2), "Ldoage")
+
+paste0("% ecology model effect sizes") %>% readr::write_lines("ms/values.tex", append = TRUE)
+paste0("% sig main effects and interactions") %>% readr::write_lines("ms/values.tex", append = TRUE)
+#
+
+paste0("% interaction shows effect more at deepest depths") %>% readr::write_lines("ms/values.tex", append = TRUE)
+write_tex(efsize(zonemod, 2), "tempZone")
+write_tex(efsize(zonemod, 3), "Tmbentho")
+write_tex(efsize(zonemod, 5), "TZoneX")
+# \newcommand{\tempTroph}{-0.91, -1.4 to -0.43}
+# \newcommand{\tempZone}{0.75, 0.23 to 1.26}
+paste0("% interaction shows effect only at deepest depths") %>% readr::write_lines("ms/values.tex", append = TRUE)
+
+
+write_tex(efsize(dotrophmod, 1), "DOlotroph")
+write_tex(efsize(dotrophmod, 2), "DOhitroph")
+write_tex(efsize(dotrophmod, 3), "DOmhitroph")
+write_tex(efsize(dotrophmod, 5), "DOtrophX")
+# \newcommand{\DOtroph}{0.33, -0.16 to 0.81}
+# \newcommand{\DOtrophX}{0.65, 0.11 to 1.18}
+
+paste0("% sig main effects only") %>% readr::write_lines("ms/values.tex", append = TRUE)
+write_tex(efsize(trophmod, 2), "tempTroph")
+write_tex(efsize(dozonemod, 2), "DOzone")
+write_tex(efsize(dosocmod, 2), "DOsociality")
+# \newcommand{\DOzone}{-0.60, -1.1 to -0.1}
+# \newcommand{\DOsociality}{-0.66, -1.22 to -0.1}
+paste0("% none significant") %>% readr::write_lines("ms/values.tex", append = TRUE)
+write_tex(efsize(latmod, 2), "tempRange")
+write_tex(efsize(socmod, 2), "tempSociality")
+write_tex(efsize(dolatmod, 2), "DOrange")
+# \newcommand{\tempRange}{0.50, -0.1 to 1.1}
+# \newcommand{\tempSociality}{0.38, -0.24 to 1}
+# \newcommand{\DOrange}{-0.48, -1.07 to 0.12}
+
 
 
 ##### effect code for factors or without interactions #####
