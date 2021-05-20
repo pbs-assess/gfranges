@@ -1,0 +1,905 @@
+---
+title: "outside yelloweye"
+author: "Philina English"
+date: "18/05/2021"
+output: html_document
+---
+
+```{r}
+# setwd(here::here()) # for RStudio Jobs
+library(dplyr)
+library(ggplot2)
+library(sdmTMB)
+# devtools::install_github("seananderson/ggsidekick")
+library(ggsidekick) # for fourth_root_power_trans
+theme_set(ggsidekick::theme_sleek())
+
+# data <- gfdata::get_ll_hook_data("Yelloweye Rockfish", ssid = c(36))
+# 
+# d1 <- gfdata::get_survey_sets("Yelloweye Rockfish", ssid = c(36))
+
+```
+
+```{r}
+convert2utm <- function(df, coords = c("X", "Y"), out_crs = 3156) {
+  x <- sf::st_as_sf(df,
+    coords = coords, crs = 4326
+  ) %>%
+    sf::st_transform(crs = out_crs) %>%
+    sf::st_coordinates() %>%
+    as.data.frame()
+  x$X <- x$X / 100000
+  x$Y <- x$Y / 100000
+  dplyr::bind_cols(x,
+    df[, which(!names(df) %in% coords), drop = FALSE])
+}
+
+expand_prediction_grid <- function(grid, years) {
+  nd <- do.call("rbind",
+    replicate(length(years), grid, simplify = FALSE))
+  nd[["year"]] <- rep(years, each = nrow(grid))
+  nd
+}
+```
+
+Model diagnostics function
+```{r}
+get_diag <- function(m, response = "catch_count", variable = "depth_scaled", colour_var = "depth_m", start_year = 2007) {
+  predictions <- predict(m)
+  predictions$residuals <- residuals(m)
+  
+  predictions <- predictions %>% filter (year >= start_year)
+  predictions$est_exp <- exp(predictions$est)
+
+  print("R^2:")
+  r2 <- cor(predictions$est, predictions[[response]])^2
+  print(r2)
+
+  print("")
+  print("AIC:")
+  print(AIC(m))
+
+  print("")
+  print("MSE:")
+  print(mean(predictions$residuals^2))
+  
+  plot_map <- function(dat, column = "est") {
+    ggplot(dat, aes_string("X", "Y", colour = column)) +
+      geom_point(alpha = 0.25) +
+      coord_fixed()+
+      gfplot::theme_pbs() 
+  }
+
+  g <- plot_map(predictions, "est") +
+    scale_colour_viridis_c() +
+    ggtitle("Prediction (fixed effects + all random effects)")
+  print(g)
+
+  # g <- plot_map(predictions, "est_non_rf") +
+  #   ggtitle("Prediction (fixed effects only)") +
+  #   scale_colour_viridis_c()
+  # print(g)
+# 
+#   g <- plot_map(predictions, "est_rf") +
+#     ggtitle("All random effects only") +
+#     scale_colour_gradient2()
+#   print(g)
+
+  g <- plot_map(predictions, "omega_s") +
+    ggtitle("Spatial random effects only") +
+    scale_colour_gradient2()
+  print(g)
+
+  g <- plot_map(predictions, "epsilon_st") +
+    ggtitle("Spatiotemporal random effects only") +
+    facet_wrap(~year) +
+    scale_colour_gradient2()
+  print(g)
+
+  g <- plot_map(predictions, "residuals") +
+    ggtitle("Residuals") +
+    facet_wrap(~year) +
+    scale_colour_gradient2()
+  print(g)
+  
+  g <- ggplot(predictions, aes_string("est_exp", response)) +
+    geom_point(alpha = 0.2) +
+    facet_wrap(~year) +
+    coord_fixed() +
+    geom_abline()+
+    gfplot::theme_pbs() 
+  print(g)
+
+  g <- ggplot(predictions, aes(est, residuals)) +
+    geom_point(alpha = 0.2) +
+    geom_smooth()+
+    gfplot::theme_pbs() 
+  print(g)
+  
+  g <- ggplot(predictions, aes_string(variable, "residuals", colour = colour_var)) +
+    geom_point(alpha = 0.4, size = 1.2) +
+    geom_smooth(colour="grey", size = 1.2) +
+    scale_colour_viridis_c(option = "B", direction = -1, begin = 0, end = 0.7, 
+      limits= c(min(predictions[colour_var]), max(predictions[colour_var]))) + #, trans= sqrt
+    # facet_wrap(~year, scales = "free_x")+
+    gfplot::theme_pbs() + theme(
+      axis.text.y = element_text(size = 14),
+      axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  print(g)
+  
+  g <- ggplot(predictions, aes_string(variable, "residuals", colour = colour_var)) +
+    geom_point(alpha = 0.4, size = 0.7) +
+    geom_smooth(colour="grey", size = 0.7) +
+    scale_colour_viridis_c(option = "B", direction = -1, begin = 0, end = 0.7, 
+      limits= c(min(predictions[colour_var]), max(predictions[colour_var]))) + #, trans= sqrt
+    facet_wrap(~year, scales = "free_x")+
+    gfplot::theme_pbs() + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  print(g)
+
+}
+```
+
+# combine event and hook data if not done already
+```{r}
+hook_adjusted_data <- "data-generated/yelloweye_hook_adjusted_36.rds"
+if (!file.exists(hook_adjusted_data)) {
+data <- readRDS("data/yelloweye-rockfish-hook-dat36.rds")
+d1 <- readRDS("data/yelloweye-rockfish-surv-sets.rds") %>% filter(survey_abbrev=="HBLL OUT S")
+
+# the following code should deal with the issue of 0 baited hooks being observed.
+adjust <- data %>%
+  group_by(year, fishing_event_id) %>%
+  mutate(total_hooks = count_target_species + count_non_target_species +
+    count_bait_only + count_empty_hooks - count_bent_broken) %>%
+  mutate(count_bait_only = replace(count_bait_only, which(count_bait_only == 0), 1)) %>%
+  mutate(prop_bait_hooks = count_bait_only / total_hooks) %>%
+  mutate(hook_adjust_factor = -log(prop_bait_hooks) / (1 - prop_bait_hooks)) %>%
+  mutate(expected_catch = round(count_target_species * hook_adjust_factor))
+
+# find out which events are in hook data but not set data:
+setdiff(data$fishing_event_id, d1$fishing_event_id)
+
+hook_adjusted_data <- left_join(d1, adjust, by = c("fishing_event_id", "year"))
+
+saveRDS(hook_adjusted_data, file = "data-generated/yelloweye_hook_adjusted_36.rds")
+}
+```
+
+# add block ids and offsets
+```{r}
+f <- "data-generated/yelloweye-rockfish-surv-36-blocks.rds"
+if (file.exists(f)) {
+  d <- readRDS(f)
+} else {
+d <- readRDS("data/yelloweye-rockfish-surv-sets.rds") %>% filter(survey_abbrev=="HBLL OUT S")
+  block_ids <- readRDS("data/survey-blocks-36.rds") 
+  d <- dplyr::left_join(d, block_ids)
+  d$block_designation <- as.numeric(d$block_designation)
+  saveRDS(d, file = "data-generated/yelloweye-rockfish-surv-36-blocks.rds")
+}
+
+hook <- readRDS("data-generated/yelloweye_hook_adjusted_36.rds") %>%
+  select(
+    survey_series_id, year, fishing_event_id, total_hooks, prop_bait_hooks,
+    hook_adjust_factor, expected_catch
+  )
+
+d <- left_join(d, hook, by = c("survey_series_id", "year", "fishing_event_id"))
+
+d <- d %>%
+  select(
+    survey_abbrev, year, longitude, latitude, catch_count, hook_count,
+    grouping_code, depth_m, block_designation, hook_adjust_factor, prop_bait_hooks
+  ) %>% mutate(lon = longitude, lat = latitude) %>%
+  rename(survey = survey_abbrev, block = block_designation)
+
+# hb <- readRDS("data/halibut-surv-sets.rds") %>% filter(survey_abbrev=="HBLL OUT S")
+
+d_utm <- convert2utm(d, coords = c("lon", "lat"))
+d_utm <- filter(d_utm, grouping_code > 270 & grouping_code < 330) # not all part of survey
+
+load("data/hbll_s_grid.rda")
+
+d_utm$depth_log <- log(d_utm$depth_m)
+d_utm$depth_centred <- d_utm$depth_log - mean(d_utm$depth_log)
+d_utm$depth_mean <- mean(d_utm$depth_log)
+d_utm$depth_sd <- sd(d_utm$depth_centred)
+d_utm$depth_scaled <- d_utm$depth_centred / sd(d_utm$depth_centred)
+d_utm$Y_cent <- d_utm$Y - mean(d_utm$Y)
+d_utm$X_cent <- d_utm$X - mean(d_utm$X)
+d_utm$area_swept <- d_utm$hook_count * 0.0024384 * 0.009144 * 1000
+d_utm$offset_area_swept <- log(d_utm$area_swept)
+d_utm$offset_area_hook <- log(d_utm$area_swept / d_utm$hook_adjust_factor)
+
+s_grid_utm <- convert2utm(hbll_s_grid$grid, coords = c("X", "Y"))
+
+s_grid_utm$longitude <- hbll_s_grid$grid$X 
+s_grid_utm$latitude <- hbll_s_grid$grid$Y 
+
+s_grid_utm$offset_area_hook <- mean(d_utm$offset_area_hook)
+s_grid_utm$offset_area_swept <- mean(d_utm$offset_area_swept)
+s_grid_utm$hook_adjust_factor <- mean(d_utm$hook_adjust_factor)
+s_grid_utm$hook_count <- 100 #mean(d_utm$hook_count)
+s_grid_utm$offset <- log(100)
+
+years <- sort(unique(d_utm$year))
+s_grid_utm <- expand_prediction_grid(s_grid_utm, years = years) %>%
+  mutate(depth_centred = log(depth) - mean(d_utm$depth_log)) %>%
+  mutate(depth_scaled = depth_centred / sd(d_utm$depth_centred))
+s_grid_utm <- mutate(s_grid_utm, Y_cent = Y - mean(d_utm$Y))
+s_grid_utm <- mutate(s_grid_utm, X_cent = X - mean(d_utm$X))
+```
+
+
+```{r }
+
+sp <- make_mesh(d_utm, c("X", "Y"), n_knots = 200)
+plot(sp)
+# png("figs/hbll-outside-S-spde.png", width = 7, height = 7, units = "in", res = 180)
+```
+
+```{r}
+glimpse(d_utm)
+```
+
+# just depth
+```{r}
+# m0 <- sdmTMB(
+#       formula = catch_count ~ 0 + as.factor(year) + 
+#           depth_scaled + I(depth_scaled^2),
+#       data = d_utm,
+#       spde = sp,
+#       time = "year",
+#       silent = FALSE,
+#       anisotropy = TRUE,
+#       #cores = cores,
+#       reml = TRUE,
+#       family = nbinom2(link = "log")
+#     )
+# saveRDS(m0, file = "models/ye-m0-depth-200kn.rds")
+m0  <-  readRDS(file = "models/ye-m0-depth-200kn.rds")
+m0
+
+get_diag(m0)
+```
+
+```{r}
+# d_utm$offset <- d_utm$offset_area_hook
+# 
+# m1 <- sdmTMB(
+#       formula = catch_count ~ 0 + as.factor(year) + depth_scaled + I(depth_scaled^2) + offset,
+#       data = d_utm,
+#       spde = sp,
+#       time = "year",
+#       silent = FALSE,
+#       anisotropy = TRUE,
+#       #cores = cores,
+#       reml = TRUE,
+#       family = nbinom2(link = "log")
+#     )
+# saveRDS(m1, file = "models/ye-m1-offset-area-hook-200kn.rds")
+
+m1  <- readRDS(file = "models/ye-m1-offset-area-hook-200kn.rds")
+m1
+get_diag(m1)
+```
+
+# estimate effect of hook area 
+```{r}
+# m1b <- sdmTMB(
+#       formula = catch_count ~ 0 + as.factor(year) + depth_scaled + I(depth_scaled^2) + offset_area_hook,
+#       data = d_utm,
+#       spde = sp,
+#       time = "year",
+#       silent = FALSE,
+#       anisotropy = TRUE,
+#       #cores = cores,
+#       reml = TRUE,
+#       family = nbinom2(link = "log")
+#     )
+# saveRDS(m1b, file = "models/ye-m1b-area-hook-200kn.rds")
+m1b  <- readRDS(file = "models/ye-m1b-area-hook-200kn.rds")
+m1b
+get_diag(m1b)
+```
+
+
+```{r}
+# d_utm$offset <- d_utm$offset_area_swept
+
+# m2 <- sdmTMB(
+#       formula = catch_count ~ 0 + as.factor(year) + 
+#           depth_scaled + I(depth_scaled^2) + offset,
+#       data = d_utm,
+#       spde = sp,
+#       time = "year",
+#       silent = FALSE,
+#       anisotropy = TRUE,
+#       #cores = cores,
+#       reml = TRUE,
+#       family = nbinom2(link = "log")
+#     )
+# saveRDS(m2, file = "models/ye-m2-offset-area-swept-200kn.rds")
+m2  <-  readRDS(file = "models/ye-m2-offset-area-swept-200kn.rds")
+m2
+get_diag(m2)
+```
+# estimate effect of area swept 
+## best so far
+```{r}
+# m2b <- sdmTMB(
+#       formula = catch_count ~ 0 + as.factor(year) + 
+#           depth_scaled + I(depth_scaled^2) + offset_area_swept,
+#       data = d_utm,
+#       spde = sp,
+#       time = "year",
+#       silent = FALSE,
+#       anisotropy = TRUE,
+#       #cores = cores,
+#       reml = TRUE,
+#       family = nbinom2(link = "log")
+#     )
+# saveRDS(m2b, file = "models/ye-m2b-area-swept-200kn.rds")
+
+m2b  <-  readRDS(file = "models/ye-m2b-area-swept-200kn.rds")
+m2b
+get_diag(m2b)
+```
+# just an estimate for the hook adjustment factor
+## second best AIC to model predicting effect of area swept
+```{r}
+# m3 <- sdmTMB(
+#       formula = catch_count ~ 0 + as.factor(year) + 
+#           depth_scaled + I(depth_scaled^2) + 
+#           hook_adjust_factor,
+#       data = d_utm,
+#       spde = sp,
+#       time = "year",
+#       silent = FALSE,
+#       anisotropy = TRUE,
+#       #cores = cores,
+#       reml = TRUE,
+#       family = nbinom2(link = "log")
+#     )
+# saveRDS(m3, file = "models/ye-m3-hook-factor-200kn.rds")
+
+m3  <- readRDS(file = "models/ye-m3-hook-factor-200kn.rds")
+m3
+get_diag(m3)
+```
+
+# use swept area offset and estimate hook adjustment
+```{r}
+# d_utm$offset <- d_utm$offset_area_swept
+# 
+# m4 <- sdmTMB(
+#       formula = catch_count ~ 0 + as.factor(year)+
+#           depth_scaled + I(depth_scaled^2) + 
+#           hook_adjust_factor +
+#           offset,
+#       data = d_utm,
+#       spde = sp,
+#       time = "year",
+#       silent = FALSE,
+#       anisotropy = TRUE,
+#       #cores = cores,
+#       reml = TRUE,
+#       family = nbinom2(link = "log")
+#     )
+# saveRDS(m4, file = "models/ye-m4-hookfact-offset-area-swept-200kn.rds")
+m4  <-  readRDS(file = "models/ye-m4-hookfact-offset-area-swept-200kn.rds")
+m4
+get_diag(m4)
+```
+
+# estimate swept area and hook adjustment
+```{r}
+# m4b <- sdmTMB(
+#       formula = catch_count ~ 0 + as.factor(year)+
+#           depth_scaled + I(depth_scaled^2) +
+#           hook_adjust_factor +
+#           offset_area_swept,
+#       data = d_utm,
+#       spde = sp,
+#       time = "year",
+#       silent = FALSE,
+#       anisotropy = TRUE,
+#       #cores = cores,
+#       reml = TRUE,
+#       family = nbinom2(link = "log")
+#     )
+# saveRDS(m4b, file = "models/ye-m4b-hookfact-area-swept-200kn.rds")
+m4b  <-  readRDS(file = "models/ye-m4b-hookfact-area-swept-200kn.rds")
+m4b
+get_diag(m4b)
+```
+
+
+# Try with more knots
+```{r }
+sp4 <- make_mesh(d_utm, c("X", "Y"), n_knots = 400)
+plot(sp4)
+# png("figs/hbll-outside-S-spde.png", width = 7, height = 7, units = "in", res = 180)
+```
+
+
+# estimate swept area and hook adjustment
+```{r}
+m4c <- sdmTMB(
+      formula = catch_count ~ 0 + as.factor(year)+
+          depth_scaled + I(depth_scaled^2) +
+          hook_adjust_factor +
+          offset_area_swept,
+      data = d_utm,
+      spde = sp4,
+      ar1_fields = T,
+      time = "year",
+      silent = FALSE,
+      anisotropy = TRUE,
+      #cores = cores,
+      reml = TRUE,
+      family = nbinom2(link = "log")
+    )
+saveRDS(m4c, file = "models/ye-m4c-hookfact-area-swept-400kn-AR1.rds")
+m4c  <-  readRDS(file = "models/ye-m4c-hookfact-area-swept-400kn-AR1.rds")
+m4c
+tidy(m4c, "ran_pars",conf.int = TRUE)
+get_diag(m4c)
+```
+
+# offset of hook_count
+```{r}
+# d_utm$offset <- log(d_utm$hook_count)
+# 
+# m5 <- sdmTMB(
+#       formula = catch_count ~ 0 + as.factor(year) + # hook_adjust_factor + # currently leaving out
+#           depth_scaled + I(depth_scaled^2) + 
+#           offset,
+#       data = d_utm,
+#       spde = sp4,
+#       ar1_fields = T,
+#       time = "year",
+#       silent = FALSE,
+#       anisotropy = TRUE,
+#       #cores = cores,
+#       reml = TRUE,
+#       family = nbinom2(link = "log")
+#     )
+saveRDS(m5, file = "models/ye-m5-hook-count-400kn-AR1.rds")
+# m5  <-  readRDS(file = "models/ye-m5-hook-count-400kn-AR1.rds")
+m5
+tidy(m5, "ran_pars",conf.int = TRUE)
+get_diag(m5)
+```
+
+
+# spatial only model
+```{r}
+d_utm$offset <- log(d_utm$hook_count)
+
+m5s <- sdmTMB(
+      formula = catch_count ~ 0 + as.factor(year) + # hook_adjust_factor + # currently leaving out
+          depth_scaled + I(depth_scaled^2) +
+          offset,
+      data = d_utm,
+      spde = sp4,
+      # ar1_fields = T,
+      # time = "year",
+      silent = FALSE,
+      anisotropy = TRUE,
+      #cores = cores,
+      reml = TRUE,
+      family = nbinom2(link = "log")
+    )
+saveRDS(m5s, file = "models/ye-m5-hook-count-400kn-spatial.rds")
+# m5s  <-  readRDS(file = "models/ye-m5-hook-count-400kn-spatial.rds")
+m5s
+tidy(m5s, "ran_pars",conf.int = TRUE)
+get_diag(m5s)
+```
+
+# Predictions from best model
+```{r}
+
+# m5  <-  readRDS(file = "models/ye-m5-hook-count-400kn-AR1.rds")
+# p <- predict(m5, newdata = s_grid_utm, se_fit = F, re_form = NULL, return_tmb_object = T)
+# saveRDS(p, "models/ye-m5-AR1-predictions.rds")
+```
+
+
+
+
+```{r}
+plot_map <- function(dat, column, wrap = TRUE) {
+  gg <- ggplot(data = dat) +
+    geom_tile(mapping = aes(X, Y, fill = {{ column }}), width = 0.025, height = 0.025) +
+    coord_fixed() +
+    scale_fill_viridis_c(option = "D")
+  if (wrap) gg + facet_wrap(~year) else gg
+}
+
+# p <- readRDS("models/ye-m4c-AR1-predictions.rds")
+p <- readRDS("models/ye-m5-AR1-predictions.rds")
+g <- plot_map(p$data, exp(est)) +
+  scale_fill_viridis_c(trans = ggsidekick::fourth_root_power_trans(), option = "D") +
+  labs(
+    fill = "Estimated\nadjusted\ncount",
+    size = "Observed\nadjusted\ncount"
+  ) +
+  geom_point(
+    data = d_utm, pch = 21, mapping = aes(
+      x = X, y = Y,
+      size = (catch_count / hook_count)*100
+    ),
+    inherit.aes = FALSE, colour = "grey20", alpha = 0.5
+  ) +
+  scale_size_area(max_size = 7)
+g
+```
+
+
+
+```{r}
+
+  gg <- ggplot(filter(p$data, year == 2020)) +
+    geom_tile(mapping = aes(longitude, latitude, fill = exp(est)), width = 0.06, height = 0.025) +
+    coord_fixed() +
+  scale_fill_viridis_c(trans = ggsidekick::fourth_root_power_trans(), option = "D") +
+  labs(
+    fill = "Estimated\nadjusted\ncount",
+    size = "Observed\nadjusted\ncount"
+  ) +
+  geom_point(
+    data = filter(d_utm, year == 2020), pch = 21, mapping = aes(
+      longitude, latitude,
+      size = (catch_count / hook_count)*100
+    ),
+    inherit.aes = FALSE, colour = "grey20", alpha = 0.5
+  ) +
+  scale_size_area(max_size = 7)
+gg
+```
+
+# try adding shape files
+
+```{r}
+library(sf)
+# library(raster)
+focal_area <-sf::st_read(dsn="shape-files/taaqwiihak_areaVer2.shp",layer="taaqwiihak_areaVer2")
+focal_area <- sf::st_transform(focal_area, crs = 4326)
+
+# make prediction grid st 
+
+s_grid_3cd <- filter(s_grid_utm, latitude<50.5) 
+
+s_grid_3cd_sf <- st_as_sf(s_grid_3cd, coords = c("longitude", "latitude"))
+st_crs(s_grid_3cd_sf) <- 4326 # set the coordinate reference system
+s_grid_3cd_sf
+
+intersected <- sf::st_intersects(s_grid_3cd_sf, focal_area)
+
+# cda <- which(lengths(intersected) > 0)
+cda_grid_sf <- s_grid_3cd_sf[which(lengths(intersected) > 0), ]
+noncda_grid_sf <- s_grid_3cd_sf[which(lengths(intersected) == 0), ]
+
+sfc_as_cols <- function(x, names = c("x","y")) {
+  stopifnot(inherits(x,"sf") && inherits(sf::st_geometry(x),"sfc_POINT"))
+  ret <- sf::st_coordinates(x)
+  ret <- tibble::as_tibble(ret)
+  stopifnot(length(names) == ncol(ret))
+  x <- x[ , !names(x) %in% names]
+  ret <- setNames(ret,names)
+  dplyr::bind_cols(x,ret)
+}
+
+cda_grid <- sfc_as_cols(cda_grid_sf, c("longitude", "latitude")) 
+noncda_grid <- sfc_as_cols(noncda_grid_sf, c("longitude", "latitude")) 
+st_geometry(cda_grid) <- NULL
+st_geometry(noncda_grid) <- NULL
+```
+
+# Predictions for CDA only
+```{r}
+m5  <-  readRDS(file = "models/ye-m5-hook-count-400kn-AR1.rds")
+p_cda <- predict(m5, newdata = cda_grid, se_fit = F, re_form = NULL, return_tmb_object = T)
+# saveRDS(p_cda, "models/ye-m5-AR1-predictions-cda.rds")
+
+i_cda <- get_index(p_cda)
+# saveRDS(i_cda, "models/ye-m5-AR1-index-cda.rds")
+
+ggplot(i_cda, aes(year, est)) + geom_line() +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.4) +
+  xlab('Year') + ylab('Biomass estimate (metric tonnes)')
+
+```
+
+
+# Predictions outside CDA but within 3cd
+```{r}
+# m5  <-  readRDS(file = "models/ye-m5-hook-count-400kn-AR1.rds")
+p_3cd <- predict(m5, newdata = noncda_grid, se_fit = F, re_form = NULL, return_tmb_object = T)
+saveRDS(p_3cd, "models/ye-m5-AR1-predictions-3cd.rds")
+
+i_3cd <- get_index(p_3cd)
+saveRDS(i_3cd, "models/ye-m5-AR1-index-3cd.rds")
+
+ggplot(i_3cd, aes(year, est)) + geom_line() +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.4) +
+  xlab('Year') + ylab('Biomass estimate (metric tonnes)')
+
+```
+
+
+# or without time
+```{r}
+m5s  <-  readRDS(file = "models/ye-m5-hook-count-400kn-spatial.rds")
+sp_cda <- predict(m5s, newdata = cda_grid, se_fit = F, re_form = NULL, return_tmb_object = T)
+saveRDS(ps, "models/ye-m5-spatial-predictions-cda.rds")
+
+i_cda_sp <- get_index(sp_cda)
+# saveRDS(i_sp, "models/ye-m5-cda-spatial-index.rds")
+
+sp_noncda <- predict(m5s, newdata = noncda_grid, se_fit = F, re_form = NULL, return_tmb_object = T)
+saveRDS(ps, "models/ye-m5-spatial-predictions-cda.rds")
+
+i_noncda_sp <- get_index(sp_noncda)
+# saveRDS(i_sp, "models/ye-m5-cda-spatial-index.rds")
+
+i_cda_sp$est / (i_cda_sp$est + i_noncda_sp$est)
+```
+
+
+
+```{r}
+
+
+# creates coast lines for area defined in lat lon
+load_coastll <- function(xlim_ll, ylim_ll, utm_zone, buffer = 0) {
+  data("nepacLLhigh", package = "PBSmapping", envir = environment())
+  np <- PBSmapping::clipPolys(nepacLLhigh,
+    xlim = xlim_ll + c(-buffer, buffer),
+    ylim = ylim_ll + c(-buffer, buffer)
+  )
+  # ll2utm(np, utm_zone = utm_zone)
+}
+
+coast <- load_coastll(
+    range(d_utm$longitude) ,
+    range(d_utm$latitude) ,
+    utm_zone = 9
+  )
+
+load_boundaries <- function(utm_zone) {
+  data("major", package = "PBSdata", envir = environment())
+  gfplot:::ll2utm(major, utm_zone = utm_zone)
+}
+
+majorbound  <- load_boundaries(9)
+# to see what's what
+library(PBSmapping) # needs this for some reason
+attributes(majorbound)$PolyData
+bound3CDnorth <- fortify(majorbound) %>% 
+  filter(PID %in% c(3,4)) %>%  filter(X > 400 & X < 600 & Y > 5550)%>% gfplot:::utm2ll(utm_zone = 9)
+
+# predictions <- p$data %>% 
+#   st_as_sf(crs = 4326, coords = c("longitude", "latitude")) 
+
+# p <- readRDS("models/ye-m4c-AR1-predictions.rds")
+p <- readRDS("models/ye-m5-AR1-predictions.rds")
+gye <- ggplot(data = focal_area) +
+  # plot predictions from best model with mean swept area and hook adjustment factor
+  geom_tile(data = filter(p$data, year == 2020),
+    aes(longitude, latitude, fill = exp(est)), width = 0.06, height = 0.025) +
+  scale_fill_viridis_c(trans = ggsidekick::fourth_root_power_trans(), 
+    option = "D", limits=c(0, 40), na.value = "yellow") +
+  labs(
+    fill = "Estimated\nadjusted\ncount",
+    size = "Observed\nadjusted\ncount"
+  ) +
+  geom_point(# plot all years together
+    data = d_utm, pch = 21, mapping = aes(
+      longitude, latitude,
+      size = (catch_count / hook_count)*100
+    ),
+    inherit.aes = FALSE, colour = "grey10", alpha = 0.4
+  ) +  scale_size_area(max_size = 4) + 
+  geom_line(# add major management region boundaries
+    data = bound3CDnorth,
+    aes(X, Y), colour = "black", lty = 2, 
+    inherit.aes = F
+  ) +
+  annotate("text", x = -129.5, y = 50.25, label = "3CD") +
+  annotate("text", x = -129.5, y = 51.25, label = "5AB") +
+  geom_sf(colour = "red", fill = NA) + # add focal area
+  geom_polygon( # add coast outline
+      data = coast, aes(x = X, y = Y, group = PID),
+      fill = "grey87", col = "grey70", lwd = 0.2
+    ) +
+  xlab("")+ ylab("")+ # remove axis labels
+  coord_sf(expand = F, ylim=c(48.5, 52.1))  +# trim points beyond grid boundaries
+  ggtitle("HBLL observed and predicted Yelloweye Rockfish catch per 100 hooks")
+gye
+# ggsave("ye-m5-AR1-2020-predictions.png", width = 6, height = 6)
+```
+
+```{r}
+g3cd <- ggplot(data = focal_area) +
+   geom_tile(data = filter(p_cda$data, year == 2020),
+   aes(longitude, latitude, fill = exp(est)), width = 0.06, height = 0.025) +
+   geom_tile(data = filter(p_3cd$data, year == 2020),
+    aes(longitude, latitude, fill = exp(est)), width = 0.05, height = 0.025) +
+  scale_fill_viridis_c(
+    trans = ggsidekick::fourth_root_power_trans(),
+    # limits=c(0, 40), na.value = "yellow",
+    option = "D") +
+  labs(
+    fill = "Estimated\ncount\nin 3CD",
+    size = "Observed\ncount"
+  ) +
+  geom_point(# plot all years together
+    data = d_utm, pch = 21, mapping = aes(
+      longitude, latitude,
+      size = (catch_count / hook_count)*100
+    ),
+    inherit.aes = FALSE, colour = "grey10", alpha = 0.4
+  ) +  scale_size_area(max_size = 4) + 
+  # geom_line(# add major management region boundaries
+  #   data = bound3CDnorth,
+  #   aes(X, Y), colour = "black", lty = 2, 
+  #   inherit.aes = F
+  # ) +
+  # annotate("text", x = -128, y = 49.5, label = "3CD") +
+  geom_sf(colour = "red", fill = NA) + # add focal area
+  geom_polygon( # add coast outline
+      data = coast, aes(x = X, y = Y, group = PID),
+      fill = "grey87", col = "grey70", lwd = 0.2
+    ) +
+  xlab("")+ ylab("")+ # remove axis labels
+  coord_sf(expand = F, ylim=c(48.4, 50.6), xlim=c(-128.5, -125.15))  +# trim points beyond grid boundaries
+  ggtitle("HBLL observed and predicted Yelloweye Rockfish catch per 100 hooks")
+g3cd
+ggsave("ye-m5-AR1-2020-predictions-3cd.png", width = 6, height = 6)
+```
+
+
+
+```{r}
+py <- readRDS("models/ye-m5-AR1-predictions.rds") 
+
+pyd <- py$data %>% rename(ye_est = est) 
+ph <- readRDS("models/halibut-m5-AR1-predictions.rds")
+phd <- ph$data %>% rename(hal_est = est) %>% select(hal_est, X, Y, year)
+
+ratio_df <- left_join(pyd, phd) %>% mutate(halibut = exp(hal_est), yelloweye = exp(ye_est), ye_per_hal = yelloweye/halibut)
+
+gratio <- ggplot(data = focal_area) +
+  # plot predictions from best model with mean swept area and hook adjustment factor
+  geom_tile(data = filter(ratio_df, year == 2020), 
+    aes(longitude, latitude, fill = ye_per_hal), width = 0.06, height = 0.025) +
+  scale_fill_viridis_c(trans = ggsidekick::fourth_root_power_trans(), 
+    # limits=c(0, 40), na.value = "yellow", 
+    option = "D"
+    ) +
+  labs(
+    fill = "Yelloweye\ncaught\nper halibut",
+    size = "Observed\nyelloweye\ncatch"
+  ) +
+  geom_point(# plot all years together
+    data = d_utm, pch = 21, mapping = aes(
+      longitude, latitude,
+      size = (catch_count / hook_count)*100
+    ),
+    inherit.aes = FALSE, colour = "grey10", alpha = 0.4
+  ) +  scale_size_area(max_size = 4) + 
+  geom_line(# add major management region boundaries
+    data = bound3CDnorth,
+    aes(X, Y), colour = "black", lty = 2, 
+    inherit.aes = F
+  ) +
+  annotate("text", x = -129.5, y = 50.25, label = "3CD") +
+  annotate("text", x = -129.5, y = 51.25, label = "5AB") +
+  geom_sf(colour = "red", fill = NA) + # add focal area
+  geom_polygon( # add coast outline
+      data = coast, aes(x = X, y = Y, group = PID),
+      fill = "grey87", col = "grey70", lwd = 0.2
+    ) +
+  xlab("")+ ylab("")+ # remove axis labels
+  coord_sf(expand = F, ylim=c(48.5, 52.1))  +# trim points beyond grid boundaries
+  ggtitle("Estimated number of Yelloweye Rockfish caught per halibut")
+gratio
+ggsave("ye-per-halibut.png", width = 6, height = 6)
+
+```
+
+
+
+
+
+
+# try tv depth
+### not useful
+```{r}
+# m5 <- sdmTMB(
+#       formula = catch_count ~ 0 + as.factor(year)+
+#           hook_adjust_factor +
+#           offset_area_swept,
+#       time_varying = ~ 0 + depth_scaled + I(depth_scaled^2),
+#       data = d_utm,
+#       spde = sp,
+#       time = "year",
+#       silent = FALSE,
+#       anisotropy = TRUE,
+#       #cores = cores,
+#       reml = TRUE,
+#       family = nbinom2(link = "log")
+#     )
+# saveRDS(m5, file = "models/ye-m5-tv-depth-200kn.rds")
+m5  <-  readRDS(file = "models/ye-m5-tv-depth-200kn.rds")
+m5
+get_diag(m5)
+```
+
+```{r}
+tvd <- gfranges::time_varying_density(m5, predictor = "depth")
+tvd$x <- exp(tvd$x)
+p <- gfranges::plot_mountains(tvd,
+    variable_label = "Depth (m)",
+    peaklines = F,
+    mountains_only = F,
+    xlimits = c(15, 270))
+p
+```
+
+
+```{r}
+# make_tv_depth_grid <- function(m){
+#   expand.grid(
+#     depth_scaled = seq(min(m$data$depth_scaled), max(m$data$depth_scaled), length.out = 100),
+#     hook_adjust_factor = mean(m$data$hook_adjust_factor), 
+#     offset_area_swept = mean(m$data$offset_area_swept), 
+#     year = as.factor(unique(m$data$year))
+#   )}
+# 
+# depth_grid <- make_tv_depth_grid(m5)
+# 
+# species_depth_profile <- function(m, depth_grid,
+#   min_depth_m = 15, 
+#   max_depth_m = 240,
+#   min_year = min(m$data$year), 
+#   response = "count"
+#   ){
+# 
+#   p <- predict(m, newdata = depth_grid, se_fit = TRUE, re_form = NA)
+#   p <- p %>% mutate(
+#     Depth = exp(depth_scaled * m$data$depth_sd[1] + m$data$depth_mean[1]),
+#     response = exp(est),
+#     lowCI = exp(est - 1.96 * est_se),
+#     highCI = exp(est + 1.96 * est_se))
+#   
+# g <- ggplot(filter(p, Depth > min_depth_m & year > min_year), 
+#   aes(Depth, response,
+#   ymin = lowCI, 
+#   ymax = highCI, 
+#   group = as.factor(year), fill = year, colour = year)) +
+#   geom_ribbon(alpha = 0.1, colour = NA) +
+#   geom_line(size = 0.5, alpha =0.85) +
+#   scale_fill_viridis_c(option = "C") +
+#   scale_colour_viridis_c(option = "C") +
+#   coord_cartesian(xlim = c(min_depth_m, max_depth_m), ylim=c(0, quantile(p$Biomass, 1))) +
+#   xlab("Depth (m)") +
+#   gfplot::theme_pbs() 
+# 
+# if(response=="biomass") {
+# g <- g + ylab("Biomass")
+# }
+# 
+# if(response=="count") {
+# g <- g + ylab("Individuals")
+# }
+# 
+# g
+# }
+# 
+# (tv_plot <- species_depth_profile(m5, depth_grid))
+```
+
